@@ -52,15 +52,25 @@ interface ActiveSubscription {
   platform: string | null;
 }
 
-async function callRpc<T>(
-  { supabaseUrl, serviceRoleKey, fn }: { supabaseUrl: string; serviceRoleKey: string; fn: string },
-): Promise<T[]> {
-  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {
+// Falha ao ler os candidatos vira erro visível (log e 502), em vez de uma
+// rodada "sem candidatos" que esconderia o problema todo dia.
+async function listCandidates(
+  { supabaseUrl, serviceRoleKey }: { supabaseUrl: string; serviceRoleKey: string },
+): Promise<GoalReminderCandidate[] | null> {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/goal_reminder_push_candidates`, {
     method: 'POST',
     headers: serviceHeaders(serviceRoleKey),
     body: '{}',
   });
-  if (!response.ok) return [];
+  if (!response.ok) {
+    console.error(JSON.stringify({
+      at: 'goal-reminder-push-dispatch',
+      error: 'candidates_rpc_failed',
+      status: response.status,
+      body: (await response.text()).slice(0, 500),
+    }));
+    return null;
+  }
   const rows = await response.json();
   return Array.isArray(rows) ? rows : [];
 }
@@ -85,6 +95,23 @@ async function claimDispatchRow(
   if (!response.ok) return false;
   const rows = await response.json();
   return Array.isArray(rows) && rows.length > 0;
+}
+
+// Envio que falhou em todos os dispositivos (erro do push service ou de rede)
+// devolve a meta para a rodada da hora seguinte.
+async function releaseDispatchRow(
+  { supabaseUrl, serviceRoleKey, candidate }: {
+    supabaseUrl: string; serviceRoleKey: string; candidate: GoalReminderCandidate;
+  },
+) {
+  const params = new URLSearchParams({
+    goal_id: `eq.${candidate.goal_id}`,
+    reference_month: `eq.${candidate.reference_month}`,
+  });
+  await fetch(`${supabaseUrl}/rest/v1/goal_reminder_push_dispatches?${params}`, {
+    method: 'DELETE',
+    headers: serviceHeaders(serviceRoleKey, { Prefer: 'return=minimal' }),
+  });
 }
 
 async function listActiveSubscriptionsForUser(
@@ -201,13 +228,13 @@ async function sendToUserSubscriptions(
 }
 
 async function processCandidates(
-  { supabaseUrl, serviceRoleKey }: { supabaseUrl: string; serviceRoleKey: string },
+  { supabaseUrl, serviceRoleKey, candidates }: {
+    supabaseUrl: string; serviceRoleKey: string; candidates: GoalReminderCandidate[];
+  },
 ) {
-  const candidates = await callRpc<GoalReminderCandidate>({
-    supabaseUrl, serviceRoleKey, fn: 'goal_reminder_push_candidates',
-  });
   let claimed = 0;
   let sent = 0;
+  let released = 0;
 
   for (const candidate of candidates) {
     const wasClaimed = await claimDispatchRow({ supabaseUrl, serviceRoleKey, candidate });
@@ -221,9 +248,14 @@ async function processCandidates(
       payload: buildGoalReminderPayload(candidate),
     });
     sent += result.sent;
+
+    if (result.sent === 0 && result.failed > 0) {
+      await releaseDispatchRow({ supabaseUrl, serviceRoleKey, candidate });
+      released += 1;
+    }
   }
 
-  return { candidates: candidates.length, claimed, sent };
+  return { candidates: candidates.length, claimed, sent, released };
 }
 
 Deno.serve(async (request) => {
@@ -253,7 +285,12 @@ Deno.serve(async (request) => {
 
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
 
-  const result = await processCandidates({ supabaseUrl, serviceRoleKey });
+  const candidates = await listCandidates({ supabaseUrl, serviceRoleKey });
+  if (candidates === null) {
+    return jsonResponse(502, { error: { code: 'CANDIDATES_FAILED', message: 'Nao foi possivel ler as metas com lembrete.' } });
+  }
+
+  const result = await processCandidates({ supabaseUrl, serviceRoleKey, candidates });
 
   return jsonResponse(200, { result });
 });

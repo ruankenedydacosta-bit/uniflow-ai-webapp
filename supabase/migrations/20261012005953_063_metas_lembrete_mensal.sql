@@ -88,7 +88,8 @@ grant execute on function public.verify_goal_reminder_dispatch_secret(text) to s
 -- - está ativa e não arquivada (pausada, concluída e cancelada ficam de fora);
 -- - ainda não atingiu o valor-alvo;
 -- - o dia de hoje em America/Sao_Paulo é o reminder_day dela;
--- - não recebeu aporte (valor positivo) neste mês;
+-- - não recebeu aporte neste mês. O filtro c.amount > 0 já prepara a
+--   retirada da #158, que vai gravar aporte com valor negativo;
 -- - ainda não recebeu o lembrete deste mês.
 -- ============================================================================
 
@@ -126,6 +127,7 @@ as $$
       where c.goal_id = g.id
         and c.amount > 0
         and c.contribution_date >= hoje.mes
+        and c.contribution_date < (hoje.mes + interval '1 month')::date
     )
     and not exists (
       select 1 from public.goal_reminder_push_dispatches d
@@ -134,14 +136,21 @@ as $$
     );
 $$;
 
+-- O cron consulta os candidatos de hora em hora. O índice parcial restringe
+-- a varredura às metas ativas com lembrete.
+create index if not exists financial_goals_reminder_day_idx
+  on public.financial_goals (reminder_day)
+  where reminder_day is not null and status = 'active' and archived_at is null;
+
 revoke all on function public.goal_reminder_push_candidates() from public, anon, authenticated;
 grant execute on function public.goal_reminder_push_candidates() to service_role;
 
 -- ============================================================================
 -- Agendamento: de hora em hora entre 12h e 22h UTC (9h a 19h em
 -- America/Sao_Paulo, que não tem horário de verão desde 2019). O primeiro
--- disparo do dia sai às 9h; os seguintes só pegam o que falhou antes de
--- gravar a linha de idempotência. O cron só chama a função quando há
+-- disparo do dia sai às 9h. Os seguintes pegam a meta cujo envio falhou em
+-- todos os dispositivos: o worker apaga a linha de idempotência nesse caso.
+-- O cron só chama a função quando há
 -- candidato. A URL do projeto vem do Vault (project_url), nunca escrita
 -- aqui. Sem project_url, a migration não falha, para não travar a fila de
 -- migrations, e só avisa.

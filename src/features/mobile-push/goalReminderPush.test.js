@@ -53,7 +53,18 @@ test('o dia e o mês são os de America/Sao_Paulo, não os de UTC', () => {
 test('meta com aporte no mês ou com lembrete já enviado no mês fica de fora', () => {
   const body = candidatesBody();
   assert.match(body, /from public\.goal_contributions c[\s\S]*c\.amount > 0[\s\S]*c\.contribution_date >= hoje\.mes/);
+  assert.match(body, /c\.contribution_date < \(hoje\.mes \+ interval '1 month'\)::date/);
   assert.match(body, /from public\.goal_reminder_push_dispatches d[\s\S]*d\.reference_month = hoje\.mes/);
+});
+
+test('índice parcial cobre só as metas ativas com lembrete', () => {
+  assert.match(SQL, /create index if not exists financial_goals_reminder_day_idx\s+on public\.financial_goals \(reminder_day\)\s+where reminder_day is not null and status = 'active' and archived_at is null;/);
+});
+
+test('aporte sem data usa a data local do aparelho, não a de UTC', () => {
+  const service = read('src/features/goals/goalService.js');
+  assert.match(service, /contribution\.contribution_date \|\| dataLocalDeHoje\(\)/);
+  assert.doesNotMatch(service, /toISOString\(\)\.split\('T'\)\[0\]/);
 });
 
 test('candidatos e segredo só executam como service_role', () => {
@@ -76,8 +87,26 @@ test('a função confere o segredo próprio e nunca o de outro worker', () => {
 });
 
 test('candidatos vêm só de goal_reminder_push_candidates(), nunca do corpo da requisição', () => {
-  assert.match(SOURCE, /fn: 'goal_reminder_push_candidates'/);
+  assert.match(SOURCE, /rest\/v1\/rpc\/goal_reminder_push_candidates/);
   assert.doesNotMatch(SOURCE, /request\.json\(\)/);
+});
+
+test('falha ao ler os candidatos responde 502 em vez de uma rodada vazia com 200', () => {
+  const fnBody = SOURCE.slice(SOURCE.indexOf('Deno.serve'));
+  assert.match(fnBody, /if \(candidates === null\) \{\s+return jsonResponse\(502,/);
+});
+
+test('envio que falhou em todos os dispositivos apaga a linha de idempotência e volta na hora seguinte', () => {
+  const processBody = SOURCE.slice(SOURCE.indexOf('async function processCandidates'));
+  assert.match(processBody, /if \(result\.sent === 0 && result\.failed > 0\) \{\s+await releaseDispatchRow\(/);
+
+  const releaseBody = SOURCE.slice(
+    SOURCE.indexOf('async function releaseDispatchRow'),
+    SOURCE.indexOf('async function listActiveSubscriptionsForUser'),
+  );
+  assert.match(releaseBody, /method: 'DELETE'/);
+  assert.match(releaseBody, /goal_id: `eq\.\$\{candidate\.goal_id\}`/);
+  assert.match(releaseBody, /reference_month: `eq\.\$\{candidate\.reference_month\}`/);
 });
 
 test('a linha de idempotência é gravada antes do envio, com ON CONFLICT DO NOTHING', () => {

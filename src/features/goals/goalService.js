@@ -38,6 +38,15 @@ function checkRequiredGoalFields(goal) {
   );
 }
 
+// Data de hoje no fuso do aparelho. toISOString() devolve a data em UTC: um
+// aporte às 21h30 do dia 31 em São Paulo saía com a data do dia 1 seguinte.
+function dataLocalDeHoje() {
+  const agora = new Date();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const dia = String(agora.getDate()).padStart(2, '0');
+  return `${agora.getFullYear()}-${mes}-${dia}`;
+}
+
 function pickDefined(source, fields) {
   return Object.fromEntries(
     fields.filter((field) => source[field] !== undefined).map((field) => [field, source[field]]),
@@ -204,7 +213,7 @@ export async function addContribution(workspaceId, goalId, contribution = {}) {
     workspace_id: workspaceId,
     goal_id: goalId,
     amount: normalizedAmount,
-    contribution_date: contribution.contribution_date || new Date().toISOString().split('T')[0],
+    contribution_date: contribution.contribution_date || dataLocalDeHoje(),
     note: contribution.note || null,
     linked_account_id: contribution.linked_account_id || null,
     client_operation_id: contribution.client_operation_id || null,
