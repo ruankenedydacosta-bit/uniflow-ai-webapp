@@ -9,7 +9,7 @@ import { upsertRecord, removeRecord, createDemoRecord, createDemoResult } from '
 
 const EMPTY_ARRAY = [];
 
-export function useGoals({ workspaceId } = {}) {
+export function useGoals({ workspaceId, comUltimoAporte = false } = {}) {
   const [goals, setGoals] = useState(EMPTY_ARRAY);
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
   const [isMutating, setIsMutating] = useState(false);
@@ -34,7 +34,7 @@ export function useGoals({ workspaceId } = {}) {
     }
 
     setIsLoading(true);
-    const result = await listGoals(workspaceId);
+    const result = await listGoals(workspaceId, { comUltimoAporte });
 
     if (requestId !== requestIdRef.current) return null;
 
@@ -42,7 +42,7 @@ export function useGoals({ workspaceId } = {}) {
     setError(result.error);
     setIsLoading(false);
     return result;
-  }, [workspaceId]);
+  }, [workspaceId, comUltimoAporte]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => refresh(), 0);
@@ -84,10 +84,15 @@ export function useGoals({ workspaceId } = {}) {
       ? createDemoResult({ ...changes, id: goalId, updated_at: new Date().toISOString() })
       : await updateGoal(workspaceId, goalId, changes);
 
+    // O update devolve só as colunas da meta; o merge mantém o que veio
+    // embutido na listagem (last_contribution_date).
     if (result.error) {
       setError(result.error);
     } else if (result.data) {
-      setGoals((current) => upsertRecord(current, result.data));
+      setGoals((current) => upsertRecord(current, {
+        ...current.find((goal) => goal.id === goalId),
+        ...result.data,
+      }));
     }
 
     setIsMutating(false);
@@ -125,7 +130,15 @@ export function useGoals({ workspaceId } = {}) {
     } else if (result.data) {
       setGoals((current) => current.map((g) => {
         if (g.id !== goalId) return g;
-        return { ...g, current_amount: Number(g.current_amount) + Number(values.amount) };
+        const dataDoAporte = result.data.contribution_date;
+        const ultimoAporte = g.last_contribution_date && g.last_contribution_date > dataDoAporte
+          ? g.last_contribution_date
+          : dataDoAporte;
+        return {
+          ...g,
+          current_amount: Number(g.current_amount) + Number(values.amount),
+          last_contribution_date: ultimoAporte ?? g.last_contribution_date,
+        };
       }));
     }
 

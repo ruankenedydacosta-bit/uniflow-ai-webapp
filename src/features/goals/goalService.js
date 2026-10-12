@@ -38,6 +38,15 @@ function checkRequiredGoalFields(goal) {
   );
 }
 
+// Data de hoje no fuso do aparelho. toISOString() devolve a data em UTC: um
+// aporte às 21h30 do dia 31 em São Paulo saía com a data do dia 1 seguinte.
+function dataLocalDeHoje() {
+  const agora = new Date();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const dia = String(agora.getDate()).padStart(2, '0');
+  return `${agora.getFullYear()}-${mes}-${dia}`;
+}
+
 function pickDefined(source, fields) {
   return Object.fromEntries(
     fields.filter((field) => source[field] !== undefined).map((field) => [field, source[field]]),
@@ -46,21 +55,34 @@ function pickDefined(source, fields) {
 
 // —————— GOALS ——————
 
-export async function listGoals(workspaceId, { status } = {}) {
+export async function listGoals(workspaceId, { status, comUltimoAporte = false } = {}) {
   if (!supabase) return createUnavailableResult([]);
   if (!isValidUuid(workspaceId)) return createValidationResult('Workspace invalido.');
 
   let query = supabase
     .from('financial_goals')
-    .select(GOAL_FIELDS)
+    .select(comUltimoAporte ? `${GOAL_FIELDS}, ultimo_aporte:goal_contributions(contribution_date)` : GOAL_FIELDS)
     .eq('workspace_id', workspaceId)
     .is('archived_at', null)
     .order('created_at', { ascending: false });
 
+  // Data do último aporte de cada meta, para a lista avisar "Sem aporte há
+  // N meses" (#154). Só a tela de Metas pede; vem limitada a uma linha.
+  if (comUltimoAporte) {
+    query = query
+      .order('contribution_date', { referencedTable: 'ultimo_aporte', ascending: false })
+      .limit(1, { referencedTable: 'ultimo_aporte' });
+  }
+
   if (status) query = query.eq('status', status);
 
   const { data, error } = await query;
-  return createResult(data ?? [], error);
+  if (!comUltimoAporte) return createResult(data ?? [], error);
+  const goals = (data ?? []).map(({ ultimo_aporte: ultimoAporte, ...goal }) => ({
+    ...goal,
+    last_contribution_date: ultimoAporte?.[0]?.contribution_date ?? null,
+  }));
+  return createResult(goals, error);
 }
 
 export async function getGoal(workspaceId, goalId) {
@@ -191,7 +213,7 @@ export async function addContribution(workspaceId, goalId, contribution = {}) {
     workspace_id: workspaceId,
     goal_id: goalId,
     amount: normalizedAmount,
-    contribution_date: contribution.contribution_date || new Date().toISOString().split('T')[0],
+    contribution_date: contribution.contribution_date || dataLocalDeHoje(),
     note: contribution.note || null,
     linked_account_id: contribution.linked_account_id || null,
     client_operation_id: contribution.client_operation_id || null,

@@ -71,6 +71,8 @@ function SimplifiedAppShell({ children }) {
   const hasPageHeader = location.pathname === SIMPLIFIED_ROUTES.RECORDS
     || location.pathname === SIMPLIFIED_ROUTES.ACCOUNT
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`)
+    // #154: Metas é tela interna do Mais (seta voltar + "Criar meta").
+    || location.pathname === SIMPLIFIED_ROUTES.METAS
     // RELATORIO1/RELATORIO-FLATTEN1: cabeçalho próprio (← Relatório da
     // Uni + mês + resumo + planilha, tudo na mesma tela) -- nunca o
     // genérico (marca + sino) duplicado por cima.
