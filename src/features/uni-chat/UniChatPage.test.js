@@ -2142,7 +2142,10 @@ test('#192: pedido de meta com ação vai ao card ou à consulta, confirma e can
   assert.match(iniciar, /acao === 'consultar'[\s\S]*?textoDaConsultaDeMetas\(pedidoDoModelo, \{ metas: goalsState\.goals \}\)/);
   assert.match(iniciar, /await listContributions\(pronto\.meta\.id\)/);
   assert.match(iniciar, /uniTurnTokenRef\.current !== turnToken\) return;/);
-  assert.match(iniciar, /textoDaMetaComAportes\(pronto\.meta, aportes\.data\.length\)/);
+  assert.match(iniciar, /metaTemDinheiro\(pronto\.meta, quantidadeDeAportes\)[\s\S]*?textoDaMetaComAportes\(pronto\.meta, quantidadeDeAportes\)/);
+  // Metas sem ler (erro) não viram "você não tem metas"; recarga com a lista em mãos não bloqueia.
+  assert.match(iniciar, /goalsState\.isLoading && goalsState\.goals\.length === 0/);
+  assert.match(iniciar, /goalsState\.error && goalsState\.error\.code !== 'SUPABASE_NOT_CONFIGURED'/);
   // Grava pelo hook da tela Metas.
   const { body: confirmar } = extractFunctionBody(page, 'async function confirmarPedidoDeMeta(id) {');
   assert.match(confirmar, /goalsState\.addGoal\(pronto\.payload\)/);

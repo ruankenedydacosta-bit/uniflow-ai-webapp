@@ -60,7 +60,7 @@ Só quando o intent é categoria; nos outros, todos os campos são null.
 Só quando o intent é meta; nos outros, todos os campos são null.
 - acao: criar (meta nova), editar (mudar nome, valor, prazo ou quanto guardar por mês de uma meta que existe), excluir (apagar uma meta) ou consultar (saber como está uma meta ou todas).
 - alvo: em editar, excluir e consultar, o apelido (m1, m2...) da meta da lista <metas> de que a pessoa fala. null se a frase não aponta uma meta da lista ou se fala de todas. null em criar.
-- nome: em criar, o nome da meta como a pessoa chamaria ("Viagem para o Chile", "Reserva de emergência"), com acentos e inicial maiúscula, sem o pedido nem o valor; em editar, só o nome novo, quando a pessoa muda o nome. null nos outros casos.
+- nome: em criar, o nome da meta como a pessoa chamaria ("Viagem para o Chile", "Reserva de emergência"), com acentos e inicial maiúscula, sem o pedido nem o valor; em editar, só o nome novo, quando a pessoa muda o nome. Em editar, excluir e consultar com alvo null porque a meta não está em <metas>, o nome como a pessoa chamou a meta ("Carro"), para a Uni dizer qual não achou. null nos outros casos.
 - valor: em criar e editar, quanto a pessoa quer juntar no total, em reais. null se não diz ou se não muda.
 - data: em criar e editar, o prazo resolvido a partir de hoje, AAAA-MM-DD. Mês sem dia é o último dia do mês; ano sem mês é 31 de dezembro. null se não diz.
 - por_mes: em criar e editar, quanto a pessoa quer guardar por mês, em reais ("300 por mês"). null se não diz. Nunca calcule: só o que a frase traz.

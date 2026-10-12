@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   ACTION_KIND_META,
+  metaTemDinheiro,
   montarPedidoDeMeta,
   respostaAoPedidoDeMeta,
   textoDaConsultaDeMetas,
@@ -87,6 +88,13 @@ test('editar: alvo desconhecido, nada para mudar, valor igual ou nome repetido p
     montarPedidoDeMeta({ ...VAZIO, acao: 'editar', alvo: null, valor: 10 }, CONTEXTO).erro,
     'Não encontrei essa meta. As suas metas em aberto são: Viagem para o Chile e Casamento.',
   );
+  // Com o nome que a pessoa disse, a Uni diz qual não achou.
+  assert.equal(
+    montarPedidoDeMeta({ ...VAZIO, acao: 'editar', alvo: null, nome: 'carro', valor: 10 }, CONTEXTO).erro,
+    'Não encontrei a meta Carro. As suas metas em aberto são: Viagem para o Chile e Casamento.',
+  );
+  // Mesmo nome com outra caixa não é renomear.
+  assert.match(montarPedidoDeMeta({ ...VAZIO, acao: 'editar', alvo: { id: 'meta-via' }, nome: 'viagem para o chile' }, CONTEXTO).erro, /O que você quer mudar/);
   assert.equal(
     montarPedidoDeMeta({ ...VAZIO, acao: 'editar', alvo: { id: 'meta-via' } }, CONTEXTO).erro,
     'O que você quer mudar na meta Viagem para o Chile? Pode ser o nome, o valor, o prazo ou quanto guardar por mês.',
@@ -99,7 +107,7 @@ test('editar: alvo desconhecido, nada para mudar, valor igual ou nome repetido p
   // Meta concluída não é alvo: a lista de abertas é a da aba Ativas.
   assert.match(montarPedidoDeMeta({ ...VAZIO, acao: 'editar', alvo: { id: 'meta-ok' }, valor: 1 }, CONTEXTO).erro, /Não encontrei essa meta/);
   // Sem nenhuma meta, a Uni ensina a criar.
-  assert.match(montarPedidoDeMeta({ ...VAZIO, acao: 'editar', alvo: { id: 'x' }, valor: 1 }, { metas: [] }).erro, /ainda não tem metas em aberto/);
+  assert.match(montarPedidoDeMeta({ ...VAZIO, acao: 'editar', alvo: { id: 'x' }, valor: 1 }, { metas: [] }).erro, /não tem metas em aberto/);
 });
 
 test('excluir: card com valor e guardado; aporte registrado manda para a tela', () => {
@@ -113,6 +121,11 @@ test('excluir: card com valor e guardado; aporte registrado manda para a tela', 
   assert.equal(textoDoPedidoDeMetaFeito(pedido), 'Meta Viagem para o Chile excluída.');
   assert.equal(textoDaMetaComAportes(METAS[0], 1), 'A meta Viagem para o Chile tem 1 aporte registrado. Para excluir, abra a tela Metas: lá você vê o que seria apagado.');
   assert.match(textoDaMetaComAportes(METAS[0], 3), /3 aportes registrados/);
+  // Valor guardado sem aporte (valor inicial) também segura a exclusão.
+  assert.equal(metaTemDinheiro(METAS[0], 0), true);
+  assert.equal(metaTemDinheiro(METAS[1], 0), false);
+  assert.equal(metaTemDinheiro(METAS[1], 2), true);
+  assert.match(textoDaMetaComAportes(METAS[0], 0), /tem R\$\u00a03\.200,00 guardados\./);
   assert.match(montarPedidoDeMeta({ ...VAZIO, acao: 'aportar' }, CONTEXTO).erro, /Não entendi o que fazer com a meta/);
 });
 
@@ -128,6 +141,11 @@ test('consultar: uma meta diz guardado, falta, prazo e por mês; sem alvo resume
   assert.equal(textoDaConsultaDeMetas({ ...VAZIO, acao: 'consultar' }, { metas: [METAS[0]] }), texto);
   assert.match(textoDaConsultaDeMetas({ ...VAZIO, acao: 'consultar' }, { metas: [] }), /ainda não tem metas/);
   assert.match(textoDaConsultaDeMetas({ ...VAZIO, acao: 'consultar', alvo: { id: 'meta-ok' } }, CONTEXTO), /Não encontrei essa meta/);
+  // Perguntou por uma meta fora da lista: não resume as outras.
+  assert.equal(
+    textoDaConsultaDeMetas({ ...VAZIO, acao: 'consultar', nome: 'Carro' }, CONTEXTO),
+    'Não encontrei a meta Carro. As suas metas em aberto são: Viagem para o Chile e Casamento.',
+  );
   // Mais de quatro: as outras ficam na tela.
   const muitas = Array.from({ length: 6 }, (_, i) => ({ ...METAS[1], id: `m${i}`, name: `Meta ${i + 1}` }));
   assert.match(textoDaConsultaDeMetas({ ...VAZIO, acao: 'consultar' }, { metas: muitas }), /As outras 2 estão na tela Metas\.$/);

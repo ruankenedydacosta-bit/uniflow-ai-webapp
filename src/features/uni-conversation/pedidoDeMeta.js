@@ -102,10 +102,7 @@ export function montarPedidoDeMeta(pedido, { metas = [], hoje = null } = {}) {
   }
 
   const meta = abertas.find((item) => item.id === pedido.alvo?.id) ?? null;
-  if (!meta) {
-    if (abertas.length === 0) return { erro: 'Você ainda não tem metas em aberto. Para criar uma, diga quanto quer juntar e para quê.' };
-    return { erro: `Não encontrei essa meta. As suas metas em aberto são: ${listarNomes(abertas)}.` };
-  }
+  if (!meta) return { erro: textoDeMetaNaoEncontrada(pedido, abertas) };
 
   if (acao === ACOES_DE_META.EXCLUIR) {
     return {
@@ -125,7 +122,8 @@ export function montarPedidoDeMeta(pedido, { metas = [], hoje = null } = {}) {
   if (ajustes.includes('data_descartada')) return { erro: ERRO_PRAZO };
   const mudancas = [];
   const nome = nomeDeMeta(pedido.nome);
-  if (nome && nome !== meta.name) {
+  // Mesmo nome com outra caixa ou acento não é renomear: o modelo capitaliza.
+  if (nome && !mesmoNome(nome, meta.name)) {
     const repetida = abertas.find((item) => item.id !== meta.id && mesmoNome(item.name, nome));
     if (repetida) return { erro: `Já existe uma meta chamada ${repetida.name}. Escolha outro nome.` };
     mudancas.push({ campo: 'name', rotulo: 'Nome', antes: meta.name, depois: nome });
@@ -187,6 +185,15 @@ function listarNomes(metas) {
   return juntar(metas.slice(0, MAX_METAS_NA_RESPOSTA).map((meta) => meta.name));
 }
 
+// A pessoa falou de uma meta que não está em aberto. Com o nome que ela
+// disse, a Uni diz qual não achou.
+function textoDeMetaNaoEncontrada(pedido, abertas) {
+  const dita = nomeDeMeta(pedido?.nome);
+  const qual = dita ? `a meta ${dita}` : 'essa meta';
+  if (abertas.length === 0) return `Não encontrei ${qual}: você não tem metas em aberto. Para criar uma, diga quanto quer juntar e para quê.`;
+  return `Não encontrei ${qual}. As suas metas em aberto são: ${listarNomes(abertas)}.`;
+}
+
 // Como está uma meta, em uma frase que dá para falar: guardado, falta e, com
 // prazo, quanto por mês. Mesma conta da tela (goalCalc).
 export function textoDaMeta(meta) {
@@ -207,11 +214,9 @@ export function textoDaConsultaDeMetas(pedido, { metas = [] } = {}) {
   const abertas = metasEmAberto(metas);
   const alvo = pedido?.alvo?.id ? abertas.find((meta) => meta.id === pedido.alvo.id) : null;
   if (alvo) return textoDaMeta(alvo);
-  if (pedido?.alvo?.id) {
-    return abertas.length === 0
-      ? 'Você não tem metas em aberto no momento.'
-      : `Não encontrei essa meta. As suas metas em aberto são: ${listarNomes(abertas)}.`;
-  }
+  // Perguntou por uma meta que não existe (alvo descartado ou nome fora da
+  // lista): dizer qual não achou, em vez de resumir as outras.
+  if (pedido?.alvo?.id || pedido?.nome) return textoDeMetaNaoEncontrada(pedido, abertas);
   if (abertas.length === 0) {
     return 'Você ainda não tem metas. Para criar uma, diga quanto quer juntar e para quê. Por exemplo: "quero juntar 5 mil para a viagem até dezembro".';
   }
@@ -225,11 +230,17 @@ export function textoDaConsultaDeMetas(pedido, { metas = [] } = {}) {
   return `Você tem ${abertas.length} metas em aberto, com ${formatCurrency(guardado)} guardados de ${formatCurrency(total)}: ${linhas.join('; ')}.${resto}`;
 }
 
-// Meta com aporte registrado não sai pela conversa: o histórico de aportes
-// iria junto. A tela Metas mostra o que seria apagado.
+// Meta com dinheiro registrado (aporte ou valor guardado) não sai pela
+// conversa: o histórico iria junto. A tela Metas mostra o que seria apagado.
+export function metaTemDinheiro(meta, quantidadeDeAportes) {
+  return quantidadeDeAportes > 0 || Number(meta?.current_amount || 0) > 0;
+}
+
 export function textoDaMetaComAportes(meta, quantidade) {
-  const aportes = quantidade === 1 ? '1 aporte registrado' : `${quantidade} aportes registrados`;
-  return `A meta ${meta.name} tem ${aportes}. Para excluir, abra a tela Metas: lá você vê o que seria apagado.`;
+  const oQueTem = quantidade > 0
+    ? (quantidade === 1 ? '1 aporte registrado' : `${quantidade} aportes registrados`)
+    : `${formatCurrency(meta.current_amount)} guardados`;
+  return `A meta ${meta.name} tem ${oQueTem}. Para excluir, abra a tela Metas: lá você vê o que seria apagado.`;
 }
 
 // O que a Uni diz depois de gravar. É este texto que a voz fala.

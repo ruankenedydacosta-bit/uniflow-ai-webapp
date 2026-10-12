@@ -443,6 +443,11 @@ test('meta: editar, excluir e consultar trocam o apelido pelo registro; apelido 
   assert.equal(consultar.nome, null);
   assert.equal(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'excluir', alvo: 'm9' }), CONTEXTO).meta.alvo, null);
   assert.equal(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'excluir', alvo: 'meta-via' }), CONTEXTO).meta.alvo, null);
+  // Sem alvo, o nome dito fica, para a Uni dizer qual meta não achou.
+  const semAlvo = validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'consultar', alvo: null, nome: 'Carro' }), CONTEXTO).meta;
+  assert.deepEqual({ alvo: semAlvo.alvo, nome: semAlvo.nome }, { alvo: null, nome: 'Carro' });
+  // Prazo vazio é "sem prazo", não prazo errado.
+  assert.deepEqual(validarInterpretacao(pedidoDeMeta({ ...META_VAZIA, acao: 'criar', nome: 'Carro', valor: 1, data: '' }), CONTEXTO).meta.ajustes, []);
 });
 
 test('meta: sem ação válida o intent segue meta com acao null; fora do intent não sai', () => {

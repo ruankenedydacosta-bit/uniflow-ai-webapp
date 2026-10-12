@@ -82,6 +82,7 @@ import {
   montarPedidoDeMeta,
   respostaAoPedidoDeMeta,
   textoDaConsultaDeMetas,
+  metaTemDinheiro,
   textoDaMetaComAportes,
   textoDoPedidoDeMetaFeito,
 } from '../uni-conversation/pedidoDeMeta.js';
@@ -1615,8 +1616,16 @@ export default function UniChatPage({ variant = 'full' }) {
   // Consultar responde na hora; criar, alterar e excluir montam o card. Meta
   // com aporte não sai pela conversa: a tela Metas mostra o que iria junto.
   async function iniciarPedidoDeMeta(pedidoDoModelo, turnToken) {
-    if (goalsState.isLoading) {
+    // Toda confirmação no chat recarrega as metas (isLoading volta a true):
+    // com a lista já em mãos, o pedido segue. Só a primeira carga espera.
+    if (goalsState.isLoading && goalsState.goals.length === 0) {
       createAssistantResponse('Ainda estou carregando as suas metas. Peça de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    // Sem conseguir ler as metas, a lista vazia mentiria ("você não tem
+    // metas") e deixaria criar uma repetida.
+    if (goalsState.error && goalsState.error.code !== 'SUPABASE_NOT_CONFIGURED') {
+      createAssistantResponse('Não consegui ler as suas metas agora. Tente de novo ou abra a tela Metas.', { deduplicateNarration: false });
       return;
     }
     if (pedidoDoModelo?.acao === 'consultar') {
@@ -1631,12 +1640,14 @@ export default function UniChatPage({ variant = 'full' }) {
     if (pronto.acao === 'excluir') {
       const aportes = await listContributions(pronto.meta.id);
       if (uniTurnTokenRef.current !== turnToken) return;
-      if (aportes.error) {
+      // Modo demo não tem aportes para conferir; qualquer outro erro para.
+      if (aportes.error && aportes.error.code !== 'SUPABASE_NOT_CONFIGURED') {
         createAssistantResponse('Não consegui conferir os aportes dessa meta agora. Tente de novo ou use a tela Metas.', { deduplicateNarration: false });
         return;
       }
-      if (aportes.data.length > 0) {
-        createAssistantResponse(textoDaMetaComAportes(pronto.meta, aportes.data.length), { deduplicateNarration: false });
+      const quantidadeDeAportes = aportes.data?.length ?? 0;
+      if (metaTemDinheiro(pronto.meta, quantidadeDeAportes)) {
+        createAssistantResponse(textoDaMetaComAportes(pronto.meta, quantidadeDeAportes), { deduplicateNarration: false });
         return;
       }
     }

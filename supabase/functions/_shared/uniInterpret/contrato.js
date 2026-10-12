@@ -337,18 +337,21 @@ function valorPositivo(bruto) {
   return Number.isFinite(numero) && numero > 0 ? Math.round(numero * 100) / 100 : null;
 }
 
-// Apelido inventado vira alvo null, e o app diz que não achou a meta. Prazo
-// no passado ou a mais de dez anos é erro de leitura e sai, marcado para o
-// app perguntar. Sem ação válida, o app responde como antes (só consulta).
+// Apelido inventado vira alvo null, e o app diz que não achou a meta; nesse
+// caso o nome fica com o que a pessoa disse, para a Uni dizer qual não
+// achou. Prazo no passado ou a mais de dez anos é erro de leitura e sai,
+// marcado para o app perguntar. Sem ação válida, o app responde como antes.
 function validarMeta(bruta, { metasPorApelido, dataReferencia }) {
   const acao = ACOES_META.includes(bruta?.acao) ? bruta.acao : null;
   const alvo = acao && acao !== 'criar' ? metasPorApelido.get(bruta?.alvo) ?? null : null;
-  const nome = acao === 'excluir' || acao === 'consultar' ? null : (textoLimpo(bruta?.nome, MAX_NOME_META) || null);
+  const nomeDito = textoLimpo(bruta?.nome, MAX_NOME_META) || null;
+  const nome = (acao === 'excluir' || acao === 'consultar') && alvo ? null : nomeDito;
   const ajustes = [];
 
   let data = null;
   if (acao === 'criar' || acao === 'editar') {
-    if (bruta?.data !== null && bruta?.data !== undefined) {
+    // String vazia é "sem prazo", não prazo errado.
+    if (typeof bruta?.data === 'string' && bruta.data.trim()) {
       if (dataValida(bruta.data) && bruta.data >= dataReferencia
         && distanciaEmDias(bruta.data, dataReferencia) <= MAX_DIAS_PRAZO_META) {
         data = bruta.data;
