@@ -225,15 +225,17 @@ function formatCategoryShare(share) {
 // Categorias do Resumo (handoff 25): as maiores do mês, da maior para a
 // menor, com a fatia do total. Tocar abre o Histórico filtrado. Criar,
 // ocultar e ver todas ficam em Organizar.
-function CategorySummary({ categories, hiddenCategories, isCurrentMonth, monthName, onSelect, onShowAll, transactions }) {
+function CategorySummary({ categories, hiddenCategories, isPastMonth, monthName, monthTotals, onSelect, onShowAll, transactions }) {
   const [type, setType] = useState('expense');
+  const monthTotal = monthTotals[type];
   const { total, linhas } = useMemo(() => maioresCategoriasDoMes({
     categories,
     ocultas: hiddenCategories,
     transactions,
     type,
     limite: CATEGORY_PREVIEW_SIZE,
-  }), [categories, hiddenCategories, transactions, type]);
+    totalDoMes: monthTotal,
+  }), [categories, hiddenCategories, monthTotal, transactions, type]);
   const isIncome = type === 'income';
   const typeName = isIncome ? 'entrada' : 'saída';
 
@@ -252,7 +254,7 @@ function CategorySummary({ categories, hiddenCategories, isCurrentMonth, monthNa
       />
       {linhas.length ? (
         <>
-          <div>
+          <div className={styles.categoryList}>
             {linhas.map((linha) => {
               const content = (
                 <>
@@ -271,7 +273,8 @@ function CategorySummary({ categories, hiddenCategories, isCurrentMonth, monthNa
                   <ProgressBar value={linha.fatia * 100} tone={isIncome ? 'green' : 'violet'} />
                 </>
               );
-              // "Sem categoria" não tem filtro no Histórico: a linha só informa.
+              // "Sem categoria" não tem opção no filtro do Histórico, como na
+              // lista de Organizar: a linha só informa.
               return linha.semCategoria ? (
                 <div key={linha.id} className={`${organizar.row} ${styles.categoryRowStatic}`}>{content}</div>
               ) : (
@@ -287,7 +290,7 @@ function CategorySummary({ categories, hiddenCategories, isCurrentMonth, monthNa
         </>
       ) : (
         <p className={styles.categoryEmpty}>
-          {`Nenhuma ${typeName} em ${monthName}${isCurrentMonth ? ' ainda' : ''}.`}
+          {`Nenhuma ${typeName} em ${monthName}${isPastMonth ? '' : ' ainda'}.`}
         </p>
       )}
     </section>
@@ -1245,8 +1248,9 @@ function SimplifiedRecordsPage() {
                     categories={categoryState.categoriasVisiveis}
                     hiddenCategories={categoryState.categoriasOcultas}
                     transactions={transactionState.transactions}
-                    monthName={month.label.split(' de ')[0]}
-                    isCurrentMonth={month.dateTo >= todayKey}
+                    monthName={new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(month.date)}
+                    monthTotals={summary}
+                    isPastMonth={month.dateTo < todayKey}
                     onSelect={selectCategory}
                     onShowAll={() => navigate(SIMPLIFIED_ROUTES.CATEGORIAS)}
                   />

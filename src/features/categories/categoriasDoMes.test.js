@@ -147,6 +147,25 @@ test('Resumo: oculta e sem categoria entram pelo valor', () => {
   assert.equal(resumo.total, 600);
 });
 
+test('Resumo: o total do card (com ajuste de saldo) vira a base das fatias', () => {
+  const resumo = maioresCategoriasDoMes({
+    categories,
+    type: 'expense',
+    transactions: [lancamento(1, 'a', 300), lancamento(2, 'b', 100)],
+    totalDoMes: 500,
+  });
+  assert.equal(resumo.total, 500);
+  assert.equal(resumo.linhas[0].fatia, 0.6);
+  // Ajuste negativo que deixa o card menor que uma categoria: a barra para no cheio.
+  const menor = maioresCategoriasDoMes({
+    categories,
+    type: 'expense',
+    transactions: [lancamento(1, 'a', 300)],
+    totalDoMes: 200,
+  });
+  assert.equal(menor.linhas[0].fatia, 1);
+});
+
 test('Resumo: mês sem lançamento do tipo vem vazio', () => {
   const resumo = maioresCategoriasDoMes({ categories, type: 'income', transactions: [lancamento(1, 'a', 10)] });
   assert.deepEqual(resumo, { total: 0, linhas: [] });

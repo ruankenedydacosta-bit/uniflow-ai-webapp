@@ -541,19 +541,19 @@
   align-self: flex-start;
 }
 
-.categoryRowStatic {
+.categoryList > .categoryRowStatic {
   cursor: default;
 }
 
 .categoryTotal {
   color: var(--uf-app-text-3);
-  font-size: 12px;
+  font-size: var(--uf-text-micro-size);
 }
 
 .categoryEmpty {
   margin: 0;
   color: var(--uf-app-text-2);
-  font-size: 14px;
+  font-size: var(--uf-text-caption-size);
   line-height: 1.5;
 }
 
