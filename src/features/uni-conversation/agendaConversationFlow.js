@@ -1592,13 +1592,20 @@ function serviceErrorText(error) {
   return 'Não consegui atualizar sua agenda agora. Tente novamente em instantes.';
 }
 
+// A data vai para o fim do texto, onde o parser a lê sem pô-la na descrição:
+// "amanhã" vira um lançamento previsto para amanhã.
+// Sem \b: "amanhã" termina em letra acentuada, que o \b não reconhece.
+const DRAFT_DATE_WORDS = /(?<![\p{L}\d])(?:hoje|depois\s+de\s+amanh[ãa]|amanh[ãa])(?![\p{L}\d])/iu;
+
 function buildFinancialDraft(originalText) {
+  const dateWord = String(originalText ?? '').match(DRAFT_DATE_WORDS)?.[0] ?? null;
   const details = String(originalText ?? '')
-    .replace(/\b(?:hoje|amanhã|amanha|depois\s+de\s+amanhã|depois\s+de\s+amanha)\b/giu, '')
+    .replace(new RegExp(DRAFT_DATE_WORDS.source, 'giu'), '')
     .replace(/\b(?:eu\s+)?(?:tenho\s+que|preciso|vou)\s+pagar\b/giu, '')
     .replace(/^[\s,.;:]+|[\s,;:]+$/g, '')
     .trim();
-  return `Registre uma despesa: ${details || originalText}`;
+  const body = details || originalText;
+  return `Registre uma despesa: ${dateWord ? `${body.replace(/[.!]+$/u, '')} ${dateWord.toLowerCase()}` : body}`;
 }
 
 export function createAgendaConversationFlow({

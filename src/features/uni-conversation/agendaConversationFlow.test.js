@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { classifyIntent } from '../uni-intents/index.js';
+import { classifyIntent, extractDate, parseFinancialText } from '../uni-intents/index.js';
 import {
   AGENDA_TIME_CLASSIFICATION,
   classifyAgendaTemporalRegion,
@@ -2875,6 +2875,10 @@ test('conflito temporal-financeiro preserva escolha sem escrita e encaminha rasc
   assert.equal(choice.handled, true);
   assert.match(choice.financialText, /^Registre uma despesa:/);
   assert.equal(classifyIntent(choice.financialText).intent, 'register_expense');
+  // A data fica no texto: o lançamento sai previsto para amanhã, não hoje.
+  assert.equal(extractDate(choice.financialText, '2026-10-12'), '2026-10-13');
+  assert.equal(choice.financialText, 'Registre uma despesa: 300 reais amanhã');
+  assert.doesNotMatch(parseFinancialText(choice.financialText, { referenceDate: '2026-10-12' }).entities.description ?? '', /amanh/i);
   assert.equal(calls.length, 0);
 });
 

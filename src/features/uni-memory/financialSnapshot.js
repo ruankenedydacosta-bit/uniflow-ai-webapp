@@ -32,6 +32,7 @@ export function createFinancialSnapshot({
       ['income', 'expense'].includes(transaction.transaction_type) &&
       Number(transaction.amount) > 0 &&
       transaction.status !== 'canceled' &&
+      transaction.status !== 'pending' &&
       inPeriod(transaction.date, periodStart, periodEnd),
     );
   const dates = validTransactions.map((transaction) => transaction.date).sort();

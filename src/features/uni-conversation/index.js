@@ -79,6 +79,7 @@ export {
   buildCompletionResponse,
   buildConfirmationResponse,
   buildExecutionErrorResponse,
+  buildPlannedConfirmationText,
 } from './uniResponseBuilder.js';
 export {
   applyPlanOperationCorrection,

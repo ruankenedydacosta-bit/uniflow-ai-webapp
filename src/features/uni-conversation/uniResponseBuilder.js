@@ -100,9 +100,38 @@ function resolveCopy(options = {}) {
 // expense/income/transfer, independente de personalidade.
 const READY_FOR_CONFIRMATION_TEXT = 'Perfeito. Revise as informações abaixo antes de registrar.';
 
+// Lançamento com data futura fica como previsto. O texto diz isso antes e
+// depois de registrar: na voz, a Uni só fala o que está na resposta.
+export function formatShortDate(isoDate) {
+  const [, month, day] = String(isoDate ?? '').split('-');
+  return `${day}/${month}`;
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+// planned só é true com data válida (financialIntentAction).
+export function buildPlannedConfirmationText(action) {
+  return `Perfeito. Revise as informações abaixo. A data é ${formatShortDate(action.date)}, então o lançamento fica previsto até você confirmar.`;
+}
+
+export function buildPlannedCompletionText(action) {
+  const date = formatShortDate(action.date);
+  if (action.transactionType === 'transfer') {
+    const source = action.account?.name;
+    const destination = action.destinationAccount?.name;
+    const detail = action.amount != null && source && destination
+      ? ` de ${formatCurrency(action.amount)} de ${source} para ${destination}`
+      : '';
+    return `Pronto. A transferência${detail} ficou prevista para ${date}. Confirme no Financeiro quando ela acontecer.`;
+  }
+  return `Pronto. O lançamento ficou previsto para ${date}. Confirme no Financeiro quando ele acontecer.`;
+}
+
 export function buildConfirmationResponse(action, options = {}) {
   const resolved = resolveCopy(options);
-  return { text: READY_FOR_CONFIRMATION_TEXT, ...resolved };
+  return { text: action?.planned ? buildPlannedConfirmationText(action) : READY_FOR_CONFIRMATION_TEXT, ...resolved };
 }
 
 export function buildClarificationResponse(action, options = {}) {
@@ -119,6 +148,9 @@ export function buildClarificationResponse(action, options = {}) {
 
 export function buildCompletionResponse(action, options = {}) {
   const resolved = resolveCopy(options);
+  if (action?.planned) {
+    return { text: buildPlannedCompletionText(action), ...resolved };
+  }
   // BUG REAL (BUG 2): transferência executada precisa dizer exatamente o
   // que foi feito ("Pronto. Transferi R$ 100 do Nubank para o Inter.") --
   // nunca o texto genérico de lançamento.

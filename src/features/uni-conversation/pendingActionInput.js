@@ -154,7 +154,8 @@ export function resolvePendingActionInput({
 
   const firstIssue = action.issues?.[0]?.field ?? null;
   const normalized = normalizeFinancialText(text);
-  const parsed = parseFinancialText(text, { referenceDate });
+  // Rascunho previsto: "dia 15" ou "sexta" numa correção continuam no futuro.
+  const parsed = parseFinancialText(text, { referenceDate, lookAhead: action.planned === true });
   const explicitField = /\b(?:valor|quantia)\b/.test(normalized) ? 'amount'
     : /\b(?:conta destino|destino)\b/.test(normalized) ? 'destinationAccount'
       : /\bconta\b/.test(normalized) ? 'account'

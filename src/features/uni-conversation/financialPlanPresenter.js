@@ -1,5 +1,6 @@
 import { normalizeFinancialText, resolveRelativeDateExpression } from '../uni-intents/index.js';
 import { PLAN_OPERATION_STATUS, PLAN_STATUS } from './pendingFinancialPlan.js';
+import { formatShortDate } from './uniResponseBuilder.js';
 
 // BLOCO E: camada de apresentacao/entrada do Pending Financial Plan --
 // texto sempre curto e falavel (nunca le ID, JSON ou percentual de
@@ -56,11 +57,16 @@ export function describePlanOperation(op) {
     const destName = op.destinationAccountResolution?.account?.name
       ?? raw.destinationAccountReference
       ?? 'conta a definir';
-    return `• Transferência de ${amountText} de ${originName} para ${destName}`;
+    return `• Transferência de ${amountText} de ${originName} para ${destName}${describePlannedDate(op)}`;
   }
   const label = op.operationType === 'income' ? 'Entrada' : 'Saída';
   const categoryName = op.action?.category?.name;
-  return `• ${label} de ${amountText}${description}${categoryName ? ` em ${categoryName}` : ''}`;
+  return `• ${label} de ${amountText}${description}${categoryName ? ` em ${categoryName}` : ''}${describePlannedDate(op)}`;
+}
+
+// Operação com data futura fica como previsto: o resumo mostra o dia.
+function describePlannedDate(op) {
+  return op.action?.planned ? `, prevista para ${formatShortDate(op.action.date)}` : '';
 }
 
 export function buildOperationClarificationQuestion(op) {
@@ -157,6 +163,12 @@ export function buildPlanResultText(planState) {
   const parts = [];
   if (confirmed.length) {
     parts.push(`Registrei ${confirmed.length === 1 ? 'o lançamento' : `${confirmed.length} lançamentos`} com sucesso.`);
+    const planned = confirmed.filter((op) => op.action?.planned).length;
+    if (planned === 1) {
+      parts.push(`${confirmed.length === 1 ? 'Ele' : 'Um deles'} ficou previsto. Confirme no Financeiro quando acontecer.`);
+    } else if (planned) {
+      parts.push(`${planned === confirmed.length ? 'Todos' : `${planned} deles`} ficaram previstos. Confirme no Financeiro quando acontecerem.`);
+    }
   }
   if (failed.length) {
     parts.push(`Não consegui registrar ${failed.length === 1 ? 'um dos lançamentos' : `${failed.length} lançamentos`}. Nada foi perdido -- pode tentar de novo.`);

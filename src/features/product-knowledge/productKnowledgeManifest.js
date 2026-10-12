@@ -138,11 +138,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/financial-management.md',
     routes: ['/financeiro', '/categorias', '/open-finance', '/relatorios'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['registrar movimentação', 'despesa', 'receita', 'transferência', 'parcelamento', 'recorrência', 'categorias', 'open finance', 'conectar banco', 'relatórios', 'exportar', 'csv'],
+    keywords: ['registrar movimentação', 'despesa', 'receita', 'transferência', 'parcelamento', 'recorrência', 'previsto', 'data futura', 'categorias', 'open finance', 'conectar banco', 'relatórios', 'exportar', 'csv'],
     status: KNOWLEDGE_STATUS.LIMITED,
     updatedAt: UPDATED_AT,
     content:
-      'Na experiência simplificada, movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni. Registrar entrada, saída, transferência ou ajuste exige os campos obrigatórios e confirmação explícita antes de salvar. Contas podem ser consultadas em Conta → Minhas contas. Cada operação respeita o espaço Pessoal/Empresa ativo. Open Finance continua sendo DEMONSTRAÇÃO VISUAL, sem conexão bancária real.',
+      'Na experiência simplificada, movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni. Registrar entrada, saída, transferência ou ajuste exige os campos obrigatórios e confirmação explícita antes de salvar. Movimentação com data futura, registrada no formulário ou pela Uni, fica prevista: aparece em Previstos no Financeiro, fora do saldo e dos totais, até ser confirmada. Contas podem ser consultadas em Conta → Minhas contas. Cada operação respeita o espaço Pessoal/Empresa ativo. Open Finance continua sendo DEMONSTRAÇÃO VISUAL, sem conexão bancária real.',
   },
   {
     id: 'goals',

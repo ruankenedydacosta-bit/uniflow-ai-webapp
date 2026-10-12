@@ -355,6 +355,20 @@ test('card de despesa/receita segue mostrando exatamente Tipo, Categoria, Descri
   assert.deepEqual(card.rows.map((row) => row.label), ['Tipo', 'Categoria', 'Descrição', 'Valor', 'Data']);
 });
 
+test('card de lançamento com data futura mostra a Situação Previsto depois da Data', () => {
+  const card = buildConfirmationFromAction({
+    typeLabel: 'Despesa',
+    transactionType: 'expense',
+    category: { name: 'Moradia' },
+    description: 'Conta de luz',
+    amount: 180,
+    date: '2026-10-25',
+    planned: true,
+  });
+  assert.deepEqual(card.rows.map((row) => row.label), ['Tipo', 'Categoria', 'Descrição', 'Valor', 'Data', 'Situação']);
+  assert.equal(card.rows.at(-1).value, 'Previsto');
+});
+
 test('card financeiro sempre apresenta income/expense como Entrada/Saída, inclusive com label legado recebido', () => {
   const expense = buildConfirmationFromAction({
     typeLabel: 'Despesa', transactionType: 'expense', amount: 50, date: '2026-08-13',

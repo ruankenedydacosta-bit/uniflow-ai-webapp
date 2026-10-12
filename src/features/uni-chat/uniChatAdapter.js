@@ -105,6 +105,9 @@ export function buildConfirmationFromAction(action) {
   if (action.date) {
     rows.push({ key: 'date', label: 'Data', value: formatDate(action.date) });
   }
+  if (action.planned) {
+    rows.push({ key: 'status', label: 'Situação', value: 'Previsto' });
+  }
 
   return {
     title: isBalanceAdjustment

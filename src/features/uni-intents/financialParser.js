@@ -46,6 +46,7 @@ export function parseFinancialText(input, options = {}) {
   const extractedEntities = extractEntities(analysisText, {
     intent: classification.intent,
     referenceDate,
+    lookAhead: safeOptions.lookAhead === true,
   });
   const categoryResult = resolveCategory(analysisText, classification.intent);
   const draft = {

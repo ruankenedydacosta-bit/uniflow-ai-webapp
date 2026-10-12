@@ -522,6 +522,51 @@ test('confirmação envia somente o payload financeiro validado', async () => {
   assert.equal(Object.hasOwn(receivedPayload, 'workspace_id'), false);
 });
 
+test('lançamento com data futura fica previsto: status pending, card e textos dizem isso', () => {
+  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: { date: '2026-07-20' } });
+
+  assert.equal(action.status, 'ready');
+  assert.equal(action.planned, true);
+  assert.equal(action.payload.status, 'pending');
+  assert.equal(action.payload.transaction_date, '2026-07-20');
+  assert.equal(
+    buildConfirmationResponse(action).text,
+    'Perfeito. Revise as informações abaixo. A data é 20/07, então o lançamento fica previsto até você confirmar.',
+  );
+  assert.equal(
+    buildCompletionResponse(action).text,
+    'Pronto. O lançamento ficou previsto para 20/07. Confirme no Financeiro quando ele acontecer.',
+  );
+});
+
+test('lançamento de hoje ou do passado não fica previsto', () => {
+  for (const date of [REFERENCE_DATE, '2026-07-01']) {
+    const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: { date } });
+    assert.equal(action.planned, false, date);
+    assert.equal(action.payload.status, 'completed', date);
+    assert.equal(buildConfirmationResponse(action).text, 'Perfeito. Revise as informações abaixo antes de registrar.');
+  }
+});
+
+test('correção de data num rascunho previsto continua no futuro', () => {
+  const previsto = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: { date: '2026-07-20' } });
+  const realizado = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const corrigir = (action) => resolvePendingActionInput({
+    value: 'na verdade é dia 5', action, accounts, categories, referenceDate: REFERENCE_DATE,
+  }).overrides?.date;
+  assert.equal(corrigir(previsto), '2026-08-05');
+  assert.equal(corrigir(realizado), '2026-07-05');
+});
+
+test('transferência com data futura avisa que ficou prevista', () => {
+  const action = createAction('Transferi 100 do Nubank para a Conta principal.', { overrides: { date: '2026-08-01' } });
+  assert.equal(action.planned, true);
+  assert.equal(
+    buildCompletionResponse(action).text,
+    'Pronto. A transferência de R$\u00a0100,00 de Nubank para Conta principal ficou prevista para 01/08. Confirme no Financeiro quando ela acontecer.',
+  );
+});
+
 // ============================================================================
 // BUG REAL EM PRODUÇÃO (BUG 2): transferência entendida mas nunca executada.
 // register_transfer estava fora da allowlist do chat (o LLM era instruído a

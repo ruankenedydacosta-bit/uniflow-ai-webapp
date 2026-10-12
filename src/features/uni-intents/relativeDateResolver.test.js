@@ -47,6 +47,15 @@ test('"dia N" resolve para a ocorrência mais recente que não seja futura', () 
   assert.equal(resolveRelativeDateExpression('dia 30', REFERENCE).resolvedDate, '2026-06-30');
 });
 
+test('"dia N do mês que vem" resolve para o dia N do mês seguinte', () => {
+  assert.equal(resolveRelativeDateExpression('lança o aluguel de 1500 pro dia 10 do mês que vem', REFERENCE).resolvedDate, '2026-08-10');
+  assert.equal(resolveRelativeDateExpression('dia 5 do próximo mês', REFERENCE).ruleId, 'day_of_next_month');
+  // Virada do ano.
+  assert.equal(resolveRelativeDateExpression('dia 3 do mês que vem', '2026-12-20').resolvedDate, '2027-01-03');
+  // Agosto tem 31 dias, setembro não: "dia 31" fica sem data.
+  assert.equal(resolveRelativeDateExpression('dia 31 do mês que vem', '2026-08-15').resolvedDate, null);
+});
+
 test('"dia N" inválido para o mês (ex.: dia 31 em mês de 30 dias) é rejeitado', () => {
   // Junho tem 30 dias -- "dia 31" cairia em julho, então é rejeitado no mês anterior.
   const result = resolveRelativeDateExpression('dia 31', '2026-07-01');
@@ -83,4 +92,25 @@ test('isValidIsoDate valida datas reais e rejeita inválidas', () => {
   assert.equal(isValidIsoDate('2026-02-30'), false);
   assert.equal(isValidIsoDate('not-a-date'), false);
   assert.equal(isValidIsoDate(null), false);
+});
+
+test('verbo no futuro ou lookAhead: "dia N" e dia da semana vão para a próxima ocorrência', () => {
+  // Referência 2026-07-29 (quarta).
+  assert.equal(resolveRelativeDateExpression('vou pagar a internet dia 30', REFERENCE).resolvedDate, '2026-07-30');
+  assert.equal(resolveRelativeDateExpression('o salário cai dia 5', REFERENCE).resolvedDate, '2026-08-05');
+  assert.equal(resolveRelativeDateExpression('o boleto vence dia 29', REFERENCE).resolvedDate, '2026-07-29');
+  assert.equal(resolveRelativeDateExpression('vence sexta', REFERENCE).resolvedDate, '2026-07-31');
+  // "Dia N" de hoje é hoje; o dia da semana de hoje é o da semana que vem.
+  assert.equal(resolveRelativeDateExpression('vence quarta', REFERENCE).resolvedDate, '2026-08-05');
+  assert.equal(resolveRelativeDateExpression('dia 15', REFERENCE, { lookAhead: true }).resolvedDate, '2026-08-15');
+  assert.equal(resolveRelativeDateExpression('pra sexta', REFERENCE, { lookAhead: true }).resolvedDate, '2026-07-31');
+  // "Passada" ganha do lookAhead; sem marcador, segue para o passado.
+  assert.equal(resolveRelativeDateExpression('segunda passada', REFERENCE, { lookAhead: true }).resolvedDate, '2026-07-27');
+  assert.equal(resolveRelativeDateExpression('paguei dia 5', REFERENCE).resolvedDate, '2026-07-05');
+  // Dia que não existe no mês seguinte fica sem data.
+  assert.equal(resolveRelativeDateExpression('vence dia 31', '2026-08-31').resolvedDate, '2026-08-31');
+  assert.equal(resolveRelativeDateExpression('vence dia 31', '2026-10-31').resolvedDate, '2026-10-31');
+  assert.equal(resolveRelativeDateExpression('vence dia 31', '2026-11-15').resolvedDate, '2026-12-31');
+  // 30 de janeiro já passou e fevereiro não tem dia 30.
+  assert.equal(resolveRelativeDateExpression('vence dia 30', '2026-01-31').resolvedDate, null);
 });
