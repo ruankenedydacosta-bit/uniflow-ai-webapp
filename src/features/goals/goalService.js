@@ -1,6 +1,6 @@
 import { isSupabaseConfigured, supabase } from '../../services/supabaseClient.js';
 
-const GOAL_FIELDS = 'id, user_id, workspace_id, name, description, category, target_amount, initial_amount, current_amount, planned_monthly_amount, start_date, target_date, priority, status, linked_account_id, completed_at, archived_at, created_at, updated_at';
+const GOAL_FIELDS = 'id, user_id, workspace_id, name, description, category, target_amount, initial_amount, current_amount, planned_monthly_amount, start_date, target_date, priority, status, linked_account_id, reminder_day, completed_at, archived_at, created_at, updated_at';
 const CONTRIBUTION_FIELDS = 'id, user_id, workspace_id, goal_id, amount, contribution_date, note, linked_account_id, client_operation_id, created_at';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -113,6 +113,7 @@ export async function createGoal(workspaceId, goal = {}) {
       'name', 'description', 'category', 'target_amount',
       'initial_amount', 'current_amount', 'planned_monthly_amount',
       'start_date', 'target_date', 'priority', 'status', 'linked_account_id',
+      'reminder_day',
     ]),
     name: goal.name.trim(),
   };
@@ -149,7 +150,7 @@ export async function updateGoal(workspaceId, goalId, changes = {}) {
     'name', 'description', 'category', 'target_amount',
     'current_amount', 'planned_monthly_amount',
     'start_date', 'target_date', 'priority', 'status',
-    'linked_account_id', 'completed_at', 'archived_at',
+    'linked_account_id', 'reminder_day', 'completed_at', 'archived_at',
   ]);
 
   if (typeof payload.name === 'string') payload.name = payload.name.trim();

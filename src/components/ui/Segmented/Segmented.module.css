@@ -29,5 +29,5 @@
 
 .option:focus-visible {
   outline: 2px solid var(--uf-app-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
