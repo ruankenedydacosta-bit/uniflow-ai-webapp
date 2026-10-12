@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import Field from '../../../components/ui/Field';
 import Modal from '../../../components/ui/Modal';
 import OutlineButton from '../../../components/ui/OutlineButton';
@@ -7,7 +7,6 @@ import { cx } from '../../../utils/cx.js';
 import {
   CATEGORY_ICON_OPTIONS,
   getCategoryIconSections,
-  getDefaultCategoryIconKey,
   resolveCategoryIconKey,
   sugerirIconesCategoria,
 } from '../categoryIconCatalog.js';
@@ -28,13 +27,6 @@ const TYPE_OPTIONS = [
 const ROTULO_POR_ICONE = Object.fromEntries(
   CATEGORY_ICON_OPTIONS.map(({ key, label }) => [key, label]),
 );
-
-// Enquanto a pessoa não escolhe um ícone, ele acompanha o nome: "Mercado"
-// já sai com o carrinho. Sem palavra conhecida, fica o padrão do tipo.
-function iconePeloNome(nome, tipo) {
-  const sugestao = sugerirIconesCategoria(nome, tipo);
-  return sugestao.porNome ? sugestao.icones[0] : getDefaultCategoryIconKey(tipo);
-}
 
 /**
  * Formulário curto de criação de categoria. Reusa o Modal do Design System
@@ -61,22 +53,32 @@ function CategoryCreateModal({
 }) {
   const [name, setName] = useState('');
   const [categoryType, setCategoryType] = useState(defaultType);
-  const [icon, setIcon] = useState(() => getDefaultCategoryIconKey(defaultType));
+  // `null` enquanto a pessoa não toca num ícone: aí o ícone acompanha o nome.
+  const [iconeEscolhido, setIconeEscolhido] = useState(null);
   const [localError, setLocalError] = useState('');
   const [mostrarTodos, setMostrarTodos] = useState(false);
-  const iconWasChosenRef = useRef(false);
   const iconesId = useId();
   const iconSections = useMemo(
     () => getCategoryIconSections(categoryType),
     [categoryType],
   );
-  // Tela 10d: seis ícones pelo nome digitado; o já escolhido continua à vista.
+  // Tela 10d: seis ícones pelo nome digitado. Uma conta por render serve à
+  // linha de sugeridos e ao ícone automático ("Mercado" já sai com o carrinho).
   const sugestao = useMemo(
-    () => sugerirIconesCategoria(name, categoryType, { manter: icon }),
-    [name, categoryType, icon],
+    () => sugerirIconesCategoria(name, categoryType, { manter: iconeEscolhido }),
+    [name, categoryType, iconeEscolhido],
   );
+  const icon = iconeEscolhido ?? sugestao.automatico;
+  // Ícone salvo que saiu do catálogo ('suppliers', 'operational'): entra no
+  // topo da grade completa para continuar marcado.
+  const iconeForaDoCatalogo = ROTULO_POR_ICONE[icon] ? null : icon;
 
   const isEditing = Boolean(category);
+
+  let dicaDosIcones = 'Os mais usados. Digite o nome para ver sugestões.';
+  if (mostrarTodos) dicaDosIcones = 'Role para ver todos os ícones.';
+  else if (sugestao.porNome) dicaDosIcones = 'Sugeridos pelo nome.';
+  else if (name.trim()) dicaDosIcones = 'Nenhuma sugestão para esse nome. Estes são os mais usados.';
 
   useEffect(() => {
     if (open) {
@@ -84,11 +86,10 @@ function CategoryCreateModal({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(category?.name ?? '');
       setCategoryType(initialType);
-      setIcon(category ? resolveCategoryIconKey(category) : getDefaultCategoryIconKey(initialType));
+      // Em edição o ícone salvo é escolha da pessoa: mudar o nome não o troca.
+      setIconeEscolhido(category ? resolveCategoryIconKey(category) : null);
       setLocalError('');
       setMostrarTodos(false);
-      // Em edição o ícone salvo é escolha da pessoa: mudar o nome não o troca.
-      iconWasChosenRef.current = Boolean(category);
     }
   }, [open, defaultType, category]);
 
@@ -117,25 +118,6 @@ function CategoryCreateModal({
     );
   }
 
-  function handleNameChange(value) {
-    setName(value);
-    if (!iconWasChosenRef.current) {
-      setIcon(iconePeloNome(value, categoryType));
-    }
-  }
-
-  function handleTypeChange(type) {
-    setCategoryType(type);
-    if (!iconWasChosenRef.current) {
-      setIcon(iconePeloNome(name, type));
-    }
-  }
-
-  function escolherIcone(chave) {
-    iconWasChosenRef.current = true;
-    setIcon(chave);
-  }
-
   function renderIconOption(chave) {
     const selected = icon === chave;
     const rotulo = ROTULO_POR_ICONE[chave] ?? 'Ícone atual';
@@ -148,7 +130,7 @@ function CategoryCreateModal({
         aria-label={rotulo}
         title={rotulo}
         className={styles.iconOption}
-        onClick={() => escolherIcone(chave)}
+        onClick={() => setIconeEscolhido(chave)}
       >
         <CategoryIcon category={{ icon: chave }} />
       </button>
@@ -179,7 +161,7 @@ function CategoryCreateModal({
             id="new-category-name"
             placeholder="Ex.: Mercado"
             value={name}
-            onChange={(event) => handleNameChange(event.target.value)}
+            onChange={(event) => setName(event.target.value)}
             autoFocus={focoAutomatico}
           />
         </Field>
@@ -189,7 +171,7 @@ function CategoryCreateModal({
             label="Tipo da categoria"
             options={TYPE_OPTIONS}
             value={categoryType}
-            onChange={handleTypeChange}
+            onChange={setCategoryType}
           />
         )}
 
@@ -197,6 +179,14 @@ function CategoryCreateModal({
           <legend>Ícone</legend>
           {mostrarTodos ? (
             <div id={iconesId} className={styles.iconLibrary} role="radiogroup" aria-label="Ícone da categoria">
+              {iconeForaDoCatalogo ? (
+                <section className={styles.iconSection}>
+                  <h3>Ícone atual</h3>
+                  <div className={styles.iconGrid}>
+                    {renderIconOption(iconeForaDoCatalogo)}
+                  </div>
+                </section>
+              ) : null}
               {iconSections.map((section) => (
                 <section className={styles.iconSection} key={section.id}>
                   <h3>{section.label}</h3>
@@ -213,9 +203,7 @@ function CategoryCreateModal({
           )}
           {/* Um botão só, que troca o texto: o foco do teclado fica nele. */}
           <p className={styles.iconHelper}>
-            {mostrarTodos && 'Role para ver todos os ícones.'}
-            {!mostrarTodos && sugestao.porNome && 'Sugeridos pelo nome.'}
-            {!mostrarTodos && !sugestao.porNome && 'Os mais usados. Digite o nome para ver sugestões.'}
+            {dicaDosIcones}
             {' '}
             <button
               type="button"

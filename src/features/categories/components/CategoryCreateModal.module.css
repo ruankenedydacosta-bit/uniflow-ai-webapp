@@ -94,8 +94,8 @@
 .iconSuggestedGrid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-  padding: 4px;
+  gap: var(--uf-space-8);
+  padding: var(--uf-space-4);
 }
 
 /* "Ver todos" e "Ver sugeridos" são texto na linha da dica, não botão. */
@@ -107,12 +107,13 @@
   font: inherit;
   cursor: pointer;
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: var(--uf-focus-ring-offset);
 }
 
+/* Mesmo anel de 2px de .iconOption; não há token de 2px para a largura. */
 .iconToggle:focus-visible {
   outline: 2px solid var(--uf-app-focus);
-  outline-offset: 2px;
+  outline-offset: var(--uf-focus-ring-offset);
   border-radius: var(--uf-radius-8);
 }
 
