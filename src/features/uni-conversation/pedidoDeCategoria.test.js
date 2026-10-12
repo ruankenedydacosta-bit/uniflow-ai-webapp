@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   ACTION_KIND_CATEGORIA,
   montarPedidoDeCategoria,
+  respostaAoPedidoDeCategoria,
   textoDoPedidoFeito,
 } from './pedidoDeCategoria.js';
 
@@ -80,4 +81,22 @@ test('excluir: card com a categoria; padrão do app, inexistente ou sem permiss�
 test('ação desconhecida pede para dizer de novo', () => {
   assert.match(montarPedidoDeCategoria({ acao: 'mover' }, DONO).erro, /criar, renomear ou excluir/);
   assert.match(montarPedidoDeCategoria(null, DONO).erro, /criar, renomear ou excluir/);
+});
+
+test('resposta ao card: o verbo da própria ação confirma; outro verbo ou outro nome não', () => {
+  const excluir = montarPedidoDeCategoria({ acao: 'excluir', alvo: { id: 'cat-carro' } }, DONO);
+  for (const frase of ['pode excluir', 'Sim, pode apagar.', 'apaga', 'pode excluir a categoria Carro', 'Confirmar', 'sim']) {
+    assert.equal(respostaAoPedidoDeCategoria(frase, excluir), 'confirm', frase);
+  }
+  for (const frase of ['Cancelar', 'não']) {
+    assert.equal(respostaAoPedidoDeCategoria(frase, excluir), 'cancel', frase);
+  }
+  for (const frase of ['pode renomear', 'pode excluir a categoria Bicos', 'gastei 50 no mercado']) {
+    assert.equal(respostaAoPedidoDeCategoria(frase, excluir), 'input', frase);
+  }
+  const renomear = montarPedidoDeCategoria({ acao: 'renomear', alvo: { id: 'cat-carro' }, nome: 'Veículo' }, DONO);
+  assert.equal(respostaAoPedidoDeCategoria('sim, pode renomear', renomear), 'confirm');
+  const criar = montarPedidoDeCategoria({ acao: 'criar', tipo: 'saida', nome: 'Impostos' }, DONO);
+  assert.equal(respostaAoPedidoDeCategoria('pode criar', criar), 'confirm');
+  assert.equal(respostaAoPedidoDeCategoria('cria impostos', criar), 'confirm');
 });

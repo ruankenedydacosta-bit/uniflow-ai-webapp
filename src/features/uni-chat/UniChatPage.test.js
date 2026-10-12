@@ -2206,7 +2206,15 @@ test('pedido de categoria: card próprio, confirmado e cancelado pelo id antes d
   assert.match(cancelar.slice(0, 300), /if \(categoriaPendenteRef\.current\?\.messageId === id\) \{\s*cancelarPedidoDeCategoria\(id\);/);
   assert.match(page, /case ROTAS_INTERPRETACAO\.CATEGORIA:\s*setIsTyping\(false\);\s*iniciarPedidoDeCategoria\(interpretacao\.categoria\);/);
   // Confirmar falando chega como "Confirmar" pelo sendText.
-  assert.match(page, /else if \(tratarRespostaDoPedidoDeCategoria\(functionalText, userMsg\)\) return;/);
+  assert.match(page, /if \(tratarPedidoDeCategoriaPendente\(functionalText, userMsg\)\) return;/);
+  // Card vencido: "Confirmar" ouve que nada foi salvo, como na edição.
+  const pendente = extractFunctionBody(page, 'function tratarPedidoDeCategoriaPendente(texto, userMsg) {').body;
+  assert.match(pendente, /if \(respostaAoPedidoDeCategoria\(texto, pendente\.pronto\) === 'input'\) return false;\s*syncMessageToSupabase\(userMsg\);\s*createAssistantResponse\(TEXTO_CATEGORIA_VENCIDA/);
+  // Trocar de assunto abandona também o pedido de categoria.
+  const abandono = extractFunctionBody(page, 'function abandonStalePendingState() {').body;
+  assert.match(abandono, /encerrarPedidoDeCategoria\('expired'\);/);
+  // Papel ainda carregando não vira "sem permissão".
+  assert.match(page, /if \(workspaceRole\.isLoading\) \{\s*createAssistantResponse\('Ainda estou carregando as permissões/);
 });
 
 test('pedido de categoria: grava pelo hook da tela, com o texto de erro de lá', async () => {
@@ -2217,4 +2225,8 @@ test('pedido de categoria: grava pelo hook da tela, com o texto de erro de lá',
   assert.match(corpo, /categoryState\.removeCategory\(pronto\.categoria\.id\)/);
   assert.match(corpo, /getCategoryErrorMessage\(resultado\.error,/);
   assert.match(corpo, /createAssistantResponse\(withFollowUpQuestion\(textoDoPedidoFeito\(pronto\)\)\)/);
+  // Gravou: o pedido acaba antes de conferir a conversa, e as outras telas
+  // recarregam as categorias.
+  assert.ok(corpo.indexOf('categoriaPendenteRef.current = null;') < corpo.indexOf('if (activeIdRef.current !== pendente.conversationId) return;'));
+  assert.match(corpo, /notifyFinancialDataChanged\('uni-chat'\);/);
 });

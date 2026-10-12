@@ -4,6 +4,8 @@
 // categoria padrão, nome repetido) e vira o card que a pessoa confirma. Quem
 // grava é o chat, depois do Confirmar.
 import { canManageCategory, isDuplicateCategoryName } from '../categories/categoryUtils.js';
+import { normalizeSearchText } from '../../utils/searchText.js';
+import { classifyPendingActionReply } from './pendingActionInput.js';
 
 // actionKind do card (confirmationCardModel.js mostra o título).
 export const ACTION_KIND_CATEGORIA = 'manage_category';
@@ -131,4 +133,30 @@ export function textoDoPedidoFeito(pedidoPronto) {
     return `Categoria ${pedidoPronto.categoria.name} renomeada para ${pedidoPronto.nome}.`;
   }
   return `Categoria ${pedidoPronto.categoria.name} excluída.`;
+}
+
+// O card pergunta "Posso excluir?", e "pode excluir" ou "sim, apaga" é a
+// resposta natural. O classificador dos rascunhos só conhece "confirmar",
+// "pode criar" e parecidos: aqui vale também o verbo da própria ação, sozinho
+// ou com o nome da categoria.
+const VERBOS_DA_ACAO = Object.freeze({
+  criar: String.raw`cri(?:ar|a|e)`,
+  renomear: String.raw`renome(?:ar|ia|ie)|troca(?:r)?|troque|muda(?:r)?|mude`,
+  excluir: String.raw`exclu(?:ir|i|a)|apag(?:ar|a|ue)|remov(?:er|e|a)|tir(?:ar|a|e)`,
+});
+
+export function respostaAoPedidoDeCategoria(texto, pronto) {
+  const nome = pronto?.categoria?.name ?? pronto?.nome ?? null;
+  const resposta = classifyPendingActionReply(texto, { subjectName: nome });
+  if (resposta !== 'input' || !VERBOS_DA_ACAO[pronto?.acao]) return resposta;
+  const frase = normalizeSearchText(texto).replace(/[.,!?]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const nomeNaFrase = nome ? `(?:\\s+(?:a\\s+)?(?:categoria\\s+)?${escaparRegex(normalizeSearchText(nome))})?` : '';
+  const confirmacao = new RegExp(
+    String.raw`^(?:(?:sim|ok|isso|claro|beleza)\s+)?(?:pode\s+)?(?:${VERBOS_DA_ACAO[pronto.acao]})(?:\s+(?:sim|ela|essa))?` + nomeNaFrase + String.raw`(?:\s+(?:sim|por favor))?$`,
+  );
+  return confirmacao.test(frase) ? 'confirm' : 'input';
+}
+
+function escaparRegex(texto) {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

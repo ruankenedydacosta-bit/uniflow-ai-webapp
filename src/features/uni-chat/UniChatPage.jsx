@@ -75,6 +75,7 @@ import {
 } from '../uni-interpret/uniInterpretClient.js';
 import {
   montarPedidoDeCategoria,
+  respostaAoPedidoDeCategoria,
   textoDoPedidoFeito,
 } from '../uni-conversation/pedidoDeCategoria.js';
 import { getCategoryErrorMessage } from '../categories/categoryUtils.js';
@@ -123,6 +124,7 @@ import {
 } from './agendaRequestLifecycle.js';
 import {
   classifyIntent,
+  normalizeFinancialText,
   stripLeadingConversationalPrefix,
 } from '../uni-intents/index.js';
 import {
@@ -1082,6 +1084,7 @@ export default function UniChatPage({ variant = 'full' }) {
     setFinancialPlan(null);
     clearCurrentPendingAction();
     encerrarEdicao('expired');
+    encerrarPedidoDeCategoria('expired');
   }
 
   // Edição de lançamento já salvo pedida em conversa ("corrige o mercado de
@@ -1253,6 +1256,9 @@ export default function UniChatPage({ variant = 'full' }) {
         || ['amount', 'accountId', 'categoryId'].some((campo) => pedido.mudancas?.[campo] !== undefined);
       if (
         pedido.forma === FORMAS_DE_EDICAO.COPULA
+        // "troca o nome de Moradia para Casa" e "troca a categoria Moradia
+        // pra Casa" mudam a categoria, não um lançamento: vão ao interpretador.
+        || /^(?:nome\b|categoria\s+(?!d[oa]s?\b|dess|dest))/.test(normalizeFinancialText(pedido.alvo ?? ''))
         || declaredIntent.startsWith('agenda_')
         || ACTION_STATEMENT_INTENTS.has(declaredIntent)
         || looksLikeFreshFinancialStatement(texto)
@@ -1447,9 +1453,15 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function iniciarPedidoDeCategoria(pedidoDoModelo) {
+    if (workspaceRole.isLoading) {
+      createAssistantResponse('Ainda estou carregando as permissões deste espaço. Peça de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
     const pronto = montarPedidoDeCategoria(pedidoDoModelo, {
       categorias: categoryState.categories,
-      papel: workspaceRole,
+      // Sem conseguir ler o papel, quem decide é a regra do banco (RLS): o
+      // card aparece e um erro de permissão volta no Confirmar.
+      papel: workspaceRole.error ? { canUpdate: true, canDelete: true } : workspaceRole,
       userId: user?.id,
       espaco: financialWorkspaceType === 'business' ? 'Empresa' : 'Pessoal',
     });
@@ -1471,11 +1483,26 @@ export default function UniChatPage({ variant = 'full' }) {
     };
   }
 
+  // Frase nova com um pedido de categoria guardado. true quando ela já foi
+  // respondida aqui.
+  function tratarPedidoDeCategoriaPendente(texto, userMsg) {
+    const pendente = categoriaPendenteRef.current;
+    if (!pendente) return false;
+    if (pedidoDeCategoriaAtivo(pendente)) return tratarRespostaDoPedidoDeCategoria(texto, userMsg);
+    encerrarPedidoDeCategoria('expired');
+    // "Confirmar" num card vencido, falado ou digitado, precisa ouvir que
+    // nada foi salvo, e não seguir para o interpretador.
+    if (respostaAoPedidoDeCategoria(texto, pendente.pronto) === 'input') return false;
+    syncMessageToSupabase(userMsg);
+    createAssistantResponse(TEXTO_CATEGORIA_VENCIDA, { deduplicateNarration: false });
+    return true;
+  }
+
   // Resposta com o card de categoria na tela. false quando a frase é outro
   // assunto: o card expira e a frase segue o caminho de sempre.
   function tratarRespostaDoPedidoDeCategoria(texto, userMsg) {
     const pendente = categoriaPendenteRef.current;
-    const resposta = classifyPendingActionReply(texto);
+    const resposta = respostaAoPedidoDeCategoria(texto, pendente.pronto);
     if (resposta === 'confirm') {
       syncMessageToSupabase(userMsg);
       void confirmarPedidoDeCategoria(pendente.messageId);
@@ -1516,13 +1543,16 @@ export default function UniChatPage({ variant = 'full' }) {
         );
         return;
       }
-      if (activeIdRef.current !== pendente.conversationId) return;
+      // Gravou: o pedido acaba mesmo que a pessoa tenha trocado de conversa
+      // durante a gravação, senão um "sim" depois gravaria de novo.
+      categoriaPendenteRef.current = null;
       setMessages((current) => current.map((message) => (
         message.id === messageId
           ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
           : message
       )));
-      categoriaPendenteRef.current = null;
+      notifyFinancialDataChanged('uni-chat');
+      if (activeIdRef.current !== pendente.conversationId) return;
       createAssistantResponse(withFollowUpQuestion(textoDoPedidoFeito(pronto)));
     } catch {
       reportConfirmationError(messageId, 'Ocorreu um erro inesperado. Tente novamente.');
@@ -3362,10 +3392,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // novo ("corrige o mercado de ontem pra 50"). Com rascunho ou agenda em
     // andamento, "corrige…" continua sendo deles.
     if (!hasPendingFinancialConversation && !hasPendingAgendaConversation) {
-      if (categoriaPendenteRef.current) {
-        if (!pedidoDeCategoriaAtivo()) encerrarPedidoDeCategoria('expired');
-        else if (tratarRespostaDoPedidoDeCategoria(functionalText, userMsg)) return;
-      }
+      if (tratarPedidoDeCategoriaPendente(functionalText, userMsg)) return;
       if (edicaoPendenteRef.current && !edicaoAtiva()) {
         const vencida = edicaoPendenteRef.current;
         encerrarEdicao('expired');
