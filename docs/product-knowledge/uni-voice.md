@@ -114,8 +114,8 @@ um desses recursos estiver indisponível, a digitação continua funcionando.
 
 ## Limitações atuais
 
-- Não há reprodução automática ao receber uma resposta — sempre exige toque do usuário.
-- Gravações são curtas e não são armazenadas pela aplicação.
+- Fora da conversa por voz em tempo real, ouvir uma resposta exige tocar em "Ouvir".
+- Gravações do microfone na conversa por texto são curtas e não são armazenadas pela aplicação.
 - Transferências e pagamentos não podem ser executados por voz nesta versão.
   Alterar ou excluir transferências, ajustes de saldo, parcelas e movimentações
   importadas também não.

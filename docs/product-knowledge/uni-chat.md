@@ -32,11 +32,11 @@ A Uni procura a movimentação pelo nome, pelo dia, pelo valor ou pela conta que
 - Pela conversa a Uni exclui uma movimentação por vez. Para apagar várias, use a tela Financeiro.
 - Transferências, ajustes de saldo, parcelas e movimentações importadas só podem ser excluídos na tela Financeiro.
 
-**Ver movimentações**: pergunte pelos itens, não só pelo total. Por exemplo, "quais foram os gastos com Uber esse mês" ou "o que eu paguei na sexta". A Uni lista até cinco movimentações com data, descrição, valor e conta, mais o total. "Quanto gastei" responde só o total.
+**Ver movimentações**: pergunte pelos itens, não só pelo total. Por exemplo, "quais foram os gastos com Uber esse mês" ou "o que eu paguei na sexta". A Uni lista até cinco movimentações com data, descrição, valor e conta. Quando todas são do mesmo tipo, mostra também o total. "Quanto gastei" responde só o total.
 
 **Categorias**: a Uni cria, renomeia e exclui categorias pela conversa. Por exemplo, "cria a categoria Pets", "troca o nome de Moradia para Casa" ou "tira a categoria Dívidas". A Uni mostra um card com o que vai mudar e só salva depois de **Confirmar**. "Quais são as minhas categorias" lista as categorias por tipo. Categorias padrão do app não podem ser renomeadas nem excluídas.
 
-**Metas**: a Uni cria, altera, exclui e consulta metas. Por exemplo, "quero juntar 5 mil para a viagem até dezembro", "muda a meta da viagem para 8 mil", "apaga a meta do carro" ou "como está a meta da viagem". Criar, alterar e excluir passam por um card de confirmação. Uma meta que já tem aportes só pode ser excluída na tela Metas. Registrar um aporte ainda é feito na tela Metas.
+**Metas**: a Uni cria, altera, exclui e consulta metas. Por exemplo, "quero juntar 5 mil para a viagem até dezembro", "muda a meta da viagem para 8 mil", "apaga a meta do carro" ou "como está a meta da viagem". Criar, alterar e excluir passam por um card de confirmação. Uma meta que já tem dinheiro guardado (aporte ou valor inicial) só pode ser excluída na tela Metas. Registrar um aporte ainda é feito na tela Metas.
 
 **Agenda**: além de marcar um compromisso, a Uni remarca ("passa o dentista pra quinta"), cancela ("desmarca o almoço com a Carla"), conclui ("já fiz a reunião") e exclui ("apaga o lembrete da vacina"). Cancelar muda o status do item; excluir apaga. Antes de cancelar ou excluir, a Uni pergunta se pode. Responda "sim" ou "não". Compromisso não tem card.
 

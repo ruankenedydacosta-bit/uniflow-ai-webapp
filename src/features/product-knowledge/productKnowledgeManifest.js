@@ -156,7 +156,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Pela conversa e pela voz a Uni cria, altera, exclui e consulta metas, com card de confirmação antes de salvar. Meta com aportes só é excluída na tela Metas. Aporte e retirada ainda são registrados na tela Metas.',
+      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Pela conversa e pela voz a Uni cria, altera, exclui e consulta metas, com card de confirmação antes de salvar. Meta com dinheiro guardado só é excluída na tela Metas. Aporte e retirada ainda são registrados na tela Metas.',
   },
   {
     id: 'crm-and-clients',
@@ -236,11 +236,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/uni-voice.md',
     routes: ['/app/home', '/app/uni'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['ouvir a uni', 'voz', 'áudio', 'reproduzir resposta', 'desativar voz', 'cache de voz', 'créditos de voz', 'conversa por voz', 'minutos de voz', 'interromper a uni'],
+    keywords: ['ouvir a uni', 'voz', 'áudio', 'reproduzir resposta', 'desativar voz', 'cache de voz', 'créditos de voz', 'conversa por voz', 'minutos de voz', 'interromper a uni', 'excluir pela voz', 'categoria pela voz', 'meta pela voz', 'agenda pela voz', 'desfazer'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A voz da Uni pode ser usada na Home e na conversa completa. O aplicativo solicita permissão de microfone antes da captura e possui controles para iniciar, parar ou cancelar. A reprodução respeita as permissões do navegador e reaproveita áudio já gerado quando disponível. As preferências ficam em Conta → Voz da Uni. Áudio e transcrição não devem cruzar usuários nem espaços. Conversa por voz em tempo real: tocar no orb da Uni na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni falando e toca em Parar para terminar. A tela mostra o status Ouvindo, Entendendo ou Rascunho pronto, e o que a pessoa disse aparece em letras grandes. Lançamentos continuam exigindo confirmação no card: nada é salvo antes de Confirmar. Se a pessoa fechar a tela de voz com um rascunho esperando, o card fica na Home até ela confirmar ou cancelar. Escrever e Conversa fecham a voz e abrem a conversa. Cada plano tem minutos de conversa por voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Conta → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
+      'A voz da Uni pode ser usada na Home e na conversa completa. O aplicativo pede permissão de microfone antes da captura e reaproveita áudio já gerado. As preferências ficam em Conta → Voz da Uni. Áudio e transcrição não cruzam usuários nem espaços. Conversa por voz em tempo real: tocar no orb da Uni na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni e toca em Parar para terminar. Pela voz dá para registrar, alterar e excluir movimentações (depois de excluir, dizer "desfazer" em até 20 segundos traz de volta), listar movimentações e categorias, criar, renomear e excluir categorias, criar, alterar, excluir e consultar metas e marcar, remarcar, cancelar, concluir e excluir compromissos. Movimentação, categoria e meta passam por um card: a Uni lê o que vai mudar e pergunta se pode confirmar; nada é salvo antes disso. Compromisso não tem card: a Uni pergunta se pode cancelar ou excluir. Se a pessoa fechar a tela de voz com um rascunho esperando, o card fica na Home. Cada plano tem minutos de conversa por voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Conta → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
   },
   {
     id: 'plans-and-limitations',

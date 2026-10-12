@@ -7,8 +7,9 @@ A conversa por voz não decide nada. Ela passa a frase ao chat (`enviar_para_uni
 ## Antes de começar
 
 - Janela anônima, usuário de teste, espaço Pessoal.
-- Pelo menos duas contas (ex.: Nubank e Itaú), três lançamentos recentes de Uber em dias diferentes, uma categoria sem uso (ex.: Pets) e uma meta em aberto (ex.: Viagem).
-- Abra a conversa por voz pelo orb da Home. Fale com pausas naturais.
+- Pelo menos duas contas (ex.: Nubank e Itaú), três lançamentos recentes de Uber em dias diferentes, uma categoria sem uso (ex.: Pets) e uma meta em aberto sem valor inicial e sem aporte (ex.: Viagem).
+- Confira em Conta → Seu plano que ainda há minutos de voz. Sem minutos, a conversa por voz não abre e o roteiro todo fica "não testado", não "falhou".
+- Abra a conversa por voz pelo orb da Uni na barra inferior. Fale com pausas naturais.
 - Registre o resultado de cada linha na issue #193: ok, falhou (com o que a Uni falou) ou não testado.
 
 ## Lançamentos
@@ -16,7 +17,7 @@ A conversa por voz não decide nada. Ela passa a frase ao chat (`enviar_para_uni
 | # | Diga | A Uni faz | A Uni fala |
 |---|---|---|---|
 | 1 | "Gastei 48 reais de Uber hoje no Nubank" | Card "Saída · rascunho" com categoria, valor, conta e data. | O valor, o que é e a conta, e pergunta se pode confirmar. Diga "pode". |
-| 2 | "Quais foram os meus gastos com Uber esse mês?" | Lista até 5 lançamentos com data, descrição, valor e conta, mais o total. | A lista e o total. Nada que não esteja na resposta. |
+| 2 | "Quais foram os meus gastos com Uber esse mês?" | Na tela: lista até 5 lançamentos com data, descrição, valor e conta, mais o total (o total só aparece quando todos são do mesmo tipo). | O essencial em uma frase, como o total e a quantidade. Nada que não esteja na resposta da tela. |
 | 3 | "Corrige o Uber de hoje pra 52" | Card "Alteração · rascunho" com antes e depois. | O campo que muda, como estava e como fica. Diga "confirma". |
 | 4 | "Apaga o Uber de hoje" | Card de exclusão com o lançamento, o valor, o dia e a conta. Depois de confirmar: "Desfazer" na tela por 20 segundos. | O que é, o valor e o dia, e pergunta se pode excluir. Diga "pode". Em seguida diga "desfazer": o lançamento volta. |
 | 4b | "Apaga todos os Uber" | Não exclui nada. | Que pela conversa exclui um lançamento por vez e que o lote é na tela Financeiro. |
@@ -36,9 +37,9 @@ A conversa por voz não decide nada. Ela passa a frase ao chat (`enviar_para_uni
 | # | Diga | A Uni faz | A Uni fala |
 |---|---|---|---|
 | 9 | "Quero juntar 5 mil para a viagem até dezembro" | Card de criar meta com nome, valor e prazo. | Nome, valor e prazo, e pergunta se pode criar. Depois de criar, avisa que o aporte se registra na tela Metas. |
-| 10 | "Como está a meta da viagem?" | Responde sem card. | Quanto está guardado, quanto falta e o prazo. Sem alvo ("como estão as minhas metas?"), resume até 3 metas em aberto. |
+| 10 | "Como está a meta da viagem?" | Responde sem card. | Quanto está guardado, quanto falta e o prazo. Sem alvo ("como estão as minhas metas?"), resume até 4 metas em aberto. |
 | 11 | "Muda a meta da viagem para 8 mil" | Card de alterar meta com antes e depois. | O que muda e pergunta se pode confirmar. |
-| 12 | "Apaga a meta da viagem" | Meta sem aporte: card de excluir. Meta com aporte: não exclui e manda para a tela Metas. | O nome e pergunta se pode excluir, ou explica que a meta tem aportes e que a exclusão é na tela Metas. |
+| 12 | "Apaga a meta da viagem" | Meta sem dinheiro guardado (sem aporte e sem valor inicial): card de excluir. Meta com dinheiro guardado: não exclui e manda para a tela Metas. | O nome e pergunta se pode excluir, ou explica que a meta tem dinheiro guardado e que a exclusão é na tela Metas. |
 
 Aporte e retirada pela conversa ficam para depois da #158.
 
@@ -48,7 +49,7 @@ Aporte e retirada pela conversa ficam para depois da #158.
 |---|---|---|---|
 | 13 | "Marca dentista sexta às 15 horas" | Cria o compromisso. | Confirma o título, o dia e a hora. Compromisso não tem card. |
 | 14 | "O que eu tenho essa semana?" | Lista os itens da agenda do período. | A lista. |
-| 15 | "Passa o dentista pra segunda às 10" | Localiza pelo título e remarca. Ambíguo: pergunta qual. | Pergunta se pode remarcar ou confirma a mudança. Responda falando; não há card. |
+| 15 | "Passa o dentista pra segunda às 10" | Localiza pelo título e remarca na hora, sem perguntar. Ambíguo: pergunta qual. | "Pronto. Atualizei" com a data e a hora novas. Não há card nem pergunta de confirmação. |
 | 16a | "Desmarca o dentista" | Pergunta "Quer mesmo cancelar dentista?" e muda o status para cancelado. | A pergunta; diga "sim". Depois, "Cancelei dentista". |
 | 16b | "Já fiz a reunião" | Marca como concluído. | "Marquei reunião como concluído". |
 | 16c | "Apaga o lembrete da vacina" | Pergunta se pode excluir e apaga de verdade. | A pergunta; diga "pode". Depois, "Excluí ... da sua agenda". |

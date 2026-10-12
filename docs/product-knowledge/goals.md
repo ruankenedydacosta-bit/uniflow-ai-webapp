@@ -32,7 +32,7 @@ Nenhum além de ter um espaço ativo.
 
 ## Limitações atuais
 
-Pela conversa e pela voz, a Uni cria, altera, exclui e consulta metas, sempre com um card de confirmação antes de salvar. Uma meta que já tem aportes só pode ser excluída na tela Metas. Registrar aporte ou retirada ainda é feito na tela Metas.
+Pela conversa e pela voz, a Uni cria, altera, exclui e consulta metas, sempre com um card de confirmação antes de salvar. Uma meta que já tem dinheiro guardado (aporte ou valor inicial) só pode ser excluída na tela Metas. Registrar aporte ou retirada ainda é feito na tela Metas.
 
 ## Mensagens de erro conhecidas
 
