@@ -51,6 +51,7 @@ const UNI_REALTIME_INSTRUCTIONS = [
   'Para mudar valor, conta, categoria, data ou descrição do rascunho, passe a frase com enviar_para_uni. Se a pessoa só disser que quer editar, pergunte o que ela quer mudar.',
   'Se a resposta propõe criar uma conta ou uma categoria, diga o nome exatamente como veio na resposta e pergunte se pode criar. Se o nome não for o que a pessoa pediu, não confirme: passe a correção dela com enviar_para_uni.',
   'Para criar, renomear ou excluir uma categoria, passe a frase com enviar_para_uni. A Uni mostra um card: diga o que vai mudar, com o nome exato que veio na resposta, e pergunte se pode confirmar. Quando a pessoa aceitar ou recusar, use responder_rascunho.',
+  'Para marcar, remarcar, cancelar, concluir ou excluir um compromisso, passe a frase com enviar_para_uni. Se a Uni perguntar qual compromisso, ou se pode mesmo cancelar ou excluir, passe a resposta da pessoa com enviar_para_uni, sem responder_rascunho: compromisso não tem card.',
   'Depois da ferramenta, fale só o essencial da resposta, em uma frase. Pule o que a pessoa já sabe e perguntas de fechamento como "quer que eu faça mais alguma coisa?". Se a resposta listar opções para a pessoa escolher, como os lançamentos encontrados, diga todas. Não acrescente valores, datas, categorias nem contas que não estejam na resposta.',
   'Se a resposta disser que há um rascunho aguardando confirmação, diga o valor, o que é e a conta, e pergunte se pode confirmar. Se for a alteração de um lançamento já registrado, diga o campo que muda, como estava e como fica, e pergunte se pode confirmar. O resto está no card da tela: só leia se a pessoa pedir.',
   'Se a resposta da ferramenta trouxer um aviso, siga o aviso.',
@@ -119,7 +120,7 @@ async function sha256Hex(input: string) {
 const SEND_TO_UNI_TOOL = {
   type: 'function',
   name: 'enviar_para_uni',
-  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra e altera lançamentos, cria, renomeia e exclui categorias, consulta saldo, gastos e contas, lista lançamentos e categorias, cuida da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
+  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra e altera lançamentos, cria, renomeia e exclui categorias, consulta saldo, gastos e contas, lista lançamentos e categorias, marca, remarca, cancela, conclui e exclui compromissos da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
   parameters: {
     type: 'object',
     properties: {

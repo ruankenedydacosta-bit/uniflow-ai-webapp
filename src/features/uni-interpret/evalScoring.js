@@ -72,12 +72,20 @@ function avaliarTitulo(palavras, titulo) {
     && !RESTO_DE_PEDIDO.test(normalizado);
 }
 
-// Pedido de categoria: a ação certa e, quando o caso diz, o nome e a
-// categoria que muda, sem acento e caixa.
+// Pedido de categoria ou de agenda: a ação certa e, quando o caso diz, o
+// nome e o alvo, sem acento e caixa. Alvo em lista são as palavras que o
+// texto precisa ter (#191): o modelo chama o compromisso como a pessoa
+// chamou, não como está salvo.
 function avaliarPedido(esperado, obtido) {
   if (!obtido || obtido.acao !== esperado.acao) return false;
-  return ['nome', 'alvo'].every((campo) => esperado[campo] === undefined
-    || normalizeSearchText(obtido[campo] ?? '') === normalizeSearchText(esperado[campo]));
+  return ['nome', 'alvo'].every((campo) => {
+    if (esperado[campo] === undefined) return true;
+    const texto = normalizeSearchText(obtido[campo] ?? '');
+    if (Array.isArray(esperado[campo])) {
+      return esperado[campo].every((palavra) => texto.includes(normalizeSearchText(palavra)));
+    }
+    return texto === normalizeSearchText(esperado[campo]);
+  });
 }
 
 // Devolve um veredito por campo: true (acertou), false (errou) ou null
@@ -174,7 +182,10 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
       consulta,
       pedido: validada.categoria
         ? { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null }
-        : null,
+        // Criar segue a régua do título; o pedido é só sobre item existente.
+        : validada.agenda?.acao && validada.agenda.acao !== 'criar'
+          ? { acao: validada.agenda.acao, nome: validada.agenda.titulo, alvo: validada.agenda.alvo }
+          : null,
     };
   }
 
