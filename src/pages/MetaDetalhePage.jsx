@@ -7,9 +7,11 @@ import UniCard from '../components/ui/UniCard/index.js';
 import { useGoals } from '../features/goals/useGoals';
 import GoalContributionSheet from '../features/goals/components/GoalContributionSheet';
 import GoalForm from '../features/goals/components/GoalForm';
+import GoalMilestoneCelebration from '../features/goals/components/GoalMilestoneCelebration';
 import { AnelDeProgresso } from '../features/goals/components/GoalListCard';
 import { mensagemDoErroAoExcluir, MOVIMENTOS } from '../features/goals/aporteDaMeta.js';
 import { calcProgress } from '../features/goals/goalCalc.js';
+import { celebracaoDoMarco, marcoCruzado } from '../features/goals/marcoDaMeta.js';
 import { listContributions } from '../features/goals/goalService';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../services/financialDataEvents.js';
 import { dataDoAporte, numerosDaMeta, precisaDeAjuste, previsaoDaUni } from '../features/goals/detalheDaMeta.js';
@@ -49,6 +51,7 @@ export default function MetaDetalhePage() {
   const [erroDaConfirmacao, setErroDaConfirmacao] = useState(null);
   const [erroDaAcao, setErroDaAcao] = useState(null);
   const [metaExcluida, setMetaExcluida] = useState(null);
+  const [celebracao, setCelebracao] = useState(null);
   const tituloDosAportesId = useId();
 
   // Depois de excluir, a meta sai de `goals` antes de a navegação terminar.
@@ -143,6 +146,12 @@ export default function MetaDetalhePage() {
     const resultado = await addGoalContribution(meta.id, values);
     if (resultado?.error) return resultado;
     setMovimento(null);
+    // Aporte que passa de 50% ou de 100% abre a celebração (#147).
+    const depois = resultado?.data?.meta
+      ? { ...meta, ...resultado.data.meta }
+      : { ...meta, current_amount: Number(meta.current_amount || 0) + Number(values.amount) };
+    const marco = marcoCruzado({ antes: Number(meta.current_amount || 0), depois: depois.current_amount, alvo: meta.target_amount });
+    if (marco) setCelebracao(celebracaoDoMarco(depois, marco));
     // A transferência lançada junto muda saldos e lista do Financeiro; o
     // aviso também recarrega os aportes desta tela.
     notifyFinancialDataChanged('meta-aporte');
@@ -336,6 +345,10 @@ export default function MetaDetalhePage() {
           onClose={() => setMovimento(null)}
           onSave={registrarMovimento}
         />
+      ) : null}
+
+      {celebracao ? (
+        <GoalMilestoneCelebration celebracao={celebracao} onClose={() => setCelebracao(null)} />
       ) : null}
     </div>
   );
