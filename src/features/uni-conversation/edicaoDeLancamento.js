@@ -368,7 +368,7 @@ function nomeDe(lista, id) {
 
 // Alteração pronta para o card e para o update. { erro } quando a mudança
 // não pode ser aplicada a este lançamento.
-export function montarAlteracao(transacao, mudancas, { accounts = [], categories = [] } = {}) {
+export function montarAlteracao(transacao, mudancas, { accounts = [], categories = [], referenceDate } = {}) {
   const bloqueio = motivoDeBloqueio(transacao);
   if (bloqueio) return { erro: bloqueio };
   const pedidas = mudancas ?? {};
@@ -386,6 +386,12 @@ export function montarAlteracao(transacao, mudancas, { accounts = [], categories
   if (pedidas.date !== undefined && pedidas.date !== transacao.transaction_date) {
     alteracoes.transaction_date = pedidas.date;
     campos.push({ campo: 'date', antes: transacao.transaction_date, depois: pedidas.date });
+    // Data depois de hoje é previsto, como no formulário: sai do saldo até
+    // a pessoa confirmar. O card mostra a mudança.
+    if (transacao.status === 'completed' && referenceDate && pedidas.date > referenceDate) {
+      alteracoes.status = 'pending';
+      campos.push({ campo: 'status', antes: 'completed', depois: 'pending' });
+    }
   }
   if (pedidas.accountId !== undefined && pedidas.accountId !== transacao.account_id) {
     const conta = (Array.isArray(accounts) ? accounts : []).find((item) => item?.id === pedidas.accountId);
@@ -434,11 +440,18 @@ const ROTULOS_DOS_CAMPOS = Object.freeze({
   account: 'Conta',
   category: 'Categoria',
   description: 'Descrição',
+  status: 'Situação',
+});
+
+const ROTULOS_DA_SITUACAO = Object.freeze({
+  completed: 'realizado',
+  pending: 'previsto',
 });
 
 function formatarCampo(campo, valor) {
   if (campo === 'amount') return formatarValor(valor);
   if (campo === 'date') return formatarData(valor);
+  if (campo === 'status') return ROTULOS_DA_SITUACAO[valor] ?? valor;
   return valor || 'sem nenhuma';
 }
 

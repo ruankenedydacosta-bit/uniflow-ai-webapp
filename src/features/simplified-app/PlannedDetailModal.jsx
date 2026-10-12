@@ -40,6 +40,8 @@ function describeDate(dateKey) {
 function PlannedDetailModal({
   accountName,
   busy = false,
+  canDelete = true,
+  canManage = true,
   categoryName,
   error,
   icon,
@@ -93,7 +95,11 @@ function PlannedDetailModal({
 
         {error ? <p className={styles.error} role="alert">{error}</p> : null}
 
-        {mode === 'detail' ? (
+        {!canManage ? (
+          <p className={styles.confirmText}>Você não tem permissão para alterar lançamentos deste espaço.</p>
+        ) : null}
+
+        {canManage && mode === 'detail' ? (
           <div className={styles.actions}>
             <OutlineButton variant="secondary" className={styles.primary} loading={busy} onClick={onConfirm}>
               {copy.confirm}
@@ -102,13 +108,15 @@ function PlannedDetailModal({
               <OutlineButton variant="ghost" disabled={busy} onClick={() => setMode('date')}>Mudar data</OutlineButton>
               <OutlineButton variant="ghost" disabled={busy} onClick={onEdit}>Editar</OutlineButton>
             </div>
-            <OutlineButton variant="ghost" disabled={busy} onClick={() => setMode('delete')}>
-              Excluir previsto
-            </OutlineButton>
+            {canDelete ? (
+              <OutlineButton variant="ghost" disabled={busy} onClick={() => setMode('delete')}>
+                Excluir previsto
+              </OutlineButton>
+            ) : null}
           </div>
         ) : null}
 
-        {mode === 'date' ? (
+        {canManage && mode === 'date' ? (
           <form
             className={styles.actions}
             onSubmit={(event) => {
@@ -132,7 +140,7 @@ function PlannedDetailModal({
           </form>
         ) : null}
 
-        {mode === 'delete' ? (
+        {canManage && canDelete && mode === 'delete' ? (
           <div className={styles.actions}>
             <p className={styles.confirmText}>Excluir este previsto? Ele some do histórico e do saldo previsto.</p>
             <OutlineButton variant="secondary" className={styles.primary} loading={busy} onClick={onDelete}>
