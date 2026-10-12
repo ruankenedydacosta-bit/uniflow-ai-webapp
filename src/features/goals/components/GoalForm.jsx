@@ -61,6 +61,7 @@ export default function GoalForm({ open, onClose, goal, onSave }) {
   });
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
 
   function handleChange(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -86,6 +87,7 @@ export default function GoalForm({ open, onClose, goal, onSave }) {
     e.preventDefault();
     if (!validate()) return;
     setSaving(true);
+    setSubmitError(null);
 
     const payload = {
       name: form.name.trim(),
@@ -100,8 +102,13 @@ export default function GoalForm({ open, onClose, goal, onSave }) {
       planned_monthly_amount: form.planned_monthly_amount ? toNumber(form.planned_monthly_amount) : undefined,
     };
 
-    await onSave(payload, goal?.id);
+    // Com erro, a folha fica aberta com o que a pessoa digitou.
+    const result = await onSave(payload, goal?.id);
     setSaving(false);
+    if (result?.error) {
+      setSubmitError('Não foi possível salvar a meta. Tente de novo.');
+      return;
+    }
     onClose();
   }
 
@@ -196,6 +203,8 @@ export default function GoalForm({ open, onClose, goal, onSave }) {
           onChange={(e) => handleChange('planned_monthly_amount', e.target.value.replace(/[^0-9,]/g, ''))}
           placeholder="Quanto pretende contribuir por mês"
         />
+
+        {submitError ? <p className={styles.error} role="alert">{submitError}</p> : null}
 
         <div className={styles.formActions}>
           <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>

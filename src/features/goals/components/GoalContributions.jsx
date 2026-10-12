@@ -10,6 +10,7 @@ export default function GoalContributions({ open, onClose, goal, contributions, 
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  const [erro, setErro] = useState(null);
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -17,15 +18,26 @@ export default function GoalContributions({ open, onClose, goal, contributions, 
     const num = parseFloat(cleaned);
     if (!num || num <= 0) return;
     setSaving(true);
+    setErro(null);
     const clientOperationId = `contrib-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    await onAdd(goal.id, { amount: num, note: note.trim() || undefined, client_operation_id: clientOperationId });
+    const result = await onAdd(goal.id, { amount: num, note: note.trim() || undefined, client_operation_id: clientOperationId });
     setSaving(false);
+    // Com erro, o valor digitado fica no campo para tentar de novo.
+    if (result?.error) {
+      setErro('Não foi possível registrar o aporte. Tente de novo.');
+      return;
+    }
     setAmount('');
     setNote('');
   }
 
   async function handleRemove(contrib) {
-    await onRemove(goal.id, contrib.id, contrib.amount);
+    setErro(null);
+    const result = await onRemove(goal.id, contrib.id, contrib.amount);
+    if (result?.error) {
+      setErro('Não foi possível excluir o aporte. Tente de novo.');
+      return;
+    }
     setConfirmRemoveId(null);
   }
 
@@ -47,6 +59,8 @@ export default function GoalContributions({ open, onClose, goal, contributions, 
           <Button type="submit" loading={saving} disabled={!amount}>Adicionar</Button>
         </div>
       </form>
+
+      {erro ? <p className={styles.error} role="alert">{erro}</p> : null}
 
       <div className={styles.list}>
         {(!contributions || contributions.length === 0) && (

@@ -18,6 +18,7 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   ACCOUNT: '/app/conta',
   UNI: '/app/uni',
   METAS: '/app/metas',
+  META: '/app/metas/:id',
   // Organizar (handoff 10): contas, cartões e categorias em Financeiro.
   ORGANIZAR: '/app/organizar',
   CATEGORIAS: '/app/organizar/categorias',
@@ -31,6 +32,10 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   // alcançada pelo CTA "Ver relatório" da Tela 1.
   RELATORIO_PLANILHA: '/app/relatorio/planilha',
 });
+
+export function metaPath(id) {
+  return `${SIMPLIFIED_ROUTES.METAS}/${encodeURIComponent(id)}`;
+}
 
 export function categoriaPath(id) {
   return `${SIMPLIFIED_ROUTES.CATEGORIAS}/${encodeURIComponent(id)}`;
