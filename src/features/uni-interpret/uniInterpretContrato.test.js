@@ -430,3 +430,21 @@ test('categoria: ação fora do contrato vira nao_entendi; fora do intent não s
   assert.equal(validarInterpretacao({ intent: 'categoria', operacoes: [], resposta: '' }, CONTEXTO).intent, 'nao_entendi');
   assert.equal(validarInterpretacao(lancamento(operacao()), CONTEXTO).categoria, undefined);
 });
+
+// #190: lista de lançamentos e catálogo de categorias.
+test('consulta lancamentos: aceita categoria de qualquer tipo e mantém os filtros', () => {
+  const { tipo, categoria, conta, termo, ajustes } = validarInterpretacao(
+    consulta({ tipo: 'lancamentos', categoria: C.sal, conta: K.cc, termo: 'Pix' }), CONTEXTO,
+  ).consulta;
+  assert.deepEqual({ tipo, categoria: categoria?.id, conta: conta?.id, termo, ajustes }, {
+    tipo: 'lancamentos', categoria: 'cat-sal', conta: 'conta-cc', termo: 'Pix', ajustes: [],
+  });
+  assert.equal(validarInterpretacao(consulta({ tipo: 'lancamentos', categoria: 'c99' }), CONTEXTO).consulta.tipo, 'outra');
+});
+
+test('consulta categorias: ignora período e filtros que vierem junto', () => {
+  const resultado = validarInterpretacao(
+    consulta({ tipo: 'categorias', inicio: '2030-01-01', fim: null, categoria: 'c99', termo: 'x' }), CONTEXTO,
+  ).consulta;
+  assert.deepEqual(resultado, { tipo: 'categorias', inicio: null, fim: null, categoria: null, conta: null, termo: null, ajustes: [] });
+});

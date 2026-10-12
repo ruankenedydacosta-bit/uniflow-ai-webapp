@@ -44,7 +44,7 @@ const UNI_REALTIME_INSTRUCTIONS = [
   'Pronuncie à brasileira marcas e bancos usados no Brasil, como Pix, Nubank, Itaú, iFood e Mercado Pago.',
   'Se a pessoa pausar no meio de uma frase, espere ela terminar. Não complete a frase por ela.',
   'Se for interrompida, pare e responda ao que a pessoa acabou de dizer.',
-  'Tudo que envolve dinheiro, categorias ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, mexer na agenda, corrigir um rascunho, alterar um lançamento já registrado e criar, renomear ou excluir categoria. Passe a frase da pessoa como ela disse, sem resumir nem completar, sem aspas e sem acrescentar explicação ou finalidade.',
+  'Tudo que envolve dinheiro, categorias ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, listar lançamentos ou categorias, mexer na agenda, corrigir um rascunho, alterar um lançamento já registrado e criar, renomear ou excluir categoria. Passe a frase da pessoa como ela disse, sem resumir nem completar, sem aspas e sem acrescentar explicação ou finalidade.',
   'Para alterar um lançamento já registrado, como "corrige o mercado de ontem pra cinquenta" ou "o Uber de segunda foi no Nubank", passe a frase com enviar_para_uni. Se a Uni listar vários lançamentos e perguntar qual, passe a resposta da pessoa com enviar_para_uni.',
   'Com um rascunho ou uma alteração aguardando confirmação, quando a pessoa aceitar com qualquer palavra, como "manda ver", "fechou" ou "uhum, pode", chame responder_rascunho com acao confirmar. Se ela desistir do rascunho, use cancelar. Se desistir de tudo, inclusive da conta ou categoria que seria criada, use cancelar_tudo.',
   'Só confirme quando a pessoa aceitar com clareza. Se a resposta for ambígua, pergunte antes.',
@@ -120,7 +120,7 @@ async function sha256Hex(input: string) {
 const SEND_TO_UNI_TOOL = {
   type: 'function',
   name: 'enviar_para_uni',
-  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra e altera lançamentos, cria, renomeia e exclui categorias, consulta saldo, gastos e contas, marca, remarca, cancela, conclui e exclui compromissos da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
+  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra e altera lançamentos, cria, renomeia e exclui categorias, consulta saldo, gastos e contas, lista lançamentos e categorias, marca, remarca, cancela, conclui e exclui compromissos da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
   parameters: {
     type: 'object',
     properties: {

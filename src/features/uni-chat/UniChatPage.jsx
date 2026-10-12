@@ -3187,6 +3187,14 @@ export default function UniChatPage({ variant = 'full' }) {
   // busca falha.
   async function responderConsultaDoModelo(consulta, dataDaFuncao) {
     const dataReferencia = dataDaFuncao ?? getLocalIsoDate();
+    const catalogo = { categorias: categoryState.categories, contas: accountState.accounts };
+    // O catálogo já está no chat: listar categorias não vai ao banco (#190).
+    // Catálogo ainda carregando ou com erro não vira "você não tem
+    // categorias": as regras respondem.
+    if (consulta.tipo === 'categorias') {
+      if (categoryState.isLoading || categoryState.error) return null;
+      return responderConsulta({ consulta, transacoes: [], dataReferencia, ...catalogo });
+    }
     const periodo = periodoDaConsulta(consulta, dataReferencia);
     try {
       const { data, error } = await listTransactionsForPeriod(effectiveWorkspace.id, {
@@ -3195,7 +3203,7 @@ export default function UniChatPage({ variant = 'full' }) {
         status: 'completed',
       });
       if (error) return null;
-      return responderConsulta({ consulta, transacoes: data, dataReferencia });
+      return responderConsulta({ consulta, transacoes: data, dataReferencia, ...catalogo });
     } catch {
       return null;
     }

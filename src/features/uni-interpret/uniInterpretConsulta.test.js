@@ -131,3 +131,90 @@ test('memória guarda conta e categoria e troca a última consulta', () => {
     response: 'Neste mês...',
   });
 });
+
+// #190: a pessoa quer ver os lançamentos, não o total.
+const CONTAS = [{ id: 'conta-nu', name: 'Nubank' }, { id: 'conta-it', name: 'Itaú' }];
+const COM_DATA = TRANSACOES.map((transacao, indice) => ({ ...transacao, transaction_date: `2026-10-0${indice + 1}` }));
+
+test('lancamentos: lista do mais recente ao mais antigo, com conta e total do mesmo tipo', () => {
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', categoria: SAUDE }), transacoes: COM_DATA, dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, encontrei 2 saídas com Saúde, que somam R$ 200,30. 02/10, Consulta, R$ 80,20, no Itaú; 01/10, Farmácia São João, R$ 120,10, no Nubank.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', termo: 'salario' }), transacoes: COM_DATA, dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, encontrei 1 entrada com salario: 04/10, Salário, R$ 5.000,00, no Itaú.',
+  );
+});
+
+test('lancamentos: tipos misturados não somam, e o que passa de 5 fica para a tela', () => {
+  const muitas = [...COM_DATA, ...COM_DATA.map((transacao) => ({ ...transacao, transaction_date: '2026-09-30' }))];
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos' }), transacoes: muitas, dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, encontrei 10 lançamentos. Os mais recentes: 05/10, Para a poupança, R$ 900,00, no Nubank; '
+    + '04/10, Salário, R$ 5.000,00, no Itaú; 03/10, Estacionamento, R$ 35,00, no Nubank; 02/10, Consulta, R$ 80,20, no Itaú; '
+    + '01/10, Farmácia São João, R$ 120,10, no Nubank. E mais 5 lançamentos, que você vê em Financeiro.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', termo: 'cinema', conta: NUBANK }), transacoes: COM_DATA, dataReferencia: HOJE }),
+    'Neste mês, não encontrei lançamentos com cinema na conta Nubank.',
+  );
+});
+
+test('categorias: lista o catálogo por tipo, sem ir ao banco', () => {
+  const categorias = [
+    { name: 'Transporte', category_type: 'expense' },
+    { name: 'Alimentação', category_type: 'expense' },
+    { name: 'Salário', category_type: 'income' },
+  ];
+  assert.equal(consultaRespondivel(consulta({ tipo: 'categorias' })), true);
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'categorias' }), transacoes: [], dataReferencia: HOJE, categorias }),
+    'Você tem 3 categorias: 2 de saída, Alimentação e Transporte; e 1 de entrada, Salário.',
+  );
+  // Arquivada não é lida em voz alta, como na tela Categorias.
+  assert.equal(
+    responder({
+      consulta: consulta({ tipo: 'categorias' }), transacoes: [], dataReferencia: HOJE,
+      categorias: [...categorias.slice(0, 1), { name: 'Arquivada', category_type: 'expense', is_active: false }],
+    }),
+    'Você tem 1 categoria de saída: Transporte.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'categorias' }), transacoes: [], dataReferencia: HOJE, categorias: categorias.slice(0, 1) }),
+    'Você tem 1 categoria de saída: Transporte.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'categorias' }), transacoes: [], dataReferencia: HOJE, categorias: [] }),
+    'Você ainda não tem categorias. Crie uma pela conversa ou em Categorias, no menu Mais.',
+  );
+});
+
+test('lancamentos: transferência entra pela conta de destino e diz de onde para onde', () => {
+  const ITAU = { id: 'conta-it', name: 'Itaú' };
+  const transferencia = { ...COM_DATA[4], account_id: 'conta-it', destination_account_id: 'conta-nu' };
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', conta: NUBANK, termo: 'poupança' }), transacoes: [transferencia], dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, encontrei 1 lançamento com poupança na conta Nubank: 05/10, Para a poupança, R$ 900,00, do Itaú para o Nubank.',
+  );
+  // Saída e entrada seguem só pela conta de origem.
+  assert.equal(
+    responder({ consulta: consulta({ conta: ITAU, termo: 'poupança' }), transacoes: [transferencia], dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, não encontrei saídas com poupança na conta Itaú.',
+  );
+});
+
+test('lancamentos: no mesmo dia, o registrado por último vem primeiro', () => {
+  const doDia = ['a', 'b', 'c'].map((letra, indice) => ({
+    transaction_type: 'expense', amount: 10, description: `Compra ${letra}`, transaction_date: '2026-10-02',
+    account_id: 'conta-nu', created_at: `2026-10-02T1${indice}:00:00Z`,
+  }));
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos' }), transacoes: doDia, dataReferencia: HOJE, contas: CONTAS }),
+    'Neste mês, encontrei 3 saídas, que somam R$ 30,00. 02/10, Compra c, R$ 10,00, no Nubank; 02/10, Compra b, R$ 10,00, no Nubank; 02/10, Compra a, R$ 10,00, no Nubank.',
+  );
+});
+
+test('tipo que não é respondido aqui devolve null, em vez de somar tudo como entrada', () => {
+  assert.equal(responderConsulta({ consulta: consulta({ tipo: 'outra' }), transacoes: TRANSACOES, dataReferencia: HOJE }), null);
+});
