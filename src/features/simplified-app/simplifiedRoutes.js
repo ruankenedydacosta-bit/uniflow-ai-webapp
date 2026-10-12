@@ -23,6 +23,8 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   ORGANIZAR: '/app/organizar',
   CATEGORIAS: '/app/organizar/categorias',
   CATEGORIA: '/app/organizar/categorias/:id',
+  CONTAS: '/app/organizar/contas',
+  CONTA: '/app/organizar/contas/:id',
   // RELATORIO1: mesmo padrão de Agenda -- rota interna sempre registrada,
   // fora da barra inferior fixa (Home | Registros | Conta). Alcançada pelo
   // card "Relatório da Uni" na Home.
@@ -39,6 +41,10 @@ export function metaPath(id) {
 
 export function categoriaPath(id) {
   return `${SIMPLIFIED_ROUTES.CATEGORIAS}/${encodeURIComponent(id)}`;
+}
+
+export function contaPath(id) {
+  return `${SIMPLIFIED_ROUTES.CONTAS}/${encodeURIComponent(id)}`;
 }
 
 // Épico #99 (navegação com a Uni no centro): Hoje | Financeiro | Falar |

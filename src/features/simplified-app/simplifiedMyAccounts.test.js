@@ -15,12 +15,14 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // placeholders.
 // ============================================================================
 
-test('routes.jsx renderiza SimplifiedMyAccountsPage na rota de minhas-contas', async () => {
+// #182: a tela de contas vive em Organizar (/app/organizar/contas). A rota
+// antiga de minhas-contas só redireciona, para não quebrar link salvo.
+test('routes.jsx redireciona minhas-contas para Contas em Organizar, sem montar SimplifiedMyAccountsPage', async () => {
   const content = await source('../../app/routes.jsx');
-  assert.match(content, /SimplifiedMyAccountsPage/);
+  assert.doesNotMatch(content, /<SimplifiedMyAccountsPage \/>/);
   assert.match(
     content,
-    /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.MY_ACCOUNTS\]\.path[\s\S]{0,200}<SimplifiedMyAccountsPage \/>/,
+    /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.MY_ACCOUNTS\]\.path[\s\S]{0,200}<Navigate to=\{SIMPLIFIED_ROUTES\.CONTAS\} replace \/>/,
   );
 });
 

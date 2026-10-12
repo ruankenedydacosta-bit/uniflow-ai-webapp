@@ -52,6 +52,18 @@ const TARGET_COPY = Object.freeze({
   }),
 });
 
+// Organizar > Contas (#182): com `accountId`, a modal fala do saldo de UMA
+// conta, não do total do espaço.
+const ACCOUNT_COPY = Object.freeze({
+  title: 'Ajustar saldo',
+  formDescription: 'Informe o saldo atual desta conta.',
+  amountLabel: 'Saldo da conta',
+  currentLabel: 'Saldo atual',
+  newLabel: 'Novo saldo',
+  submitLabel: 'Salvar saldo',
+  successTitle: 'Saldo atualizado',
+});
+
 function generateOperationId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -74,8 +86,12 @@ function generateOperationId() {
 // abertura -- por isso todo o estado abaixo nasce limpo via useState
 // inicial, sem efeito de reset (evita cascading renders e gera um
 // client_operation_id novo por abertura naturalmente).
-function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClose, open }) {
-  const copy = TARGET_COPY[target] ?? TARGET_COPY.balance;
+//
+// Organizar > Contas (#182): com `accountId`, o ajuste corrige o saldo de
+// UMA conta (o detalhe da conta abre a modal com o saldo derivado dela).
+// Sem `accountId`, segue o comportamento acima.
+function UpdateBalanceModal({ target = 'balance', accountId = null, currentValue, onChanged, onClose, open }) {
+  const copy = accountId ? ACCOUNT_COPY : (TARGET_COPY[target] ?? TARGET_COPY.balance);
   const [step, setStep] = useState('form');
   // BLOCO SALDO/RECEITA/DESPESA EDITAVEIS (ajuste de UX): o campo nasce
   // preenchido com o valor atual do card, não com "R$ 0,00" -- o usuário
@@ -128,6 +144,7 @@ function UpdateBalanceModal({ target = 'balance', currentValue, onChanged, onClo
 
     const result = await submitBalanceAdjustment({
       target,
+      accountId,
       currentBalance: currentValueNumber,
       newBalance: newValue,
       note,

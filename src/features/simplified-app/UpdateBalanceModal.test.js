@@ -39,9 +39,12 @@ test('nenhuma referência a conta sobrevive no componente -- nem seletor, nem "C
 
 test('modal é genérica: target decide qual card (balance/income/expense) ela ajusta, currentValue é o total atual daquele card', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
-  assert.match(modal, /function UpdateBalanceModal\(\{ target = 'balance', currentValue, onChanged, onClose, open \}\)/);
+  // #182: `accountId` opcional -- o detalhe da conta em Organizar ajusta o
+  // saldo de uma conta; sem ele, o ajuste segue sobre o total.
+  assert.match(modal, /function UpdateBalanceModal\(\{ target = 'balance', accountId = null, currentValue, onChanged, onClose, open \}\)/);
   assert.match(modal, /const currentValueNumber = Number\(currentValue \?\? 0\);/);
-  assert.match(modal, /const copy = TARGET_COPY\[target\] \?\? TARGET_COPY\.balance;/);
+  // Com accountId, os textos falam do saldo de uma conta (ACCOUNT_COPY).
+  assert.match(modal, /const copy = accountId \? ACCOUNT_COPY : \(TARGET_COPY\[target\] \?\? TARGET_COPY\.balance\);/);
 });
 
 test('TARGET_COPY define título/rótulos próprios para balance, income e expense -- nenhum texto genérico "saldo" vaza pros outros dois', async () => {
@@ -107,14 +110,16 @@ test('fluxo exige confirmação explícita: enviar o formulário só avança par
   assert.match(reviewSlice, /if \(!hasChange\) return;/);
 });
 
-test('somente "Confirmar" no resumo chama submitBalanceAdjustment, repassando target e sem accountId', async () => {
+test('somente "Confirmar" no resumo chama submitBalanceAdjustment, repassando target e o accountId da prop (null por padrão)', async () => {
   const modal = await source('./UpdateBalanceModal.jsx');
   const confirmStart = modal.indexOf('async function handleConfirm() {');
   assert.ok(confirmStart > -1);
   const confirmSlice = modal.slice(confirmStart, modal.indexOf('\n  }', confirmStart));
   assert.match(confirmSlice, /submitBalanceAdjustment\(\{/);
   assert.match(confirmSlice, /target,/);
-  assert.doesNotMatch(confirmSlice, /accountId:/);
+  assert.match(confirmSlice, /accountId,/);
+  // Nenhum seletor de conta na modal: o accountId só vem de quem a abre.
+  assert.doesNotMatch(modal, /useState\([^)]*account/i);
 });
 
 test('clique duplo/repetido no Confirmar nunca dispara uma segunda chamada (guarda isSubmitting)', async () => {
