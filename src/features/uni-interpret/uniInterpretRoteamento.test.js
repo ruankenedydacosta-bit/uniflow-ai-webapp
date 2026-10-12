@@ -313,3 +313,11 @@ test('saldo e meta têm rota própria e nunca viram rascunho nem plano', () => {
     assert.equal(interpretacaoParaPlano({ intent, operacoes: comOperacao, resposta: '' }), null);
   }
 });
+
+test('pedido de categoria vai para a rota própria; sem ação, não entendi', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'categoria', operacoes: [], resposta: '', categoria: { acao: 'criar', tipo: 'saida', alvo: null, nome: 'Impostos' } }),
+    ROTAS_INTERPRETACAO.CATEGORIA,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'categoria', operacoes: [], resposta: '' }), ROTAS_INTERPRETACAO.NAO_ENTENDI);
+});

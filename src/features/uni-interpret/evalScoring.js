@@ -71,6 +71,14 @@ function avaliarTitulo(palavras, titulo) {
     && !RESTO_DE_PEDIDO.test(normalizado);
 }
 
+// Pedido de categoria: a ação certa e, quando o caso diz, o nome e a
+// categoria que muda, sem acento e caixa.
+function avaliarPedido(esperado, obtido) {
+  if (!obtido || obtido.acao !== esperado.acao) return false;
+  return ['nome', 'alvo'].every((campo) => esperado[campo] === undefined
+    || normalizeSearchText(obtido[campo] ?? '') === normalizeSearchText(esperado[campo]));
+}
+
 // Devolve um veredito por campo: true (acertou), false (errou) ou null
 // (o campo não se aplica ao caso).
 export function avaliarCaso(caso, resultado) {
@@ -91,6 +99,9 @@ export function avaliarCaso(caso, resultado) {
       consulta: esperado.consulta && resultado.consulta !== undefined
         ? intent && avaliarConsulta(esperado.consulta, resultado.consulta)
         : null,
+      pedido: esperado.pedido && resultado.pedido !== undefined
+        ? intent && avaliarPedido(esperado.pedido, resultado.pedido)
+        : null,
     };
   }
 
@@ -106,11 +117,12 @@ export function avaliarCaso(caso, resultado) {
       && (resultado.recorrente === true) === (esperado.recorrente === true),
     titulo: null,
     consulta: null,
+    pedido: null,
   };
 }
 
 export function resumirAvaliacao(vereditos) {
-  const campos = ['intent', 'valor', 'data', 'categoria', 'modalidade', 'titulo', 'consulta'];
+  const campos = ['intent', 'valor', 'data', 'categoria', 'modalidade', 'titulo', 'consulta', 'pedido'];
   return Object.fromEntries(campos.map((campo) => {
     const aplicaveis = vereditos.filter((veredito) => veredito[campo] !== null);
     const acertos = aplicaveis.filter((veredito) => veredito[campo]).length;
@@ -123,6 +135,7 @@ const INTENT_DO_INTERPRETADOR = {
   meta: 'meta',
   consulta: 'consulta',
   agenda: 'agenda',
+  categoria: 'categoria',
   conversa: 'conversa',
   correcao: 'correcao',
   nao_entendi: 'nao_entendeu',
@@ -158,6 +171,9 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
       recorrente: false,
       titulo: validada.agenda?.titulo ?? null,
       consulta,
+      pedido: validada.categoria
+        ? { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null }
+        : null,
     };
   }
 
@@ -178,5 +194,6 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
     recorrente: operacao.recorrente === true,
     titulo: null,
     consulta: null,
+    pedido: null,
   };
 }

@@ -16,6 +16,7 @@ export const ROTAS_INTERPRETACAO = Object.freeze({
   META: 'meta',
   CONSULTA: 'consulta',
   AGENDA: 'agenda',
+  CATEGORIA: 'categoria',
   CONVERSA: 'conversa',
   NAO_ENTENDI: 'nao_entendi',
 });
@@ -54,6 +55,8 @@ export function escolherRotaDaInterpretacao(interpretacao) {
       return ROTAS_INTERPRETACAO.CONSULTA;
     case 'agenda':
       return ROTAS_INTERPRETACAO.AGENDA;
+    case 'categoria':
+      return interpretacao.categoria?.acao ? ROTAS_INTERPRETACAO.CATEGORIA : ROTAS_INTERPRETACAO.NAO_ENTENDI;
     case 'conversa':
       return ROTAS_INTERPRETACAO.CONVERSA;
     case 'nao_entendi':

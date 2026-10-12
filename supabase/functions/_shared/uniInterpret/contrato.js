@@ -13,12 +13,15 @@
 // saldo e meta não levam operação: o app público não ajusta saldo nem cria
 // objetivo pela conversa, só responde (#80).
 export const INTENTS = Object.freeze([
-  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'conversa', 'nao_entendi',
+  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // Consulta que o app responde com os parâmetros (#80). 'outra' (meta, contas
 // a pagar, maior gasto, comparação...) segue para as regras de consulta.
 export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'outra']);
+// Criar, renomear ou excluir uma categoria pela conversa. O app confere
+// permissão, nome repetido e categoria padrão antes de mostrar o card.
+export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -103,18 +106,32 @@ const ESQUEMA_AGENDA = {
   },
 };
 
+// Pedido de categoria. Fora do intent categoria, todos os campos são null.
+const ESQUEMA_CATEGORIA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['acao', 'tipo', 'alvo', 'nome'],
+  properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_CATEGORIA, null] },
+    tipo: { type: ['string', 'null'], enum: ['saida', 'entrada', null] },
+    alvo: { ...TEXTO_OU_NULO, description: 'apelido da categoria que muda ou sai, ex.: c3' },
+    nome: { ...TEXTO_OU_NULO, description: 'nome da categoria nova ou nome novo' },
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
     agenda: ESQUEMA_AGENDA,
     resposta: { type: 'string' },
     consulta: ESQUEMA_CONSULTA,
+    categoria: ESQUEMA_CATEGORIA,
   },
 });
 
@@ -279,6 +296,18 @@ function validarAgenda(bruta) {
   return { titulo: titulo || null, valor: valor > 0 ? valor : null };
 }
 
+// Apelido inventado vira alvo null, e o app diz que não achou a categoria.
+// Renomear e excluir valem só para entrada e saída, com o tipo da própria
+// categoria; criar sem tipo vale saída, o caso de quase toda categoria nova.
+function validarCategoria(bruta, { categoriasPorApelido }) {
+  const acao = ACOES_CATEGORIA.includes(bruta?.acao) ? bruta.acao : null;
+  const alvo = acao && acao !== 'criar' ? categoriasPorApelido.get(bruta?.alvo) ?? null : null;
+  const nome = textoLimpo(bruta?.nome, MAX_NOVA_CATEGORIA) || null;
+  const tipoPorAlvo = { expense: 'saida', income: 'entrada' }[alvo?.category_type] ?? null;
+  const tipo = acao === 'criar' ? (bruta?.tipo === 'entrada' ? 'entrada' : 'saida') : tipoPorAlvo;
+  return { acao, tipo, alvo, nome: acao === 'excluir' ? null : nome };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -299,6 +328,12 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
 
   if (intent === 'consulta') {
     return { intent, operacoes: [], resposta, consulta: validarConsulta(bruta?.consulta, contexto) };
+  }
+  if (intent === 'categoria') {
+    const categoria = validarCategoria(bruta?.categoria, contexto);
+    return categoria.acao
+      ? { intent, operacoes: [], resposta, categoria }
+      : { intent: 'nao_entendi', operacoes: [], resposta };
   }
   if (intent !== 'lancamento' && intent !== 'correcao') {
     return { intent, operacoes: [], resposta };
