@@ -15,7 +15,12 @@ import ResetPasswordPage from '../pages/ResetPasswordPage';
 import { PrivacidadePage, PRIVACIDADE_ROUTE } from '../features/legal';
 import SettingsPage from '../pages/SettingsPage';
 import OpenFinancePage from '../pages/OpenFinancePage';
-import { CategoriesPage } from '../features/categories';
+import {
+  CategoriaDetalhePage,
+  CategoriasListaPage,
+  CategoriesPage,
+  OrganizarPage,
+} from '../features/categories';
 import { FuturePage } from '../features/future';
 import { PresentationPage } from '../features/presentation';
 import { PERSONAL_PLAN_RETURN_ROUTE, PersonalPlanPage, PersonalPlanReturnPage } from '../features/personal-plan';
@@ -430,6 +435,28 @@ export const appRoutes = [
     label: 'Open Finance',
     title: 'Open Finance',
     element: <OpenFinancePage />,
+  },
+  // Organizar (handoff 10): hub, lista e detalhe de categoria.
+  {
+    path: SIMPLIFIED_ROUTES.ORGANIZAR,
+    label: 'Organizar',
+    title: 'Organizar',
+    simplified: true,
+    element: <OrganizarPage />,
+  },
+  {
+    path: SIMPLIFIED_ROUTES.CATEGORIAS,
+    label: 'Categorias',
+    title: 'Categorias',
+    simplified: true,
+    element: <CategoriasListaPage />,
+  },
+  {
+    path: SIMPLIFIED_ROUTES.CATEGORIA,
+    label: 'Categoria',
+    title: 'Categoria',
+    simplified: true,
+    element: <CategoriaDetalhePage />,
   },
   {
     path: SIMPLIFIED_ROUTES.METAS,

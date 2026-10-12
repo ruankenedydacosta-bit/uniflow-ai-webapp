@@ -13,6 +13,11 @@ import { CategoryIcon } from '../categoryIcons.jsx';
 import { CATEGORY_TYPES, isDuplicateCategoryName } from '../categoryUtils.js';
 import styles from './CategoryCreateModal.module.css';
 
+// No celular o teclado subiria com a folha e faria ela pular: só o desktop
+// (ponteiro fino) abre com o nome em foco.
+const focoAutomatico = typeof window !== 'undefined'
+  && window.matchMedia?.('(pointer: fine)').matches === true;
+
 const TYPE_OPTIONS = [
   { value: CATEGORY_TYPES.EXPENSE, label: 'Saída' },
   { value: CATEGORY_TYPES.INCOME, label: 'Entrada' },
@@ -122,7 +127,7 @@ function CategoryCreateModal({
             placeholder="Ex.: Mercado"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            autoFocus
+            autoFocus={focoAutomatico}
           />
         </Field>
 
