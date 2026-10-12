@@ -7,6 +7,7 @@ import ProgressBar from '../components/ui/ProgressBar/index.js';
 import { useGoals } from '../features/goals/useGoals';
 import GoalListCard from '../features/goals/components/GoalListCard';
 import GoalCreateFlow from '../features/goals/components/GoalCreateFlow';
+import GoalSuggestions from '../features/goals/components/GoalSuggestions';
 import { ABAS_DE_METAS, resumirMetasAtivas, separarPorAba } from '../features/goals/listaDeMetas.js';
 import { PhPlusIcon } from '../features/simplified-app/SimplifiedIcons.jsx';
 import SimplifiedSubpageHeader from '../features/simplified-app/SimplifiedSubpageHeader.jsx';
@@ -35,7 +36,8 @@ export default function ObjetivosPage() {
   const { goals, isLoading, error, refresh, addGoal } = useGoals({ workspaceId: workspace?.id, comUltimoAporte: true });
 
   const [aba, setAba] = useState(() => abaInicial(parametros));
-  const [criando, setCriando] = useState(false);
+  // null fechada; { inicial } aberta, com inicial nulo ou vindo de uma sugestão.
+  const [criacao, setCriacao] = useState(null);
 
   const { ativas, concluidas } = useMemo(() => separarPorAba(goals), [goals]);
   const resumo = useMemo(() => resumirMetasAtivas(goals), [goals]);
@@ -46,7 +48,7 @@ export default function ObjetivosPage() {
   async function handleCreate(values) {
     const result = await addGoal(values);
     if (!result?.error) {
-      setCriando(false);
+      setCriacao(null);
       setAba('ativas');
       window.scrollTo({ top: 0 });
     }
@@ -60,7 +62,7 @@ export default function ObjetivosPage() {
         onBack={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
         backLabel="Voltar para Mais"
         action={(
-          <button type="button" className={styles.headerAction} onClick={() => setCriando(true)} aria-label="Criar meta">
+          <button type="button" className={styles.headerAction} onClick={() => setCriacao({ inicial: null })} aria-label="Criar meta">
             <PhPlusIcon />
           </button>
         )}
@@ -79,11 +81,7 @@ export default function ObjetivosPage() {
         <p className={styles.state} role="status">Carregando metas…</p>
       ) : goals.length === 0 ? (
         error ? null : (
-          <div className={styles.state}>
-            <p className={styles.stateTitle}>Nenhuma meta ainda</p>
-            <p>Crie uma meta para ver quanto falta e quanto guardar por mês.</p>
-            <OutlineButton onClick={() => setCriando(true)}>Criar meta</OutlineButton>
-          </div>
+          <GoalSuggestions onEscolher={(inicial) => setCriacao({ inicial })} />
         )
       ) : (
         <>
@@ -116,8 +114,8 @@ export default function ObjetivosPage() {
         </>
       )}
 
-      {criando ? (
-        <GoalCreateFlow onClose={() => setCriando(false)} onCreate={handleCreate} />
+      {criacao ? (
+        <GoalCreateFlow inicial={criacao.inicial} onClose={() => setCriacao(null)} onCreate={handleCreate} />
       ) : null}
     </div>
   );

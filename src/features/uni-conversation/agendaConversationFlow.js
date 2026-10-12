@@ -6,6 +6,7 @@ import {
   pushPendingAction,
   updatePendingAction,
 } from './pendingActionStack.js';
+import { classifyPendingActionReply } from './pendingActionInput.js';
 import {
   classifyIntent,
   normalizeFinancialText,
@@ -40,6 +41,35 @@ const AGENDA_INTENTS = new Set([
   'agenda_no_time',
   'agenda_financial_conflict',
 ]);
+
+// Ação que o uni-interpret leu sobre um compromisso já marcado (#191). Com
+// ela, a regex de verbo não decide o ramo: "desmarca o dentista" cancela
+// mesmo sem a palavra "compromisso".
+const ACAO_INTERPRETADA = Object.freeze({
+  editar: { intent: 'agenda_edit', action: 'edit' },
+  cancelar: { intent: 'agenda_cancel', action: 'cancel' },
+  concluir: { intent: 'agenda_complete', action: 'complete' },
+  excluir: { intent: 'agenda_cancel', action: 'delete' },
+});
+
+// Resposta à pergunta "Quer mesmo cancelar X?". Por voz chega "sim, cancela",
+// "pode excluir", "pode sim", "isso"; a lista curta de antes só aceitava
+// "sim". Aqui "cancela" confirma: é o verbo da própria pergunta, nunca a
+// desistência que o classificador genérico de rascunho vê nele.
+const ABERTURA_AFIRMATIVA = /^(?:sim|ok|isso|claro|pode|beleza|certo)[,.!]?\s+/;
+const FECHO_AFIRMATIVO = /\s+(?:sim|por favor)[.!]?$/;
+const CONFIRMA_CANCELAMENTO = /^(?:sim|confirmo|confirmar|confirma|isso|pode|pode\s+(?:sim|ser)|(?:pode\s+)?(?:cancelar|cancela|excluir|exclui|apagar|apaga|remover|remove|concluir|conclui)(?:\s+(?:isso|esse|essa|ele|ela))?)[.!]?$/;
+// "não", "não, deixa", "não quero": começou com não, é recusa.
+const RECUSA_CANCELAMENTO = /^(?:nao|não)\b/;
+
+function respostaAoCancelamento(text) {
+  const normalized = normalizeFinancialText(text).replace(/[!?]+$/g, '');
+  if (RECUSA_CANCELAMENTO.test(normalized)) return 'recusa';
+  const semAbertura = normalized.replace(ABERTURA_AFIRMATIVA, '').replace(FECHO_AFIRMATIVO, '').trim() || normalized;
+  if (CONFIRMA_CANCELAMENTO.test(normalized) || CONFIRMA_CANCELAMENTO.test(semAbertura)) return 'confirma';
+  if (classifyPendingActionReply(text) === 'confirm') return 'confirma';
+  return 'outra';
+}
 
 const PENDING_TYPES = Object.freeze({
   CREATE: 'agenda_create',
@@ -1472,6 +1502,28 @@ function matchesTitle(item, subject) {
   return expected && candidate.includes(expected);
 }
 
+// Palavras que não distinguem um compromisso de outro.
+const PALAVRAS_DE_LIGACAO = new Set(['com', 'para', 'pra', 'das', 'dos', 'uma', 'que', 'sobre', 'meu', 'minha', 'nos', 'nas']);
+
+function palavrasDistintivas(subject) {
+  return normalizeIdentity(subject)
+    .split(' ')
+    .filter((palavra) => palavra.length >= 3 && !PALAVRAS_DE_LIGACAO.has(palavra));
+}
+
+// O alvo do modelo é como a pessoa chamou o compromisso ("Consulta no
+// dentista"), não o título salvo ("Dentista"). Primeiro valem os itens com
+// todas as palavras do alvo; sem nenhum, qualquer palavra distintiva basta,
+// e mais de um candidato cai na desambiguação.
+function filtrarPeloAlvo(items, subject) {
+  const palavras = palavrasDistintivas(subject);
+  if (palavras.length === 0) return items.filter((item) => matchesTitle(item, subject));
+  const texto = (item) => normalizeIdentity(`${item.title ?? ''} ${item.description ?? ''}`);
+  const todas = items.filter((item) => palavras.every((palavra) => texto(item).includes(palavra)));
+  if (todas.length > 0) return todas;
+  return items.filter((item) => palavras.some((palavra) => texto(item).includes(palavra)));
+}
+
 function selectUniqueCandidate(items, text) {
   const normalized = normalizeIdentity(text);
   const ordinalMatch = normalized.match(/\b(?:opcao\s+)?(1|2|3|primeir[oa]|segund[oa]|terceir[oa])\b/);
@@ -1699,15 +1751,18 @@ export function createAgendaConversationFlow({
     return result;
   }
 
-  async function findCandidates(identity, { subject, date }) {
+  // porPalavras: o assunto veio do modelo, não da frase; casa por palavras.
+  async function findCandidates(identity, { subject, date, porPalavras = false }) {
     const result = await services.listAgendaItems(identity.workspaceId, {
       ...(date ? dateBounds(date) : {}),
       status: 'scheduled',
     });
     if (result.error) return result;
+    const items = result.data ?? [];
+    if (!subject) return { ...result, data: items };
     return {
       ...result,
-      data: (result.data ?? []).filter((item) => !subject || matchesTitle(item, subject)),
+      data: porPalavras ? filtrarPeloAlvo(items, subject) : items.filter((item) => matchesTitle(item, subject)),
     };
   }
 
@@ -1759,7 +1814,12 @@ export function createAgendaConversationFlow({
     if (!active) return null;
     const normalized = normalizeFinancialText(text);
 
-    if (/^(?:cancela|cancelar|deixa|deixa pra la|nao quero|nao agenda(?:r)?)[.!]?$/.test(normalized)) {
+    // "Cancela." respondendo a "Quer mesmo cancelar X?" é a confirmação,
+    // tratada no ramo da pendência; aqui só vale para as outras pendências.
+    if (
+      active.type !== PENDING_TYPES.CANCEL
+      && /^(?:cancela|cancelar|deixa|deixa pra la|nao quero|nao agenda(?:r)?)[.!]?$/.test(normalized)
+    ) {
       if (active.type === PENDING_TYPES.CREATE) {
         await clearCreationOperation(identity, active.fields.clientOperationId);
       }
@@ -1967,17 +2027,19 @@ export function createAgendaConversationFlow({
     }
 
     if (active.type === PENDING_TYPES.CANCEL) {
-      if (/^(?:nao|não)[.!]?$/.test(normalized)) {
+      const resposta = respostaAoCancelamento(text);
+      if (resposta === 'recusa') {
         const transition = cancelPendingAction(stack, active.id, { cascade: true });
         setStack(identity, transition.stack);
         return { handled: true, text: 'Tudo bem. Mantive o compromisso na sua agenda.' };
       }
-      if (/^(?:sim|confirmo|pode|pode cancelar|confirmar)[.!]?$/.test(normalized)) {
+      if (resposta === 'confirma') {
         const result = await executeSelected(identity, active.fields.action, active.fields.item);
         finishPending(identity, active, result);
         return result;
       }
-      return { handled: true, text: `Quer mesmo cancelar ${active.fields.item.title}? Responda “sim” ou “não”.` };
+      const verbo = active.fields.action === 'delete' ? 'excluir' : 'cancelar';
+      return { handled: true, text: `Quer mesmo ${verbo} ${active.fields.item.title}? Responda “sim” ou “não”.` };
     }
 
     if (active.type === PENDING_TYPES.DISAMBIGUATE) {
@@ -2008,7 +2070,8 @@ export function createAgendaConversationFlow({
   }
 
   // interpretado: { titulo } do uni-interpret (#142). Com ele, o título não
-  // sai da regex.
+  // sai da regex. Com { acao, alvo } (#191), o ramo e o compromisso alvo
+  // também não: a regex só decide quando não há interpretação.
   async function handleInternal({ text, identity, referenceDate, origin = 'text', interpretado = null }) {
     if (!identity?.userId || !identity?.workspaceId || !identity?.conversationId) {
       return { handled: true, text: 'Não consegui identificar seu espaço atual. Atualize a página e tente novamente.' };
@@ -2018,7 +2081,13 @@ export function createAgendaConversationFlow({
     const analyticsOrigin = origin === 'voice'
       ? GA4_PRODUCT_ORIGINS.VOICE
       : GA4_PRODUCT_ORIGINS.MANUAL;
-    const classification = classifyIntent(agendaText);
+    const acaoInterpretada = ACAO_INTERPRETADA[interpretado?.acao] ?? null;
+    const classification = acaoInterpretada
+      ? { intent: acaoInterpretada.intent, confidence: 1, signals: ['uni_interpret'] }
+      : classifyIntent(agendaText);
+    const alvoInterpretado = typeof interpretado?.alvo === 'string' && interpretado.alvo.trim()
+      ? interpretado.alvo.trim()
+      : null;
     const currentStack = getStack(identity);
     const currentPending = currentStack ? getActivePendingAction(currentStack) : null;
     if (shouldSupersedePending(currentPending, classification, agendaText, referenceDate)) {
@@ -2110,18 +2179,21 @@ export function createAgendaConversationFlow({
     }
 
     const normalizedText = normalizeFinancialText(agendaText);
-    const action = classification.intent === 'agenda_edit'
+    const action = acaoInterpretada?.action ?? (classification.intent === 'agenda_edit'
       ? 'edit'
       : classification.intent === 'agenda_complete'
         ? 'complete'
         : /\b(?:excluir|exclui|remover|remove)\b/.test(normalizedText)
           ? 'delete'
-          : 'cancel';
+          : 'cancel');
     if (action === 'edit') {
       const timeAnalysis = analyzeAgendaTime(agendaText, { allowContextual: true });
       if (timeAnalysis.invalid) return { handled: true, text: INVALID_TIME_CORRECTION_TEXT };
-      const subject = extractEditTargetSubject(agendaText);
+      const subject = alvoInterpretado ?? extractEditTargetSubject(agendaText);
       const changes = extractEditChanges(agendaText, referenceDate, timeAnalysis);
+      // O nome novo vem do modelo quando ele leu um; a regex só completa
+      // data e horário.
+      if (interpretado?.titulo) changes.title = interpretado.titulo;
       if (!subject) {
         await startPending(identity, PENDING_TYPES.EDIT, {
           item: null,
@@ -2137,6 +2209,7 @@ export function createAgendaConversationFlow({
       const candidates = await findCandidates(identity, {
         subject,
         date: extractEditTargetDate(agendaText, referenceDate),
+        porPalavras: Boolean(alvoInterpretado),
       });
       if (candidates.error) return { handled: true, text: serviceErrorText(candidates.error) };
       if (!candidates.data.length) return { handled: true, text: 'Não encontrei esse compromisso na sua agenda.' };
@@ -2165,9 +2238,9 @@ export function createAgendaConversationFlow({
       return executeSelected(identity, action, candidates.data[0], changes);
     }
 
-    const subject = extractTitle(agendaText);
+    const subject = alvoInterpretado ?? extractTitle(agendaText);
     const date = resolveAgendaDate(agendaText, referenceDate);
-    const candidates = await findCandidates(identity, { subject, date });
+    const candidates = await findCandidates(identity, { subject, date, porPalavras: Boolean(alvoInterpretado) });
     if (candidates.error) return { handled: true, text: serviceErrorText(candidates.error) };
     if (!candidates.data.length) return { handled: true, text: 'Não encontrei esse compromisso na sua agenda.' };
     if (candidates.data.length > 1) {

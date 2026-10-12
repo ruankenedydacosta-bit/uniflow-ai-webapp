@@ -112,6 +112,7 @@ function CompactResponse({
   onConfirmAction,
   onEditAction,
   onCancelAction,
+  onUndoAction,
   editForm = null,
   onSaveEditAction,
   interactionState,
@@ -306,7 +307,16 @@ function CompactResponse({
           {displayedProcessingMessage}
         </p>
       ) : (isVoicePresentation || showHomeReply) && lastUni?.text ? (
-        <p className={styles.uniResponse}>{uniDisplayText}</p>
+        <>
+          <p className={styles.uniResponse}>{uniDisplayText}</p>
+          {/* Exclusão recente (#189): o botão fica enquanto o chat ainda
+              consegue trazer o lançamento de volta. */}
+          {lastUni.undo?.status === 'available' && typeof onUndoAction === 'function' ? (
+            <OutlineButton variant="secondary" onClick={() => onUndoAction(lastUni.id)} disabled={isExecuting}>
+              Desfazer
+            </OutlineButton>
+          ) : null}
+        </>
       ) : null}
       {/* HOTFIX P1.4: "Ouvir resposta" removido do card compacto da Home --
           o fluxo principal aqui é sempre automático (autoplay). O botão
@@ -350,6 +360,7 @@ function SimplifiedHomeView({
   onBeforeVoiceStart,
   onConfirmAction,
   onCancelAction,
+  onUndoAction,
   editForm = null,
   onSaveEditAction,
   onWelcomeVoiceSettled,
@@ -888,6 +899,12 @@ function SimplifiedHomeView({
     onCancelAction(id);
   }
 
+  function handleCardUndo(id) {
+    realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.UNDO);
+    markHomeReply();
+    onUndoAction(id);
+  }
+
   function handleCardSaveEdit(id, overrides) {
     realtime.announceScreenAction(REALTIME_SCREEN_ACTIONS.EDIT);
     markHomeReply();
@@ -905,6 +922,7 @@ function SimplifiedHomeView({
       onConfirmAction={handleCardConfirm}
       onEditAction={() => navigate(SIMPLIFIED_ROUTES.UNI)}
       onCancelAction={handleCardCancel}
+      onUndoAction={handleCardUndo}
       interactionState={interactionState}
       voiceStatus={voiceController.status}
       voiceCaptureStatus={voiceInput.status}

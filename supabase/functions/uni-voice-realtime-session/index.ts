@@ -44,13 +44,15 @@ const UNI_REALTIME_INSTRUCTIONS = [
   'Pronuncie à brasileira marcas e bancos usados no Brasil, como Pix, Nubank, Itaú, iFood e Mercado Pago.',
   'Se a pessoa pausar no meio de uma frase, espere ela terminar. Não complete a frase por ela.',
   'Se for interrompida, pare e responda ao que a pessoa acabou de dizer.',
-  'Tudo que envolve dinheiro, categorias ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, mexer na agenda, corrigir um rascunho, alterar um lançamento já registrado e criar, renomear ou excluir categoria. Passe a frase da pessoa como ela disse, sem resumir nem completar, sem aspas e sem acrescentar explicação ou finalidade.',
+  'Tudo que envolve dinheiro, categorias ou compromissos passa pela ferramenta enviar_para_uni: registrar gasto, receita ou transferência, consultar saldo, gastos ou contas, listar lançamentos ou categorias, mexer na agenda, corrigir um rascunho, alterar ou excluir um lançamento já registrado e criar, renomear ou excluir categoria. Passe a frase da pessoa como ela disse, sem resumir nem completar, sem aspas e sem acrescentar explicação ou finalidade.',
   'Para alterar um lançamento já registrado, como "corrige o mercado de ontem pra cinquenta" ou "o Uber de segunda foi no Nubank", passe a frase com enviar_para_uni. Se a Uni listar vários lançamentos e perguntar qual, passe a resposta da pessoa com enviar_para_uni.',
+  'Para excluir um lançamento já registrado, como "apaga o Uber de ontem" ou "tira esse último, foi engano", passe a frase com enviar_para_uni. A Uni mostra um card com o lançamento: diga o que é, o valor e o dia, e pergunte se pode excluir. Quando a pessoa aceitar ou recusar, use responder_rascunho. Se logo depois de excluir a pessoa disser que foi engano ou pedir para desfazer, passe "desfazer" com enviar_para_uni.',
   'Com um rascunho ou uma alteração aguardando confirmação, quando a pessoa aceitar com qualquer palavra, como "manda ver", "fechou" ou "uhum, pode", chame responder_rascunho com acao confirmar. Se ela desistir do rascunho, use cancelar. Se desistir de tudo, inclusive da conta ou categoria que seria criada, use cancelar_tudo.',
   'Só confirme quando a pessoa aceitar com clareza. Se a resposta for ambígua, pergunte antes.',
   'Para mudar valor, conta, categoria, data ou descrição do rascunho, passe a frase com enviar_para_uni. Se a pessoa só disser que quer editar, pergunte o que ela quer mudar.',
   'Se a resposta propõe criar uma conta ou uma categoria, diga o nome exatamente como veio na resposta e pergunte se pode criar. Se o nome não for o que a pessoa pediu, não confirme: passe a correção dela com enviar_para_uni.',
   'Para criar, renomear ou excluir uma categoria, passe a frase com enviar_para_uni. A Uni mostra um card: diga o que vai mudar, com o nome exato que veio na resposta, e pergunte se pode confirmar. Quando a pessoa aceitar ou recusar, use responder_rascunho.',
+  'Para marcar, remarcar, cancelar, concluir ou excluir um compromisso, passe a frase com enviar_para_uni. Se a Uni perguntar qual compromisso, ou se pode mesmo cancelar ou excluir, passe a resposta da pessoa com enviar_para_uni, sem responder_rascunho: compromisso não tem card.',
   'Depois da ferramenta, fale só o essencial da resposta, em uma frase. Pule o que a pessoa já sabe e perguntas de fechamento como "quer que eu faça mais alguma coisa?". Se a resposta listar opções para a pessoa escolher, como os lançamentos encontrados, diga todas. Não acrescente valores, datas, categorias nem contas que não estejam na resposta.',
   'Se a resposta disser que há um rascunho aguardando confirmação, diga o valor, o que é e a conta, e pergunte se pode confirmar. Se for a alteração de um lançamento já registrado, diga o campo que muda, como estava e como fica, e pergunte se pode confirmar. O resto está no card da tela: só leia se a pessoa pedir.',
   'Se a resposta da ferramenta trouxer um aviso, siga o aviso.',
@@ -119,7 +121,7 @@ async function sha256Hex(input: string) {
 const SEND_TO_UNI_TOOL = {
   type: 'function',
   name: 'enviar_para_uni',
-  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra e altera lançamentos, cria, renomeia e exclui categorias, consulta saldo, gastos e contas, cuida da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
+  description: 'Envia a frase da pessoa ao assistente financeiro da Uni, que registra, altera e exclui lançamentos, cria, renomeia e exclui categorias, consulta saldo, gastos e contas, lista lançamentos e categorias, marca, remarca, cancela, conclui e exclui compromissos da agenda e corrige rascunhos. Devolve a resposta a ser falada e se há rascunho aguardando confirmação.',
   parameters: {
     type: 'object',
     properties: {
@@ -157,7 +159,7 @@ const SAVE_NAME_PRONUNCIATION_TOOL = {
 const ANSWER_DRAFT_TOOL = {
   type: 'function',
   name: 'responder_rascunho',
-  description: 'Confirma ou cancela o rascunho, a alteração de lançamento ou o pedido de categoria que está aguardando confirmação na tela, como se a pessoa tocasse no card. Use quando a pessoa aceitar ou recusar o rascunho, com quaisquer palavras. Devolve a resposta a ser falada.',
+  description: 'Confirma ou cancela o rascunho, a alteração ou exclusão de lançamento ou o pedido de categoria que está aguardando confirmação na tela, como se a pessoa tocasse no card. Use quando a pessoa aceitar ou recusar o rascunho, com quaisquer palavras. Devolve a resposta a ser falada.',
   parameters: {
     type: 'object',
     properties: {

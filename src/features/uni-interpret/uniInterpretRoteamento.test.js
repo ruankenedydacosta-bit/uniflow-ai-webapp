@@ -298,6 +298,29 @@ test('agenda: título do modelo com o valor formatado', () => {
   );
 });
 
+// #191: ação sobre um compromisso que já existe vai inteira ao fluxo da agenda.
+test('agenda: ação sobre compromisso existente leva ação, alvo e, só em editar, o nome novo', () => {
+  const agenda = (campos) => ({ intent: 'agenda', operacoes: [], agenda: campos, resposta: '' });
+  assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ acao: 'cancelar', alvo: ' Almoço com a Carla ', titulo: null, valor: null })),
+    { acao: 'cancelar', alvo: 'Almoço com a Carla', titulo: null },
+  );
+  assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João', valor: null })),
+    { acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João' },
+  );
+  assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ acao: 'excluir', alvo: null, titulo: 'Dentista', valor: 50 })),
+    { acao: 'excluir', alvo: null, titulo: null },
+    'fora de editar, o título do modelo não vale e o valor não entra',
+  );
+  assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ acao: 'criar', alvo: null, titulo: 'Dentista', valor: null })),
+    { titulo: 'Dentista' },
+    'criar segue o caminho do título',
+  );
+});
+
 test('agenda: sem título do modelo, ou de uma função anterior ao contrato, a regex segue', () => {
   assert.equal(interpretacaoParaAgenda({ intent: 'agenda', operacoes: [], agenda: { titulo: '  ', valor: 50 }, resposta: '' }), null);
   assert.equal(interpretacaoParaAgenda({ intent: 'agenda', operacoes: [], resposta: '' }), null);
@@ -320,4 +343,12 @@ test('pedido de categoria vai para a rota própria; sem ação, não entendi', (
     ROTAS_INTERPRETACAO.CATEGORIA,
   );
   assert.equal(escolherRotaDaInterpretacao({ intent: 'categoria', operacoes: [], resposta: '' }), ROTAS_INTERPRETACAO.NAO_ENTENDI);
+});
+
+test('exclusão de lançamento vai para a rota própria; sem o bloco (função antiga), as regras seguem', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'exclusao', operacoes: [], resposta: '', exclusao: { alvo: 'Uber', data: null, valor: null, conta: null, ultimo: false, lote: false } }),
+    ROTAS_INTERPRETACAO.EXCLUSAO,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'exclusao', operacoes: [], resposta: '' }), null);
 });

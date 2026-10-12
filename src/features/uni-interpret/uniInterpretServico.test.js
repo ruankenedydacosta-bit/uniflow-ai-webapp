@@ -171,7 +171,7 @@ test('agenda: devolve título e valor do compromisso', async () => {
     chamarModelo,
   });
   assert.equal(resultado.corpo.intent, 'agenda');
-  assert.deepEqual(resultado.corpo.agenda, { titulo: 'Pagar mensalidade das escolas', valor: 2500 });
+  assert.deepEqual(resultado.corpo.agenda, { acao: null, alvo: null, titulo: 'Pagar mensalidade das escolas', valor: 2500 });
   assert.deepEqual(resultado.corpo.operacoes, []);
 });
 
@@ -189,6 +189,26 @@ test('categoria: devolve a ação, o tipo, o alvo só com id e nome, e o nome no
   });
   assert.equal(resultado.corpo.intent, 'categoria');
   assert.deepEqual(resultado.corpo.categoria, { acao: 'renomear', tipo: 'saida', alvo: { id: 'cat-edu', name: 'Educação' }, nome: 'Escola' });
+});
+
+test('exclusao: devolve os critérios com a conta só com id e nome', async () => {
+  const { chamarModelo } = modeloQueResponde({
+    intent: 'exclusao',
+    operacoes: [],
+    resposta: '',
+    exclusao: { alvo: 'Uber', data: '2026-10-01', valor: null, conta: 'k1', ultimo: false, lote: false },
+  });
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'apaga o Uber de ontem no Nubank' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo,
+    agora: AGORA,
+  });
+  assert.equal(resultado.corpo.intent, 'exclusao');
+  assert.deepEqual(resultado.corpo.exclusao, {
+    alvo: 'Uber', data: '2026-10-01', valor: null, conta: { id: 'conta-nu', name: 'Nubank' }, ultimo: false, lote: false,
+  });
+  assert.deepEqual(resultado.corpo.operacoes, []);
 });
 
 test('falha do provedor vira status próprio e a métrica não leva a frase', async () => {

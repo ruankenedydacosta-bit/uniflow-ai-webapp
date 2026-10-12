@@ -76,6 +76,9 @@ function serializar(validada) {
     ...(categoria ? {
       categoria: { acao: categoria.acao, tipo: categoria.tipo, alvo: paraCliente(categoria.alvo), nome: categoria.nome },
     } : {}),
+    ...(validada.exclusao ? {
+      exclusao: { ...validada.exclusao, conta: paraCliente(validada.exclusao.conta) },
+    } : {}),
     ...(consulta ? {
       consulta: {
         tipo: consulta.tipo,
