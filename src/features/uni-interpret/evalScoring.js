@@ -53,7 +53,8 @@ function mesmoFiltro(filtros = [{}], obtido) {
 
 function avaliarConsulta(esperado, obtido) {
   if (!obtido || esperado.tipo !== obtido.tipo) return false;
-  if (esperado.tipo === 'outra') return true;
+  // outra vai para as regras e categorias não tem filtro: basta o tipo.
+  if (esperado.tipo === 'outra' || esperado.tipo === 'categorias') return true;
   return mesmoPeriodo(esperado, obtido) && mesmoFiltro(esperado.filtros, obtido);
 }
 
@@ -71,13 +72,21 @@ function avaliarTitulo(palavras, titulo) {
     && !RESTO_DE_PEDIDO.test(normalizado);
 }
 
-// Pedido de categoria ou de exclusão: a ação certa e, quando o caso diz, o
-// nome e o alvo, sem acento e caixa. Na exclusão (#189), `palavras` são as
-// que o alvo precisa ter, e data, valor, ultimo e lote batem exatos.
+// Pedido de categoria, de agenda ou de exclusão: a ação certa e, quando o
+// caso diz, o nome e o alvo, sem acento e caixa. Alvo em lista (#191) ou
+// `palavras` (#189) são as palavras que o texto precisa ter: o modelo chama o
+// item como a pessoa chamou, não como está salvo. Na exclusão, data, valor,
+// ultimo e lote batem exatos.
 function avaliarPedido(esperado, obtido) {
   if (!obtido || obtido.acao !== esperado.acao) return false;
-  const textoIgual = ['nome', 'alvo'].every((campo) => esperado[campo] === undefined
-    || normalizeSearchText(obtido[campo] ?? '') === normalizeSearchText(esperado[campo]));
+  const textoIgual = ['nome', 'alvo'].every((campo) => {
+    if (esperado[campo] === undefined) return true;
+    const texto = normalizeSearchText(obtido[campo] ?? '');
+    if (Array.isArray(esperado[campo])) {
+      return esperado[campo].every((palavra) => texto.includes(normalizeSearchText(palavra)));
+    }
+    return texto === normalizeSearchText(esperado[campo]);
+  });
   const palavras = esperado.palavras === undefined
     || esperado.palavras.every((palavra) => normalizeSearchText(obtido.alvo ?? '').includes(normalizeSearchText(palavra)));
   const exatos = ['data', 'valor', 'ultimo', 'lote'].every((campo) => esperado[campo] === undefined
@@ -156,6 +165,10 @@ function pedidoDaInterpretacao(validada) {
   if (validada.exclusao) {
     const { alvo, data, valor, conta, ultimo, lote } = validada.exclusao;
     return { acao: 'excluir_lancamento', alvo, data, valor, conta: conta?.name ?? null, ultimo, lote };
+  }
+  // Criar segue a régua do título; o pedido é só sobre item existente (#191).
+  if (validada.agenda?.acao && validada.agenda.acao !== 'criar') {
+    return { acao: validada.agenda.acao, nome: validada.agenda.titulo, alvo: validada.agenda.alvo };
   }
   return null;
 }

@@ -171,7 +171,7 @@ test('agenda: devolve título e valor do compromisso', async () => {
     chamarModelo,
   });
   assert.equal(resultado.corpo.intent, 'agenda');
-  assert.deepEqual(resultado.corpo.agenda, { titulo: 'Pagar mensalidade das escolas', valor: 2500 });
+  assert.deepEqual(resultado.corpo.agenda, { acao: null, alvo: null, titulo: 'Pagar mensalidade das escolas', valor: 2500 });
   assert.deepEqual(resultado.corpo.operacoes, []);
 });
 

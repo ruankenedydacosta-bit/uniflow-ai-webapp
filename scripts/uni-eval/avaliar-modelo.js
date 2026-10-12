@@ -134,7 +134,7 @@ for (const caso of casosDoConjunto) {
     console.log(`      exclusao | alvo: ${alvo ?? '-'} | ${data ?? '-'} | ${valor ?? '-'} | ${conta ?? '-'}${ultimo ? ' | último' : ''}${lote ? ' | lote' : ''}`);
   } else if (resultado.pedido) {
     const { acao, nome, alvo } = resultado.pedido;
-    console.log(`      categoria ${acao} | alvo: ${alvo ?? '-'} | nome: ${nome ?? '-'}`);
+    console.log(`      ${resultado.intent} ${acao} | alvo: ${alvo ?? '-'} | nome: ${nome ?? '-'}`);
   }
   if (resultado.consulta) {
     const { tipo, inicio, fim, categoria, termo } = resultado.consulta;

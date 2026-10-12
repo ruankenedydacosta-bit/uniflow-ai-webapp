@@ -14,9 +14,11 @@
 // esperado.data: ISO; ausente quando a frase não fala de data (vale hoje).
 // esperado.titulo: em agenda, palavras que o título precisa ter (#142).
 // esperado.pedido: em categoria, a ação (criar, renomear, excluir) e,
-//   quando importa, o nome e o alvo, sem acento e caixa. Em exclusao (#189),
-//   acao 'excluir_lancamento' com as palavras que o alvo precisa ter e, quando
-//   importa, data, valor, ultimo e lote.
+//   quando importa, o nome e o alvo, sem acento e caixa. Em agenda (#191), a
+//   ação (editar, cancelar, concluir, excluir) e as palavras que o alvo
+//   precisa ter. Em exclusao (#189), acao 'excluir_lancamento' com as
+//   palavras que o alvo precisa ter e, quando importa, data, valor, ultimo e
+//   lote.
 //
 // Data de referência de todos os casos: sexta, 02/10/2026.
 //
@@ -756,6 +758,37 @@ export const CASOS = [
       },
     },
   },
+  // #190: ver os lançamentos em si, não o total.
+  {
+    id: 'consulta-lista-uber',
+    frase: 'quais foram meus gastos com uber esse mês?',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'lancamentos', filtros: [{ termo: 'uber' }, { categoria: 'Transporte', termo: 'uber' }] },
+    },
+  },
+  {
+    id: 'consulta-lista-ontem',
+    frase: 'o que eu paguei ontem?',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'lancamentos', inicio: '2026-10-01', fim: '2026-10-01' },
+    },
+  },
+  {
+    id: 'consulta-lista-entradas-setembro',
+    reservado: true,
+    frase: 'me mostra as entradas de setembro',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'lancamentos', inicio: '2026-09-01', fim: '2026-09-30' },
+    },
+  },
+  {
+    id: 'consulta-categorias',
+    frase: 'quais categorias eu tenho?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'categorias' } },
+  },
   {
     id: 'consulta-maior-gasto',
     reservado: true,
@@ -868,6 +901,34 @@ export const CASOS = [
     id: 'categoria-nova-com-valor',
     frase: 'registrar uma despesa de cinco mil e quinhentos reais no dia primeiro de outubro com a categoria Impostos',
     esperado: { intent: 'lancar_saida', valor: 5500, novaCategoria: 'Impostos', data: '2026-10-01' },
+  },
+  // Ação sobre um compromisso já marcado (#191): a régua confere a ação e as
+  // palavras do alvo; data e hora seguem com o parser da agenda.
+  {
+    id: 'agenda-cancelar-dentista',
+    frase: 'Cancela a consulta no dentista de quinta',
+    esperado: { intent: 'agenda', pedido: { acao: 'cancelar', alvo: ['dentista'] } },
+  },
+  {
+    id: 'agenda-remarcar-contador',
+    frase: 'Remarca a reunião com o contador pra terça às 14h',
+    esperado: { intent: 'agenda', pedido: { acao: 'editar', alvo: ['reunião', 'contador'] } },
+  },
+  {
+    id: 'agenda-concluir-reuniao',
+    frase: 'Pode marcar a reunião de ontem como concluída',
+    esperado: { intent: 'agenda', pedido: { acao: 'concluir', alvo: ['reunião'] } },
+  },
+  {
+    id: 'agenda-excluir-vacina',
+    frase: 'Apaga o lembrete da vacina do cachorro',
+    esperado: { intent: 'agenda', pedido: { acao: 'excluir', alvo: ['vacina'] } },
+  },
+  {
+    id: 'agenda-desmarcar-almoco',
+    reservado: true,
+    frase: 'desmarca o jantar com a Bia de sábado',
+    esperado: { intent: 'agenda', pedido: { acao: 'cancelar', alvo: ['jantar', 'bia'] } },
   },
   // Workspace empresa.
   {

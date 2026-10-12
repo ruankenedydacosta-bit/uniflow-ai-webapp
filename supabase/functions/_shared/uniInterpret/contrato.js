@@ -16,12 +16,17 @@ export const INTENTS = Object.freeze([
   'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
-// Consulta que o app responde com os parâmetros (#80). 'outra' (meta, contas
-// a pagar, maior gasto, comparação...) segue para as regras de consulta.
-export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'outra']);
+// Consulta que o app responde com os parâmetros (#80). 'lancamentos' lista
+// os itens em vez de somar e 'categorias' lista o catálogo (#190). 'outra'
+// (meta, contas a pagar, maior gasto, comparação...) segue para as regras de
+// consulta.
+export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'lancamentos', 'categorias', 'outra']);
 // Criar, renomear ou excluir uma categoria pela conversa. O app confere
 // permissão, nome repetido e categoria padrão antes de mostrar o card.
 export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
+// O que fazer com um compromisso (#191). Cancelar muda o status; excluir
+// apaga. Fora de criar, o app localiza o compromisso pelo alvo.
+export const ACOES_AGENDA = Object.freeze(['criar', 'editar', 'cancelar', 'concluir', 'excluir']);
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -97,12 +102,15 @@ const ESQUEMA_CONSULTA = {
 
 // Compromisso ou lembrete (#142). Data e hora continuam com o parser da
 // agenda no app; o modelo devolve o que a regex não consegue: o título como a
-// pessoa escreveria e o valor citado.
+// pessoa escreveria e o valor citado. Em #191, também a ação sobre um
+// compromisso que já existe e como a pessoa o chamou.
 const ESQUEMA_AGENDA = {
   type: 'object',
   additionalProperties: false,
-  required: ['titulo', 'valor'],
+  required: ['acao', 'alvo', 'titulo', 'valor'],
   properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_AGENDA, null] },
+    alvo: { ...TEXTO_OU_NULO, description: 'compromisso já marcado que muda, sai ou foi feito, como a pessoa o chamou' },
     titulo: TEXTO_OU_NULO,
     valor: { type: ['number', 'null'] },
   },
@@ -281,15 +289,20 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   const ajustes = [];
   let tipo = TIPOS_CONSULTA.includes(bruta?.tipo) ? bruta.tipo : 'outra';
 
+  // O catálogo não tem período nem filtro: o que vier junto é ignorado.
+  if (tipo === 'categorias') {
+    return { tipo, inicio: null, fim: null, categoria: null, conta: null, termo: null, ajustes: [] };
+  }
+
   const { inicio, fim, problema } = validarPeriodo(bruta, dataReferencia);
   if (problema) ajustes.push(problema);
 
   // Categoria de outro tipo ("quanto gastei de salário") ou apelido inventado.
+  // A lista de lançamentos aceita categoria de qualquer tipo: ela não soma.
   const categoriaBruta = categoriasPorApelido.get(bruta?.categoria) ?? null;
   const categoryType = CATEGORY_TYPE_POR_TIPO_CONSULTA[tipo];
-  const categoria = categoriaBruta && categoryType && categoriaBruta.category_type === categoryType
-    ? categoriaBruta
-    : null;
+  const tipoCompativel = tipo === 'lancamentos' || (categoryType && categoriaBruta?.category_type === categoryType);
+  const categoria = categoriaBruta && tipoCompativel ? categoriaBruta : null;
   if (bruta?.categoria && !categoria) ajustes.push('categoria_descartada');
 
   const conta = contasPorApelido.get(bruta?.conta) ?? null;
@@ -304,16 +317,33 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   return { tipo, inicio, fim, categoria, conta, termo, ajustes };
 }
 
-// Título vazio vira null: o fluxo da agenda usa o parser próprio ou pergunta.
-// Título longo demais é cortado na última palavra inteira.
-function validarAgenda(bruta) {
-  const limpo = textoLimpo(bruta?.titulo, MAX_TITULO_AGENDA + 1);
+// Texto vazio vira null; longo demais é cortado na última palavra inteira.
+function tituloDeAgenda(valor) {
+  const limpo = textoLimpo(valor, MAX_TITULO_AGENDA + 1);
   const titulo = limpo.length > MAX_TITULO_AGENDA
     ? limpo.slice(0, MAX_TITULO_AGENDA).replace(/\s+\S*$/, '')
     : limpo;
+  return titulo || null;
+}
+
+function semAcentoNemCaixa(texto) {
+  return String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+// Título vazio vira null: o fluxo da agenda usa o parser próprio ou pergunta.
+// Ação fora da lista vira null, e o app segue como antes do campo existir.
+// Alvo só vale sobre um compromisso que já existe; em criar, é null. Título
+// só vale em criar e, em editar, como nome novo: igual ao alvo é eco do
+// modelo, e renomearia o compromisso numa remarcação.
+function validarAgenda(bruta) {
+  const acao = ACOES_AGENDA.includes(bruta?.acao) ? bruta.acao : null;
+  const alvo = acao && acao !== 'criar' ? tituloDeAgenda(bruta?.alvo) : null;
+  let titulo = tituloDeAgenda(bruta?.titulo);
+  if (acao && acao !== 'criar' && acao !== 'editar') titulo = null;
+  if (acao === 'editar' && titulo && alvo && semAcentoNemCaixa(titulo) === semAcentoNemCaixa(alvo)) titulo = null;
   const valorBruto = Number(bruta?.valor);
   const valor = Number.isFinite(valorBruto) ? Math.round(valorBruto * 100) / 100 : 0;
-  return { titulo: titulo || null, valor: valor > 0 ? valor : null };
+  return { acao, alvo, titulo, valor: valor > 0 ? valor : null };
 }
 
 // Apelido inventado vira alvo null, e o app diz que não achou a categoria.

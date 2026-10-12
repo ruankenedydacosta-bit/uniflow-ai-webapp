@@ -194,17 +194,43 @@ test('agenda: título limpo e valor positivo; vazio ou inválido vira null', () 
   assert.deepEqual(agenda({ titulo: '  Pagar mensalidade\ndas escolas ', valor: 2500.004 }), {
     intent: 'agenda',
     operacoes: [],
-    agenda: { titulo: 'Pagar mensalidade das escolas', valor: 2500 },
+    agenda: { acao: null, alvo: null, titulo: 'Pagar mensalidade das escolas', valor: 2500 },
     resposta: '',
   });
-  assert.deepEqual(agenda({ titulo: '   ', valor: 0 }).agenda, { titulo: null, valor: null });
-  assert.deepEqual(agenda({ titulo: null, valor: null }).agenda, { titulo: null, valor: null });
-  assert.deepEqual(agenda(undefined).agenda, { titulo: null, valor: null });
+  const vazio = { acao: null, alvo: null, titulo: null, valor: null };
+  assert.deepEqual(agenda({ titulo: '   ', valor: 0 }).agenda, vazio);
+  assert.deepEqual(agenda({ titulo: null, valor: null }).agenda, vazio);
+  assert.deepEqual(agenda(undefined).agenda, vazio);
   assert.equal(agenda({ titulo: 'x'.repeat(200), valor: null }).agenda.titulo.length, MAX_TITULO_AGENDA);
   const longo = agenda({ titulo: `Pagar ${'mensalidade '.repeat(10)}das escolas`, valor: null }).agenda.titulo;
   assert.ok(longo.length <= MAX_TITULO_AGENDA);
   assert.match(longo, /mensalidade$/, 'corta na palavra inteira');
   assert.equal(agenda({ titulo: 'Dentista', valor: 0.004 }).agenda.valor, null);
+});
+
+// #191: ação sobre um compromisso que já existe e como a pessoa o chamou.
+test('agenda: ação da lista e alvo limpo; ação inventada vira null e criar não leva alvo', () => {
+  const agenda = (campos) => validarInterpretacao({ intent: 'agenda', operacoes: [], agenda: campos, resposta: '' }, CONTEXTO).agenda;
+  assert.deepEqual(agenda({ acao: 'cancelar', alvo: ' Almoço  com a\nCarla ', titulo: null, valor: null }), {
+    acao: 'cancelar', alvo: 'Almoço com a Carla', titulo: null, valor: null,
+  });
+  assert.deepEqual(agenda({ acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João', valor: null }), {
+    acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João', valor: null,
+  });
+  assert.deepEqual(agenda({ acao: 'criar', alvo: 'Dentista', titulo: 'Dentista', valor: null }), {
+    acao: 'criar', alvo: null, titulo: 'Dentista', valor: null,
+  });
+  assert.deepEqual(agenda({ acao: 'apagar', alvo: 'Dentista', titulo: null, valor: null }), {
+    acao: null, alvo: null, titulo: null, valor: null,
+  });
+  assert.equal(agenda({ acao: 'excluir', alvo: 'x'.repeat(200), titulo: null, valor: null }).alvo.length, MAX_TITULO_AGENDA);
+  assert.deepEqual(agenda({ acao: 'concluir', alvo: '  ', titulo: null, valor: null }), {
+    acao: 'concluir', alvo: null, titulo: null, valor: null,
+  });
+  // Título só vale em criar e editar; em editar, igual ao alvo é eco.
+  assert.equal(agenda({ acao: 'excluir', alvo: null, titulo: 'Dentista', valor: null }).titulo, null);
+  assert.equal(agenda({ acao: 'editar', alvo: 'Reunião com o contador', titulo: 'reuniao com o Contador', valor: null }).titulo, null);
+  assert.equal(agenda({ acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João', valor: null }).titulo, 'Reunião com o João');
 });
 
 // #80, etapa 2b: o app público não ajusta saldo nem cria meta pela
@@ -428,4 +454,22 @@ test('exclusao: alvo limpo, data perto da referência, valor positivo e conta pe
     alvo: null, data: null, valor: null, conta: null, ultimo: false, lote: false,
   });
   assert.equal(validarInterpretacao(lancamento(operacao()), CONTEXTO).exclusao, undefined);
+});
+
+// #190: lista de lançamentos e catálogo de categorias.
+test('consulta lancamentos: aceita categoria de qualquer tipo e mantém os filtros', () => {
+  const { tipo, categoria, conta, termo, ajustes } = validarInterpretacao(
+    consulta({ tipo: 'lancamentos', categoria: C.sal, conta: K.cc, termo: 'Pix' }), CONTEXTO,
+  ).consulta;
+  assert.deepEqual({ tipo, categoria: categoria?.id, conta: conta?.id, termo, ajustes }, {
+    tipo: 'lancamentos', categoria: 'cat-sal', conta: 'conta-cc', termo: 'Pix', ajustes: [],
+  });
+  assert.equal(validarInterpretacao(consulta({ tipo: 'lancamentos', categoria: 'c99' }), CONTEXTO).consulta.tipo, 'outra');
+});
+
+test('consulta categorias: ignora período e filtros que vierem junto', () => {
+  const resultado = validarInterpretacao(
+    consulta({ tipo: 'categorias', inicio: '2030-01-01', fim: null, categoria: 'c99', termo: 'x' }), CONTEXTO,
+  ).consulta;
+  assert.deepEqual(resultado, { tipo: 'categorias', inicio: null, fim: null, categoria: null, conta: null, termo: null, ajustes: [] });
 });

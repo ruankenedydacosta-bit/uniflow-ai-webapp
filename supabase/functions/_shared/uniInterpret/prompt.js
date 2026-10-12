@@ -10,8 +10,8 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - lancamento: registrar dinheiro que saiu, entrou ou foi transferido entre contas do usuário. Vale mesmo sem verbo ("Spotify 21,90", "táxi 40 reais").
 - saldo: a pessoa pergunta ou informa quanto dinheiro há numa conta ("o saldo da conta corrente está em 2.300", "quanto sobrou no cartão de débito?"). Vale também para quem diz quanto dinheiro tem agora sem dizer que recebeu ("tô com 800 reais na conta"). Dinheiro que entrou é lancamento; conta a pagar é agenda ou lancamento.
 - meta: quer criar uma meta ou um objetivo de juntar dinheiro daqui para frente ("quero guardar 2 mil até dezembro"). Dinheiro que a pessoa já guardou ou separou é lancamento: transferencia, quando foi para uma poupança ou reserva dela. Perguntar sobre uma meta que já existe é consulta.
-- consulta: pergunta sobre os dados dele (gastos, entradas, quanto falta para uma meta).
-- agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento).
+- consulta: pergunta sobre os dados dele (gastos, entradas, quais lançamentos ou categorias tem, quanto falta para uma meta).
+- agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento). Vale também para remarcar, cancelar, concluir ou excluir um compromisso já marcado ("passa o dentista pra quinta", "desmarca o almoço com a Carla", "já fiz a reunião", "apaga o lembrete da vacina").
 - correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
 - categoria: criar, renomear ou excluir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
 - exclusao: apagar um lançamento já registrado ("apaga o iFood de ontem", "exclui o mercado de sábado", "tira esse último lançamento, foi engano", "apaga tudo que lancei em setembro"). Excluir uma categoria é categoria; cancelar um compromisso é agenda; desistir do <rascunho> é correcao.
@@ -36,7 +36,9 @@ Uma frase pode ter várias operações ("paguei 40 de táxi e 25 de lanche" são
 
 ## consulta
 Só quando o intent é consulta; nos outros, todos os campos são null.
-- tipo: saidas (quanto gastou ou pagou), entradas (quanto recebeu ou entrou), resumo (como foi o período, com entradas e saídas juntas) ou outra (qualquer outra pergunta: meta, contas a pagar, maior gasto, última movimentação, comparação entre períodos, previsão).
+- tipo: saidas (quanto gastou ou pagou, o total), entradas (quanto recebeu ou entrou, o total), resumo (como foi o período, com entradas e saídas juntas), lancamentos (a pessoa quer ver os lançamentos em si, não o total: "quais foram os gastos com Uber", "o que eu paguei na sexta", "lista as entradas de agosto", "o que comprei no mercado sábado"), categorias (quais categorias existem: "quais são as minhas categorias", "lista as categorias") ou outra (qualquer outra pergunta: meta, contas a pagar, maior gasto, última movimentação, comparação entre períodos, previsão).
+- "Quanto" pede um total: saidas ou entradas. "Quais", "o que", "me mostra" e "lista" pedem os itens: lancamentos, mesmo com "paguei" ou "gastei" na frase.
+- Em lancamentos, categoria, termo, conta e período filtram a lista do mesmo jeito que em saidas e entradas. Em categorias, todos os outros campos são null.
 - inicio e fim: o período perguntado, resolvido a partir de hoje, de AAAA-MM-DD a AAAA-MM-DD. Mês citado vai do dia 1 ao último dia; mês sem ano é o mais recente que já começou. Semana vai de segunda a domingo. "Desde março" termina hoje. Os dois são null quando a frase não fala de período: vale o mês atual.
 - categoria: apelido, só quando a pessoa pergunta por uma categoria do catálogo ou por um nome claro dela ("com saúde", "de transporte"), do tipo da pergunta.
 - termo: quando a pessoa pergunta por algo específico que não é uma categoria inteira (uma loja, um serviço, um item: "estacionamento", "Spotify"), a palavra como apareceria na descrição do lançamento. Nunca a categoria repetida. null nos outros casos.
@@ -44,9 +46,11 @@ Só quando o intent é consulta; nos outros, todos os campos são null.
 - Pergunta curta que continua a anterior do histórico ("e no outro mês?", "só no cartão") repete os campos que não mudaram.
 
 ## agenda
-Só quando o intent é agenda; nos outros, titulo e valor são null. Em agenda, operacoes fica vazia.
-- titulo: o compromisso como a pessoa escreveria na própria agenda, começando pelo que vai fazer, com acentos e inicial maiúscula. Sem o pedido ("me lembra", "marca", "anota", "eu vou ter que"), sem data, sem hora e sem valor. "Anota aí que na terça eu preciso levar o carro na revisão" vira "Levar o carro na revisão". Nomes de pessoas e lugares ficam.
-- Palavras no começo da frase que são o nome da Uni mal transcrito ("O meu", "Uni,") não entram no título.
+Só quando o intent é agenda; nos outros, todos os campos são null. Em agenda, operacoes fica vazia.
+- acao: criar quando marca algo novo. editar quando muda dia, horário ou nome de um compromisso já marcado ("remarca", "adia", "passa pra", "muda o horário"). cancelar quando desmarca ("cancela", "desmarca": o compromisso fica na agenda como cancelado). concluir quando a pessoa diz que já fez ("já fiz", "pode marcar como feito"). excluir quando pede para apagar ("apaga", "exclui", "tira da agenda").
+- alvo: em editar, cancelar, concluir e excluir, o compromisso que já existe, como a pessoa o chamou, com acentos e inicial maiúscula, sem o verbo, sem data e sem hora ("desmarca o almoço com a Carla de sexta" vira "Almoço com a Carla"). null em criar.
+- titulo: em criar, o compromisso como a pessoa escreveria na própria agenda, começando pelo que vai fazer, com acentos e inicial maiúscula. Sem o pedido ("me lembra", "marca", "anota", "eu vou ter que"), sem data, sem hora e sem valor. "Anota aí que na terça eu preciso levar o carro na revisão" vira "Levar o carro na revisão". Nomes de pessoas e lugares ficam. Em editar, só o nome novo quando a pessoa pede para mudar o nome do compromisso; senão null. Em cancelar, concluir e excluir, null.
+- Palavras no começo da frase que são o nome da Uni mal transcrito ("O meu", "Uni,") não entram no título nem no alvo.
 - titulo é null quando a frase não diz do que se trata ("marca um compromisso pra sexta"): a Uni vai perguntar.
 - valor: em reais, quando a frase cita quanto pagar ou receber. null se não cita.
 

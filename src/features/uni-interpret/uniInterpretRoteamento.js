@@ -148,13 +148,30 @@ export function interpretacaoParaPlano(interpretacao) {
   return { operations, clarificationQuestion: null };
 }
 
+// Ações sobre um compromisso que já existe (#191). Criar segue o caminho do
+// título; função anterior ao campo não manda acao e cai no mesmo caminho.
+const ACOES_SOBRE_COMPROMISSO = new Set(['editar', 'cancelar', 'concluir', 'excluir']);
+
+function textoOuNulo(valor) {
+  const texto = typeof valor === 'string' ? valor.trim() : '';
+  return texto || null;
+}
+
 // Compromisso → campos que o fluxo da agenda usa no lugar da regex (#142).
 // O valor citado entra no título, que é o que aparece no Google Agenda e no
 // lembrete, a não ser que o título já traga um número. null quando o modelo não deu título: a regex tenta ou a Uni
-// pergunta.
+// pergunta. Com ação sobre um compromisso existente (#191), devolve a ação,
+// o alvo e, em editar, o nome novo; o fluxo da agenda localiza o item.
 export function interpretacaoParaAgenda(interpretacao) {
   if (escolherRotaDaInterpretacao(interpretacao) !== ROTAS_INTERPRETACAO.AGENDA) return null;
-  const titulo = typeof interpretacao.agenda?.titulo === 'string' ? interpretacao.agenda.titulo.trim() : '';
+  if (ACOES_SOBRE_COMPROMISSO.has(interpretacao.agenda?.acao)) {
+    return {
+      acao: interpretacao.agenda.acao,
+      alvo: textoOuNulo(interpretacao.agenda.alvo),
+      titulo: interpretacao.agenda.acao === 'editar' ? textoOuNulo(interpretacao.agenda.titulo) : null,
+    };
+  }
+  const titulo = textoOuNulo(interpretacao.agenda?.titulo) ?? '';
   if (!titulo) return null;
   const valor = Number(interpretacao.agenda.valor);
   if (Number.isFinite(valor) && valor > 0 && !/\d/.test(titulo)) {
