@@ -189,7 +189,7 @@ test('o hook guarda o resultado com a chave da consulta e busca de novo quando o
   assert.match(hook, /\} catch \{\n\s+next = \{ queryKey, items: NO_ITEMS, error: LOAD_ERROR \};/);
 });
 
-test('a busca das contas é enxuta: só despesa e receita válidas, só os campos da projeção', async () => {
+test('a busca das contas é enxuta: só despesa e receita previstas, só os campos da projeção', async () => {
   const service = await readFile(new URL('../../services/transactionService.js', import.meta.url), 'utf8');
   const fnBody = service.slice(
     service.indexOf('export async function listScheduledTransactionCandidates'),
@@ -197,7 +197,7 @@ test('a busca das contas é enxuta: só despesa e receita válidas, só os campo
   );
   assert.match(fnBody, /\.select\(SCHEDULED_TRANSACTION_FIELDS\)/);
   assert.match(fnBody, /\.in\('transaction_type', \['expense', 'income'\]\)/);
-  assert.match(fnBody, /\.not\('status', 'in', '\(canceled,failed\)'\)/);
+  assert.match(fnBody, /\.eq\('status', 'pending'\)/);
   assert.match(fnBody, /fetchAllPages\(/);
   assert.match(service, /const SCHEDULED_TRANSACTION_FIELDS =\n {2}'id, description, transaction_type, status, transaction_date, created_at, updated_at';/);
 });

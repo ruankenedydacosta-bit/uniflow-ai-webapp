@@ -29,13 +29,18 @@ import { animarLinhaNova } from './movimentoDeSalvar.js';
 import { useNumeroContado } from './useNumeroContado.js';
 import {
   buildCategorySummaries,
+  describePlannedTransaction,
   filterRecordTransactions,
   formatRelativeTransactionDate,
   getMonthRange,
   summarizeMonth,
+  summarizePlannedBalance,
+  summarizePlannedTotals,
   transactionNoticeDuration,
 } from './simplifiedRecordsData.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import PlannedDetailModal from './PlannedDetailModal.jsx';
+import { toDateKey } from './simplifiedAgendaCalendar.js';
 import styles from './simplifiedRecords.module.css';
 
 const PAGE_SIZE = 20;
@@ -160,7 +165,7 @@ function MonthSelector({ month, onChange }) {
 // gráfico acumulado. Não existe card público de Saldo.
 // `shownValues` e `valueRefs` vêm da página, que conta Entradas e Saídas
 // depois de salvar (#145). O rótulo de leitor de tela usa o valor real.
-function MonthlySummary({ onCardClick, shownValues, summary, transactions, monthRange, valueRefs }) {
+function MonthlySummary({ onCardClick, plannedTotals, plannedTransactions, shownValues, summary, transactions, monthRange, valueRefs }) {
   const cards = [
     { id: 'income', label: 'Entradas', value: summary.income, action: 'atualizar as entradas' },
     { id: 'expense', label: 'Saídas', value: summary.expense, action: 'atualizar as saídas' },
@@ -184,10 +189,15 @@ function MonthlySummary({ onCardClick, shownValues, summary, transactions, month
             <strong aria-hidden="true" ref={valueRefs[card.id]}>
               {card.id === 'agenda' ? card.detail : formatCurrency(shownValues[card.id])}
             </strong>
+            {plannedTotals?.[card.id] > 0 ? (
+              <small className={styles.summaryPlanned}>
+                {`+ ${formatCurrency(plannedTotals[card.id])} previsto`}
+              </small>
+            ) : null}
           </button>
         ))}
       </div>
-      <SimplifiedRecordsMonthChart transactions={transactions} monthRange={monthRange} />
+      <SimplifiedRecordsMonthChart transactions={transactions} monthRange={monthRange} plannedTransactions={plannedTransactions} />
     </section>
   );
 }
@@ -349,6 +359,8 @@ function TransactionRow({
   onEdit,
   onOpen,
   onRequestDelete,
+  onConfirmPlanned,
+  planned = false,
   transaction,
 }) {
   const [dragX, setDragX] = useState(0);
@@ -369,6 +381,9 @@ function TransactionRow({
 
   const isIncome = transaction.transaction_type === 'income';
   const isTransfer = transaction.transaction_type === 'transfer';
+  const plannedInfo = planned
+    ? describePlannedTransaction(transaction, categoryPresentation?.name ?? 'Outros')
+    : null;
   // BLOCO FINAL DO MVP (Saldo manual): "adjustment" pode ser positivo ou
   // negativo -- ao contrário de income/expense, o sinal correto vem de
   // adjustment_delta, nunca do tipo sozinho.
@@ -497,7 +512,7 @@ function TransactionRow({
         onPointerCancel={handlePointerCancel}
         aria-label={`${transaction.description}, ${formatCurrency(transaction.amount)}. Toque para editar, segure ou arraste para mais opções.`}
       >
-        <IconBox className={`${styles.transactionIcon} ${isIncome || isPositiveAdjustment ? styles.transactionIconIncome : ''}`}>
+        <IconBox className={`${styles.transactionIcon} ${isIncome || isPositiveAdjustment ? styles.transactionIconIncome : ''} ${planned ? styles.plannedIcon : ''}`}>
           <CategoryIcon category={{
             name: categoryPresentation?.name,
             category_type: isTransfer ? 'transfer' : transaction.transaction_type,
@@ -506,13 +521,34 @@ function TransactionRow({
         </IconBox>
         <span className={styles.transactionMain}>
           <strong>{transaction.description || categoryPresentation?.name || 'Outros'}</strong>
-          <small>
-            {`${formatRelativeTransactionDate(transaction.transaction_date)} · ${categoryPresentation?.name ?? 'Outros'}`}
-          </small>
+          {planned ? (
+            <small className={plannedInfo.due ? styles.plannedDue : undefined}>{plannedInfo.text}</small>
+          ) : (
+            <small>
+              {`${formatRelativeTransactionDate(transaction.transaction_date)} · ${categoryPresentation?.name ?? 'Outros'}`}
+            </small>
+          )}
         </span>
-        <b className={isIncome || isPositiveAdjustment ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
-          {isIncome || isPositiveAdjustment ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
-        </b>
+        {planned && onConfirmPlanned && plannedInfo.due ? (
+          <span
+            role="button"
+            tabIndex={0}
+            className={styles.plannedConfirm}
+            onClick={(event) => { event.stopPropagation(); onConfirmPlanned(transaction); }}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' && event.key !== ' ') return;
+              event.preventDefault();
+              event.stopPropagation();
+              onConfirmPlanned(transaction);
+            }}
+          >
+            Confirmar
+          </span>
+        ) : (
+          <b className={planned ? styles.plannedAmount : isIncome || isPositiveAdjustment ? styles.positiveAmount : isTransfer ? styles.transferAmount : styles.negativeAmount}>
+            {isIncome || isPositiveAdjustment ? '+' : isTransfer ? '' : '-'} {formatCurrency(transaction.amount)}
+          </b>
+        )}
         <button
           type="button"
           className={styles.rowMenuIcon}
@@ -535,7 +571,10 @@ function TransactionList({
   emptyMessage,
   onDelete,
   onEdit,
+  onConfirmPlanned,
+  onOpenPlanned,
   onShowAll,
+  plannedTransactions = [],
   showAllAction,
   transactions,
   visibleCount,
@@ -568,52 +607,80 @@ function TransactionList({
     closeRow();
   }
 
-  return (
-    <section className={styles.recordsSection} aria-labelledby="recent-transactions-title">
-      <div className={styles.sectionHeading}>
-        <h2 id="recent-transactions-title">
-          {showAllAction ? 'Transações recentes' : 'Histórico'}
-        </h2>
-        {showAllAction && transactions.length ? (
-          <button type="button" onClick={onShowAll}>Ver todas</button>
-        ) : null}
-      </div>
-      {visible.length ? (
-        <div className={styles.transactionList}>
-          {visible.map((transaction) => {
-            const isTransfer = transaction.transaction_type === 'transfer';
-            const category = categoryMap.get(transaction.category_id);
-            const categoryPresentation = buildCategorySummaries(
-              category ? [category] : [],
-              category ? [transaction] : [],
-            )[0];
+  function renderRow(transaction, planned) {
+    const isTransfer = transaction.transaction_type === 'transfer';
+    const category = categoryMap.get(transaction.category_id);
+    const categoryPresentation = buildCategorySummaries(
+      category ? [category] : [],
+      category ? [transaction] : [],
+    )[0];
 
-            return (
-              <TransactionRow
-                key={transaction.id}
-                canDelete={canDeleteTransaction(transaction)}
-                categoryPresentation={
-                  categoryPresentation
-                    ? { ...categoryPresentation, name: category?.name ?? (isTransfer ? 'Transferência' : 'Outros') }
-                    : { name: isTransfer ? 'Transferência' : 'Outros' }
-                }
-                isConfirmingDelete={confirmDeleteId === transaction.id}
-                isOpen={openRowId === transaction.id}
-                onCancelDelete={() => setConfirmDeleteId(null)}
-                onClose={closeRow}
-                onConfirmDelete={() => handleConfirmDelete(transaction)}
-                onEdit={(item) => { closeRow(); onEdit(item); }}
-                onOpen={() => setOpenRowId(transaction.id)}
-                onRequestDelete={() => handleRequestDelete(transaction)}
-                transaction={transaction}
-              />
-            );
-          })}
+    return (
+      <TransactionRow
+        key={transaction.id}
+        canDelete={canDeleteTransaction(transaction)}
+        categoryPresentation={
+          categoryPresentation
+            ? { ...categoryPresentation, name: category?.name ?? (isTransfer ? 'Transferência' : 'Outros') }
+            : { name: isTransfer ? 'Transferência' : 'Outros' }
+        }
+        isConfirmingDelete={confirmDeleteId === transaction.id}
+        isOpen={openRowId === transaction.id}
+        onCancelDelete={() => setConfirmDeleteId(null)}
+        onClose={closeRow}
+        onConfirmDelete={() => handleConfirmDelete(transaction)}
+        onEdit={(item) => { closeRow(); if (planned && onOpenPlanned) onOpenPlanned(item); else onEdit(item); }}
+        onOpen={() => setOpenRowId(transaction.id)}
+        onRequestDelete={() => handleRequestDelete(transaction)}
+        onConfirmPlanned={onConfirmPlanned}
+        planned={planned}
+        transaction={transaction}
+      />
+    );
+  }
+
+  const plannedBalance = summarizePlannedBalance(plannedTransactions);
+  const hasPlanned = plannedTransactions.length > 0;
+
+  return (
+    <>
+      {hasPlanned ? (
+        <section className={styles.recordsSection} aria-labelledby="planned-transactions-title">
+          <div className={styles.sectionHeading}>
+            <h2 id="planned-transactions-title">
+              {showAllAction ? 'Previstos' : `Previstos · ${plannedTransactions.length}`}
+            </h2>
+            {showAllAction ? (
+              <button type="button" onClick={onShowAll}>Ver todos</button>
+            ) : (
+              <span className={styles.plannedBalance}>
+                {`Saldo previsto ${plannedBalance < 0 ? '-' : '+'} ${formatCurrency(Math.abs(plannedBalance))}`}
+              </span>
+            )}
+          </div>
+          <div className={styles.transactionList}>
+            {plannedTransactions.map((transaction) => renderRow(transaction, true))}
+          </div>
+        </section>
+      ) : null}
+      <section className={styles.recordsSection} aria-labelledby="recent-transactions-title">
+        <div className={styles.sectionHeading}>
+          <h2 id="recent-transactions-title">
+            {showAllAction ? 'Transações recentes' : hasPlanned ? 'Realizados' : 'Histórico'}
+          </h2>
+          {showAllAction && transactions.length ? (
+            <button type="button" onClick={onShowAll}>Ver todas</button>
+          ) : null}
         </div>
-      ) : (
-        <div className={styles.inlineEmpty}>{emptyMessage}</div>
-      )}
-    </section>
+        {visible.length ? (
+          <div className={styles.transactionList}>
+            {visible.map((transaction) => renderRow(transaction, false))}
+          </div>
+        ) : (
+          <div className={styles.inlineEmpty}>{emptyMessage}</div>
+        )}
+      </section>
+    </>
   );
 }
 
@@ -682,6 +749,8 @@ function SimplifiedRecordsPage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
+  const [plannedDetail, setPlannedDetail] = useState(null);
+  const [plannedError, setPlannedError] = useState(null);
   const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [transactionSuccessNotice, setTransactionSuccessNotice] = useState(null);
   const transactionNoticeTimerRef = useRef(null);
@@ -717,6 +786,15 @@ function SimplifiedRecordsPage() {
     dateTo: month.dateTo,
     status: 'completed',
   });
+  // Previstos vencidos de meses anteriores continuam esperando confirmação,
+  // então no mês atual e nos futuros a busca não tem data inicial.
+  const todayKey = toDateKey(new Date());
+  const plannedState = useTransactions({
+    workspaceId: workspace?.id,
+    dateFrom: month.dateTo >= todayKey ? undefined : month.dateFrom,
+    dateTo: month.dateTo,
+    status: 'pending',
+  });
   const balanceState = useFinancialBalances({ workspaceId: workspace?.id });
   const budgetState = useCategoryBudgets({ workspaceId: workspace?.id });
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
@@ -732,10 +810,11 @@ function SimplifiedRecordsPage() {
       accountState.refresh(),
       categoryState.refresh(),
       transactionState.refresh(),
+      plannedState.refresh(),
       balanceState.refresh(),
       budgetState.refresh(),
     ]);
-  }, [accountState, balanceState, budgetState, categoryState, transactionState]);
+  }, [accountState, balanceState, budgetState, categoryState, plannedState, transactionState]);
 
   useEffect(() => {
     const handleDataChanged = (event) => {
@@ -744,13 +823,14 @@ function SimplifiedRecordsPage() {
         accountState.refresh(),
         categoryState.refresh(),
         transactionState.refresh(),
+        plannedState.refresh(),
         balanceState.refresh(),
         budgetState.refresh(),
       ]);
     };
     window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
     return () => window.removeEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
-  }, [accountState, balanceState, budgetState, categoryState, transactionState]);
+  }, [accountState, balanceState, budgetState, categoryState, plannedState, transactionState]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -781,6 +861,31 @@ function SimplifiedRecordsPage() {
     () => filterRecordTransactions(transactionState.transactions, filters),
     [filters, transactionState.transactions],
   );
+  const filteredPlanned = useMemo(
+    () => filterRecordTransactions(plannedState.transactions, { ...filters, sort: 'oldest', status: 'pending' }),
+    [filters, plannedState.transactions],
+  );
+  const monthPlanned = useMemo(
+    () => plannedState.transactions.filter(
+      (transaction) => transaction.transaction_date >= month.dateFrom,
+    ),
+    [month.dateFrom, plannedState.transactions],
+  );
+  const plannedTotals = useMemo(() => summarizePlannedTotals(monthPlanned), [monthPlanned]);
+  // Resumo: os 3 primeiros por data, com os vencidos no topo.
+  const summaryPlanned = useMemo(
+    () => filterRecordTransactions(plannedState.transactions, {
+      ...EMPTY_FILTERS,
+      sort: 'oldest',
+      status: 'pending',
+    }).slice(0, 3),
+    [plannedState.transactions],
+  );
+  // O formulário edita pelo id: precisa achar também os previstos.
+  const formTransactionState = useMemo(() => ({
+    ...transactionState,
+    transactions: [...transactionState.transactions, ...plannedState.transactions],
+  }), [plannedState.transactions, transactionState]);
   const accountsWithDerivedBalance = useMemo(() => {
     const balanceMap = new Map(
       balanceState.accountBalances.map((balance) => [balance.account_id, balance.derived_balance]),
@@ -881,6 +986,71 @@ function SimplifiedRecordsPage() {
     if (transactionState.isMutating || !canDeleteTransaction(transaction)) return;
     const result = await transactionState.removeTransaction(transaction.id);
     if (!result.error) await refresh();
+  }
+
+  // Confirmar grava como realizado com a data de hoje.
+  async function handleConfirmPlanned(transaction) {
+    if (transactionState.isMutating || !canManage) return false;
+    setPlannedError(null);
+    const result = await transactionState.saveTransaction(
+      { status: 'completed', transaction_date: toDateKey(new Date()) },
+      transaction.id,
+    );
+    if (result.error) {
+      const message = 'Não foi possível confirmar. Tente novamente.';
+      setPlannedError(message);
+      // Confirmar pela linha não abre o detalhe: o aviso vai para o toast.
+      if (!plannedDetail) showTransactionNotice(message);
+      return false;
+    }
+    await refresh();
+    showTransactionNotice(
+      transaction.transaction_type === 'income' ? 'Entrada recebida.' : 'Pagamento confirmado.',
+    );
+    return true;
+  }
+
+  function openPlannedDetail(transaction) {
+    setPlannedError(null);
+    setPlannedDetail(transaction);
+  }
+
+  async function handlePlannedFromDetail(action) {
+    if (!(await action())) return;
+    setPlannedDetail(null);
+  }
+
+  async function handleChangePlannedDate(transaction, transactionDate) {
+    if (transactionState.isMutating || !canManage) return false;
+    setPlannedError(null);
+    const result = await transactionState.saveTransaction({ transaction_date: transactionDate }, transaction.id);
+    if (result.error) {
+      setPlannedError('Não foi possível mudar a data. Tente novamente.');
+      return false;
+    }
+    await refresh();
+    showTransactionNotice('Data atualizada.');
+    return true;
+  }
+
+  async function handleDeletePlanned(transaction) {
+    if (transactionState.isMutating || !canDeleteTransaction(transaction)) return false;
+    setPlannedError(null);
+    // Parcela precisa do escopo (só esta, próximas, todas), que só o
+    // formulário completo oferece.
+    if (transaction.metadata?.installment_group_id) {
+      setPlannedDetail(null);
+      setTransactionDialog({ type: transaction.transaction_type, transactionId: transaction.id });
+      return false;
+    }
+    const result = await transactionState.removeTransaction(transaction.id);
+    if (result.error) {
+      setPlannedError('Não foi possível excluir. Tente novamente.');
+      return false;
+    }
+    await refresh();
+    showTransactionNotice('Previsto excluído.');
+    return true;
   }
 
   function showTransactionNotice(message) {
@@ -1046,6 +1216,8 @@ function SimplifiedRecordsPage() {
                     onCardClick={openSummaryCard}
                     transactions={transactionState.transactions}
                     monthRange={month}
+                    plannedTotals={plannedTotals}
+                    plannedTransactions={monthPlanned}
                   />
                   <TransactionList
                     categories={categoryState.categories}
@@ -1056,7 +1228,10 @@ function SimplifiedRecordsPage() {
                     })}
                     onDelete={handleQuickDelete}
                     canDeleteTransaction={canDeleteTransaction}
+                    onConfirmPlanned={handleConfirmPlanned}
+                    onOpenPlanned={openPlannedDetail}
                     onShowAll={() => setActiveTab('history')}
+                    plannedTransactions={summaryPlanned}
                     showAllAction
                     transactions={recentTransactions}
                     visibleCount={4}
@@ -1106,6 +1281,8 @@ function SimplifiedRecordsPage() {
                     onDelete={handleQuickDelete}
                     canDeleteTransaction={canDeleteTransaction}
                     showAllAction={false}
+                    onOpenPlanned={openPlannedDetail}
+                    plannedTransactions={filteredPlanned}
                     transactions={filteredTransactions}
                     visibleCount={visibleCount}
                   />
@@ -1142,6 +1319,35 @@ function SimplifiedRecordsPage() {
         />
       ) : null}
 
+      {plannedDetail ? (
+        <PlannedDetailModal
+          key={plannedDetail.id}
+          open
+          transaction={plannedDetail}
+          accountName={accountState.accounts.find((account) => account.id === plannedDetail.account_id)?.name}
+          categoryName={categoryState.categories.find((category) => category.id === plannedDetail.category_id)?.name
+            ?? (plannedDetail.transaction_type === 'transfer' ? 'Transferência' : 'Outros')}
+          icon={(
+            <CategoryIcon category={{
+              name: categoryState.categories.find((category) => category.id === plannedDetail.category_id)?.name,
+              category_type: plannedDetail.transaction_type,
+              icon: categoryState.categories.find((category) => category.id === plannedDetail.category_id)?.icon,
+            }}
+            />
+          )}
+          busy={transactionState.isMutating}
+          error={plannedError}
+          onClose={() => setPlannedDetail(null)}
+          onConfirm={() => void handlePlannedFromDetail(() => handleConfirmPlanned(plannedDetail))}
+          onChangeDate={(date) => void handlePlannedFromDetail(() => handleChangePlannedDate(plannedDetail, date))}
+          onDelete={() => void handlePlannedFromDetail(() => handleDeletePlanned(plannedDetail))}
+          onEdit={() => {
+            setTransactionDialog({ type: plannedDetail.transaction_type, transactionId: plannedDetail.id });
+            setPlannedDetail(null);
+          }}
+        />
+      ) : null}
+
       <FinanceTransactionModal
         key={`simplified-record-${transactionDialog?.type ?? 'closed'}-${transactionDialog?.transactionId ?? 'new'}`}
         open={Boolean(transactionDialog)}
@@ -1159,7 +1365,7 @@ function SimplifiedRecordsPage() {
         presentation="sheet"
         accountState={displayAccountState}
         categoryState={categoryState}
-        transactionState={transactionState}
+        transactionState={formTransactionState}
         className={styles.transactionDialogDark}
         overlayClassName={styles.darkOverlay}
       />
