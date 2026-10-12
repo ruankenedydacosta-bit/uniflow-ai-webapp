@@ -97,11 +97,6 @@
   margin: 0;
 }
 
-.stateTitle {
-  color: var(--uf-app-text);
-  font-size: 15px;
-  font-weight: var(--uf-font-weight-medium);
-}
 
 .errorBanner {
   display: flex;
