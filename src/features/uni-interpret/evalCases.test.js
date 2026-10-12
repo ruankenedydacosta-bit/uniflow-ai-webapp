@@ -5,7 +5,7 @@ import { catalogoDoWorkspace, metasDaAvaliacao } from './evalCatalog.js';
 import { CASOS } from './evalCases.js';
 import { avaliarCaso, INTENTS_DE_LANCAMENTO, resumirAvaliacao } from './evalScoring.js';
 
-const INTENTS_VALIDOS = new Set([...INTENTS_DE_LANCAMENTO, 'saldo', 'meta', 'consulta', 'agenda', 'categoria', 'conversa']);
+const INTENTS_VALIDOS = new Set([...INTENTS_DE_LANCAMENTO, 'saldo', 'meta', 'consulta', 'agenda', 'categoria', 'exclusao', 'conversa']);
 
 test('cada caso tem id único e intent conhecido', () => {
   const ids = CASOS.map((caso) => caso.id);
@@ -190,7 +190,7 @@ test('consulta esperada usa categoria do catálogo e período ISO em ordem', () 
   const nomes = new Set(catalogoDoWorkspace('personal').map((category) => category.name));
   for (const caso of CASOS.filter((item) => item.esperado.consulta)) {
     const { tipo, inicio, fim, filtros = [] } = caso.esperado.consulta;
-    assert.ok(['saidas', 'entradas', 'resumo', 'outra'].includes(tipo), `${caso.id}: tipo ${tipo}`);
+    assert.ok(['saidas', 'entradas', 'resumo', 'lancamentos', 'categorias', 'outra'].includes(tipo), `${caso.id}: tipo ${tipo}`);
     assert.equal(Boolean(inicio), Boolean(fim), `${caso.id}: período pela metade`);
     if (inicio) assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(inicio) && inicio <= fim, `${caso.id}: período inválido`);
     for (const filtro of filtros) {

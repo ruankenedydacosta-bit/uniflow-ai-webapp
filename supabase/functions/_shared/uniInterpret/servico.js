@@ -87,6 +87,9 @@ function serializar(validada) {
         ajustes: meta.ajustes,
       },
     } : {}),
+    ...(validada.exclusao ? {
+      exclusao: { ...validada.exclusao, conta: paraCliente(validada.exclusao.conta) },
+    } : {}),
     ...(consulta ? {
       consulta: {
         tipo: consulta.tipo,

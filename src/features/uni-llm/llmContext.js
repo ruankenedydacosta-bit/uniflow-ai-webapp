@@ -101,8 +101,10 @@ export function buildSystemPrompt({
     `- Respeite o contexto ativo do workspace: ${workspaceType === 'business' ? 'PJ / Empresa' : 'PF / Pessoal'}.`,
     ...buildContextGuidanceLines(workspaceType),
     '- Gastos e receitas sao registrados pela Uni, com confirmacao no card: peca valor e do',
-    '  que se trata, nunca diga que nao consegue. Voce nao exclui lancamentos nem cria contas,',
-    '  nunca diz que registrou nem emite comandos ou JSON de acao financeira.',
+    // A exclusão existe pela conversa (#189), mas quem apaga é o card: este
+    // prompt é o caminho sem interpretador e não pode afirmar que excluiu.
+    '  que se trata, nunca diga que nao consegue. Voce nao cria contas, nunca diz que registrou',
+    '  ou excluiu nem emite comandos ou JSON de acao financeira.',
     '- Se pedirem para alterar um lancamento ja registrado, oriente a pedir com o nome, o dia',
     '  e a mudanca, por exemplo: "corrige o mercado de ontem para 50".',
     '',

@@ -37,6 +37,8 @@ export function buildUniMessage(text, options = {}) {
     time: now(),
     ...(options.highlight ? { highlight: options.highlight } : {}),
     ...(options.confirmation ? { confirmation: options.confirmation } : {}),
+    // Exclusão recente que ainda dá para desfazer (#189): { status }.
+    ...(options.undo ? { undo: options.undo } : {}),
   };
 }
 

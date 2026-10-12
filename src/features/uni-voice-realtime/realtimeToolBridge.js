@@ -179,12 +179,15 @@ export const REALTIME_SCREEN_ACTIONS = Object.freeze({
   CONFIRM: 'confirm',
   CANCEL: 'cancel',
   EDIT: 'edit',
+  // Desfazer a exclusão de um lançamento (#189), pelo botão do aviso.
+  UNDO: 'undo',
 });
 
 const SCREEN_ACTION_DESCRIPTIONS = Object.freeze({
   [REALTIME_SCREEN_ACTIONS.CONFIRM]: 'tocou em Confirmar no card da tela',
   [REALTIME_SCREEN_ACTIONS.CANCEL]: 'tocou em Cancelar no card da tela',
   [REALTIME_SCREEN_ACTIONS.EDIT]: 'mudou os campos do card na tela e salvou',
+  [REALTIME_SCREEN_ACTIONS.UNDO]: 'tocou em Desfazer na tela para o lançamento excluído voltar',
 });
 
 const SCREEN_REPLY_MAX_LENGTH = 600;

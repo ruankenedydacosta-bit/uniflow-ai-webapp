@@ -504,12 +504,13 @@ export function textoDaAlteracao(transacao, campos) {
   return `Vou alterar ${nome} de ${formatarData(transacao.transaction_date)}: ${lista}. Posso confirmar?`;
 }
 
-export function textoDaEscolha(candidatos, total, { accounts = [] } = {}) {
+// verbo: o que a pessoa vai fazer com o escolhido ("alterar", "excluir").
+export function textoDaEscolha(candidatos, total, { accounts = [], verbo = 'alterar' } = {}) {
   const itens = candidatos.map((transacao, indice) => `${indice + 1}. ${descreverLancamento(transacao, { accounts })}`);
   const abertura = total > candidatos.length
     ? `Encontrei ${total} lançamentos assim. Os ${candidatos.length} mais recentes são:`
     : `Encontrei ${candidatos.length} lançamentos assim:`;
-  return `${abertura}\n${itens.join('\n')}\nQual deles você quer alterar?`;
+  return `${abertura}\n${itens.join('\n')}\nQual deles você quer ${verbo}?`;
 }
 
 export function textoDaAlteracaoFeita(transacao, campos) {
