@@ -79,12 +79,14 @@ import {
   textoDoPedidoFeito,
 } from '../uni-conversation/pedidoDeCategoria.js';
 import {
+  ACOES_DE_META,
   montarPedidoDeMeta,
   respostaAoPedidoDeMeta,
   textoDaConsultaDeMetas,
   metaTemDinheiro,
   textoDaMetaComAportes,
   textoDoPedidoDeMetaFeito,
+  textoDoErroDoMovimento,
 } from '../uni-conversation/pedidoDeMeta.js';
 import { listContributions } from '../goals/goalService.js';
 import { getCategoryErrorMessage } from '../categories/categoryUtils.js';
@@ -1638,8 +1640,13 @@ export default function UniChatPage({ variant = 'full' }) {
     metaPendenteRef.current = null;
   }
 
-  // Consultar responde na hora; criar, alterar e excluir montam o card. Meta
-  // com aporte não sai pela conversa: a tela Metas mostra o que iria junto.
+  function ehMovimentoDeMeta(acao) {
+    return acao === ACOES_DE_META.APORTAR || acao === ACOES_DE_META.RETIRAR;
+  }
+
+  // Consultar responde na hora; criar, alterar, excluir, aportar e retirar
+  // montam o card. Meta com aporte não sai pela conversa: a tela Metas
+  // mostra o que iria junto.
   async function iniciarPedidoDeMeta(pedidoDoModelo, turnToken) {
     // Toda confirmação no chat recarrega as metas (isLoading volta a true):
     // com a lista já em mãos, o pedido segue. Só a primeira carga espera.
@@ -1657,7 +1664,19 @@ export default function UniChatPage({ variant = 'full' }) {
       createAssistantResponse(textoDaConsultaDeMetas(pedidoDoModelo, { metas: goalsState.goals }), { deduplicateNarration: false });
       return;
     }
-    const pronto = montarPedidoDeMeta(pedidoDoModelo, { metas: goalsState.goals, hoje: getLocalIsoDate() });
+    const movimento = ehMovimentoDeMeta(pedidoDoModelo?.acao);
+    // A transferência do aporte depende das contas. Só a primeira carga
+    // conta como "sem contas": a recarga depois de um lançamento e o erro de
+    // uma gravação antiga mantêm a lista em mãos.
+    const contasSemLer = accountState.accounts.length === 0 && (accountState.isLoading || accountState.error);
+    const pronto = montarPedidoDeMeta(pedidoDoModelo, {
+      metas: goalsState.goals,
+      contas: contasSemLer ? null : accountState.activeAccounts,
+      hoje: getLocalIsoDate(),
+      // A mesma chave em toda tentativa deste card: um "sim" repetido ou uma
+      // nova tentativa depois de a resposta se perder não grava duas vezes.
+      clientOperationId: movimento ? globalThis.crypto?.randomUUID?.() ?? null : null,
+    });
     if (pronto.erro) {
       createAssistantResponse(pronto.erro, { deduplicateNarration: false });
       return;
@@ -1732,16 +1751,27 @@ export default function UniChatPage({ variant = 'full' }) {
     setIsExecutingAction(true);
     setExecutionError(null);
     try {
+      const movimento = ehMovimentoDeMeta(pronto.acao);
       let resultado;
       if (pronto.acao === 'criar') {
         resultado = await goalsState.addGoal(pronto.payload);
       } else if (pronto.acao === 'editar') {
         resultado = await goalsState.editGoal(pronto.meta.id, pronto.payload);
+      } else if (movimento) {
+        resultado = await goalsState.addGoalContribution(pronto.meta.id, pronto.payload);
       } else {
         resultado = await goalsState.removeGoal(pronto.meta.id);
       }
       if (resultado?.error) {
-        reportConfirmationError(messageId, 'Não consegui salvar a meta. Tente de novo ou use a tela Metas.');
+        // O hook guarda o erro da gravação como se fosse da leitura: sem
+        // limpar, todo pedido de meta seguinte diria que não leu as metas.
+        goalsState.clearError();
+        reportConfirmationError(
+          messageId,
+          movimento
+            ? textoDoErroDoMovimento(resultado.error, pronto.acao)
+            : 'Não consegui salvar a meta. Tente de novo ou use a tela Metas.',
+        );
         return;
       }
       // Gravou: o pedido acaba mesmo que a pessoa tenha trocado de conversa
@@ -1754,7 +1784,7 @@ export default function UniChatPage({ variant = 'full' }) {
       )));
       notifyFinancialDataChanged('uni-chat');
       if (activeIdRef.current !== pendente.conversationId) return;
-      createAssistantResponse(withFollowUpQuestion(textoDoPedidoDeMetaFeito(pronto)));
+      createAssistantResponse(withFollowUpQuestion(textoDoPedidoDeMetaFeito(pronto, { metaAtualizada: resultado?.data?.meta ?? null })));
     } catch {
       reportConfirmationError(messageId, 'Ocorreu um erro inesperado. Tente novamente.');
     } finally {

@@ -4,11 +4,19 @@
 // muda) e vira o card que a pessoa confirma, ou o texto da consulta. Quem
 // grava é o chat, depois do Confirmar, pelo mesmo hook da tela Metas.
 //
-// Aporte e retirada ficam para depois da #158: as regras de aporte (criar
-// transferência, conta vinculada, retirada bloqueada) ainda não existem.
+// Aporte e retirada (#161) seguem as regras da folha da tela (#158): a
+// transferência vai da conta escolhida para a conta vinculada da meta (na
+// retirada, o inverso), retirada maior que o guardado e meta concluída são
+// bloqueadas, e meta pausada só aceita retirada.
 import { normalizeSearchText } from '../../utils/searchText.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { calcRemaining, calcRequiredMonthlyAmount } from '../goals/goalCalc.js';
+import {
+  mensagemDoErro,
+  montarMovimento as montarMovimentoDaFolha,
+  MOVIMENTOS,
+  transferenciaDaMeta,
+} from '../goals/aporteDaMeta.js';
 import { classifyPendingActionReply } from './pendingActionInput.js';
 import { formatarData } from './edicaoDeLancamento.js';
 
@@ -20,13 +28,20 @@ export const ACOES_DE_META = Object.freeze({
   EDITAR: 'editar',
   EXCLUIR: 'excluir',
   CONSULTAR: 'consultar',
+  APORTAR: 'aportar',
+  RETIRAR: 'retirar',
 });
 
 const TITULO_DO_CARD = Object.freeze({
   criar: 'Criar meta',
   editar: 'Alterar meta',
   excluir: 'Excluir meta',
+  aportar: 'Registrar aporte',
+  retirar: 'Retirar da meta',
 });
+
+// Mais contas que isso na pergunta vira lista cansativa na voz.
+const MAX_CONTAS_NA_PERGUNTA = 4;
 
 const NOME_MAX = 60;
 // Mais que isso na voz vira lista cansativa: o resto fica na tela Metas.
@@ -51,13 +66,21 @@ function metasEmAberto(metas) {
 const ERRO_PRAZO = 'Não entendi o prazo. Diga uma data daqui para frente, como "até dezembro" ou "em julho do ano que vem".';
 
 // pedido: { acao, alvo: { id, name } | null, nome, valor, data, porMes,
-// ajustes } do uni-interpret. metas: as metas do espaço. Devolve { erro } com
-// o texto para a pessoa, ou o pedido pronto para o card. Consultar não passa
-// por aqui: veja textoDaConsultaDeMetas.
-export function montarPedidoDeMeta(pedido, { metas = [], hoje = null } = {}) {
+// conta, soNaMeta, ajustes } do uni-interpret. metas: as metas do espaço;
+// contas: as contas ativas, para a transferência do aporte, ou null quando
+// ainda não foi possível lê-las; clientOperationId: a chave de idempotência
+// do aporte. Devolve { erro } com o texto para a pessoa, ou o pedido pronto
+// para o card. Consultar não passa por aqui: veja textoDaConsultaDeMetas.
+export function montarPedidoDeMeta(pedido, {
+  metas = [], contas = [], hoje = null, clientOperationId = null,
+} = {}) {
   const acao = pedido?.acao;
   const abertas = metasEmAberto(metas);
   const ajustes = Array.isArray(pedido?.ajustes) ? pedido.ajustes : [];
+
+  if (acao === ACOES_DE_META.APORTAR || acao === ACOES_DE_META.RETIRAR) {
+    return montarMovimentoDaConversa(pedido, { metas, abertas, contas, hoje, ajustes, clientOperationId });
+  }
 
   if (acao === ACOES_DE_META.CRIAR) {
     const nome = nomeDeMeta(pedido.nome);
@@ -166,6 +189,127 @@ export function montarPedidoDeMeta(pedido, { metas = [], hoje = null } = {}) {
   };
 }
 
+// Por que o aporte não entra no Financeiro, numa frase que dá para falar.
+function motivoSemTransferencia(meta, transferencia) {
+  if (!transferencia.vinculada) {
+    return meta.linked_account_id ? 'a conta vinculada à meta foi arquivada' : 'a meta não tem conta vinculada';
+  }
+  return 'não há outra conta para a transferência';
+}
+
+function juntarComOu(partes) {
+  if (partes.length <= 1) return partes.join('');
+  return `${partes.slice(0, -1).join(', ')} ou ${partes.at(-1)}`;
+}
+
+function perguntaDaConta(meta, retirada, candidatas) {
+  const pergunta = retirada
+    ? `Para qual conta foi o dinheiro da meta ${meta.name}`
+    : `De qual conta saiu o dinheiro para a meta ${meta.name}`;
+  const opcoes = candidatas.length <= MAX_CONTAS_NA_PERGUNTA
+    ? `: ${juntarComOu(candidatas.map((conta) => conta.name))}?`
+    : '? Diga o nome da conta.';
+  return `${pergunta}${opcoes} Se não quiser lançar no Financeiro, diga "só na meta".`;
+}
+
+// Aporte ou retirada. Confere a meta, o valor, a data e a conta da
+// transferência antes do card; o banco confere tudo de novo ao gravar. O
+// payload sai do mesmo montarMovimento da folha da tela.
+function montarMovimentoDaConversa(pedido, { metas, abertas, contas, hoje, ajustes, clientOperationId }) {
+  const { acao } = pedido;
+  const retirada = acao === ACOES_DE_META.RETIRAR;
+  const meta = abertas.find((item) => item.id === pedido.alvo?.id) ?? null;
+  if (!meta) {
+    // O uni-interpret só vê as metas em aberto: a concluída chega pelo nome.
+    const dita = nomeDeMeta(pedido.nome);
+    const concluida = dita && (Array.isArray(metas) ? metas : []).find((item) => (
+      item && !item.archived_at && item.status === 'completed' && mesmoNome(item.name, dita)
+    ));
+    if (concluida) return { erro: `A meta ${concluida.name} está concluída e não recebe aporte nem retirada.` };
+    return { erro: textoDeMetaNaoEncontrada(pedido, abertas) };
+  }
+  if (!retirada && meta.status !== 'active') {
+    return { erro: `A meta ${meta.name} está pausada. Para registrar um aporte, retome a meta na tela Metas.` };
+  }
+  const valor = Number(pedido.valor) > 0 ? Math.round(Number(pedido.valor) * 100) / 100 : null;
+  if (!valor) {
+    return { erro: retirada ? `Quanto você quer tirar da meta ${meta.name}?` : `Quanto você guardou na meta ${meta.name}?` };
+  }
+  if (ajustes.includes('data_antiga')) {
+    return { erro: 'Essa data tem mais de um ano. Para registrar um movimento tão antigo, use a tela Metas.' };
+  }
+  // O servidor confere a data no fuso de São Paulo; o aparelho pode estar
+  // num dia antes.
+  if (ajustes.includes('data_descartada') || (pedido.data && hoje && pedido.data > hoje)) {
+    return { erro: 'Não entendi a data. Diga um dia até hoje, como "ontem" ou "dia 5".' };
+  }
+  const guardado = Number(meta.current_amount || 0);
+  if (retirada && valor > guardado) {
+    return { erro: `A retirada passa do valor guardado. A meta ${meta.name} tem ${formatCurrency(guardado)}.` };
+  }
+  const data = pedido.data || hoje;
+
+  let conta = null;
+  let semFinanceiro = null;
+  let transferencia = null;
+  if (pedido.soNaMeta) {
+    semFinanceiro = 'sem lançar no Financeiro';
+  } else if (contas === null && meta.linked_account_id) {
+    // Sem a lista, a conta vinculada pareceria arquivada e o aporte iria sem
+    // a transferência que a pessoa espera.
+    return { erro: 'Não consegui ler as suas contas agora. Tente de novo em instantes ou use a tela Metas.' };
+  } else {
+    transferencia = transferenciaDaMeta(meta, Array.isArray(contas) ? contas : []);
+    if (!transferencia.disponivel) {
+      semFinanceiro = `sem lançar no Financeiro: ${motivoSemTransferencia(meta, transferencia)}`;
+    } else if (pedido.conta) {
+      // Conta citada que não serve de outra ponta (a própria conta
+      // vinculada, ou uma arquivada): pergunta, em vez de trocar sem avisar.
+      conta = transferencia.contas.find((item) => item.id === pedido.conta.id) ?? null;
+    } else if (transferencia.contas.length === 1) {
+      // Com uma conta só do outro lado, ela já vem escolhida, como na folha.
+      [conta] = transferencia.contas;
+    }
+    if (transferencia.disponivel && !conta) return { erro: perguntaDaConta(meta, retirada, transferencia.contas) };
+  }
+
+  const vinculada = transferencia?.vinculada ?? null;
+  const [origem, destino] = retirada ? [vinculada, conta] : [conta, vinculada];
+  const depois = guardado + (retirada ? -valor : valor);
+  const rows = [
+    { label: 'Meta', value: meta.name },
+    { label: retirada ? 'Retirada' : 'Aporte', value: formatCurrency(valor), emphasis: true },
+    { label: 'Data', value: formatarData(data) },
+    { label: 'Financeiro', value: conta ? `Transferência de ${origem.name} para ${destino.name}` : 'Não lança' },
+    { label: 'Guardado depois', value: `${formatCurrency(depois)} de ${formatCurrency(meta.target_amount)}` },
+  ];
+  const quando = data && data !== hoje ? ` com data de ${formatarData(data)}` : '';
+  const comoFica = conta
+    ? ` e lançar a transferência de ${origem.name} para ${destino.name} no Financeiro`
+    : `, ${semFinanceiro}`;
+  const oQue = retirada
+    ? `Vou tirar ${formatCurrency(valor)} da meta ${meta.name}`
+    : `Vou registrar ${formatCurrency(valor)} na meta ${meta.name}`;
+  return {
+    acao,
+    meta,
+    nome: null,
+    conta,
+    origem: conta ? origem : null,
+    destino: conta ? destino : null,
+    payload: montarMovimentoDaFolha({
+      movimento: retirada ? MOVIMENTOS.RETIRADA : MOVIMENTOS.APORTE,
+      centavos: Math.round(valor * 100),
+      data,
+      observacao: '',
+      registrarNoFinanceiro: Boolean(conta),
+      contaId: conta?.id ?? null,
+    }, clientOperationId),
+    texto: `${oQue}${quando}${comoFica}. Posso registrar?`,
+    card: card(acao, rows),
+  };
+}
+
 function card(acao, rows) {
   return {
     title: TITULO_DO_CARD[acao],
@@ -243,10 +387,24 @@ export function textoDaMetaComAportes(meta, quantidade) {
   return `A meta ${meta.name} tem ${oQueTem}. Para excluir, abra a tela Metas: lá você vê o que seria apagado.`;
 }
 
-// O que a Uni diz depois de gravar. É este texto que a voz fala.
-export function textoDoPedidoDeMetaFeito(pronto) {
+// O que a Uni diz depois de gravar. É este texto que a voz fala. No aporte e
+// na retirada, metaAtualizada é a meta que o banco devolveu, com o valor
+// guardado novo.
+export function textoDoPedidoDeMetaFeito(pronto, { metaAtualizada = null } = {}) {
   if (pronto.acao === ACOES_DE_META.CRIAR) {
-    return `Meta ${pronto.nome} criada. Quando guardar dinheiro para ela, registre o aporte na tela Metas.`;
+    return `Meta ${pronto.nome} criada. Quando guardar dinheiro para ela, me diga quanto, como "guardei 200 na ${pronto.nome}".`;
+  }
+  if (pronto.acao === ACOES_DE_META.APORTAR || pronto.acao === ACOES_DE_META.RETIRAR) {
+    const valor = Math.abs(pronto.payload.amount);
+    const guardado = metaAtualizada?.current_amount ?? Number(pronto.meta.current_amount || 0) + pronto.payload.amount;
+    const alvo = metaAtualizada?.target_amount ?? pronto.meta.target_amount;
+    const feito = pronto.acao === ACOES_DE_META.RETIRAR
+      ? `Retirada de ${formatCurrency(valor)} registrada na meta ${pronto.meta.name}.`
+      : `Aporte de ${formatCurrency(valor)} registrado na meta ${pronto.meta.name}.`;
+    const transferencia = pronto.origem && pronto.destino
+      ? ` A transferência de ${pronto.origem.name} para ${pronto.destino.name} entrou no Financeiro.`
+      : '';
+    return `${feito} Agora ela tem ${formatCurrency(guardado)} de ${formatCurrency(alvo)}.${transferencia}`;
   }
   if (pronto.acao === ACOES_DE_META.EDITAR) {
     return `Meta ${pronto.nome ?? pronto.meta.name} alterada.`;
@@ -261,7 +419,19 @@ const VERBOS_DA_ACAO = Object.freeze({
   criar: String.raw`cri(?:ar|a|e)`,
   editar: String.raw`alter(?:ar|a|e)|muda(?:r)?|mude|edit(?:ar|a|e)|troca(?:r)?|troque`,
   excluir: String.raw`exclu(?:ir|i|a)|apag(?:ar|a|ue)|remov(?:er|e|a)|tir(?:ar|a|e)`,
+  aportar: String.raw`registr(?:ar|a|e)|guard(?:ar|a|e)|aport(?:ar|a|e)|coloc(?:ar|a)|coloque`,
+  retirar: String.raw`registr(?:ar|a|e)|tir(?:ar|a|e)|retir(?:ar|a|e)|sac(?:ar|a)|saque`,
 });
+
+// Erro do banco ao gravar o aporte ou a retirada, dito na conversa. A folha
+// da tela fala do interruptor "Registrar também no Financeiro", que a
+// conversa não tem.
+export function textoDoErroDoMovimento(error, acao) {
+  if (error?.message === 'meta_sem_conta_vinculada' || error?.message === 'conta_de_origem_invalida') {
+    return 'A conta vinculada à meta mudou. Peça de novo para eu conferir as contas.';
+  }
+  return mensagemDoErro(error, acao === ACOES_DE_META.RETIRAR ? MOVIMENTOS.RETIRADA : MOVIMENTOS.APORTE);
+}
 
 export function respostaAoPedidoDeMeta(texto, pronto) {
   const nome = pronto?.meta?.name ?? pronto?.nome ?? null;

@@ -20,7 +20,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { validarInterpretacao } from '../../supabase/functions/_shared/uniInterpret/contrato.js';
 import { INSTRUCOES, montarMensagemUsuario } from '../../supabase/functions/_shared/uniInterpret/prompt.js';
 import { interpretarComAnthropic, interpretarComOpenAi } from '../../supabase/functions/_shared/uniInterpret/provedores.js';
-import { catalogoDoWorkspace, metasDaAvaliacao } from '../../src/features/uni-interpret/evalCatalog.js';
+import { catalogoDoWorkspace, contasDaAvaliacao, metasDaAvaliacao } from '../../src/features/uni-interpret/evalCatalog.js';
 import { CASOS, DATA_REFERENCIA } from '../../src/features/uni-interpret/evalCases.js';
 import { avaliarCaso, normalizarInterpretacao, resumirAvaliacao } from '../../src/features/uni-interpret/evalScoring.js';
 
@@ -89,12 +89,15 @@ for (const caso of casosDoConjunto) {
   const workspaceType = caso.workspace ?? 'personal';
   const categorias = catalogoDoWorkspace(workspaceType);
   const metas = metasDaAvaliacao();
+  const contas = caso.contas ? contasDaAvaliacao() : [];
   const mensagem = montarMensagemUsuario({
     frase: caso.frase,
     dataReferencia: DATA_REFERENCIA,
     workspaceType,
     categorias,
+    contas,
     metas,
+    historico: caso.historico ?? [],
   });
 
   const inicio = performance.now();
@@ -114,7 +117,7 @@ for (const caso of casosDoConjunto) {
   }
 
   const validada = chamada.ok
-    ? validarInterpretacao(chamada.bruta, { categorias, metas, dataReferencia: DATA_REFERENCIA })
+    ? validarInterpretacao(chamada.bruta, { categorias, contas, metas, dataReferencia: DATA_REFERENCIA })
     : { intent: 'nao_entendi', operacoes: [], resposta: '' };
   const resultado = normalizarInterpretacao(validada, { limiarConfianca });
   const veredito = avaliarCaso(caso, resultado);
@@ -135,8 +138,8 @@ for (const caso of casosDoConjunto) {
     const { alvo, data, valor, conta, ultimo, lote } = resultado.pedido;
     console.log(`      exclusao | alvo: ${alvo ?? '-'} | ${data ?? '-'} | ${valor ?? '-'} | ${conta ?? '-'}${ultimo ? ' | último' : ''}${lote ? ' | lote' : ''}`);
   } else if (resultado.pedido) {
-    const { acao, nome, alvo } = resultado.pedido;
-    console.log(`      ${resultado.intent} ${acao} | alvo: ${alvo ?? '-'} | nome: ${nome ?? '-'}`);
+    const { acao, nome, alvo, valor, data, conta, soNaMeta } = resultado.pedido;
+    console.log(`      ${resultado.intent} ${acao} | alvo: ${alvo ?? '-'} | nome: ${nome ?? '-'} | ${valor ?? '-'} | ${data ?? '-'} | conta: ${conta ?? '-'}${soNaMeta ? ' | só na meta' : ''}`);
   }
   if (resultado.consulta) {
     const { tipo, inicio, fim, categoria, termo } = resultado.consulta;

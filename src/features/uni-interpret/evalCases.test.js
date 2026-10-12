@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { catalogoDoWorkspace, metasDaAvaliacao } from './evalCatalog.js';
+import { catalogoDoWorkspace, contasDaAvaliacao, metasDaAvaliacao } from './evalCatalog.js';
 import { CASOS } from './evalCases.js';
 import { avaliarCaso, INTENTS_DE_LANCAMENTO, resumirAvaliacao } from './evalScoring.js';
 
@@ -58,10 +58,26 @@ test('pedido de meta: alvo existe em metasDaAvaliacao e nome a criar não existe
   for (const caso of CASOS.filter((item) => item.esperado.intent === 'meta' && item.esperado.pedido)) {
     const { pedido } = caso;
     const { acao, alvo, nome } = caso.esperado.pedido;
-    assert.ok(['criar', 'editar', 'excluir', 'consultar'].includes(acao), `${caso.id}: ação ${acao}`);
+    assert.ok(['criar', 'editar', 'excluir', 'consultar', 'aportar', 'retirar'].includes(acao), `${caso.id}: ação ${acao}`);
     if (alvo !== undefined) assert.ok(nomes.includes(alvo), `${caso.id}: "${alvo}" fora das metas da avaliação`);
     if (acao === 'criar' && nome) assert.ok(!nomes.includes(nome), `${caso.id}: "${nome}" já existe`);
     assert.equal(pedido, undefined);
+  }
+});
+
+// #161: a conta esperada precisa estar nas contas que o caso manda ao
+// modelo, e o histórico tem o formato que o uni-interpret recebe.
+test('conta esperada e histórico: só com contas no caso e turnos bem formados', () => {
+  const contas = contasDaAvaliacao().map((conta) => conta.name);
+  for (const caso of CASOS) {
+    if ('contas' in caso) assert.equal(caso.contas, true, `${caso.id}: contas não é true`);
+    const conta = caso.esperado.pedido?.conta;
+    if (conta !== undefined && caso.esperado.pedido.acao !== 'excluir_lancamento') {
+      assert.ok(caso.contas && contas.includes(conta), `${caso.id}: "${conta}" fora das contas do caso`);
+    }
+    for (const turno of caso.historico ?? []) {
+      assert.ok(['usuario', 'uni'].includes(turno.autor) && typeof turno.texto === 'string' && turno.texto, `${caso.id}: turno inválido`);
+    }
   }
 });
 

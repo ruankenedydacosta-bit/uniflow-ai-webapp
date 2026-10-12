@@ -24,9 +24,9 @@ export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'la
 // Criar, renomear ou excluir uma categoria pela conversa. O app confere
 // permissão, nome repetido e categoria padrão antes de mostrar o card.
 export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
-// Pedido de meta pela conversa (#192). Aporte e retirada entram depois da
-// #158, quando as regras de aporte existirem.
-export const ACOES_META = Object.freeze(['criar', 'editar', 'excluir', 'consultar']);
+// Pedido de meta pela conversa (#192). Aportar e retirar (#161) registram
+// dinheiro guardado ou tirado de uma meta, com as regras da #158.
+export const ACOES_META = Object.freeze(['criar', 'editar', 'excluir', 'consultar', 'aportar', 'retirar']);
 // O que fazer com um compromisso (#191). Cancelar muda o status; excluir
 // apaga. Fora de criar, o app localiza o compromisso pelo alvo.
 export const ACOES_AGENDA = Object.freeze(['criar', 'editar', 'cancelar', 'concluir', 'excluir']);
@@ -52,6 +52,8 @@ export const MAX_TERMO = 40;
 export const MAX_NOME_META = 60;
 // Prazo de meta: até dez anos. Mais que isso é erro de leitura.
 export const MAX_DIAS_PRAZO_META = 3653;
+// Aporte e retirada: até um ano para trás, nunca no futuro.
+export const MAX_DIAS_MOVIMENTO_META = 366;
 // Como a pessoa descreveu o lançamento que quer excluir (#189).
 export const MAX_ALVO_EXCLUSAO = 80;
 
@@ -141,14 +143,16 @@ const ESQUEMA_CATEGORIA = {
 const ESQUEMA_META = {
   type: 'object',
   additionalProperties: false,
-  required: ['acao', 'alvo', 'nome', 'valor', 'data', 'por_mes'],
+  required: ['acao', 'alvo', 'nome', 'valor', 'data', 'por_mes', 'conta', 'so_na_meta'],
   properties: {
     acao: { type: ['string', 'null'], enum: [...ACOES_META, null] },
-    alvo: { ...TEXTO_OU_NULO, description: 'apelido da meta que muda, sai ou é consultada, ex.: m2' },
+    alvo: { ...TEXTO_OU_NULO, description: 'apelido da meta que muda, sai, é consultada ou recebe o aporte, ex.: m2' },
     nome: { ...TEXTO_OU_NULO, description: 'nome da meta nova ou nome novo' },
-    valor: { type: ['number', 'null'], description: 'quanto a pessoa quer juntar, em reais' },
-    data: { ...TEXTO_OU_NULO, description: 'prazo, AAAA-MM-DD' },
+    valor: { type: ['number', 'null'], description: 'quanto a pessoa quer juntar, ou quanto guardou ou tirou, em reais' },
+    data: { ...TEXTO_OU_NULO, description: 'prazo, ou o dia do aporte ou da retirada, AAAA-MM-DD' },
     por_mes: { type: ['number', 'null'], description: 'quanto guardar por mês, em reais' },
+    conta: { ...TEXTO_OU_NULO, description: 'apelido da conta de onde saiu ou para onde foi o dinheiro, ex.: k1' },
+    so_na_meta: { type: 'boolean', description: 'a pessoa pediu para não lançar no Financeiro' },
   },
 };
 
@@ -391,15 +395,30 @@ function valorPositivo(bruto) {
 // caso o nome fica com o que a pessoa disse, para a Uni dizer qual não
 // achou. Prazo no passado ou a mais de dez anos é erro de leitura e sai,
 // marcado para o app perguntar. Sem ação válida, o app responde como antes.
-function validarMeta(bruta, { metasPorApelido, dataReferencia }) {
+// Em aportar e retirar, a data é o dia do movimento (até hoje) e a conta é a
+// ponta da transferência que a pessoa citou.
+function validarMeta(bruta, { metasPorApelido, contasPorApelido, dataReferencia }) {
   const acao = ACOES_META.includes(bruta?.acao) ? bruta.acao : null;
   const alvo = acao && acao !== 'criar' ? metasPorApelido.get(bruta?.alvo) ?? null : null;
   const nomeDito = textoLimpo(bruta?.nome, MAX_NOME_META) || null;
-  const nome = (acao === 'excluir' || acao === 'consultar') && alvo ? null : nomeDito;
+  const movimento = acao === 'aportar' || acao === 'retirar';
+  const nome = (acao === 'excluir' || acao === 'consultar' || movimento) && alvo ? null : nomeDito;
   const ajustes = [];
 
   let data = null;
-  if (acao === 'criar' || acao === 'editar') {
+  if (movimento) {
+    // Mais de um ano para trás é data entendida, mas antiga demais para a
+    // conversa: marcada à parte, para o app dizer o motivo.
+    if (typeof bruta?.data === 'string' && bruta.data.trim()) {
+      if (!dataValida(bruta.data) || bruta.data > dataReferencia) {
+        ajustes.push('data_descartada');
+      } else if (distanciaEmDias(bruta.data, dataReferencia) > MAX_DIAS_MOVIMENTO_META) {
+        ajustes.push('data_antiga');
+      } else {
+        data = bruta.data;
+      }
+    }
+  } else if (acao === 'criar' || acao === 'editar') {
     // String vazia é "sem prazo", não prazo errado.
     if (typeof bruta?.data === 'string' && bruta.data.trim()) {
       if (dataValida(bruta.data) && bruta.data >= dataReferencia
@@ -415,9 +434,11 @@ function validarMeta(bruta, { metasPorApelido, dataReferencia }) {
     acao,
     alvo,
     nome,
-    valor: comValores ? valorPositivo(bruta?.valor) : null,
+    valor: comValores || movimento ? valorPositivo(bruta?.valor) : null,
     data,
     porMes: comValores ? valorPositivo(bruta?.por_mes) : null,
+    conta: movimento ? contasPorApelido.get(bruta?.conta) ?? null : null,
+    soNaMeta: movimento && bruta?.so_na_meta === true,
     ajustes,
   };
 }

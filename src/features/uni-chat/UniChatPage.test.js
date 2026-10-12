@@ -2166,6 +2166,23 @@ test('#192: pedido de meta com ação vai ao card ou à consulta, confirma e can
   assert.match(abandonar, /encerrarPedidoDeMeta\('expired'\)/);
 });
 
+// #161: aporte e retirada pela conversa gravam pela mesma função da folha.
+test('#161: aporte e retirada conferem as contas, gravam pelo hook da tela com chave de idempotência e falam o novo guardado', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body: iniciar } = extractFunctionBody(page, 'async function iniciarPedidoDeMeta(pedidoDoModelo, turnToken) {');
+  // Só a primeira carga das contas conta como "sem contas": recarga e erro
+  // de gravação antiga mantêm a lista.
+  assert.match(iniciar, /const contasSemLer = accountState\.accounts\.length === 0 && \(accountState\.isLoading \|\| accountState\.error\);/);
+  assert.match(iniciar, /montarPedidoDeMeta\(pedidoDoModelo, \{\s*metas: goalsState\.goals,\s*contas: contasSemLer \? null : accountState\.activeAccounts,/);
+  assert.match(iniciar, /clientOperationId: movimento \? globalThis\.crypto\?\.randomUUID\?\.\(\) \?\? null : null,/);
+  const { body: confirmar } = extractFunctionBody(page, 'async function confirmarPedidoDeMeta(id) {');
+  assert.match(confirmar, /goalsState\.addGoalContribution\(pronto\.meta\.id, pronto\.payload\)/);
+  // Erro da gravação não pode virar "não consegui ler as suas metas" no pedido seguinte.
+  assert.match(confirmar, /if \(resultado\?\.error\) \{\s*(?:\/\/[^\n]*\n\s*)*goalsState\.clearError\(\);/);
+  assert.match(confirmar, /textoDoErroDoMovimento\(resultado\.error, pronto\.acao\)/);
+  assert.match(confirmar, /textoDoPedidoDeMetaFeito\(pronto, \{ metaAtualizada: resultado\?\.data\?\.meta \?\? null \}\)/);
+});
+
 test('#80: consulta com parâmetros soma o período inteiro no banco; outra pergunta ou falha vai para as regras', async () => {
   const page = await source('UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');

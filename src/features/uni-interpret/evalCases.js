@@ -19,8 +19,11 @@
 //   precisa ter. Em exclusao (#189), acao 'excluir_lancamento' com as
 //   palavras que o alvo precisa ter e, quando importa, data, valor, ultimo e
 //   lote.
-//   Em meta (#192), a ação (criar, editar, excluir, consultar) e, quando
-//   importa, nome, alvo (uma das metas de metasDaAvaliacao), valor e data.
+//   Em meta (#192), a ação (criar, editar, excluir, consultar, aportar,
+//   retirar) e, quando importa, nome, alvo (uma das metas de
+//   metasDaAvaliacao), valor, data, conta (#161) e soNaMeta.
+// contas: true manda as contas de contasDaAvaliacao ao modelo. historico:
+//   os turnos anteriores da conversa, quando a frase responde à Uni.
 //
 // Data de referência de todos os casos: sexta, 02/10/2026.
 //
@@ -1162,6 +1165,78 @@ export const CASOS = [
     id: 'meta-excluir',
     frase: 'apaga a meta do notebook',
     esperado: { intent: 'meta', pedido: { acao: 'excluir', alvo: 'Notebook' } },
+  },
+  // Aporte e retirada pela conversa (#161). Guardar numa meta da lista é
+  // meta; guardar numa conta continua transferência (reserva-emergencia,
+  // joguei-poupanca).
+  {
+    id: 'meta-aportar',
+    frase: 'guardei 400 na viagem',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Viagem para o Chile', valor: 400 } },
+  },
+  {
+    id: 'meta-aportar-ontem',
+    frase: 'ontem coloquei mais 250 na meta do casamento',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Casamento', valor: 250, data: '2026-10-01' } },
+  },
+  {
+    id: 'meta-retirar',
+    frase: 'tirei 300 da viagem do Chile',
+    esperado: { intent: 'meta', pedido: { acao: 'retirar', alvo: 'Viagem para o Chile', valor: 300 } },
+  },
+  {
+    id: 'meta-aportar-conta',
+    contas: true,
+    frase: 'separei 500 do Nubank pro notebook',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Notebook', valor: 500, conta: 'Nubank' } },
+  },
+  {
+    id: 'meta-aportar-so-na-meta',
+    frase: 'guardei 200 na viagem, mas só na meta, não lança no financeiro',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Viagem para o Chile', valor: 200, soNaMeta: true } },
+  },
+  {
+    id: 'meta-resposta-conta',
+    contas: true,
+    historico: [
+      { autor: 'usuario', texto: 'guardei 400 na viagem' },
+      { autor: 'uni', texto: 'De qual conta saiu o dinheiro para a meta Viagem para o Chile: Nubank ou Itaú? Se não quiser lançar no Financeiro, diga "só na meta".' },
+    ],
+    frase: 'do Itaú',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Viagem para o Chile', valor: 400, conta: 'Itaú' } },
+  },
+  {
+    id: 'meta-correcao-card',
+    contas: true,
+    historico: [
+      { autor: 'usuario', texto: 'guardei 400 na viagem' },
+      { autor: 'uni', texto: 'Vou registrar R$ 400,00 na meta Viagem para o Chile e lançar a transferência de Nubank para Poupança no Financeiro. Posso registrar?' },
+    ],
+    frase: 'não, foi do Itaú',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Viagem para o Chile', valor: 400, conta: 'Itaú' } },
+  },
+  {
+    id: 'meta-depositei',
+    reservado: true,
+    frase: 'depositei 150 na meta do casamento',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Casamento', valor: 150 } },
+  },
+  {
+    id: 'meta-saquei',
+    reservado: true,
+    frase: 'saquei mil da meta da viagem pra pagar o conserto do carro',
+    esperado: { intent: 'meta', pedido: { acao: 'retirar', alvo: 'Viagem para o Chile', valor: 1000 } },
+  },
+  {
+    id: 'meta-resposta-so-na-meta',
+    reservado: true,
+    contas: true,
+    historico: [
+      { autor: 'usuario', texto: 'coloquei 300 no notebook' },
+      { autor: 'uni', texto: 'De qual conta saiu o dinheiro para a meta Notebook: Nubank, Itaú ou Poupança? Se não quiser lançar no Financeiro, diga "só na meta".' },
+    ],
+    frase: 'deixa só na meta mesmo',
+    esperado: { intent: 'meta', pedido: { acao: 'aportar', alvo: 'Notebook', valor: 300, soNaMeta: true } },
   },
   {
     id: 'meta-criar-por-mes',

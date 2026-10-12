@@ -68,3 +68,15 @@ const METAS = [
 export function metasDaAvaliacao() {
   return METAS.map(([id, name]) => ({ id, name }));
 }
+
+// Contas do workspace da avaliação (#161). Só os casos com `contas: true` as
+// mandam ao modelo, para não mudar o prompt dos casos que já existiam.
+const CONTAS = [
+  ['conta-01', 'Nubank'],
+  ['conta-02', 'Itaú'],
+  ['conta-03', 'Poupança'],
+];
+
+export function contasDaAvaliacao() {
+  return CONTAS.map(([id, name]) => ({ id, name }));
+}
