@@ -309,3 +309,20 @@ test('"a segunda" na lista é segunda-feira, não a segunda posição', () => {
   assert.equal(escolherCandidato('a segunda', lista, contexto), daSegunda);
   assert.equal(escolherCandidato('o segundo', lista, contexto), mercadoSemanaPassada);
 });
+
+test('mudar a data de um realizado para depois de hoje vira previsto, e o card mostra', () => {
+  const realizado = { ...mercadoOntem, status: 'completed' };
+  const alteracao = montarAlteracao(realizado, { date: '2026-10-15' }, contexto);
+  assert.deepEqual(alteracao.alteracoes, { transaction_date: '2026-10-15', status: 'pending' });
+  const linhas = semNbsp(linhasDaAlteracao(realizado, alteracao.campos, contexto));
+  assert.deepEqual(linhas.at(-1), {
+    key: 'edit-change-status', label: 'Situação', value: 'realizado → previsto', emphasis: true,
+  });
+});
+
+test('data de hoje ou passada não muda a situação', () => {
+  const realizado = { ...mercadoOntem, status: 'completed' };
+  assert.deepEqual(montarAlteracao(realizado, { date: HOJE }, contexto).alteracoes, { transaction_date: HOJE });
+  const previsto = { ...mercadoOntem, status: 'pending', transaction_date: '2026-10-20' };
+  assert.deepEqual(montarAlteracao(previsto, { date: '2026-10-25' }, contexto).alteracoes, { transaction_date: '2026-10-25' });
+});

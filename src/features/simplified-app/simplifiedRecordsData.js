@@ -238,9 +238,8 @@ export function describePlannedTransaction(transaction, categoryName, referenceD
     const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(date);
     return { due: false, text: `${day} · ${categoryName}` };
   }
-  if (daysLate === 0) return { due: true, text: 'Vence hoje · Confirme' };
-  if (daysLate === 1) return { due: true, text: 'Venceu ontem · Confirme' };
-  return { due: true, text: `Venceu há ${daysLate} dias · Confirme` };
+  const dueText = daysLate === 0 ? 'Vence hoje' : daysLate === 1 ? 'Venceu ontem' : `Venceu há ${daysLate} dias`;
+  return { due: true, dueText, text: `${dueText} · Confirme` };
 }
 
 // Saldo dos previstos: entradas somam, saídas subtraem, transferência não

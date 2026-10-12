@@ -61,6 +61,10 @@
   animation: avisoDesce var(--uf-motion-mola-salto-duracao) var(--uf-motion-mola-salto) both;
 }
 
+.transactionSuccessToast[data-tone='error'] {
+  border-color: color-mix(in srgb, var(--uf-app-danger) 50%, transparent);
+}
+
 .transactionSuccessToast span {
   width: 24px;
   height: 24px;
