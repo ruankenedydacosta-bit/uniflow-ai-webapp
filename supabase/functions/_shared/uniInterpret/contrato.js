@@ -263,6 +263,11 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   const ajustes = [];
   let tipo = TIPOS_CONSULTA.includes(bruta?.tipo) ? bruta.tipo : 'outra';
 
+  // O catálogo não tem período nem filtro: o que vier junto é ignorado.
+  if (tipo === 'categorias') {
+    return { tipo, inicio: null, fim: null, categoria: null, conta: null, termo: null, ajustes: [] };
+  }
+
   const { inicio, fim, problema } = validarPeriodo(bruta, dataReferencia);
   if (problema) ajustes.push(problema);
 
@@ -280,11 +285,6 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   const termo = textoLimpo(bruta?.termo, MAX_TERMO) || null;
   // O resumo soma tudo do período: não filtra por categoria nem por termo.
   if (tipo === 'resumo' && termo) ajustes.push('termo_no_resumo');
-
-  // O catálogo não tem período nem filtro: o que vier junto é ignorado.
-  if (tipo === 'categorias') {
-    return { tipo, inicio: null, fim: null, categoria: null, conta: null, termo: null, ajustes: [] };
-  }
 
   if (ajustes.length > 0) tipo = 'outra';
 
