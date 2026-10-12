@@ -1,7 +1,6 @@
 import { formatCurrency } from '../../utils/formatters.js';
-import { dataIsoLocal, MESES_MAXIMOS_DO_PLANO, somarMeses, textoDoMes } from './criacaoDeMeta.js';
-import { calcMesesAteAData } from './goalCalc.js';
-import { lerData } from './listaDeMetas.js';
+import { calcularPlano, MESES_MAXIMOS_DO_PLANO, textoDoMes } from './criacaoDeMeta.js';
+import { calcRemainingMonths, lerData } from './goalCalc.js';
 
 // Folha "Ajustar plano" (handoff 08g, #159), aberta quando a meta fica em
 // Atenção ou Atrasada. Cada opção traz o efeito calculado e as alterações
@@ -23,11 +22,6 @@ function centavos(valor) {
   return Math.round(Number(valor || 0) * 100);
 }
 
-// O mesmo formato da criação: a data-alvo é o último dia do mês do prazo.
-function ultimoDiaDoMes(data) {
-  return dataIsoLocal(new Date(data.getFullYear(), data.getMonth() + 1, 0));
-}
-
 function mesDaData(valor) {
   const data = lerData(valor);
   return data ? textoDoMes(data.getFullYear(), data.getMonth()) : null;
@@ -45,19 +39,20 @@ function ajusteMensal(falta, meses, mesDoPrazo) {
   };
 }
 
-// Mudar a data, com o valor por mês mantido.
-function ajusteDeData(falta, planejado, hoje) {
+// Mudar a data, com o valor por mês mantido. A conta é a da criação no modo
+// "Valor por mês": a data-alvo vira o último dia do mês em que o valor
+// cobre o que falta.
+function ajusteDeData(guardado, alvo, planejado, hoje) {
   const base = { value: AJUSTES.DATA, titulo: 'Mudar a data' };
   if (!planejado) return { ...base, descricao: 'A meta não tem valor por mês definido. Escolha antes quanto guardar por mês.', alteracoes: null };
-  const meses = Math.ceil(falta / planejado);
-  if (meses > MESES_MAXIMOS_DO_PLANO) {
+  const plano = calcularPlano({ alvo, guardado, modo: 'mensal', porMes: planejado, hoje });
+  if (!plano || plano.meses > MESES_MAXIMOS_DO_PLANO) {
     return { ...base, descricao: `Com ${formatCurrency(planejado)} por mês, a meta levaria mais de 50 anos.`, alteracoes: null };
   }
-  const fim = somarMeses(hoje, meses);
   return {
     ...base,
-    descricao: `Guardando ${formatCurrency(planejado)} por mês, você chega lá em ${textoDoMes(fim.getFullYear(), fim.getMonth())}.`,
-    alteracoes: { target_date: ultimoDiaDoMes(fim) },
+    descricao: `Guardando ${formatCurrency(planejado)} por mês, você chega lá em ${plano.textoDoPrazo}.`,
+    alteracoes: { target_date: plano.dataAlvo },
   };
 }
 
@@ -84,12 +79,12 @@ export function opcoesDeAjuste(meta, hoje = new Date()) {
   const alvo = Number(meta.target_amount || 0);
   const falta = Math.max(centavos(alvo) - centavos(guardado), 0) / 100;
   const planejado = Number(meta.planned_monthly_amount) > 0 ? Number(meta.planned_monthly_amount) : null;
-  const meses = calcMesesAteAData(meta.target_date, hoje) ?? 0;
+  const meses = calcRemainingMonths(meta.target_date, hoje) ?? 0;
   const mesDoPrazo = mesDaData(meta.target_date);
 
   return [
     ajusteMensal(falta, meses, mesDoPrazo),
-    ajusteDeData(falta, planejado, hoje),
+    ajusteDeData(guardado, alvo, planejado, hoje),
     ajusteDeValor(guardado, alvo, planejado, meses, mesDoPrazo),
     {
       value: AJUSTES.PAUSAR,

@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import ChoiceRow from '../../../components/ui/ChoiceRow';
 import Modal from '../../../components/ui/Modal';
 import OutlineButton from '../../../components/ui/OutlineButton';
@@ -8,15 +8,21 @@ import { calcRemaining } from '../goalCalc.js';
 // Mesma folha da criação de meta: diálogo, campos e rodapé iguais.
 import styles from './GoalCreateFlow.module.css';
 
-// Folha "Ajustar plano" (handoff 08g, #159). O pai monta o componente só
-// enquanto a folha está aberta, então cada abertura recalcula as opções.
-// `onSave` recebe as alterações do updateGoal e devolve o resultado.
+// Folha "Ajustar plano" (handoff 08g, #159). As opções acompanham a meta:
+// um aporte registrado pela Uni com a folha aberta muda o que falta e as
+// contas de cada opção. `onSave` recebe as alterações do updateGoal e
+// devolve o resultado.
 export default function GoalPlanAdjustSheet({ meta, onClose, onSave }) {
   const formId = useId();
   const nomeDoGrupo = useId();
   const [hoje] = useState(() => new Date());
-  const [opcoes] = useState(() => opcoesDeAjuste(meta, hoje));
-  const [escolha, setEscolha] = useState(() => primeiraOpcaoDisponivel(opcoes));
+  const opcoes = useMemo(() => opcoesDeAjuste(meta, hoje), [meta, hoje]);
+  const [escolhaDaPessoa, setEscolha] = useState(null);
+  // A escolha que ficou indisponível depois da mudança volta para a primeira
+  // opção disponível.
+  const escolha = opcoes.some((opcao) => opcao.value === escolhaDaPessoa && opcao.alteracoes)
+    ? escolhaDaPessoa
+    : primeiraOpcaoDisponivel(opcoes);
   const [erro, setErro] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const salvandoRef = useRef(false);

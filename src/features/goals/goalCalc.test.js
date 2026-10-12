@@ -5,7 +5,7 @@ import {
   calcRequiredMonthlyAmount, calcExpectedProgress, calcRhythmStatus,
   calcTotalPlanned, calcTotalAccumulated, calcOverallProgress,
   calcActiveGoals, calcCompletedGoals, calcLateGoals,
-  calcRequiredToReachGoal, calcMonthsUntilTarget, calcMesesAteAData,
+  calcRequiredToReachGoal, calcMonthsUntilTarget,
   getRhythmLabel, getRhythmVariant,
 } from './goalCalc.js';
 
@@ -277,12 +277,12 @@ test('calcRhythmStatus: meta criada sem nada guardado nasce no ritmo', () => {
   assert.equal(calcRhythmStatus({ ...meta, planned_monthly_amount: 86 }, new Date(2026, 9, 13)), 'on_track');
 });
 
-test('calcMesesAteAData conta o mês do prazo e vence só no dia seguinte', () => {
-  assert.equal(calcMesesAteAData('2027-03-31', new Date(2026, 9, 12)), 5);
-  assert.equal(calcMesesAteAData('2026-10-31', new Date(2026, 9, 12)), 1);
-  assert.equal(calcMesesAteAData('2026-10-31', new Date(2026, 9, 31, 22)), 1);
-  assert.equal(calcMesesAteAData('2026-10-31', new Date(2026, 10, 1)), 0);
-  assert.equal(calcMesesAteAData(null), null);
+test('calcRemainingMonths conta o mês do prazo e vence só no dia seguinte', () => {
+  assert.equal(calcRemainingMonths('2027-03-31', new Date(2026, 9, 12)), 5);
+  assert.equal(calcRemainingMonths('2026-10-31', new Date(2026, 9, 12)), 1);
+  assert.equal(calcRemainingMonths('2026-10-31', new Date(2026, 9, 31, 22)), 1);
+  assert.equal(calcRemainingMonths('2026-10-31', new Date(2026, 10, 1)), 0);
+  assert.equal(calcRemainingMonths(null), null);
 });
 
 test('calcRhythmStatus pelo plano: um mês de aporte atrás é atenção, mais é atrasada', () => {
@@ -298,4 +298,16 @@ test('calcRhythmStatus: no último dia do prazo a meta ainda não venceu', () =>
   const meta = { status: 'active', current_amount: 2400, target_amount: 3000, planned_monthly_amount: 600, start_date: '2026-10-01', target_date: '2027-03-31' };
   assert.equal(calcRhythmStatus(meta, new Date(2027, 2, 31, 20)), 'on_track');
   assert.equal(calcRhythmStatus(meta, new Date(2027, 3, 1)), 'late');
+});
+
+test('calcRhythmStatus: vencida faltando centavos é atrasada', () => {
+  const meta = { status: 'active', current_amount: 2990, target_amount: 3000, start_date: '2026-01-01', target_date: '2026-06-30' };
+  assert.equal(calcRhythmStatus(meta, new Date(2026, 6, 1)), 'late');
+  assert.equal(calcRhythmStatus({ ...meta, current_amount: 3000 }, new Date(2026, 6, 1)), 'on_track');
+});
+
+test('calcExpectedProgress: no dia da data-alvo o prazo ainda não acabou', () => {
+  const meta = { status: 'active', current_amount: 900, target_amount: 1000, start_date: '2026-01-01', target_date: '2026-12-31' };
+  assert.equal(calcExpectedProgress(meta, new Date(2026, 11, 31, 10)), 92);
+  assert.equal(calcRhythmStatus({ ...meta, current_amount: 950 }, new Date(2026, 11, 31, 10)), 'on_track');
 });
