@@ -1,4 +1,5 @@
 import { UniRingOrb } from '../../../components/ui/UniRingOrb/index.js';
+import OutlineButton from '../../../components/ui/OutlineButton/OutlineButton.jsx';
 import ActionConfirmation from './ActionConfirmation';
 import { VOICE_TTS_STATUS } from '../../uni-voice-tts';
 import SafeMarkdown from '../../../components/content/SafeMarkdown.jsx';
@@ -20,6 +21,7 @@ export default function MessageBubble({
   onConfirmAction,
   onEditAction,
   onCancelAction,
+  onUndoAction,
   editForm = null,
   onSaveEditAction,
   isExecuting = false,
@@ -81,6 +83,9 @@ export default function MessageBubble({
   ].join(' ');
 
   const showSpeak = !isUser && voiceEnabled && typeof onSpeakMessage === 'function' && message.text;
+  // Exclusão recente (#189): o botão fica enquanto o chat ainda consegue
+  // trazer o lançamento de volta.
+  const showUndo = !isUser && message.undo?.status === 'available' && typeof onUndoAction === 'function';
   const activeStatus = isActiveVoiceMessage ? voiceStatus : VOICE_TTS_STATUS.IDLE;
   const isLoadingVoice = activeStatus === VOICE_TTS_STATUS.LOADING;
   const isPlayingVoice = activeStatus === VOICE_TTS_STATUS.PLAYING;
@@ -122,6 +127,17 @@ export default function MessageBubble({
             <SafeMarkdown className={styles.text}>{resolvedText}</SafeMarkdown>
           )}
         </div>
+        {showUndo && (
+          <div className={styles.metaRow}>
+            <OutlineButton
+              variant="secondary"
+              onClick={() => onUndoAction(message.id)}
+              disabled={isExecuting}
+            >
+              Desfazer
+            </OutlineButton>
+          </div>
+        )}
         {showSpeak && (
           <div className={styles.metaRow}>
             <div className={styles.voiceControls}>

@@ -14,6 +14,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento).
 - correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
 - categoria: criar, renomear ou excluir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
+- exclusao: apagar um lançamento já registrado ("apaga o iFood de ontem", "exclui o mercado de sábado", "tira esse último lançamento, foi engano", "apaga tudo que lancei em setembro"). Excluir uma categoria é categoria; cancelar um compromisso é agenda; desistir do <rascunho> é correcao.
 - conversa: cumprimento, agradecimento, papo.
 - nao_entendi: nenhuma das anteriores com segurança.
 
@@ -55,6 +56,15 @@ Só quando o intent é categoria; nos outros, todos os campos são null.
 - nome: em criar, o nome da categoria nova; em renomear, o nome novo. Com acentos e inicial maiúscula, sem aspas e sem a finalidade ("para vincular essa despesa"). null em excluir.
 - alvo: em renomear e excluir, o apelido da categoria do catálogo que muda ou sai. null se ela não estiver no catálogo. null em criar.
 - tipo: em criar, entrada quando a pessoa fala de receita, entrada ou ganho; senão saida.
+
+## exclusao
+Só quando o intent é exclusao; nos outros, alvo, data, valor e conta são null, e ultimo e lote são false. Em exclusao, operacoes fica vazia.
+- alvo: o que é o lançamento, como apareceria na descrição dele ("Uber", "mercado", "conta de luz"). Sem o verbo, sem data, sem valor e sem conta. null quando a frase não diz do que se trata.
+- data: o dia do lançamento, resolvido a partir de hoje, só se a frase cita. "Sábado" é o último sábado que já passou.
+- valor: em reais, só se a frase cita o valor do lançamento.
+- conta: apelido (k1, k2...), só se a frase cita a conta.
+- ultimo: true quando a pessoa se refere ao lançamento que acabou de fazer ("esse último", "o que eu acabei de lançar", "isso que registrei agora").
+- lote: true quando a pessoa quer apagar vários de uma vez ("todos os Uber", "tudo de setembro", "os lançamentos de ontem").
 
 ## resposta
 Só para conversa e nao_entendi: uma frase curta em português, para ser falada. Para nao_entendi, peça para a pessoa dizer de outro jeito. Nos outros intents, string vazia.

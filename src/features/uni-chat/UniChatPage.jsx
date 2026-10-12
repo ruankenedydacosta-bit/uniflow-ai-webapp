@@ -80,6 +80,21 @@ import {
 } from '../uni-conversation/pedidoDeCategoria.js';
 import { getCategoryErrorMessage } from '../categories/categoryUtils.js';
 import {
+  alvoDaExclusao,
+  camposParaRecriar,
+  cardDaExclusao,
+  DESFAZER_EXCLUSAO_MS,
+  ehPedidoDeDesfazer,
+  motivoDeBloqueioDaExclusao,
+  respostaAoPedidoDeExclusao,
+  TEXTO_DESFAZER_VENCIDO,
+  TEXTO_EXCLUSAO_EM_LOTE,
+  TEXTO_EXCLUSAO_SEM_ALVO,
+  textoDaExclusao,
+  textoDaExclusaoDesfeita,
+  textoDaExclusaoFeita,
+} from '../uni-conversation/exclusaoDeLancamento.js';
+import {
   ROTAS_INTERPRETACAO,
   escolherRotaDaInterpretacao,
   interpretacaoParaAgenda,
@@ -184,6 +199,7 @@ import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { executeConfirmedFinancialAction } from '../../services/confirmedFinancialActionService.js';
 import {
+  createTransaction,
   getTransaction,
   listTransactions,
   listTransactionsForPeriod,
@@ -218,6 +234,7 @@ const EDICAO_TTL_MS = 15 * 60 * 1000;
 const ULTIMO_CONFIRMADO_TTL_MS = 30 * 60 * 1000;
 const TEXTO_EDICAO_VENCIDA = 'Essa alteração expirou e nada foi salvo. Peça de novo se ainda quiser alterar.';
 const TEXTO_CATEGORIA_VENCIDA = 'Esse pedido de categoria expirou e nada foi salvo. Peça de novo se ainda quiser.';
+const TEXTO_EXCLUSAO_VENCIDA = 'Esse pedido de exclusão expirou e nada foi apagado. Peça de novo se ainda quiser excluir.';
 const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze([
   'register_income',
   'register_expense',
@@ -1575,6 +1592,340 @@ export default function UniChatPage({ variant = 'full' }) {
     createAssistantResponse(withFollowUpQuestion('Tudo bem. Não mudei nenhuma categoria.'));
   }
 
+  // Exclusão de lançamento salvo (#189) esperando escolha ou confirmação.
+  // Pendência paralela, como a edição, e com o mesmo prazo. Não sobrevive a
+  // recarregar a página.
+  const [exclusaoPendente, setExclusaoPendenteState] = useState(null);
+  const exclusaoPendenteRef = useRef(null);
+  // Lançamento apagado há pouco, que ainda dá para trazer de volta:
+  // { transacao, messageId, workspaceId, conversationId, timer }.
+  const exclusaoDesfazivelRef = useRef(null);
+  // Conversa em que o prazo de desfazer já passou: "desfazer" dito depois
+  // recebe o aviso em vez de ir ao interpretador.
+  const desfazerVencidoRef = useRef(null);
+
+  function setExclusaoPendente(next) {
+    exclusaoPendenteRef.current = next;
+    setExclusaoPendenteState(next);
+  }
+
+  function exclusaoAtiva(exclusao = exclusaoPendenteRef.current) {
+    return Boolean(
+      exclusao
+      && Date.now() - exclusao.criadaEm <= EDICAO_TTL_MS
+      && exclusao.conversationId === activeIdRef.current
+      && exclusao.workspaceId === effectiveWorkspace?.id,
+    );
+  }
+
+  function encerrarExclusao(status) {
+    const exclusao = exclusaoPendenteRef.current;
+    if (!exclusao) return;
+    if (status && exclusao.messageId) {
+      setMessages((current) => current.map((message) => (
+        message.id === exclusao.messageId && message.confirmation?.status === 'pending'
+          ? { ...message, confirmation: { ...message.confirmation, status } }
+          : message
+      )));
+    }
+    setExclusaoPendente(null);
+  }
+
+  function marcarDesfazer(messageId, status) {
+    if (!messageId) return;
+    setMessages((current) => current.map((message) => (
+      message.id === messageId && message.undo
+        ? { ...message, undo: { ...message.undo, status } }
+        : message
+    )));
+  }
+
+  // Esquece o lançamento apagado: ao vencer o prazo, desfazer ou trocar de
+  // conversa. status marca o aviso na tela ('expired', 'done'); null só limpa.
+  function limparDesfazivel(status) {
+    const desfazivel = exclusaoDesfazivelRef.current;
+    if (!desfazivel) return;
+    clearTimeout(desfazivel.timer);
+    exclusaoDesfazivelRef.current = null;
+    if (status === 'expired') desfazerVencidoRef.current = { conversationId: desfazivel.conversationId };
+    if (status) marcarDesfazer(desfazivel.messageId, status);
+  }
+
+  // Relê o lançamento antes do card: o card mostra o que vai sair de verdade.
+  async function prepararExclusao(transacaoId, turnToken) {
+    const workspaceId = effectiveWorkspace?.id;
+    const conversationId = activeIdRef.current;
+    setIsTyping(true);
+    const lida = await getTransaction(workspaceId, transacaoId).catch(() => null);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
+    setIsTyping(false);
+    const transacao = lida?.data ?? null;
+    if (!transacao) {
+      createAssistantResponse('Não consegui abrir esse lançamento agora. Tente de novo ou exclua na tela Financeiro.', { deduplicateNarration: false });
+      return;
+    }
+    const bloqueio = motivoDeBloqueioDaExclusao(transacao);
+    if (bloqueio) {
+      createAssistantResponse(bloqueio, { deduplicateNarration: false });
+      return;
+    }
+    const contexto = contextoDaEdicao();
+    const message = createAssistantResponse(textoDaExclusao(transacao, contexto), {
+      type: 'confirmation',
+      confirmation: cardDaExclusao(transacao, contexto),
+      deduplicateNarration: false,
+    });
+    setExclusaoPendente({
+      etapa: 'confirmar',
+      transacao,
+      messageId: message?.id ?? null,
+      workspaceId,
+      conversationId,
+      criadaEm: Date.now(),
+    });
+  }
+
+  function publicarBuscaDaExclusao(resultado, turnToken) {
+    if (resultado.tipo === 'bloqueado') {
+      createAssistantResponse(motivoDeBloqueioDaExclusao(resultado.transacao), { deduplicateNarration: false });
+      return;
+    }
+    if (resultado.tipo === 'varios') {
+      createAssistantResponse(
+        textoDaEscolha(resultado.candidatos, resultado.total, { ...contextoDaEdicao(), verbo: 'excluir' }),
+        { deduplicateNarration: false },
+      );
+      setExclusaoPendente({
+        etapa: 'escolher',
+        candidatos: resultado.candidatos,
+        messageId: null,
+        workspaceId: effectiveWorkspace?.id,
+        conversationId: activeIdRef.current,
+        criadaEm: Date.now(),
+      });
+      return;
+    }
+    void prepararExclusao(resultado.transacao.id, turnToken);
+  }
+
+  // Pedido de exclusão vindo do uni-interpret. Nunca apaga mais de um: o
+  // pedido em lote vai para a tela.
+  async function iniciarExclusao(exclusao, turnToken) {
+    if (exclusao.lote) {
+      createAssistantResponse(TEXTO_EXCLUSAO_EM_LOTE, { deduplicateNarration: false });
+      return;
+    }
+    const contexto = contextoDaEdicao();
+    const alvo = alvoDaExclusao(exclusao, contexto);
+    if (exclusao.ultimo) {
+      // "Esse último" é o que acabou de ser confirmado nesta conversa; sem
+      // nada confirmado e sem outra pista, o lançamento mais recente.
+      const transacaoId = ultimoConfirmadoValido()?.id ?? (!alvo.criterios ? ultimoLancamentoCriado()?.id : null);
+      if (transacaoId) {
+        await prepararExclusao(transacaoId, turnToken);
+        return;
+      }
+      if (!alvo.criterios) {
+        createAssistantResponse('Não achei um lançamento recente para excluir. Diga qual é, com o nome e o dia ou o valor.', { deduplicateNarration: false });
+        return;
+      }
+    }
+    if (!alvo.criterios) {
+      createAssistantResponse(TEXTO_EXCLUSAO_SEM_ALVO, { deduplicateNarration: false });
+      return;
+    }
+    let resultado = localizarLancamento(alvo, transactionsState.transactions, { categories: categoryState.categories });
+    if (resultado.tipo === 'nenhum' && alvo.data) {
+      // Fora dos carregados: com data dita, busca aquele dia no servidor.
+      const conversationId = activeIdRef.current;
+      setIsTyping(true);
+      const doDia = await listTransactions(effectiveWorkspace?.id, { dateFrom: alvo.data, dateTo: alvo.data, limit: 100 })
+        .catch(() => null);
+      if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
+      setIsTyping(false);
+      resultado = localizarLancamento(alvo, doDia?.data ?? [], { categories: categoryState.categories });
+    }
+    if (resultado.tipo === 'nenhum') {
+      createAssistantResponse(
+        alvo.data
+          ? 'Não encontrei esse lançamento nesse dia. Diga o nome como aparece no Financeiro, com o dia ou o valor.'
+          : 'Não encontrei esse lançamento entre os mais recentes. Diga também o dia ou o valor dele.',
+        { deduplicateNarration: false },
+      );
+      return;
+    }
+    publicarBuscaDaExclusao(resultado, turnToken);
+  }
+
+  // Resposta com a exclusão pendente. false quando a frase é outro assunto:
+  // a exclusão é descartada e a frase segue o caminho de sempre.
+  function tratarRespostaDaExclusao(texto, userMsg, turnToken) {
+    const exclusao = exclusaoPendenteRef.current;
+    const contexto = contextoDaEdicao();
+
+    if (exclusao.etapa === 'confirmar') {
+      const resposta = respostaAoPedidoDeExclusao(texto, exclusao.transacao);
+      if (resposta === 'confirm') {
+        syncMessageToSupabase(userMsg);
+        void confirmarExclusao(exclusao.messageId);
+        return true;
+      }
+      if (resposta === 'cancel') {
+        syncMessageToSupabase(userMsg);
+        cancelarExclusao(exclusao.messageId);
+        return true;
+      }
+      encerrarExclusao('expired');
+      return false;
+    }
+
+    if (classifyPendingActionReply(texto) === 'cancel') {
+      syncMessageToSupabase(userMsg);
+      encerrarExclusao(null);
+      createAssistantResponse(withFollowUpQuestion('Tudo bem. Não excluí nada.'), { deduplicateNarration: false });
+      return true;
+    }
+    if (
+      looksLikeFreshFinancialStatement(texto)
+      || looksLikeFreshBalanceStatement(texto)
+      || interpretarPedidoDeEdicao(texto, contexto)
+    ) {
+      encerrarExclusao(null);
+      return false;
+    }
+    // "apaga o segundo" escolhe como "o segundo".
+    const escolha = texto.replace(/^\s*(?:pode\s+)?(?:exclui|exclua|apaga|apague|remove|remova|tira|tire)\s+/i, '');
+    const escolhido = escolherCandidato(escolha, exclusao.candidatos, contexto);
+    if (escolhido) {
+      syncMessageToSupabase(userMsg);
+      encerrarExclusao(null);
+      void prepararExclusao(escolhido.id, turnToken);
+      return true;
+    }
+    syncMessageToSupabase(userMsg);
+    createAssistantResponse(
+      `Não identifiquei qual deles. Diga o número da lista, de 1 a ${exclusao.candidatos.length}, ou "cancelar".`,
+      { deduplicateNarration: false },
+    );
+    return true;
+  }
+
+  // Apaga de verdade, pelo mesmo hook da tela Financeiro, e abre a janela de
+  // desfazer. Desfazer recria o lançamento com os campos lidos antes do card.
+  async function confirmarExclusao(id) {
+    const exclusao = exclusaoPendenteRef.current;
+    if (!exclusaoAtiva(exclusao) || exclusao.etapa !== 'confirmar' || confirmingRef.current) return;
+    const messageId = id ?? exclusao.messageId;
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    setExecutionError(null);
+    try {
+      const resultado = await transactionsState.removeTransaction(exclusao.transacao.id);
+      if (resultado?.error || !resultado?.data) {
+        reportConfirmationError(messageId, 'Não consegui excluir esse lançamento. Tente de novo ou exclua na tela Financeiro.');
+        return;
+      }
+      // Apagou: a pendência acaba mesmo que a pessoa tenha trocado de
+      // conversa durante a gravação, senão um "sim" depois apagaria de novo.
+      setExclusaoPendente(null);
+      if (ultimoConfirmadoRef.current?.id === exclusao.transacao.id) ultimoConfirmadoRef.current = null;
+      setMessages((current) => current.map((message) => (
+        message.id === messageId
+          ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
+          : message
+      )));
+      await Promise.all([balanceState.refresh(), accountState.refresh()]);
+      notifyFinancialDataChanged('uni-chat');
+      if (activeIdRef.current !== exclusao.conversationId) return;
+      limparDesfazivel('expired');
+      const aviso = createAssistantResponse(textoDaExclusaoFeita(exclusao.transacao), {
+        deduplicateNarration: false,
+        undo: { status: 'available' },
+      });
+      const timer = setTimeout(() => {
+        if (exclusaoDesfazivelRef.current?.timer === timer) limparDesfazivel('expired');
+      }, DESFAZER_EXCLUSAO_MS);
+      exclusaoDesfazivelRef.current = {
+        transacao: exclusao.transacao,
+        messageId: aviso?.id ?? null,
+        workspaceId: exclusao.workspaceId,
+        conversationId: exclusao.conversationId,
+        timer,
+      };
+    } catch {
+      reportConfirmationError(messageId, 'Ocorreu um erro inesperado. Tente novamente.');
+    } finally {
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
+  }
+
+  function cancelarExclusao(id) {
+    const exclusao = exclusaoPendenteRef.current;
+    if (!exclusao) return;
+    setMessages((current) => current.map((message) => (
+      message.id === (id ?? exclusao.messageId)
+        ? { ...message, confirmation: { ...message.confirmation, status: 'canceled' } }
+        : message
+    )));
+    setExclusaoPendente(null);
+    setExecutionError(null);
+    createAssistantResponse(withFollowUpQuestion('Tudo bem. Não excluí nada.'));
+  }
+
+  // Desfazer, pelo botão do aviso (messageId) ou falado ("desfazer", sem
+  // id). O lançamento volta com os mesmos campos e um id novo.
+  async function desfazerExclusao(messageId = null) {
+    const desfazivel = exclusaoDesfazivelRef.current;
+    const vale = desfazivel
+      && (!messageId || desfazivel.messageId === messageId)
+      && desfazivel.conversationId === activeIdRef.current
+      && desfazivel.workspaceId === effectiveWorkspace?.id;
+    if (!vale) {
+      marcarDesfazer(messageId, 'expired');
+      createAssistantResponse(TEXTO_DESFAZER_VENCIDO, { deduplicateNarration: false });
+      return;
+    }
+    if (confirmingRef.current) return;
+    limparDesfazivel(null);
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    try {
+      const resultado = await createTransaction(desfazivel.workspaceId, camposParaRecriar(desfazivel.transacao));
+      if (resultado?.error || !resultado?.data) {
+        marcarDesfazer(desfazivel.messageId, 'expired');
+        createAssistantResponse('Não consegui trazer o lançamento de volta. Registre de novo pela conversa ou pela tela Financeiro.', { deduplicateNarration: false });
+        return;
+      }
+      marcarDesfazer(desfazivel.messageId, 'done');
+      await Promise.all([
+        transactionsState.refresh(),
+        balanceState.refresh(),
+        accountState.refresh(),
+      ]);
+      notifyFinancialDataChanged('uni-chat');
+      if (activeIdRef.current !== desfazivel.conversationId) return;
+      ultimoConfirmadoRef.current = {
+        id: resultado.data.id,
+        workspaceId: desfazivel.workspaceId,
+        conversationId: desfazivel.conversationId,
+        em: Date.now(),
+      };
+      createAssistantResponse(withFollowUpQuestion(textoDaExclusaoDesfeita(desfazivel.transacao)));
+    } catch {
+      marcarDesfazer(desfazivel.messageId, 'expired');
+      createAssistantResponse('Não consegui trazer o lançamento de volta. Registre de novo pela conversa ou pela tela Financeiro.', { deduplicateNarration: false });
+    } finally {
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
+  }
+
+  function handleDesfazerExclusao(messageId) {
+    if (confirmingRef.current || isExecutingAction) return;
+    void desfazerExclusao(messageId);
+  }
+
   useEffect(() => {
     const conversationState = financialConversation.state;
     if (
@@ -1696,7 +2047,8 @@ export default function UniChatPage({ variant = 'full' }) {
       pendingAction
       || pendingActionStack?.actions?.length
       || isFinancialPlanActive()
-      || edicaoAtiva(edicaoPendente),
+      || edicaoAtiva(edicaoPendente)
+      || exclusaoAtiva(exclusaoPendente),
     );
     if (hasRealPendingEntity) return;
     setMessages((current) => {
@@ -1711,7 +2063,7 @@ export default function UniChatPage({ variant = 'full' }) {
       return changed ? sanitized : current;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- isFinancialPlanActive lê financialPlanRef.current (ref, não estado); incluí-la recriaria o efeito a cada render sem mudar seu comportamento.
-  }, [pendingHydrated, pendingAction, pendingActionStack, edicaoPendente]);
+  }, [pendingHydrated, pendingAction, pendingActionStack, edicaoPendente, exclusaoPendente]);
 
   const reconcileConversations = useCallback(async () => {
     if (!effectiveWorkspace?.id) return;
@@ -1835,6 +2187,8 @@ export default function UniChatPage({ variant = 'full' }) {
     confirmingRef.current = false;
     financialConversation.reset();
     setEdicaoPendente(null);
+    setExclusaoPendente(null);
+    limparDesfazivel(null);
     ultimoConfirmadoRef.current = null;
     conversationalMemoryRef.current.reset();
     const candidates = updated
@@ -2310,6 +2664,8 @@ export default function UniChatPage({ variant = 'full' }) {
     confirmingRef.current = false;
     financialConversation.reset();
     setEdicaoPendente(null);
+    setExclusaoPendente(null);
+    limparDesfazivel(null);
     ultimoConfirmadoRef.current = null;
     // Sprint 2 — troca de conversa nunca carrega memória conversacional da
     // conversa anterior (nunca é memória de longo prazo).
@@ -3285,6 +3641,10 @@ export default function UniChatPage({ variant = 'full' }) {
         setIsTyping(false);
         iniciarPedidoDeCategoria(interpretacao.categoria);
         return true;
+      case ROTAS_INTERPRETACAO.EXCLUSAO:
+        setIsTyping(false);
+        await iniciarExclusao(interpretacao.exclusao, turnToken);
+        return true;
       case ROTAS_INTERPRETACAO.CONVERSA:
         setIsTyping(false);
         // Cumprimento e agradecimento: o modelo já devolve a frase. Sem
@@ -3404,8 +3764,29 @@ export default function UniChatPage({ variant = 'full' }) {
       }
       if (edicaoAtiva() && tratarRespostaDaEdicao(functionalText, userMsg, turnToken)) return;
       if (tentarPedidoDeEdicao(functionalText, userMsg, declaredIntent, turnToken)) return;
+      // Exclusão de lançamento salvo (#189): "desfazer" logo depois de
+      // apagar traz o lançamento de volta (depois do prazo, avisa em vez de
+      // ir ao interpretador); resposta à lista ou ao card de exclusão.
+      if (ehPedidoDeDesfazer(functionalText)
+        && (exclusaoDesfazivelRef.current || desfazerVencidoRef.current?.conversationId === activeIdRef.current)) {
+        desfazerVencidoRef.current = null;
+        syncMessageToSupabase(userMsg);
+        void desfazerExclusao(null);
+        return;
+      }
+      if (exclusaoPendenteRef.current && !exclusaoAtiva()) {
+        const vencida = exclusaoPendenteRef.current;
+        encerrarExclusao('expired');
+        if (vencida.etapa === 'confirmar' && respostaAoPedidoDeExclusao(functionalText, vencida.transacao) !== 'input') {
+          syncMessageToSupabase(userMsg);
+          createAssistantResponse(TEXTO_EXCLUSAO_VENCIDA, { deduplicateNarration: false });
+          return;
+        }
+      }
+      if (exclusaoAtiva() && tratarRespostaDaExclusao(functionalText, userMsg, turnToken)) return;
     } else {
       if (edicaoPendenteRef.current) encerrarEdicao('expired');
+      if (exclusaoPendenteRef.current) encerrarExclusao('expired');
       encerrarPedidoDeCategoria('expired');
     }
     if (hasAgendaConversation) {
@@ -3502,6 +3883,8 @@ export default function UniChatPage({ variant = 'full' }) {
     confirmingRef.current = false;
     financialConversation.reset();
     setEdicaoPendente(null);
+    setExclusaoPendente(null);
+    limparDesfazivel(null);
     ultimoConfirmadoRef.current = null;
     conversationalMemoryRef.current.reset();
     const candidates = conversations
@@ -3554,6 +3937,8 @@ export default function UniChatPage({ variant = 'full' }) {
     confirmingRef.current = false;
     financialConversation.reset();
     setEdicaoPendente(null);
+    setExclusaoPendente(null);
+    limparDesfazivel(null);
     ultimoConfirmadoRef.current = null;
     conversationalMemoryRef.current.reset();
     stickToBottom.current = true;
@@ -3601,6 +3986,8 @@ export default function UniChatPage({ variant = 'full' }) {
       confirmingRef.current = false;
       financialConversation.reset();
       setEdicaoPendente(null);
+      setExclusaoPendente(null);
+      limparDesfazivel(null);
       ultimoConfirmadoRef.current = null;
       conversationalMemoryRef.current.reset();
       saveHistory(nextList);
@@ -3628,6 +4015,15 @@ export default function UniChatPage({ variant = 'full' }) {
       } else {
         encerrarEdicao('expired');
         reportConfirmationError(id, TEXTO_EDICAO_VENCIDA);
+      }
+      return;
+    }
+    if (exclusaoPendenteRef.current?.messageId === id) {
+      if (exclusaoAtiva()) {
+        await confirmarExclusao(id);
+      } else {
+        encerrarExclusao('expired');
+        reportConfirmationError(id, TEXTO_EXCLUSAO_VENCIDA);
       }
       return;
     }
@@ -3987,6 +4383,10 @@ export default function UniChatPage({ variant = 'full' }) {
       cancelarEdicao(id);
       return;
     }
+    if (exclusaoPendenteRef.current?.messageId === id) {
+      cancelarExclusao(id);
+      return;
+    }
     if (
       !pendingAction
       && isPlanReadyForFinalConfirmation(financialPlanRef.current)
@@ -4163,6 +4563,7 @@ export default function UniChatPage({ variant = 'full' }) {
         onBeforeVoiceStart={handleBeforeVoiceStart}
         onConfirmAction={handleConfirmAction}
         onCancelAction={handleCancelAction}
+        onUndoAction={handleDesfazerExclusao}
         editForm={pendingEditForm}
         onSaveEditAction={handleSaveEditAction}
         onWelcomeVoiceSettled={handleWelcomeVoiceSettled}
@@ -4220,6 +4621,7 @@ export default function UniChatPage({ variant = 'full' }) {
                 onConfirmAction={handleConfirmAction}
                 onEditAction={handleEditAction}
                 onCancelAction={handleCancelAction}
+                onUndoAction={handleDesfazerExclusao}
                 editForm={message.confirmation?.status === 'pending' ? pendingEditForm : null}
                 onSaveEditAction={handleSaveEditAction}
                 isExecuting={isExecutingAction}

@@ -71,12 +71,18 @@ function avaliarTitulo(palavras, titulo) {
     && !RESTO_DE_PEDIDO.test(normalizado);
 }
 
-// Pedido de categoria: a ação certa e, quando o caso diz, o nome e a
-// categoria que muda, sem acento e caixa.
+// Pedido de categoria ou de exclusão: a ação certa e, quando o caso diz, o
+// nome e o alvo, sem acento e caixa. Na exclusão (#189), `palavras` são as
+// que o alvo precisa ter, e data, valor, ultimo e lote batem exatos.
 function avaliarPedido(esperado, obtido) {
   if (!obtido || obtido.acao !== esperado.acao) return false;
-  return ['nome', 'alvo'].every((campo) => esperado[campo] === undefined
+  const textoIgual = ['nome', 'alvo'].every((campo) => esperado[campo] === undefined
     || normalizeSearchText(obtido[campo] ?? '') === normalizeSearchText(esperado[campo]));
+  const palavras = esperado.palavras === undefined
+    || esperado.palavras.every((palavra) => normalizeSearchText(obtido.alvo ?? '').includes(normalizeSearchText(palavra)));
+  const exatos = ['data', 'valor', 'ultimo', 'lote'].every((campo) => esperado[campo] === undefined
+    || (obtido[campo] ?? null) === esperado[campo]);
+  return textoIgual && palavras && exatos;
 }
 
 // Devolve um veredito por campo: true (acertou), false (errou) ou null
@@ -136,11 +142,23 @@ const INTENT_DO_INTERPRETADOR = {
   consulta: 'consulta',
   agenda: 'agenda',
   categoria: 'categoria',
+  exclusao: 'exclusao',
   conversa: 'conversa',
   correcao: 'correcao',
   nao_entendi: 'nao_entendeu',
 };
 const INTENT_POR_TIPO = { saida: 'lancar_saida', entrada: 'lancar_entrada', transferencia: 'transferir' };
+
+function pedidoDaInterpretacao(validada) {
+  if (validada.categoria) {
+    return { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null };
+  }
+  if (validada.exclusao) {
+    const { alvo, data, valor, conta, ultimo, lote } = validada.exclusao;
+    return { acao: 'excluir_lancamento', alvo, data, valor, conta: conta?.name ?? null, ultimo, lote };
+  }
+  return null;
+}
 
 // Converte a saída já validada do uni-interpret (validarInterpretacao) no
 // resultado normalizado da régua. Categoria com confiança abaixo do limiar
@@ -171,9 +189,7 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
       recorrente: false,
       titulo: validada.agenda?.titulo ?? null,
       consulta,
-      pedido: validada.categoria
-        ? { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null }
-        : null,
+      pedido: pedidoDaInterpretacao(validada),
     };
   }
 

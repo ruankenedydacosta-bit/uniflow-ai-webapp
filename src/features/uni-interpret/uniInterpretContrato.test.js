@@ -58,7 +58,7 @@ test('apelidos seguem a ordem por tipo e nome, independente da ordem recebida', 
 });
 
 test('schema é estrito: todo campo obrigatório e nenhum extra', () => {
-  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria];
+  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.exclusao];
   for (const objeto of objetos) {
     assert.equal(objeto.additionalProperties, false);
     assert.deepEqual([...objeto.required].sort(), Object.keys(objeto.properties).sort());
@@ -403,4 +403,29 @@ test('categoria: ação fora do contrato vira nao_entendi; fora do intent não s
   assert.equal(validarInterpretacao({ intent: 'categoria', operacoes: [], resposta: '', categoria: { acao: 'mover', tipo: null, alvo: null, nome: 'X' } }, CONTEXTO).intent, 'nao_entendi');
   assert.equal(validarInterpretacao({ intent: 'categoria', operacoes: [], resposta: '' }, CONTEXTO).intent, 'nao_entendi');
   assert.equal(validarInterpretacao(lancamento(operacao()), CONTEXTO).categoria, undefined);
+});
+
+// Excluir lançamento pela conversa (#189): o modelo diz qual; o contrato só
+// limpa o que não dá para usar.
+test('exclusao: alvo limpo, data perto da referência, valor positivo e conta pelo apelido', () => {
+  const pedido = (exclusao) => ({ intent: 'exclusao', operacoes: [], resposta: '', exclusao });
+  const validada = validarInterpretacao(pedido({ alvo: '  Uber\n', data: '2026-10-01', valor: 25.004, conta: K.cc, ultimo: false, lote: false }), CONTEXTO);
+  assert.equal(validada.intent, 'exclusao');
+  assert.deepEqual(validada.operacoes, []);
+  assert.deepEqual({ ...validada.exclusao, conta: validada.exclusao.conta.id }, {
+    alvo: 'Uber', data: '2026-10-01', valor: 25, conta: 'conta-cc', ultimo: false, lote: false,
+  });
+
+  // Data impossível ou longe demais, valor zero e apelido inventado saem.
+  const limpa = validarInterpretacao(pedido({ alvo: '', data: '2024-01-01', valor: 0, conta: 'k9', ultimo: 'sim', lote: true }), CONTEXTO).exclusao;
+  assert.deepEqual(limpa, { alvo: null, data: null, valor: null, conta: null, ultimo: false, lote: true });
+  assert.deepEqual(
+    validarInterpretacao(pedido({ alvo: null, data: '2026-13-40', valor: -5, conta: null, ultimo: true, lote: false }), CONTEXTO).exclusao,
+    { alvo: null, data: null, valor: null, conta: null, ultimo: true, lote: false },
+  );
+  // Bloco ausente ainda devolve o intent com tudo vazio: o app pergunta qual.
+  assert.deepEqual(validarInterpretacao({ intent: 'exclusao', operacoes: [], resposta: '' }, CONTEXTO).exclusao, {
+    alvo: null, data: null, valor: null, conta: null, ultimo: false, lote: false,
+  });
+  assert.equal(validarInterpretacao(lancamento(operacao()), CONTEXTO).exclusao, undefined);
 });

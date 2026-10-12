@@ -14,7 +14,9 @@
 // esperado.data: ISO; ausente quando a frase não fala de data (vale hoje).
 // esperado.titulo: em agenda, palavras que o título precisa ter (#142).
 // esperado.pedido: em categoria, a ação (criar, renomear, excluir) e,
-//   quando importa, o nome e o alvo, sem acento e caixa.
+//   quando importa, o nome e o alvo, sem acento e caixa. Em exclusao (#189),
+//   acao 'excluir_lancamento' com as palavras que o alvo precisa ter e, quando
+//   importa, data, valor, ultimo e lote.
 //
 // Data de referência de todos os casos: sexta, 02/10/2026.
 //
@@ -838,6 +840,29 @@ export const CASOS = [
     reservado: true,
     frase: 'quero uma categoria nova de receita chamada Aulas particulares',
     esperado: { intent: 'categoria', pedido: { acao: 'criar', nome: 'Aulas particulares' } },
+  },
+  // Exclusão de lançamento já salvo (#189): o modelo só diz qual; quem acha
+  // e confirma é o app.
+  {
+    id: 'exclusao-uber-ontem',
+    frase: 'apaga o Uber de ontem',
+    esperado: { intent: 'exclusao', pedido: { acao: 'excluir_lancamento', palavras: ['uber'], data: '2026-10-01', lote: false } },
+  },
+  {
+    id: 'exclusao-mercado-valor-sabado',
+    frase: 'exclui o lançamento do mercado de 85 reais de sábado',
+    esperado: { intent: 'exclusao', pedido: { acao: 'excluir_lancamento', palavras: ['mercado'], data: '2026-09-26', valor: 85 } },
+  },
+  {
+    id: 'exclusao-ultimo-engano',
+    frase: 'pode tirar esse último lançamento, foi engano',
+    esperado: { intent: 'exclusao', pedido: { acao: 'excluir_lancamento', ultimo: true, lote: false } },
+  },
+  {
+    id: 'exclusao-lote-setembro',
+    reservado: true,
+    frase: 'apaga todos os gastos de setembro',
+    esperado: { intent: 'exclusao', pedido: { acao: 'excluir_lancamento', lote: true } },
   },
   {
     id: 'categoria-nova-com-valor',

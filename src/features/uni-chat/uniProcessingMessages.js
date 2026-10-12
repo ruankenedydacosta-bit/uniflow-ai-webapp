@@ -36,6 +36,7 @@ const EXECUTING_LABEL_BY_ACTION_KIND = Object.freeze({
   transfer: 'Organizando seus registros…',
   income: 'Registrando sua movimentação…',
   expense: 'Registrando sua movimentação…',
+  delete_transaction: 'Excluindo o lançamento…',
 });
 
 const DEFAULT_EXECUTING_LABEL = 'Aplicando a alteração…';

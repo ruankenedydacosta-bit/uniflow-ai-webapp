@@ -13,7 +13,7 @@
 // saldo e meta não levam operação: o app público não ajusta saldo nem cria
 // objetivo pela conversa, só responde (#80).
 export const INTENTS = Object.freeze([
-  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'conversa', 'nao_entendi',
+  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // Consulta que o app responde com os parâmetros (#80). 'outra' (meta, contas
@@ -41,6 +41,8 @@ export const MAX_TITULO_AGENDA = 80;
 export const MIN_PARCELAS = 2;
 export const MAX_PARCELAS = 72;
 export const MAX_TERMO = 40;
+// Como a pessoa descreveu o lançamento que quer excluir (#189).
+export const MAX_ALVO_EXCLUSAO = 80;
 
 // Apelidos estáveis: ordem por tipo e nome, a mesma que o prompt mostra.
 export function indexarCatalogo({ categorias = [], contas = [] } = {}) {
@@ -119,12 +121,29 @@ const ESQUEMA_CATEGORIA = {
   },
 };
 
+// Excluir um lançamento já registrado (#189). O modelo só diz qual: quem acha
+// o lançamento, lista os parecidos e pede confirmação é o app. Fora do intent
+// exclusao, todos os campos são null ou false.
+const ESQUEMA_EXCLUSAO = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['alvo', 'data', 'valor', 'conta', 'ultimo', 'lote'],
+  properties: {
+    alvo: { ...TEXTO_OU_NULO, description: 'o que é o lançamento, sem data, valor nem conta, ex.: Uber' },
+    data: { ...TEXTO_OU_NULO, description: 'AAAA-MM-DD' },
+    valor: { type: ['number', 'null'] },
+    conta: { ...TEXTO_OU_NULO, description: 'apelido da conta, ex.: k1' },
+    ultimo: { type: 'boolean', description: 'a pessoa se refere ao último lançamento que fez' },
+    lote: { type: 'boolean', description: 'a pessoa quer excluir vários lançamentos de uma vez' },
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'exclusao'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
@@ -132,6 +151,7 @@ export const ESQUEMA = Object.freeze({
     resposta: { type: 'string' },
     consulta: ESQUEMA_CONSULTA,
     categoria: ESQUEMA_CATEGORIA,
+    exclusao: ESQUEMA_EXCLUSAO,
   },
 });
 
@@ -308,6 +328,23 @@ function validarCategoria(bruta, { categoriasPorApelido }) {
   return { acao, tipo, alvo, nome: acao === 'excluir' ? null : nome };
 }
 
+// Data impossível ou longe demais sai, como no lançamento. Conta inventada
+// sai. O que sobra é critério para o app achar o lançamento; sem nenhum, o
+// app pergunta qual.
+function validarExclusao(bruta, { contasPorApelido, dataReferencia }) {
+  const data = dataValida(bruta?.data) && distanciaEmDias(bruta.data, dataReferencia) <= 366 ? bruta.data : null;
+  const valorBruto = Number(bruta?.valor);
+  const valor = Number.isFinite(valorBruto) && valorBruto > 0 ? Math.round(valorBruto * 100) / 100 : null;
+  return {
+    alvo: textoLimpo(bruta?.alvo, MAX_ALVO_EXCLUSAO) || null,
+    data,
+    valor,
+    conta: contasPorApelido.get(bruta?.conta) ?? null,
+    ultimo: bruta?.ultimo === true,
+    lote: bruta?.lote === true,
+  };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -334,6 +371,9 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
     return categoria.acao
       ? { intent, operacoes: [], resposta, categoria }
       : { intent: 'nao_entendi', operacoes: [], resposta };
+  }
+  if (intent === 'exclusao') {
+    return { intent, operacoes: [], resposta, exclusao: validarExclusao(bruta?.exclusao, contexto) };
   }
   if (intent !== 'lancamento' && intent !== 'correcao') {
     return { intent, operacoes: [], resposta };
