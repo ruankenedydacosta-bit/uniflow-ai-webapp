@@ -885,14 +885,16 @@ test('BLOCO VOZ 1: erro relevante ao usuário fala -- os 5 pontos de erro de han
   // O sétimo é o toque em Confirmar numa alteração de lançamento vencida.
   // O oitavo é o toque em Confirmar num pedido de categoria vencido.
   // O nono é o toque em Confirmar numa exclusão de lançamento vencida (#189).
-  assert.equal(callSites.length, 9, 'esperava 9 pontos de erro do card usando reportConfirmationError');
+  // O décimo é o toque em Confirmar num pedido de meta vencido (#192).
+  assert.equal(callSites.length, 10, 'esperava 10 pontos de erro do card usando reportConfirmationError');
   // Nenhum setExecutionError fora do ponto central (sem duplicação de
   // registro/narração) -- só o reset neutro (null) continua nos fluxos.
   assert.equal((page.match(/setExecutionError\(errorText\);/g) ?? []).length, 1);
   // 14: os dois últimos são confirmar e cancelar a edição de lançamento salvo.
   // 16: mais confirmar e cancelar o pedido de categoria.
   // 18: mais confirmar e cancelar a exclusão de lançamento (#189).
-  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 18);
+  // 20: mais confirmar e cancelar o pedido de meta (#192).
+  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 20);
 });
 
 test('BLOCO VOZ 1: narração de erro é gated pela experiência simplificada + preferência de voz -- chat completo permanece manual', async () => {
@@ -2118,7 +2120,7 @@ test('#80: lançamento e plano interpretados pelo modelo nunca vão ao chat gera
   assert.match(lancamento, /financialConversation\.reset\(\);/);
 });
 
-test('#80: saldo responde que o app não usa mais saldo e meta responde que ainda não cria objetivos', async () => {
+test('#80: saldo responde que o app não usa mais saldo e meta sem ação responde que ainda não cria objetivos', async () => {
   const page = await source('UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
   // A mesma resposta da trava de saldo do sendText, sem card de ajuste.
@@ -2127,9 +2129,41 @@ test('#80: saldo responde que o app não usa mais saldo e meta responde que aind
   assert.match(sendText, /responderResumoSemSaldo\(functionalText, isRetiredBalanceRequest\);/);
   const saldo = body.slice(body.indexOf('case ROTAS_INTERPRETACAO.SALDO:'), body.indexOf('case ROTAS_INTERPRETACAO.META:'));
   assert.doesNotMatch(saldo, /startFromParsed/);
-  assert.match(body, /case ROTAS_INTERPRETACAO\.META:\s*setIsTyping\(false\);[\s\S]*?createAssistantResponse\(TEXTO_META_SEM_CRIACAO, \{ deduplicateNarration: false \}\);\s*return true;/);
+  // Interpretação sem ação de meta (função antiga): a resposta de antes.
+  assert.match(body, /case ROTAS_INTERPRETACAO\.META:\s*setIsTyping\(false\);[\s\S]*?if \(!interpretacao\.meta\?\.acao\) \{\s*createAssistantResponse\(TEXTO_META_SEM_CRIACAO, \{ deduplicateNarration: false \}\);\s*return true;\s*\}/);
   // Sem o modelo, a meta recebe a mesma resposta pelas regras.
   assert.match(page, /result\.parsed\?\.intent === 'create_goal'\) \{\s*createAssistantResponse\(TEXTO_META_SEM_CRIACAO\);/);
+});
+
+// #192: meta pela conversa e pela voz, no padrão do pedido de categoria.
+test('#192: pedido de meta com ação vai ao card ou à consulta, confirma e cancela pelo toque e pela frase', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
+  assert.match(body, /case ROTAS_INTERPRETACAO\.META:[\s\S]*?await iniciarPedidoDeMeta\(interpretacao\.meta, turnToken\);\s*return true;/);
+  // Consultar responde na hora; excluir confere os aportes antes do card.
+  const { body: iniciar } = extractFunctionBody(page, 'async function iniciarPedidoDeMeta(pedidoDoModelo, turnToken) {');
+  assert.match(iniciar, /acao === 'consultar'[\s\S]*?textoDaConsultaDeMetas\(pedidoDoModelo, \{ metas: goalsState\.goals \}\)/);
+  assert.match(iniciar, /await listContributions\(pronto\.meta\.id\)/);
+  assert.match(iniciar, /uniTurnTokenRef\.current !== turnToken\) return;/);
+  assert.match(iniciar, /metaTemDinheiro\(pronto\.meta, quantidadeDeAportes\)[\s\S]*?textoDaMetaComAportes\(pronto\.meta, quantidadeDeAportes\)/);
+  // Metas sem ler (erro) não viram "você não tem metas"; recarga com a lista em mãos não bloqueia.
+  assert.match(iniciar, /goalsState\.isLoading && goalsState\.goals\.length === 0/);
+  assert.match(iniciar, /goalsState\.error && goalsState\.error\.code !== 'SUPABASE_NOT_CONFIGURED'/);
+  // Grava pelo hook da tela Metas.
+  const { body: confirmar } = extractFunctionBody(page, 'async function confirmarPedidoDeMeta(id) {');
+  assert.match(confirmar, /goalsState\.addGoal\(pronto\.payload\)/);
+  assert.match(confirmar, /goalsState\.editGoal\(pronto\.meta\.id, pronto\.payload\)/);
+  assert.match(confirmar, /goalsState\.removeGoal\(pronto\.meta\.id\)/);
+  assert.match(confirmar, /notifyFinancialDataChanged\('uni-chat'\)/);
+  // Toque no card, frase nova e troca de assunto.
+  const { body: confirmAction } = extractFunctionBody(page, 'async function handleConfirmAction(id) {');
+  assert.match(confirmAction, /metaPendenteRef\.current\?\.messageId === id[\s\S]*?await confirmarPedidoDeMeta\(id\)[\s\S]*?reportConfirmationError\(id, TEXTO_META_VENCIDA\)/);
+  // A chave da desestruturação confunde extractFunctionBody: a busca é na página.
+  assert.match(page, /function handleCancelAction\(id, \{ cascade = false \} = \{\}\) \{[\s\S]*?metaPendenteRef\.current\?\.messageId === id\) \{\s*cancelarPedidoDeMeta\(id\);/);
+  const { body: sendText } = extractFunctionBody(page, 'function sendText(text, metadata) {');
+  assert.match(sendText, /if \(tratarPedidoDeMetaPendente\(functionalText, userMsg\)\) return;/);
+  const { body: abandonar } = extractFunctionBody(page, 'function abandonStalePendingState() {');
+  assert.match(abandonar, /encerrarPedidoDeMeta\('expired'\)/);
 });
 
 test('#80: consulta com parâmetros soma o período inteiro no banco; outra pergunta ou falha vai para as regras', async () => {

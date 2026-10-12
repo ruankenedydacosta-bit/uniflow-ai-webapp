@@ -19,6 +19,8 @@
 //   precisa ter. Em exclusao (#189), acao 'excluir_lancamento' com as
 //   palavras que o alvo precisa ter e, quando importa, data, valor, ultimo e
 //   lote.
+//   Em meta (#192), a ação (criar, editar, excluir, consultar) e, quando
+//   importa, nome, alvo (uma das metas de metasDaAvaliacao), valor e data.
 //
 // Data de referência de todos os casos: sexta, 02/10/2026.
 //
@@ -1128,17 +1130,50 @@ export const CASOS = [
   {
     id: 'meta-juntar',
     frase: 'quero juntar 10 mil pra viajar no ano que vem',
-    esperado: { intent: 'meta' },
+    esperado: { intent: 'meta', pedido: { acao: 'criar', valor: 10000 } },
   },
   {
     id: 'meta-criar',
     frase: 'cria uma meta de reserva de emergência de 6 mil',
-    esperado: { intent: 'meta' },
+    esperado: { intent: 'meta', pedido: { acao: 'criar', nome: 'Reserva de emergência', valor: 6000 } },
   },
+  // Meta pela conversa (#192): pergunta sobre meta deixa de ser consulta.
   {
     id: 'meta-consulta',
     frase: 'quanto falta pra eu bater minha meta?',
-    esperado: { intent: 'consulta', consulta: { tipo: 'outra' } },
+    esperado: { intent: 'meta', pedido: { acao: 'consultar' } },
+  },
+  {
+    id: 'meta-consultar-alvo',
+    frase: 'como tá a meta da viagem?',
+    esperado: { intent: 'meta', pedido: { acao: 'consultar', alvo: 'Viagem para o Chile' } },
+  },
+  {
+    id: 'meta-editar-valor',
+    frase: 'muda a meta da viagem pro Chile pra 15 mil',
+    esperado: { intent: 'meta', pedido: { acao: 'editar', alvo: 'Viagem para o Chile', valor: 15000 } },
+  },
+  {
+    id: 'meta-editar-prazo',
+    frase: 'a meta do casamento agora é até junho do ano que vem',
+    esperado: { intent: 'meta', pedido: { acao: 'editar', alvo: 'Casamento', data: '2027-06-30' } },
+  },
+  {
+    id: 'meta-excluir',
+    frase: 'apaga a meta do notebook',
+    esperado: { intent: 'meta', pedido: { acao: 'excluir', alvo: 'Notebook' } },
+  },
+  {
+    id: 'meta-criar-por-mes',
+    reservado: true,
+    frase: 'quero guardar 300 por mês pra juntar 3600 até dezembro',
+    esperado: { intent: 'meta', pedido: { acao: 'criar', valor: 3600, data: '2026-12-31' } },
+  },
+  {
+    id: 'meta-consultar-todas',
+    reservado: true,
+    frase: 'me mostra minhas metas',
+    esperado: { intent: 'meta', pedido: { acao: 'consultar' } },
   },
   {
     id: 'saldo-carteira-agora',
@@ -1156,7 +1191,7 @@ export const CASOS = [
     id: 'meta-carro',
     reservado: true,
     frase: 'quero economizar uns 40 mil pra trocar de carro',
-    esperado: { intent: 'meta' },
+    esperado: { intent: 'meta', pedido: { acao: 'criar', valor: 40000 } },
   },
   // Parâmetros de consulta (#80, etapa 2c): o app soma as movimentações do
   // período com o filtro que o modelo devolve.

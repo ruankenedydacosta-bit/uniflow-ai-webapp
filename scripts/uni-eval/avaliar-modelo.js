@@ -20,7 +20,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { validarInterpretacao } from '../../supabase/functions/_shared/uniInterpret/contrato.js';
 import { INSTRUCOES, montarMensagemUsuario } from '../../supabase/functions/_shared/uniInterpret/prompt.js';
 import { interpretarComAnthropic, interpretarComOpenAi } from '../../supabase/functions/_shared/uniInterpret/provedores.js';
-import { catalogoDoWorkspace } from '../../src/features/uni-interpret/evalCatalog.js';
+import { catalogoDoWorkspace, metasDaAvaliacao } from '../../src/features/uni-interpret/evalCatalog.js';
 import { CASOS, DATA_REFERENCIA } from '../../src/features/uni-interpret/evalCases.js';
 import { avaliarCaso, normalizarInterpretacao, resumirAvaliacao } from '../../src/features/uni-interpret/evalScoring.js';
 
@@ -88,11 +88,13 @@ const casosDoConjunto = CASOS.filter((caso) => (
 for (const caso of casosDoConjunto) {
   const workspaceType = caso.workspace ?? 'personal';
   const categorias = catalogoDoWorkspace(workspaceType);
+  const metas = metasDaAvaliacao();
   const mensagem = montarMensagemUsuario({
     frase: caso.frase,
     dataReferencia: DATA_REFERENCIA,
     workspaceType,
     categorias,
+    metas,
   });
 
   const inicio = performance.now();
@@ -112,7 +114,7 @@ for (const caso of casosDoConjunto) {
   }
 
   const validada = chamada.ok
-    ? validarInterpretacao(chamada.bruta, { categorias, dataReferencia: DATA_REFERENCIA })
+    ? validarInterpretacao(chamada.bruta, { categorias, metas, dataReferencia: DATA_REFERENCIA })
     : { intent: 'nao_entendi', operacoes: [], resposta: '' };
   const resultado = normalizarInterpretacao(validada, { limiarConfianca });
   const veredito = avaliarCaso(caso, resultado);

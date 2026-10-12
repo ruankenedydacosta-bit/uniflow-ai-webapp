@@ -10,8 +10,8 @@
 // contas vão no prompt com apelidos curtos (c1, c2, k1...) e a validação
 // traduz o apelido para o registro real, descartando apelido inventado.
 
-// saldo e meta não levam operação: o app público não ajusta saldo nem cria
-// objetivo pela conversa, só responde (#80).
+// saldo não leva operação: o app público não ajusta saldo pela conversa, só
+// responde (#80). meta leva o pedido de meta (#192).
 export const INTENTS = Object.freeze([
   'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'conversa', 'nao_entendi',
 ]);
@@ -24,6 +24,9 @@ export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'la
 // Criar, renomear ou excluir uma categoria pela conversa. O app confere
 // permissão, nome repetido e categoria padrão antes de mostrar o card.
 export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
+// Pedido de meta pela conversa (#192). Aporte e retirada entram depois da
+// #158, quando as regras de aporte existirem.
+export const ACOES_META = Object.freeze(['criar', 'editar', 'excluir', 'consultar']);
 // O que fazer com um compromisso (#191). Cancelar muda o status; excluir
 // apaga. Fora de criar, o app localiza o compromisso pelo alvo.
 export const ACOES_AGENDA = Object.freeze(['criar', 'editar', 'cancelar', 'concluir', 'excluir']);
@@ -46,17 +49,22 @@ export const MAX_TITULO_AGENDA = 80;
 export const MIN_PARCELAS = 2;
 export const MAX_PARCELAS = 72;
 export const MAX_TERMO = 40;
+export const MAX_NOME_META = 60;
+// Prazo de meta: até dez anos. Mais que isso é erro de leitura.
+export const MAX_DIAS_PRAZO_META = 3653;
 // Como a pessoa descreveu o lançamento que quer excluir (#189).
 export const MAX_ALVO_EXCLUSAO = 80;
 
 // Apelidos estáveis: ordem por tipo e nome, a mesma que o prompt mostra.
-export function indexarCatalogo({ categorias = [], contas = [] } = {}) {
+export function indexarCatalogo({ categorias = [], contas = [], metas = [] } = {}) {
   const categoriasOrdenadas = [...categorias].sort((a, b) =>
     a.category_type.localeCompare(b.category_type) || a.name.localeCompare(b.name, 'pt-BR'));
   const contasOrdenadas = [...contas].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  const metasOrdenadas = [...metas].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   return {
     categorias: categoriasOrdenadas.map((registro, indice) => ({ apelido: `c${indice + 1}`, registro })),
     contas: contasOrdenadas.map((registro, indice) => ({ apelido: `k${indice + 1}`, registro })),
+    metas: metasOrdenadas.map((registro, indice) => ({ apelido: `m${indice + 1}`, registro })),
   };
 }
 
@@ -129,6 +137,21 @@ const ESQUEMA_CATEGORIA = {
   },
 };
 
+// Pedido de meta (#192). Fora do intent meta, todos os campos são null.
+const ESQUEMA_META = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['acao', 'alvo', 'nome', 'valor', 'data', 'por_mes'],
+  properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_META, null] },
+    alvo: { ...TEXTO_OU_NULO, description: 'apelido da meta que muda, sai ou é consultada, ex.: m2' },
+    nome: { ...TEXTO_OU_NULO, description: 'nome da meta nova ou nome novo' },
+    valor: { type: ['number', 'null'], description: 'quanto a pessoa quer juntar, em reais' },
+    data: { ...TEXTO_OU_NULO, description: 'prazo, AAAA-MM-DD' },
+    por_mes: { type: ['number', 'null'], description: 'quanto guardar por mês, em reais' },
+  },
+};
+
 // Excluir um lançamento já registrado (#189). O modelo só diz qual: quem acha
 // o lançamento, lista os parecidos e pede confirmação é o app. Fora do intent
 // exclusao, todos os campos são null ou false.
@@ -151,7 +174,7 @@ const ESQUEMA_EXCLUSAO = {
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'exclusao'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
@@ -159,6 +182,7 @@ export const ESQUEMA = Object.freeze({
     resposta: { type: 'string' },
     consulta: ESQUEMA_CONSULTA,
     categoria: ESQUEMA_CATEGORIA,
+    meta: ESQUEMA_META,
     exclusao: ESQUEMA_EXCLUSAO,
   },
 });
@@ -358,6 +382,46 @@ function validarCategoria(bruta, { categoriasPorApelido }) {
   return { acao, tipo, alvo, nome: acao === 'excluir' ? null : nome };
 }
 
+function valorPositivo(bruto) {
+  const numero = Number(bruto);
+  return Number.isFinite(numero) && numero > 0 ? Math.round(numero * 100) / 100 : null;
+}
+
+// Apelido inventado vira alvo null, e o app diz que não achou a meta; nesse
+// caso o nome fica com o que a pessoa disse, para a Uni dizer qual não
+// achou. Prazo no passado ou a mais de dez anos é erro de leitura e sai,
+// marcado para o app perguntar. Sem ação válida, o app responde como antes.
+function validarMeta(bruta, { metasPorApelido, dataReferencia }) {
+  const acao = ACOES_META.includes(bruta?.acao) ? bruta.acao : null;
+  const alvo = acao && acao !== 'criar' ? metasPorApelido.get(bruta?.alvo) ?? null : null;
+  const nomeDito = textoLimpo(bruta?.nome, MAX_NOME_META) || null;
+  const nome = (acao === 'excluir' || acao === 'consultar') && alvo ? null : nomeDito;
+  const ajustes = [];
+
+  let data = null;
+  if (acao === 'criar' || acao === 'editar') {
+    // String vazia é "sem prazo", não prazo errado.
+    if (typeof bruta?.data === 'string' && bruta.data.trim()) {
+      if (dataValida(bruta.data) && bruta.data >= dataReferencia
+        && distanciaEmDias(bruta.data, dataReferencia) <= MAX_DIAS_PRAZO_META) {
+        data = bruta.data;
+      } else {
+        ajustes.push('data_descartada');
+      }
+    }
+  }
+  const comValores = acao === 'criar' || acao === 'editar';
+  return {
+    acao,
+    alvo,
+    nome,
+    valor: comValores ? valorPositivo(bruta?.valor) : null,
+    data,
+    porMes: comValores ? valorPositivo(bruta?.por_mes) : null,
+    ajustes,
+  };
+}
+
 // Data impossível ou longe demais sai, como no lançamento. Conta inventada
 // sai. O que sobra é critério para o app achar o lançamento; sem nenhum, o
 // app pergunta qual.
@@ -378,7 +442,7 @@ function validarExclusao(bruta, { contasPorApelido, dataReferencia }) {
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
-export function validarInterpretacao(bruta, { categorias = [], contas = [], dataReferencia } = {}) {
+export function validarInterpretacao(bruta, { categorias = [], contas = [], metas = [], dataReferencia } = {}) {
   const intent = INTENTS.includes(bruta?.intent) ? bruta.intent : 'nao_entendi';
   const resposta = textoLimpo(bruta?.resposta, MAX_RESPOSTA);
 
@@ -386,10 +450,11 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
     return { intent, operacoes: [], agenda: validarAgenda(bruta?.agenda), resposta };
   }
 
-  const indice = indexarCatalogo({ categorias, contas });
+  const indice = indexarCatalogo({ categorias, contas, metas });
   const contexto = {
     categoriasPorApelido: new Map(indice.categorias.map(({ apelido, registro }) => [apelido, registro])),
     contasPorApelido: new Map(indice.contas.map(({ apelido, registro }) => [apelido, registro])),
+    metasPorApelido: new Map(indice.metas.map(({ apelido, registro }) => [apelido, registro])),
     dataReferencia,
   };
 
@@ -401,6 +466,9 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], data
     return categoria.acao
       ? { intent, operacoes: [], resposta, categoria }
       : { intent: 'nao_entendi', operacoes: [], resposta };
+  }
+  if (intent === 'meta') {
+    return { intent, operacoes: [], resposta, meta: validarMeta(bruta?.meta, contexto) };
   }
   if (intent === 'exclusao') {
     return { intent, operacoes: [], resposta, exclusao: validarExclusao(bruta?.exclusao, contexto) };

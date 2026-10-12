@@ -72,11 +72,11 @@ function avaliarTitulo(palavras, titulo) {
     && !RESTO_DE_PEDIDO.test(normalizado);
 }
 
-// Pedido de categoria, de agenda ou de exclusão: a ação certa e, quando o
-// caso diz, o nome e o alvo, sem acento e caixa. Alvo em lista (#191) ou
-// `palavras` (#189) são as palavras que o texto precisa ter: o modelo chama o
-// item como a pessoa chamou, não como está salvo. Na exclusão, data, valor,
-// ultimo e lote batem exatos.
+// Pedido de categoria, de agenda, de exclusão ou de meta: a ação certa e,
+// quando o caso diz, o nome e o alvo, sem acento e caixa. Alvo em lista
+// (#191) ou `palavras` (#189) são as palavras que o texto precisa ter: o
+// modelo chama o item como a pessoa chamou, não como está salvo. Valor
+// compara em centavos; data, ultimo e lote batem exatos.
 function avaliarPedido(esperado, obtido) {
   if (!obtido || obtido.acao !== esperado.acao) return false;
   const textoIgual = ['nome', 'alvo'].every((campo) => {
@@ -89,9 +89,11 @@ function avaliarPedido(esperado, obtido) {
   });
   const palavras = esperado.palavras === undefined
     || esperado.palavras.every((palavra) => normalizeSearchText(obtido.alvo ?? '').includes(normalizeSearchText(palavra)));
-  const exatos = ['data', 'valor', 'ultimo', 'lote'].every((campo) => esperado[campo] === undefined
+  const valor = esperado.valor === undefined
+    || (esperado.valor === null ? (obtido.valor ?? null) === null : mesmoValor(esperado.valor, obtido.valor));
+  const exatos = ['data', 'ultimo', 'lote'].every((campo) => esperado[campo] === undefined
     || (obtido[campo] ?? null) === esperado[campo]);
-  return textoIgual && palavras && exatos;
+  return textoIgual && palavras && valor && exatos;
 }
 
 // Devolve um veredito por campo: true (acertou), false (errou) ou null
@@ -158,9 +160,14 @@ const INTENT_DO_INTERPRETADOR = {
 };
 const INTENT_POR_TIPO = { saida: 'lancar_saida', entrada: 'lancar_entrada', transferencia: 'transferir' };
 
+// Pedido de categoria, meta, exclusão ou agenda no formato que avaliarPedido lê.
 function pedidoDaInterpretacao(validada) {
   if (validada.categoria) {
     return { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null };
+  }
+  if (validada.meta) {
+    const { acao, nome, alvo, valor, data } = validada.meta;
+    return { acao, nome, alvo: alvo?.name ?? null, valor, data };
   }
   if (validada.exclusao) {
     const { alvo, data, valor, conta, ultimo, lote } = validada.exclusao;
