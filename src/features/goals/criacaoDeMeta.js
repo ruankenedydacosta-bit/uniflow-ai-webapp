@@ -5,8 +5,9 @@ import { formatCurrency } from '../../utils/formatters.js';
 
 export const PASSOS_DA_CRIACAO = 3;
 
-// Prazo máximo aceito no plano por valor por mês: abaixo disso, um valor
-// por mês muito pequeno geraria uma data-alvo séculos à frente.
+// Prazo máximo aceito no plano, nos dois modos: sem ele, um valor por mês
+// muito pequeno ou um mês digitado no campo geraria uma data-alvo séculos
+// à frente.
 export const MESES_MAXIMOS_DO_PLANO = 600;
 
 export const DIAS_DO_LEMBRETE = Object.freeze(Array.from({ length: 28 }, (_, indice) => indice + 1));
@@ -89,7 +90,9 @@ export function textoDoMes(ano, mes) {
 // - modo 'mensal': o valor por mês define o prazo.
 // `entradasDoMes` nulo ou zero deixa o percentual de fora.
 export function calcularPlano({ alvo, guardado = 0, modo, prazo, porMes, entradasDoMes, hoje = new Date() }) {
-  const falta = Math.max(Number(alvo || 0) - Number(guardado || 0), 0);
+  // Subtração em centavos: 10,30 - 3,30 em ponto flutuante dá
+  // 7.000000000000001, e o arredondamento para cima viraria R$ 8 por mês.
+  const falta = Math.max(Math.round((Number(alvo || 0) - Number(guardado || 0)) * 100) / 100, 0);
   if (!(Number(alvo) > 0) || falta <= 0) return null;
 
   let meses;
@@ -140,6 +143,7 @@ export function erroDoPasso(passo, formulario, plano) {
     if (formulario.modo === 'data') {
       if (!lerMes(formulario.prazo)) return 'Escolha o mês do prazo.';
       if (!plano) return 'Escolha um mês depois do atual.';
+      if (plano.meses > MESES_MAXIMOS_DO_PLANO) return 'Escolha um prazo de até 50 anos.';
       return null;
     }
     if (!(formulario.porMes > 0)) return 'Informe quanto vai guardar por mês.';

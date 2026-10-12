@@ -48,7 +48,10 @@ function CampoDeValor({ label, centavos, onChange, autoFocus = false }) {
   );
 }
 
-function AvisoDeNotificacao({ push }) {
+// Só montado com o lembrete ligado: o useWebPush grava a inscrição do
+// aparelho ao montar, e isso não precisa rodar a cada abertura da criação.
+function AvisoDeNotificacao() {
+  const push = useWebPush();
   if (push.status === PUSH_STATUS.ENABLED || push.status === PUSH_STATUS.CHECKING) return null;
   if (push.status === PUSH_STATUS.DENIED) {
     return <p className={styles.helper}>As notificações estão bloqueadas neste navegador. Libere nas configurações do navegador para receber o lembrete.</p>;
@@ -89,7 +92,6 @@ export default function GoalCreateFlow({ onClose, onCreate }) {
   });
   const entradasDoMes = carregandoEntradas ? null : summarizeMonth(transactions).income;
   const { activeAccounts } = useAccounts({ workspaceId });
-  const push = useWebPush();
 
   const [passo, setPasso] = useState(1);
   const [tipo, setTipo] = useState(tipos[0].value);
@@ -143,9 +145,15 @@ export default function GoalCreateFlow({ onClose, onCreate }) {
     if (criandoRef.current) return;
     criandoRef.current = true;
     setCriando(true);
-    const result = await onCreate(montarMetaParaCriar(formulario, plano, hoje));
-    criandoRef.current = false;
-    setCriando(false);
+    let result;
+    try {
+      result = await onCreate(montarMetaParaCriar(formulario, plano, hoje));
+    } catch (error) {
+      result = { error };
+    } finally {
+      criandoRef.current = false;
+      setCriando(false);
+    }
     if (result?.error) {
       setErro('Não foi possível criar a meta. Tente de novo.');
     }
@@ -219,7 +227,8 @@ export default function GoalCreateFlow({ onClose, onCreate }) {
                 placeholder="Ex.: Viagem em dezembro"
                 onChange={(event) => {
                   setNome(event.target.value);
-                  setNomeEditado(true);
+                  // Campo apagado volta a acompanhar o tipo escolhido.
+                  setNomeEditado(event.target.value.trim() !== '');
                   setErro(null);
                 }}
               />
@@ -287,7 +296,7 @@ export default function GoalCreateFlow({ onClose, onCreate }) {
                     ))}
                   </select>
                 </Field>
-                <AvisoDeNotificacao push={push} />
+                <AvisoDeNotificacao />
               </>
             ) : null}
 

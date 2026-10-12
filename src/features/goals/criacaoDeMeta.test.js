@@ -124,3 +124,18 @@ test('o goalCalc chega ao mesmo valor por mês do plano', () => {
 
   assert.equal(calcRequiredMonthlyAmount(meta), plano.porMes);
 });
+
+test('o que falta é calculado em centavos, sem erro de ponto flutuante', () => {
+  const porData = calcularPlano({ alvo: 10.3, guardado: 3.3, modo: 'data', prazo: '2026-11', hoje: HOJE });
+  assert.equal(porData.falta, 7);
+  assert.equal(porData.porMes, 7);
+
+  const porValor = calcularPlano({ alvo: 10.3, guardado: 3.3, modo: 'mensal', porMes: 7, hoje: HOJE });
+  assert.equal(porValor.meses, 1);
+});
+
+test('o prazo por data também respeita o limite de 50 anos', () => {
+  const longe = formulario({ prazo: '2999-01' });
+  const plano = calcularPlano({ ...longe, hoje: HOJE });
+  assert.equal(erroDoPasso(2, longe, plano), 'Escolha um prazo de até 50 anos.');
+});
