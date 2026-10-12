@@ -2167,3 +2167,28 @@ test('#80: recorrência numa operação só abre o card do mês e avisa que a re
   const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
   assert.match(body, /publishConversationResult\(phrased\);\s*if \(interpretacao\.operacoes\[0\]\?\.recorrente === true\) \{\s*createAssistantResponse\(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO/);
 });
+
+// BUG REAL EM PRODUÇÃO (voz, 11/10/2026): com a Uni perguntando o valor, a
+// frase inteira com valor, data e categoria ia para as regras, que só liam a
+// categoria; a Uni perguntou o valor quatro vezes. A resposta ao rascunho é
+// lida pelo uni-interpret, com o rascunho, antes das regras.
+test('#80: resposta ao rascunho vai ao uni-interpret antes das regras, que ficam de reserva', async () => {
+  const page = await source('UniChatPage.jsx');
+  const { body } = extractFunctionBody(page, 'function handlePendingConversationInput(text, userMsg) {');
+  const modelo = body.indexOf('if (podeLerRascunhoPeloModelo(action)) {');
+  const regras = body.indexOf('const resolvedInput = resolvePendingActionInput({');
+  const dependencia = body.indexOf('if (categoryDependencyActive) {');
+  assert.ok(modelo > -1 && regras > -1 && modelo < regras, 'o modelo lê antes das regras');
+  assert.ok(dependencia > -1 && dependencia < modelo, 'cards de criar conta ou categoria seguem com o fluxo próprio');
+  assert.match(body, /void lerRascunhoPeloModelo\(text, action, responderPelasRegras\);/);
+
+  const { body: leitura } = extractFunctionBody(page, 'async function lerRascunhoPeloModelo(text, action, pelasRegras) {');
+  assert.match(leitura, /rascunho: montarRascunhoParaInterpretacao\(action\)/);
+  assert.match(leitura, /const correcao = correcaoDoRascunho\(interpretacao, action, \{ categorias: categoryState\.categories \}\);/);
+  // Toque no card durante a espera: a resposta do modelo é descartada.
+  assert.match(leitura, /if \(rascunhoAtualRef\.current !== action\) return;/);
+  assert.match(leitura, /if \(!correcao\) \{\s*pelasRegras\(\);/);
+  assert.match(leitura, /uniTurnTokenRef\.current !== turnToken/);
+  // Com o modelo lendo primeiro, a segunda chamada depois das regras sobra.
+  assert.doesNotMatch(page, /correctPendingWithAi/);
+});

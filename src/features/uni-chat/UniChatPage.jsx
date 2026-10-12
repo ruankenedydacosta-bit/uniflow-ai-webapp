@@ -67,6 +67,7 @@ import {
   createPhraseStructuredFactService, isLlmPhrasingFlagEnabled,
 } from '../uni-llm';
 import {
+  correcaoDoRascunho,
   createUniInterpretClient,
   interpretacaoParaOverrides,
   montarHistoricoParaInterpretacao,
@@ -605,29 +606,67 @@ export default function UniChatPage({ variant = 'full' }) {
     );
   }
 
-  // Ajuste que as regras não entenderam, com o card na tela: a IA recebe o
-  // rascunho e devolve a operação corrigida ("não, foi no débito").
-  async function correctPendingWithAi(text, action, confirmationId) {
+  // Resposta a um rascunho de entrada ou saída (card na tela ou campo
+  // pendente) lida pelo uni-interpret, com o rascunho junto.
+  function podeLerRascunhoPeloModelo(action) {
+    return Boolean(
+      effectiveWorkspace?.id
+      && uniInterpretClient.isSupported()
+      && (action?.transactionType === 'expense' || action?.transactionType === 'income'),
+    );
+  }
+
+  // pelasRegras lê a frase quando a interpretação não corrige este rascunho:
+  // IA fora, erro, outra intenção ou nada muda.
+  async function lerRascunhoPeloModelo(text, action, pelasRegras) {
     const conversationId = activeIdRef.current;
+    const turnToken = uniTurnTokenRef.current;
     setIsTyping(true);
-    let overrides;
+    let interpretacao;
     try {
-      overrides = await interpretWithAi(text, action, { draft: montarRascunhoParaInterpretacao(action) });
+      ({ interpretacao } = await uniInterpretClient.interpretar({
+        workspaceId: effectiveWorkspace.id,
+        frase: text,
+        historico: montarHistoricoParaInterpretacao(messages),
+        rascunho: montarRascunhoParaInterpretacao(action),
+      }));
     } finally {
       setIsTyping(false);
     }
-    if (activeIdRef.current !== conversationId) return;
-    const result = overrides ? financialConversation.provideInput(overrides) : null;
-    if (!result) {
-      createAssistantResponse('Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.');
+    if (activeIdRef.current !== conversationId || uniTurnTokenRef.current !== turnToken) return;
+    // Os botões do card seguem ativos durante a espera: se a pessoa tocou em
+    // Confirmar, Cancelar ou Editar, o rascunho já é outro e a resposta do
+    // modelo não vale mais.
+    if (rascunhoAtualRef.current !== action) return;
+
+    const correcao = correcaoDoRascunho(interpretacao, action, { categorias: categoryState.categories });
+    if (!correcao) {
+      pelasRegras();
       return;
     }
-    setMessages((current) => current.map((message) => (
-      message.id === confirmationId
+    const draftCardId = findPendingConfirmationMessageId();
+    const marcarCardAtualizado = () => setMessages((current) => current.map((message) => (
+      message.id === draftCardId && message.confirmation?.status === 'pending'
         ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
         : message
     )));
-    setPendingAction(null);
+
+    // Categoria pedida pelo nome e fora do catálogo: o card de criar a
+    // categoria vem antes, e o rascunho volta com os outros campos da frase.
+    if (correcao.novaCategoria) {
+      const draftAction = Object.keys(correcao.overrides).length
+        ? financialConversation.provideInput(correcao.overrides).action ?? action
+        : action;
+      startCategoryDependency(correcao.novaCategoria, draftAction);
+      marcarCardAtualizado();
+      return;
+    }
+
+    if (pendingAction) {
+      marcarCardAtualizado();
+      setPendingAction(null);
+    }
+    const result = financialConversation.provideInput(correcao.overrides);
     await publishConversationResultWithInference(result);
   }
 
@@ -915,6 +954,11 @@ export default function UniChatPage({ variant = 'full' }) {
   const [conversations, setConversations] = useState(initialChatState.conversations);
   const [activeId, setActiveId] = useState(initialChatState.activeId);
   const [pendingAction, setPendingAction] = useState(null);
+  // Rascunho de agora, para quem volta de uma espera saber se ele mudou.
+  const rascunhoAtualRef = useRef(null);
+  useEffect(() => {
+    rascunhoAtualRef.current = pendingAction ?? financialConversation.state.action;
+  });
   const [pendingActionStack, setPendingActionStack] = useState(null);
   const agendaConversationRef = useRef(null);
   if (!agendaConversationRef.current) {
@@ -2643,118 +2687,128 @@ export default function UniChatPage({ variant = 'full' }) {
       return true;
     }
 
-    const resolvedInput = resolvePendingActionInput({
-      value: text,
-      action,
-      accounts: accountState.accounts,
-      categories: categoryState.categories,
-      workspaceId: effectiveWorkspace?.id,
-      referenceDate: getLocalIsoDate(),
-    });
-    if (resolvedInput.kind !== 'correction') {
-      const accountNames = resolvedInput.accounts?.map((account) => account.name).filter(Boolean) ?? [];
-
-      // BUG 2 (Sprint 4, Bloco 4.0): antes de tratar "não encontrei essa
-      // conta/categoria" como proposta de CRIAR uma conta/categoria com o
-      // texto INTEIRO do usuário (causa raiz do bug real: "Estou gastando
-      // demais?" virando nome de conta), classifica se o texto realmente
-      // parece resposta à pendência, mudança de assunto, ou é ambíguo. Ver
-      // classifyPendingActionRelation.js para a estratégia completa e por
-      // que "confirmar"/"cancelar" e matches diretos de conta/categoria
-      // nunca chegam a esta checagem (resolvidos antes, sem mudança de
-      // comportamento). `isLikelyFinancialQuestion` continua existindo como
-      // segundo guard, mas a classificação central resolve o caso que ele
-      // não cobria (perguntas sem pronome interrogativo inicial).
-      if (resolvedInput.kind === 'account_not_found' || resolvedInput.kind === 'category_not_found') {
-        const relation = classifyPendingActionRelation({
-          pendingAction: { field: resolvedInput.kind === 'account_not_found' ? 'account' : 'category' },
-          userText: text,
-          conversationContext: { referenceDate: getLocalIsoDate() },
-          availableAccounts: accountState.accounts,
-          availableCategories: categoryState.categories,
-        });
-
-        if (relation.relation === 'changes_subject') {
-          // pendência permanece intacta (nunca desaparece silenciosamente)
-          // -- a nova pergunta é respondida pelo fallback conversacional
-          // normal, fora do fluxo de pendência. Publicação única
-          // preservada: handleUnresolvedMessage é o mesmo ponto de saída
-          // já usado por runDeterministicFinancialFlow.
-          void handleUnresolvedMessage(text, messages);
-          return true;
-        }
-
-        // "A categoria é Animais de Estimação" com o card na tela: o nome veio
-        // explícito, então a frase responde ao rascunho, mesmo que o
-        // classificador a ache ambígua. Pergunta ("qual categoria você
-        // usou?") já saiu acima como mudança de assunto. Os outros campos da
-        // mesma frase ("foi ontem") entram no rascunho antes, para ele voltar
-        // com eles depois que a categoria for criada.
-        if (resolvedInput.kind === 'category_not_found' && resolvedInput.requestedCategoryName && action) {
-          const draftCardId = findPendingConfirmationMessageId();
-          const draftAction = resolvedInput.overrides
-            ? financialConversation.provideInput(resolvedInput.overrides).action ?? action
-            : action;
-          if (startCategoryDependency(resolvedInput.requestedCategoryName, draftAction)) {
-            setMessages((current) => current.map((message) => (
-              message.id === draftCardId && message.confirmation?.status === 'pending'
-                ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
-                : message
-            )));
-            return true;
-          }
-        }
-
-        if (relation.relation === 'ambiguous') {
-          createAssistantResponse(relation.suggestedClarification);
-          return true;
-        }
-        // relation === 'answers_pending': segue o fluxo já existente abaixo,
-        // comportamento idêntico ao anterior para frases inequívocas.
-      }
-
-      if (
-        resolvedInput.kind === 'account_not_found'
-        && !isLikelyFinancialQuestion(text)
-        && startAccountDependency(text)
-      ) {
-        return true;
-      }
-      if (
-        resolvedInput.kind === 'category_not_found'
-        && startCategoryDependency(text, action)
-      ) {
-        return true;
-      }
-      const pendingConfirmationId = pendingAction ? findPendingConfirmationMessageId() : null;
-      if (resolvedInput.kind === 'invalid' && pendingConfirmationId && uniInterpretClient.isSupported()) {
-        void correctPendingWithAi(text, pendingAction, pendingConfirmationId);
-        return true;
-      }
-      const message = resolvedInput.kind === 'ambiguous_account'
-        ? `Encontrei mais de uma conta correspondente: ${accountNames.join(', ')}. Qual delas você quer usar?`
-        : resolvedInput.kind === 'account_not_found'
-          ? accountNames.length
-            ? `Não encontrei essa conta no Espaço ${financialWorkspaceType === 'business' ? 'Empresa' : 'Pessoal'}. Contas disponíveis: ${accountNames.join(', ')}.`
-            : `Não encontrei essa conta e não há contas disponíveis no Espaço ${financialWorkspaceType === 'business' ? 'Empresa' : 'Pessoal'}.`
-          : pendingAction
-            ? 'Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.'
-            : financialConversation.state.response || 'Não consegui identificar esse dado. Tente informar de outra forma.';
-      createAssistantResponse(message);
+    // #80: com a IA disponível, quem lê a resposta ao rascunho é o
+    // uni-interpret, com o rascunho junto. BUG REAL EM PRODUÇÃO (voz,
+    // 11/10/2026): pelas regras, "Registrar uma despesa de cinco mil e
+    // quinhentos reais no dia quinze de outubro, com a categoria Impostos"
+    // virou só resposta de categoria, e a Uni perguntou o valor quatro vezes.
+    // As regras abaixo leem quando o modelo não devolve uma correção deste
+    // rascunho (IA fora, erro, outra intenção, nada muda).
+    if (podeLerRascunhoPeloModelo(action)) {
+      void lerRascunhoPeloModelo(text, action, responderPelasRegras);
       return true;
     }
+    return responderPelasRegras();
 
-    if (pendingAction) {
-      setMessages((current) => current.map((message) => (
-        message.confirmation?.status === 'pending'
-          ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
-          : message
-      )));
-      setPendingAction(null);
+    function responderPelasRegras() {
+      const resolvedInput = resolvePendingActionInput({
+        value: text,
+        action,
+        accounts: accountState.accounts,
+        categories: categoryState.categories,
+        workspaceId: effectiveWorkspace?.id,
+        referenceDate: getLocalIsoDate(),
+      });
+      if (resolvedInput.kind !== 'correction') {
+        const accountNames = resolvedInput.accounts?.map((account) => account.name).filter(Boolean) ?? [];
+
+        // BUG 2 (Sprint 4, Bloco 4.0): antes de tratar "não encontrei essa
+        // conta/categoria" como proposta de CRIAR uma conta/categoria com o
+        // texto INTEIRO do usuário (causa raiz do bug real: "Estou gastando
+        // demais?" virando nome de conta), classifica se o texto realmente
+        // parece resposta à pendência, mudança de assunto, ou é ambíguo. Ver
+        // classifyPendingActionRelation.js para a estratégia completa e por
+        // que "confirmar"/"cancelar" e matches diretos de conta/categoria
+        // nunca chegam a esta checagem (resolvidos antes, sem mudança de
+        // comportamento). `isLikelyFinancialQuestion` continua existindo como
+        // segundo guard, mas a classificação central resolve o caso que ele
+        // não cobria (perguntas sem pronome interrogativo inicial).
+        if (resolvedInput.kind === 'account_not_found' || resolvedInput.kind === 'category_not_found') {
+          const relation = classifyPendingActionRelation({
+            pendingAction: { field: resolvedInput.kind === 'account_not_found' ? 'account' : 'category' },
+            userText: text,
+            conversationContext: { referenceDate: getLocalIsoDate() },
+            availableAccounts: accountState.accounts,
+            availableCategories: categoryState.categories,
+          });
+
+          if (relation.relation === 'changes_subject') {
+            // pendência permanece intacta (nunca desaparece silenciosamente)
+            // -- a nova pergunta é respondida pelo fallback conversacional
+            // normal, fora do fluxo de pendência. Publicação única
+            // preservada: handleUnresolvedMessage é o mesmo ponto de saída
+            // já usado por runDeterministicFinancialFlow.
+            void handleUnresolvedMessage(text, messages);
+            return true;
+          }
+
+          // "A categoria é Animais de Estimação" com o card na tela: o nome veio
+          // explícito, então a frase responde ao rascunho, mesmo que o
+          // classificador a ache ambígua. Pergunta ("qual categoria você
+          // usou?") já saiu acima como mudança de assunto. Os outros campos da
+          // mesma frase ("foi ontem") entram no rascunho antes, para ele voltar
+          // com eles depois que a categoria for criada.
+          if (resolvedInput.kind === 'category_not_found' && resolvedInput.requestedCategoryName && action) {
+            const draftCardId = findPendingConfirmationMessageId();
+            const draftAction = resolvedInput.overrides
+              ? financialConversation.provideInput(resolvedInput.overrides).action ?? action
+              : action;
+            if (startCategoryDependency(resolvedInput.requestedCategoryName, draftAction)) {
+              setMessages((current) => current.map((message) => (
+                message.id === draftCardId && message.confirmation?.status === 'pending'
+                  ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
+                  : message
+              )));
+              return true;
+            }
+          }
+
+          if (relation.relation === 'ambiguous') {
+            createAssistantResponse(relation.suggestedClarification);
+            return true;
+          }
+          // relation === 'answers_pending': segue o fluxo já existente abaixo,
+          // comportamento idêntico ao anterior para frases inequívocas.
+        }
+
+        if (
+          resolvedInput.kind === 'account_not_found'
+          && !isLikelyFinancialQuestion(text)
+          && startAccountDependency(text)
+        ) {
+          return true;
+        }
+        if (
+          resolvedInput.kind === 'category_not_found'
+          && startCategoryDependency(text, action)
+        ) {
+          return true;
+        }
+        const message = resolvedInput.kind === 'ambiguous_account'
+          ? `Encontrei mais de uma conta correspondente: ${accountNames.join(', ')}. Qual delas você quer usar?`
+          : resolvedInput.kind === 'account_not_found'
+            ? accountNames.length
+              ? `Não encontrei essa conta no Espaço ${financialWorkspaceType === 'business' ? 'Empresa' : 'Pessoal'}. Contas disponíveis: ${accountNames.join(', ')}.`
+              : `Não encontrei essa conta e não há contas disponíveis no Espaço ${financialWorkspaceType === 'business' ? 'Empresa' : 'Pessoal'}.`
+            : pendingAction
+              ? 'Para continuar, diga “confirmar”, “cancelar” ou informe o campo que deseja corrigir.'
+              : financialConversation.state.response || 'Não consegui identificar esse dado. Tente informar de outra forma.';
+        createAssistantResponse(message);
+        return true;
+      }
+
+      if (pendingAction) {
+        setMessages((current) => current.map((message) => (
+          message.confirmation?.status === 'pending'
+            ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
+            : message
+        )));
+        setPendingAction(null);
+      }
+      const result = financialConversation.provideInput(resolvedInput.overrides);
+      void publishConversationResultWithInference(result);
+      return true;
     }
-    const result = financialConversation.provideInput(resolvedInput.overrides);
-    void publishConversationResultWithInference(result);
-    return true;
   }
 
   function runDeterministicFinancialFlow(text, historySnapshot, modeloJaLeu = false) {

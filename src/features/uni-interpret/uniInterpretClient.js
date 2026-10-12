@@ -6,6 +6,8 @@
 // continuam os mesmos. Nunca lança: qualquer falha volta como
 // { interpretacao: null, error } e o chat segue com as regras sem IA.
 
+import { normalizeSearchText } from '../../utils/searchText.js';
+
 export const UNI_INTERPRET_FUNCTION_NAME = 'uni-interpret';
 
 // A interpretação fica no meio do lançamento falado: esperar mais que isso
@@ -149,4 +151,56 @@ export function interpretacaoParaOverrides(interpretacao, { transactionType } = 
   if (operacao.categoria?.id) overrides.categoryId = operacao.categoria.id;
   if (operacao.conta?.id) overrides.accountId = operacao.conta.id;
   return Object.keys(overrides).length ? overrides : null;
+}
+
+function valorNoRascunho(action, campo) {
+  if (campo === 'categoryId') return action?.category?.id ?? null;
+  if (campo === 'accountId') return action?.account?.id ?? null;
+  return action?.[campo] ?? null;
+}
+
+// O modelo devolve a operação inteira: um campo só muda se o valor for outro
+// de verdade. Descrição igual sem acento e caixa, ou valor em texto, não é
+// mudança.
+function mudou(campo, valor, atual) {
+  if (campo === 'amount') return Number(valor) !== Number(atual);
+  if (campo === 'description') return normalizeSearchText(valor) !== normalizeSearchText(atual ?? '');
+  return valor !== atual;
+}
+
+// Resposta ao rascunho lida pelo uni-interpret → o que muda nele: os campos
+// diferentes do rascunho e, se a pessoa pediu uma categoria fora do
+// catálogo, o nome dela. Nome que já existe no catálogo, só com outro acento
+// ou caixa, vira a categoria existente, sem card para criar outra. null
+// quando a interpretação não corrige este rascunho (outra intenção, outro
+// tipo, várias operações, parcela) ou não muda nada: aí as regras leem a
+// frase.
+export function correcaoDoRascunho(interpretacao, action, { categorias = [] } = {}) {
+  if (interpretacao?.intent !== 'correcao') return null;
+  const operacoes = Array.isArray(interpretacao.operacoes) ? interpretacao.operacoes : [];
+  const [operacao] = operacoes;
+  const transactionType = action?.transactionType;
+  if (operacoes.length !== 1 || TRANSACAO_POR_TIPO[operacao?.tipo] !== transactionType || transactionType === 'transfer') return null;
+  if (operacao.parcelas) return null;
+
+  const overrides = Object.fromEntries(
+    Object.entries(interpretacaoParaOverrides(interpretacao, { transactionType }) ?? {})
+      .filter(([campo, valor]) => mudou(campo, valor, valorNoRascunho(action, campo))),
+  );
+  let novaCategoria = !operacao.categoria?.id && typeof operacao.novaCategoria === 'string' && operacao.novaCategoria.trim()
+    ? operacao.novaCategoria.trim()
+    : null;
+  if (novaCategoria) {
+    const existente = (Array.isArray(categorias) ? categorias : []).find((categoria) => (
+      categoria?.category_type === transactionType
+      && categoria.is_active !== false
+      && normalizeSearchText(categoria.name) === normalizeSearchText(novaCategoria)
+    ));
+    if (existente) {
+      novaCategoria = null;
+      if (existente.id !== valorNoRascunho(action, 'categoryId')) overrides.categoryId = existente.id;
+    }
+  }
+  if (!Object.keys(overrides).length && !novaCategoria) return null;
+  return { overrides, novaCategoria };
 }
