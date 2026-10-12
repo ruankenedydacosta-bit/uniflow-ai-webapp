@@ -1,5 +1,9 @@
 # Open Finance Migration Review
 
+> Registro historico de julho de 2026. A migration 004 esta em producao desde
+> a integracao Supabase-GitHub. O estado atual fica em
+> `OPEN_FINANCE_ARCHITECTURE.md`.
+
 ## Escopo
 
 Revisao pre-aplicacao da migration:

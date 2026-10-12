@@ -2,26 +2,18 @@
 
 ## Status
 
-Em 2026-07-11, a infraestrutura de dominio foi aplicada e validada somente no
-projeto Supabase `UniFlow DEV`.
+Em 2026-10-12 nenhuma instituicao financeira esta conectada e nenhum provedor
+foi escolhido.
 
-- A migration 004 foi aplicada com sucesso no DEV.
-- A validacao estatica concluiu 12/12 verificacoes.
-- Quatro tabelas, RLS, policies, FKs, indices e triggers foram confirmados.
-- Nenhuma escrita foi liberada ao frontend.
-- Nenhuma coluna proibida destinada a segredo foi encontrada.
-- Nenhuma instituicao financeira foi conectada.
+- As tabelas da migration 004 existem em producao (`egbqrhcfxtjqwgteaknp`),
+  aplicadas pela integracao Supabase-GitHub no merge, e estao vazias.
+- O projeto `UniFlow DEV` citado nas revisoes de julho saiu do fluxo. Toda
+  migration vai para producao no merge em `main`.
+- A migration 068 ajustou o nucleo financeiro ao app atual (ver "Conta e
+  lancamento do Open Finance no nucleo").
 - Nenhum token, certificado, segredo ou credencial bancaria foi criado.
-- Producao permanece sem alteracoes.
-- Paginas, CSS e mocks atuais permanecem inalterados.
-
-A migration aprovada no DEV e:
-
-`supabase/migrations/20260711_004_open_finance_infrastructure.sql`
-
-Ela depende das migrations de identidade, workspaces e nucleo financeiro. A
-aprovacao no DEV nao autoriza promocao para producao nem conexao de um
-provedor.
+- A tela `/open-finance` continua sendo demonstracao visual.
+- Os services e o hook `useOpenFinance` existem, mas nenhuma tela os usa.
 
 ## Principio do produto
 
@@ -204,6 +196,63 @@ A revogacao futura deve interromper novos jobs, revogar no provedor e aplicar a
 politica de retencao. Excluir historico financeiro normalizado nao deve ser uma
 consequencia implicita sem regra de produto e base legal claramente definidas.
 
+## Conta e lancamento do Open Finance no nucleo
+
+Conta e lancamento normalizados que vem do banco usam `source_type =
+'open_finance'` em `accounts` e `transactions`. So o backend grava esse valor:
+as policies de insert do app exigem `source_type = 'manual'`.
+
+Regras garantidas no banco pela migration 068:
+
+- **Saldo.** `get_derived_account_balances()` devolve, para conta do Open
+  Finance que nao e cartao, o `accounts.current_balance` gravado pelo backend.
+  O extrato importado cobre so os ultimos meses, entao somar lancamentos nao
+  reproduz o saldo do banco. Cartao continua derivado dos lancamentos, como o
+  cartao manual: a fatura sai do ciclo.
+- **Conta protegida.** O app (`authenticated`/`anon`) nao edita nome, tipo,
+  instituicao, saldo, limite, fechamento, vencimento nem `is_active`, e nao
+  exclui. `metadata` segue editavel.
+- **Lancamento protegido.** O app nao edita valor, data, conta, tipo,
+  descricao, status, parcelas nem recorrencia, e nao exclui. Categoria,
+  observacao, competencia e `metadata` seguem editaveis: recategorizar e o
+  trabalho da pessoa e da Uni.
+- **Quem passa.** Edge Function com `service_role`, RPC `security definer` e
+  cascata de FK (excluir o espaco). As RPCs da Uni ja filtram
+  `source_type = 'manual'`.
+- **Payload.** `transactions.raw_provider_data` fica sempre nulo (CHECK). O
+  payload sanitizado mora em `external_transactions.sanitized_provider_data`,
+  sem grant para o app.
+
+A interface ja segue essas regras: `ehContaDoOpenFinance` bloqueia editar,
+ajustar saldo e excluir conta, e a Uni recusa editar ou excluir lancamento
+importado.
+
+## Decisoes pendentes antes do backend
+
+Nao dependem do provedor escolhido e precisam de resposta do dono antes da
+primeira Edge Function:
+
+1. **Conta manual que ja existe.** A pessoa registra a conta Nubank a mao ha
+   meses e conecta o Nubank. A conta manual vira a do Open Finance (mantendo
+   o historico) ou nasce uma conta nova e a manual e arquivada?
+2. **Lancamento manual duplicado.** O mesmo gasto lancado pela voz e importado
+   pelo banco. A conciliacao vincula o importado ao manual
+   (`external_transactions.normalized_transaction_id`) por valor, data e conta?
+   E o lancamento manual sem conta (`account_id` nulo, o caso comum hoje)?
+3. **Transferencia entre contas proprias.** Duas contas conectadas mostram um
+   debito e um credito. Sem conciliacao, viram uma despesa e uma receita e
+   inflam os totais do mes.
+4. **Aporte de meta.** O aporte cria uma transferencia manual para a conta
+   vinculada (#158). Com a conta vinculada no Open Finance, o banco tambem
+   manda o credito. A #206 define o comportamento da meta.
+5. **Plano.** Cada conexao tem custo mensal no agregador. Definir em qual plano
+   o Open Finance entra e o limite de conexoes, imposto no banco por trigger.
+6. **Retencao.** `data_retention_until` existe, mas nenhum job apaga nada.
+   Definir prazo apos revogacao e o que acontece com os lancamentos
+   normalizados.
+7. **Politica de privacidade.** O agregador entra como subprocessador na mesma
+   PR da feature.
+
 ## Webhooks e Edge Functions
 
 Edge Functions ou backend seguro serao responsaveis por:
@@ -280,12 +329,13 @@ tokens, validacao de webhooks bancarios ou acesso privilegiado ao banco.
 2. Comparar PF/PJ, dados suportados, webhooks, seguranca, SLA e custos.
 3. Selecionar um provedor somente depois de uma matriz documentada.
 4. Definir requisitos regulatorios sem incluir credenciais no repositorio.
-5. Criar Edge Functions com secrets apenas no DEV.
-6. Implementar consentimento sandbox do provedor escolhido.
-7. Criar roteiro autenticado de leitura/RLS para o fluxo integrado.
-8. Validar idempotencia, retries, revogacao e expiracao.
-9. Conciliar contas e transacoes externas com o dominio normalizado.
-10. Conectar interface somente depois dos testes de seguranca.
+5. Responder as decisoes pendentes acima.
+6. Criar Edge Functions com secrets do sandbox do provedor.
+7. Implementar consentimento sandbox do provedor escolhido.
+8. Criar roteiro autenticado de leitura/RLS para o fluxo integrado.
+9. Validar idempotencia, retries, revogacao e expiracao.
+10. Conciliar contas e transacoes externas com o dominio normalizado.
+11. Conectar interface somente depois dos testes de seguranca.
 
 ## Criterios antes de producao
 
@@ -298,4 +348,5 @@ tokens, validacao de webhooks bancarios ou acesso privilegiado ao banco.
 - revogacao e expiracao testadas;
 - rate limit, retry e observabilidade ativos;
 - plano de incidente e rollback documentado;
-- nenhuma migration promovida sem passar antes pelo DEV.
+- toda migration validada antes do merge numa transacao com ROLLBACK contra
+  o banco, com o roteiro de teste em `supabase/tests/`.
