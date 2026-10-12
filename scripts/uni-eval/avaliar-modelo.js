@@ -129,7 +129,10 @@ for (const caso of casosDoConjunto) {
   console.log(
     `      ${resultado.intent} | ${resultado.valor ?? '-'} | ${resultado.data ?? '-'} | ${resultado.categoria ?? '-'} (${resultado.modoCategoria}${operacao ? ` ${operacao.confianca}` : ''})${esperado} | "${operacao?.descricao ?? ''}"${resultado.parcelas ? ` | ${resultado.parcelas}x` : ''}${resultado.recorrente ? ' | recorrente' : ''}${resultado.titulo ? ` | título: "${resultado.titulo}"` : ''}`,
   );
-  if (resultado.pedido) {
+  if (resultado.pedido?.acao === 'excluir_lancamento') {
+    const { alvo, data, valor, conta, ultimo, lote } = resultado.pedido;
+    console.log(`      exclusao | alvo: ${alvo ?? '-'} | ${data ?? '-'} | ${valor ?? '-'} | ${conta ?? '-'}${ultimo ? ' | último' : ''}${lote ? ' | lote' : ''}`);
+  } else if (resultado.pedido) {
     const { acao, nome, alvo } = resultado.pedido;
     console.log(`      ${resultado.intent} ${acao} | alvo: ${alvo ?? '-'} | nome: ${nome ?? '-'}`);
   }

@@ -72,13 +72,14 @@ function avaliarTitulo(palavras, titulo) {
     && !RESTO_DE_PEDIDO.test(normalizado);
 }
 
-// Pedido de categoria ou de agenda: a ação certa e, quando o caso diz, o
-// nome e o alvo, sem acento e caixa. Alvo em lista são as palavras que o
-// texto precisa ter (#191): o modelo chama o compromisso como a pessoa
-// chamou, não como está salvo.
+// Pedido de categoria, de agenda ou de exclusão: a ação certa e, quando o
+// caso diz, o nome e o alvo, sem acento e caixa. Alvo em lista (#191) ou
+// `palavras` (#189) são as palavras que o texto precisa ter: o modelo chama o
+// item como a pessoa chamou, não como está salvo. Na exclusão, data, valor,
+// ultimo e lote batem exatos.
 function avaliarPedido(esperado, obtido) {
   if (!obtido || obtido.acao !== esperado.acao) return false;
-  return ['nome', 'alvo'].every((campo) => {
+  const textoIgual = ['nome', 'alvo'].every((campo) => {
     if (esperado[campo] === undefined) return true;
     const texto = normalizeSearchText(obtido[campo] ?? '');
     if (Array.isArray(esperado[campo])) {
@@ -86,6 +87,11 @@ function avaliarPedido(esperado, obtido) {
     }
     return texto === normalizeSearchText(esperado[campo]);
   });
+  const palavras = esperado.palavras === undefined
+    || esperado.palavras.every((palavra) => normalizeSearchText(obtido.alvo ?? '').includes(normalizeSearchText(palavra)));
+  const exatos = ['data', 'valor', 'ultimo', 'lote'].every((campo) => esperado[campo] === undefined
+    || (obtido[campo] ?? null) === esperado[campo]);
+  return textoIgual && palavras && exatos;
 }
 
 // Devolve um veredito por campo: true (acertou), false (errou) ou null
@@ -145,11 +151,27 @@ const INTENT_DO_INTERPRETADOR = {
   consulta: 'consulta',
   agenda: 'agenda',
   categoria: 'categoria',
+  exclusao: 'exclusao',
   conversa: 'conversa',
   correcao: 'correcao',
   nao_entendi: 'nao_entendeu',
 };
 const INTENT_POR_TIPO = { saida: 'lancar_saida', entrada: 'lancar_entrada', transferencia: 'transferir' };
+
+function pedidoDaInterpretacao(validada) {
+  if (validada.categoria) {
+    return { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null };
+  }
+  if (validada.exclusao) {
+    const { alvo, data, valor, conta, ultimo, lote } = validada.exclusao;
+    return { acao: 'excluir_lancamento', alvo, data, valor, conta: conta?.name ?? null, ultimo, lote };
+  }
+  // Criar segue a régua do título; o pedido é só sobre item existente (#191).
+  if (validada.agenda?.acao && validada.agenda.acao !== 'criar') {
+    return { acao: validada.agenda.acao, nome: validada.agenda.titulo, alvo: validada.agenda.alvo };
+  }
+  return null;
+}
 
 // Converte a saída já validada do uni-interpret (validarInterpretacao) no
 // resultado normalizado da régua. Categoria com confiança abaixo do limiar
@@ -180,12 +202,7 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
       recorrente: false,
       titulo: validada.agenda?.titulo ?? null,
       consulta,
-      pedido: validada.categoria
-        ? { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null }
-        // Criar segue a régua do título; o pedido é só sobre item existente.
-        : validada.agenda?.acao && validada.agenda.acao !== 'criar'
-          ? { acao: validada.agenda.acao, nome: validada.agenda.titulo, alvo: validada.agenda.alvo }
-          : null,
+      pedido: pedidoDaInterpretacao(validada),
     };
   }
 

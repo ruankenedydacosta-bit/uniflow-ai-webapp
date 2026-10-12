@@ -191,6 +191,26 @@ test('categoria: devolve a ação, o tipo, o alvo só com id e nome, e o nome no
   assert.deepEqual(resultado.corpo.categoria, { acao: 'renomear', tipo: 'saida', alvo: { id: 'cat-edu', name: 'Educação' }, nome: 'Escola' });
 });
 
+test('exclusao: devolve os critérios com a conta só com id e nome', async () => {
+  const { chamarModelo } = modeloQueResponde({
+    intent: 'exclusao',
+    operacoes: [],
+    resposta: '',
+    exclusao: { alvo: 'Uber', data: '2026-10-01', valor: null, conta: 'k1', ultimo: false, lote: false },
+  });
+  const resultado = await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'apaga o Uber de ontem no Nubank' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo,
+    agora: AGORA,
+  });
+  assert.equal(resultado.corpo.intent, 'exclusao');
+  assert.deepEqual(resultado.corpo.exclusao, {
+    alvo: 'Uber', data: '2026-10-01', valor: null, conta: { id: 'conta-nu', name: 'Nubank' }, ultimo: false, lote: false,
+  });
+  assert.deepEqual(resultado.corpo.operacoes, []);
+});
+
 test('falha do provedor vira status próprio e a métrica não leva a frase', async () => {
   const casos = [['limite', 429], ['tempo_esgotado', 504], ['sem_cota', 503], ['recusa', 502], ['desconhecido', 502]];
   for (const [motivo, status] of casos) {

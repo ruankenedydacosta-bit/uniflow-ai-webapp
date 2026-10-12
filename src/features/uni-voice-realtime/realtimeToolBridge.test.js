@@ -351,3 +351,12 @@ test('a sessão manda criar, renomear ou excluir categoria pelo chat, com card e
   assert.match(EDGE_SOURCE, /Quando a pessoa aceitar ou recusar, use responder_rascunho\./);
   assert.doesNotMatch(EDGE_SOURCE, /ainda não dá pela conversa/);
 });
+
+// #189: excluir lançamento pela voz passa pelo chat, com card, e "desfazer"
+// volta pelo mesmo caminho.
+test('a sessão manda excluir lançamento pelo chat e repassa "desfazer" logo depois', () => {
+  assert.match(EDGE_SOURCE, /Para excluir um lançamento já registrado, como "apaga o Uber de ontem"[^\n]*passe a frase com enviar_para_uni\./);
+  assert.match(EDGE_SOURCE, /pedir para desfazer, passe "desfazer" com enviar_para_uni\./);
+  assert.match(EDGE_SOURCE, /registra, altera e exclui lançamentos/);
+  assert.match(EDGE_SOURCE, /a alteração ou exclusão de lançamento ou o pedido de categoria/);
+});

@@ -884,13 +884,15 @@ test('BLOCO VOZ 1: erro relevante ao usuário fala -- os 5 pontos de erro de han
   // O sexto é a edição no card que não pôde ser aplicada (handleSaveEditAction).
   // O sétimo é o toque em Confirmar numa alteração de lançamento vencida.
   // O oitavo é o toque em Confirmar num pedido de categoria vencido.
-  assert.equal(callSites.length, 8, 'esperava 8 pontos de erro do card usando reportConfirmationError');
+  // O nono é o toque em Confirmar numa exclusão de lançamento vencida (#189).
+  assert.equal(callSites.length, 9, 'esperava 9 pontos de erro do card usando reportConfirmationError');
   // Nenhum setExecutionError fora do ponto central (sem duplicação de
   // registro/narração) -- só o reset neutro (null) continua nos fluxos.
   assert.equal((page.match(/setExecutionError\(errorText\);/g) ?? []).length, 1);
   // 14: os dois últimos são confirmar e cancelar a edição de lançamento salvo.
   // 16: mais confirmar e cancelar o pedido de categoria.
-  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 16);
+  // 18: mais confirmar e cancelar a exclusão de lançamento (#189).
+  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 18);
 });
 
 test('BLOCO VOZ 1: narração de erro é gated pela experiência simplificada + preferência de voz -- chat completo permanece manual', async () => {
@@ -1360,9 +1362,10 @@ test('BUG 2 REAL: confirmações órfãs (sem pendingAction/pendingActionStack/f
   assert.ok(idx > -1);
   const slice = page.slice(idx, idx + 1800);
   assert.match(slice, /if \(!pendingHydrated\) return;/);
-  assert.match(slice, /const hasRealPendingEntity = Boolean\(\s*pendingAction\s*\|\|\s*pendingActionStack\?\.actions\?\.length\s*\|\|\s*isFinancialPlanActive\(\)\s*\|\|\s*edicaoAtiva\(edicaoPendente\),\s*\);/);
+  // A exclusão de lançamento (#189) é pendência real como a edição.
+  assert.match(slice, /const hasRealPendingEntity = Boolean\(\s*pendingAction\s*\|\|\s*pendingActionStack\?\.actions\?\.length\s*\|\|\s*isFinancialPlanActive\(\)\s*\|\|\s*edicaoAtiva\(edicaoPendente\)\s*\|\|\s*exclusaoAtiva\(exclusaoPendente\),\s*\);/);
   assert.match(slice, /if \(hasRealPendingEntity\) return;/);
-  assert.match(slice, /\[pendingHydrated, pendingAction, pendingActionStack, edicaoPendente\]/);
+  assert.match(slice, /\[pendingHydrated, pendingAction, pendingActionStack, edicaoPendente, exclusaoPendente\]/);
   assert.match(slice, /status: 'expired'/);
 });
 

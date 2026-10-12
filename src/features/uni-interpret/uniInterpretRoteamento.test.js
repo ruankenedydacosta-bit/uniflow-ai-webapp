@@ -344,3 +344,11 @@ test('pedido de categoria vai para a rota própria; sem ação, não entendi', (
   );
   assert.equal(escolherRotaDaInterpretacao({ intent: 'categoria', operacoes: [], resposta: '' }), ROTAS_INTERPRETACAO.NAO_ENTENDI);
 });
+
+test('exclusão de lançamento vai para a rota própria; sem o bloco (função antiga), as regras seguem', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'exclusao', operacoes: [], resposta: '', exclusao: { alvo: 'Uber', data: null, valor: null, conta: null, ultimo: false, lote: false } }),
+    ROTAS_INTERPRETACAO.EXCLUSAO,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'exclusao', operacoes: [], resposta: '' }), null);
+});
