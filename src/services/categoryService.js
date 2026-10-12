@@ -221,6 +221,25 @@ export async function updateCategory(
   );
 }
 
+/** Quantos lançamentos do espaço apontam para a categoria, em qualquer status. */
+export async function contarLancamentosDaCategoria(workspaceId, categoryId) {
+  if (!supabase) {
+    return createUnavailableResult(0);
+  }
+
+  if (!isValidUuid(workspaceId) || !isValidUuid(categoryId)) {
+    return createValidationResult('Workspace ou categoria invalida.');
+  }
+
+  const { count, error } = await supabase
+    .from('transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('workspace_id', workspaceId)
+    .eq('category_id', categoryId);
+
+  return createResult(error ? null : Number(count) || 0, error);
+}
+
 export async function deleteCategory(workspaceId, categoryId) {
   if (!supabase) {
     return createUnavailableResult(null);
@@ -230,11 +249,10 @@ export async function deleteCategory(workspaceId, categoryId) {
     return createValidationResult('Workspace ou categoria invalida.');
   }
 
-  const { count: dependencyCount, error: dependencyError } = await supabase
-    .from('transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('workspace_id', workspaceId)
-    .eq('category_id', categoryId);
+  const { data: dependencyCount, error: dependencyError } = await contarLancamentosDaCategoria(
+    workspaceId,
+    categoryId,
+  );
 
   if (dependencyError) {
     return createResult(null, dependencyError);
@@ -243,7 +261,8 @@ export async function deleteCategory(workspaceId, categoryId) {
   if (dependencyCount > 0) {
     return createResult(null, {
       code: 'CATEGORY_HAS_DEPENDENCIES',
-      message: 'Esta categoria tem lançamentos. Troque a categoria desses lançamentos antes de excluir.',
+      message: 'Esta categoria tem lançamentos. Escolha a categoria que vai recebê-los antes de excluir.',
+      dependencyCount,
     });
   }
 
@@ -256,4 +275,56 @@ export async function deleteCategory(workspaceId, categoryId) {
     .maybeSingle();
 
   return normalizeSingleResult(data, error, 'Categoria nao encontrada para exclusao.');
+}
+
+// Mensagens-código da função excluir_categoria_movendo_lancamentos (migration
+// 064) traduzidas para texto de tela. Qualquer outro erro segue cru para o
+// fallback da interface.
+const MENSAGENS_MOVER_E_EXCLUIR = Object.freeze({
+  categoria_sessao_obrigatoria: 'Sua sessão expirou. Entre de novo e tente outra vez.',
+  categoria_parametros_obrigatorios: 'Escolha a categoria que vai receber os lançamentos.',
+  categoria_destino_igual: 'Escolha uma categoria diferente da que será excluída.',
+  categoria_nao_encontrada: 'Esta categoria não existe mais. Feche e confira a lista.',
+  categoria_destino_invalida:
+    'A categoria escolhida não serve de destino. Escolha uma categoria ativa do mesmo tipo.',
+  categoria_lancamentos_nao_movidos:
+    'Não foi possível mover os lançamentos. Confira sua permissão no espaço e tente de novo.',
+  categoria_sem_permissao: 'Você não tem permissão para excluir esta categoria.',
+});
+
+/**
+ * Move os lançamentos da categoria para `destinoId` e exclui a categoria, na
+ * mesma transação do banco. Devolve em `data.movedCount` quantos lançamentos
+ * foram movidos.
+ */
+export async function excluirCategoriaMovendoLancamentos(workspaceId, categoryId, destinoId) {
+  if (!supabase) {
+    return createUnavailableResult(null);
+  }
+
+  if (!isValidUuid(workspaceId) || !isValidUuid(categoryId)) {
+    return createValidationResult('Workspace ou categoria invalida.');
+  }
+  if (!isValidUuid(destinoId)) {
+    return createValidationResult('Escolha a categoria que vai receber os lançamentos.');
+  }
+  if (destinoId === categoryId) {
+    return createValidationResult(MENSAGENS_MOVER_E_EXCLUIR.categoria_destino_igual);
+  }
+
+  const { data, error } = await supabase.rpc('excluir_categoria_movendo_lancamentos', {
+    p_workspace_id: workspaceId,
+    p_category_id: categoryId,
+    p_destination_category_id: destinoId,
+  });
+
+  if (error) {
+    const mensagem = MENSAGENS_MOVER_E_EXCLUIR[error.message];
+    if (error.message === 'categoria_nao_encontrada') {
+      return createResult(null, { code: 'CATEGORY_NOT_FOUND', message: mensagem });
+    }
+    return createResult(null, mensagem ? { code: 'INVALID_CATEGORY_REQUEST', message: mensagem } : error);
+  }
+
+  return createResult({ id: categoryId, movedCount: Number(data) || 0 });
 }

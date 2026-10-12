@@ -93,6 +93,33 @@ export function getCategoryErrorMessage(error, fallbackMessage) {
   return fallbackMessage;
 }
 
+/**
+ * Quantos lançamentos impedem a exclusão, segundo o erro do serviço. Zero
+ * quando o erro é outro ou não há erro.
+ */
+export function lancamentosQueBloqueiam(error) {
+  if (!error || error.code !== 'CATEGORY_HAS_DEPENDENCIES') return 0;
+  const total = Number(error.dependencyCount);
+  return Number.isFinite(total) && total > 0 ? total : 1;
+}
+
+/**
+ * Categorias que podem receber os lançamentos de `category` quando ela é
+ * excluída: ativas, do mesmo tipo (saída não vira entrada) e nunca a própria.
+ * A lista já vem filtrada pelo espaço e pelo contexto (PF/PJ) do hook.
+ * Mantém a ordem de entrada (padrão primeiro, depois por nome).
+ */
+export function categoriasDestinoParaMover(categories, category) {
+  if (!category?.id || !category?.category_type) return [];
+  const list = Array.isArray(categories) ? categories : [];
+  return list.filter((candidate) =>
+    Boolean(candidate?.id)
+    && candidate.id !== category.id
+    && candidate.category_type === category.category_type
+    && candidate.is_active !== false,
+  );
+}
+
 /** Decide se a busca deve ser exibida para uma dada quantidade de itens. */
 export function shouldShowSearch(itemCount) {
   return Number(itemCount) >= SEARCH_MIN_ITEMS;
