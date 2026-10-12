@@ -1,5 +1,9 @@
 import { formatCurrency } from '../../utils/formatters.js';
-import { calcProgress, calcRemaining, calcRequiredMonthlyAmount, calcRhythmStatus } from './goalCalc.js';
+import { calcProgress, calcRemaining, calcRequiredMonthlyAmount, calcRhythmStatus, lerData, mesesEntre } from './goalCalc.js';
+
+// lerData e mesesEntre moram no goalCalc, que também conta o ritmo; os
+// outros módulos de Metas seguem importando daqui.
+export { lerData, mesesEntre };
 
 // Apresentação da lista de Metas (handoff 08a, #154): resumo do topo, abas,
 // selo de ritmo e linha de apoio de cada card. Funções puras; `hoje` entra
@@ -22,17 +26,6 @@ const SELOS_DE_RITMO = {
 const FORMATO_MES = new Intl.DateTimeFormat('pt-BR', { month: 'long' });
 const FORMATO_MES_ANO = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' });
 const FORMATO_DIA_MES_ANO = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
-
-// "2026-12-01" vira meia-noite local, não UTC. Com `new Date(texto)` a data
-// pura cai no dia anterior em Brasília e o alvo de dezembro vira novembro.
-export function lerData(valor) {
-  if (!valor) return null;
-  if (valor instanceof Date) return valor;
-  const dataPura = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
-  if (dataPura) return new Date(Number(dataPura[1]), Number(dataPura[2]) - 1, Number(dataPura[3]));
-  const data = new Date(valor);
-  return Number.isNaN(data.getTime()) ? null : data;
-}
 
 export function separarPorAba(metas) {
   const ativas = [];
@@ -61,15 +54,6 @@ export function seloDaMeta(meta) {
   if (meta.status === 'completed') return { rotulo: 'Concluída', tom: 'verde' };
   if (meta.status === 'paused') return { rotulo: 'Pausada', tom: 'neutro' };
   return SELOS_DE_RITMO[calcRhythmStatus(meta)] ?? null;
-}
-
-export function mesesEntre(inicio, fim) {
-  const de = lerData(inicio);
-  const ate = lerData(fim);
-  if (!de || !ate || ate <= de) return 0;
-  let meses = (ate.getFullYear() - de.getFullYear()) * 12 + (ate.getMonth() - de.getMonth());
-  if (ate.getDate() < de.getDate()) meses -= 1;
-  return Math.max(meses, 0);
 }
 
 // Sem aporte registrado, conta desde o início da meta.

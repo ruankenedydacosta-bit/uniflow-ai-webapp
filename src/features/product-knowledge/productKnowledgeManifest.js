@@ -152,11 +152,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/goals.md',
     routes: ['/app/metas'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['meta', 'metas', 'objetivo', 'objetivos', 'reserva de emergência', 'aporte', 'contribuição', 'progresso da meta', 'criar meta pela uni', 'excluir meta'],
+    keywords: ['meta', 'metas', 'objetivo', 'objetivos', 'reserva de emergência', 'aporte', 'contribuição', 'progresso da meta', 'criar meta pela uni', 'excluir meta', 'ajustar plano', 'meta atrasada'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Pela conversa e pela voz a Uni cria, altera, exclui e consulta metas, com card de confirmação antes de salvar. Meta com dinheiro guardado só é excluída na tela Metas. Aporte e retirada ainda são registrados na tela Metas.',
+      'Metas ficam em Mais → Produto → Metas (/app/metas). Cada meta tem valor-alvo, data, aportes e um status de ritmo (no ritmo, atenção ou atrasada). Meta em atenção ou atrasada mostra "Ajustar plano" no detalhe: guardar mais por mês, mudar a data, reduzir a meta ou pausar. Pela conversa e pela voz a Uni cria, altera, exclui e consulta metas, com card de confirmação antes de salvar. Meta com dinheiro guardado só é excluída na tela Metas. Aporte e retirada ainda são registrados na tela Metas.',
   },
   {
     id: 'crm-and-clients',
