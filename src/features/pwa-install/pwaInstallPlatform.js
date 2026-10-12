@@ -1,4 +1,4 @@
-import { PWA_INSTALL_COOLDOWN_MS, PWA_INSTALL_DISMISS_KEY } from './pwaInstallConfig.js';
+import { PWA_INSTALL_COOLDOWN_MS, PWA_INSTALL_DISMISS_KEY, PWA_INSTALLED_KEY } from './pwaInstallConfig.js';
 
 export const PWA_INSTALL_PLATFORM = Object.freeze({
   IOS_SAFARI: 'ios-safari',
@@ -48,6 +48,40 @@ export function readPwaInstallCooldown(storage, now = Date.now()) {
 export function persistPwaInstallCooldown(storage, now = Date.now()) {
   try {
     storage?.setItem(PWA_INSTALL_DISMISS_KEY, String(now + PWA_INSTALL_COOLDOWN_MS));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Aberto numa aba do navegador, o app não sabe se já está instalado: o
+// display-mode só vale dentro do app instalado. Abrir o app instalado ou
+// receber appinstalled deixa uma marca no localStorage, que no Android e no
+// desktop é o mesmo da aba do navegador. O Chromium só dispara
+// beforeinstallprompt quando o app não está instalado, e aí a marca sai
+// (cobre quem desinstalou). No iOS o app instalado tem storage próprio e o
+// Safari nunca vê a marca. Ler runtime.localStorage já lança quando o
+// navegador bloqueia dados do site, por isso o acesso fica dentro do try.
+export function readPwaInstalledMark(runtime = globalThis) {
+  try {
+    return runtime?.localStorage?.getItem(PWA_INSTALLED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function persistPwaInstalledMark(runtime = globalThis) {
+  try {
+    runtime?.localStorage?.setItem(PWA_INSTALLED_KEY, '1');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearPwaInstalledMark(runtime = globalThis) {
+  try {
+    runtime?.localStorage?.removeItem(PWA_INSTALLED_KEY);
     return true;
   } catch {
     return false;
