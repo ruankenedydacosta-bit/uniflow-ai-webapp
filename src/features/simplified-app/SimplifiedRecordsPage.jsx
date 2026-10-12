@@ -4,8 +4,11 @@ import { useSession } from '../../app/SessionContext.jsx';
 import FilterChips from '../../components/ui/FilterChips/index.js';
 import IconBox from '../../components/ui/IconBox/index.js';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
-import CategoryCreateModal from '../categories/components/CategoryCreateModal.jsx';
-import { CategoryIcon, PlusIcon } from '../categories/categoryIcons.jsx';
+import ProgressBar from '../../components/ui/ProgressBar/index.js';
+import Segmented from '../../components/ui/Segmented/index.js';
+import { maioresCategoriasDoMes } from '../categories/categoriasDoMes.js';
+import { CategoryIcon } from '../categories/categoryIcons.jsx';
+import organizar from '../categories/organizar.module.css';
 import { useAccounts, useCategories, useCategoryBudgets, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
 import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionModal.jsx';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
@@ -22,6 +25,7 @@ import {
   PhMicrophoneIcon,
   PhSquaresFourIcon,
   PhPlusIcon,
+  PhTagIcon,
   PhXIcon,
   UniMark,
 } from './SimplifiedIcons.jsx';
@@ -44,7 +48,7 @@ import { toDateKey } from './simplifiedAgendaCalendar.js';
 import styles from './simplifiedRecords.module.css';
 
 const PAGE_SIZE = 20;
-const CATEGORY_PREVIEW_SIZE = 8;
+const CATEGORY_PREVIEW_SIZE = 5;
 // Aviso de quem confirmou um previsto.
 const CONFIRMED_NOTICES = {
   expense: 'Pagamento confirmado.',
@@ -59,6 +63,11 @@ const CREATED_NOTICES = {
   adjustment: 'Ajuste registrado.',
 };
 const EMPTY_RECORDS = Object.freeze([]);
+
+const CATEGORY_TYPE_OPTIONS = Object.freeze([
+  { value: 'expense', label: 'Saídas' },
+  { value: 'income', label: 'Entradas' },
+]);
 
 const TYPE_FILTER_OPTIONS = Object.freeze([
   { value: 'all', label: 'Todas' },
@@ -208,65 +217,78 @@ function MonthlySummary({ onCardClick, plannedTotals, plannedTransactions, shown
   );
 }
 
-function CategoryGrid({
-  canCreate,
-  categories,
-  createTitle,
-  expanded,
-  onCreate,
-  onExpand,
-  onSelect,
-}) {
-  const collapsedCategoryCount = Math.max(0, CATEGORY_PREVIEW_SIZE - 1);
-  const visible = expanded ? categories : categories.slice(0, collapsedCategoryCount);
+function formatCategoryShare(share) {
+  const percent = Math.round(share * 100);
+  return percent === 0 && share > 0 ? 'menos de 1%' : `${percent}%`;
+}
+
+// Categorias do Resumo (handoff 25): as maiores do mês, da maior para a
+// menor, com a fatia do total. Tocar abre o Histórico filtrado. Criar,
+// ocultar e ver todas ficam em Organizar.
+function CategorySummary({ categories, hiddenCategories, isCurrentMonth, monthName, onSelect, onShowAll, transactions }) {
+  const [type, setType] = useState('expense');
+  const { total, linhas } = useMemo(() => maioresCategoriasDoMes({
+    categories,
+    ocultas: hiddenCategories,
+    transactions,
+    type,
+    limite: CATEGORY_PREVIEW_SIZE,
+  }), [categories, hiddenCategories, transactions, type]);
+  const isIncome = type === 'income';
+  const typeName = isIncome ? 'entrada' : 'saída';
 
   return (
     <section className={styles.recordsSection} aria-labelledby="records-categories-title">
       <div className={styles.sectionHeading}>
         <h2 id="records-categories-title">Categorias</h2>
-        {categories.length > collapsedCategoryCount ? (
-          <button type="button" onClick={onExpand}>
-            {expanded ? 'Ver menos' : 'Ver todas'}
-          </button>
-        ) : null}
+        <button type="button" onClick={onShowAll}>Ver todas</button>
       </div>
-      {visible.length ? (
-        <div className={styles.categoryGrid}>
-          {visible.map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              className={styles.categoryCard}
-              onClick={() => onSelect(category.id)}
-              aria-label={`${category.name}: ${formatCurrency(category.amount)}, ${category.count} registros`}
-            >
-              <IconBox className={styles.categoryIcon}>
-                <CategoryIcon category={category} />
-              </IconBox>
-              <strong>{category.name}</strong>
-              <b>{formatCurrency(category.amount)}</b>
-              <small>{category.count} {category.count === 1 ? 'registro' : 'registros'}</small>
-            </button>
-          ))}
-          <button
-            type="button"
-            className={`${styles.categoryCard} ${styles.createCategoryCard}`}
-            onClick={onCreate}
-            disabled={!canCreate}
-            title={createTitle}
-          >
-            <IconBox className={styles.categoryIcon}><PlusIcon /></IconBox>
-            <strong>Criar categoria</strong>
-            <small>Nome, tipo e ícone</small>
-          </button>
-        </div>
+      <Segmented
+        className={styles.categoryTypeToggle}
+        label="Tipo de categoria"
+        options={CATEGORY_TYPE_OPTIONS}
+        value={type}
+        onChange={setType}
+      />
+      {linhas.length ? (
+        <>
+          <div>
+            {linhas.map((linha) => {
+              const content = (
+                <>
+                  <IconBox className={isIncome ? styles.transactionIconIncome : undefined}>
+                    {linha.semCategoria ? <PhTagIcon /> : <CategoryIcon category={linha} />}
+                  </IconBox>
+                  <span className={organizar.rowText}>
+                    <span className={organizar.rowTitle}>{linha.name}</span>
+                    <span className={organizar.rowHint}>
+                      {`${linha.quantidade} ${linha.quantidade === 1 ? 'lançamento' : 'lançamentos'} · ${formatCategoryShare(linha.fatia)}`}
+                    </span>
+                  </span>
+                  <span className={`${organizar.rowValue} ${isIncome ? styles.positiveAmount : ''}`}>
+                    {formatCurrency(linha.valor)}
+                  </span>
+                  <ProgressBar value={linha.fatia * 100} tone={isIncome ? 'green' : 'violet'} />
+                </>
+              );
+              // "Sem categoria" não tem filtro no Histórico: a linha só informa.
+              return linha.semCategoria ? (
+                <div key={linha.id} className={`${organizar.row} ${styles.categoryRowStatic}`}>{content}</div>
+              ) : (
+                <button key={linha.id} type="button" className={organizar.row} onClick={() => onSelect(linha.id)}>
+                  {content}
+                </button>
+              );
+            })}
+          </div>
+          <span className={styles.categoryTotal}>
+            {`Total de ${typeName}s em ${monthName}: ${formatCurrency(total)}`}
+          </span>
+        </>
       ) : (
-        <div className={styles.inlineEmpty}>
-          <span>Nenhuma categoria disponível neste espaço.</span>
-          <OutlineButton variant="secondary" onClick={onCreate} disabled={!canCreate} title={createTitle}>
-            <PlusIcon /> Criar categoria
-          </OutlineButton>
-        </div>
+        <p className={styles.categoryEmpty}>
+          {`Nenhuma ${typeName} em ${monthName}${isCurrentMonth ? ' ainda' : ''}.`}
+        </p>
       )}
     </section>
   );
@@ -756,12 +778,10 @@ function SimplifiedRecordsPage() {
   useEffect(() => {
     if (initialCategoryId) navigate(location.pathname, { replace: true, state: null });
   }, [initialCategoryId, location.pathname, navigate]);
-  const [showAllCategories, setShowAllCategories] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [transactionDialog, setTransactionDialog] = useState(null);
   const [plannedDetail, setPlannedDetail] = useState(null);
   const [plannedError, setPlannedError] = useState(null);
-  const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const [transactionSuccessNotice, setTransactionSuccessNotice] = useState(null);
   const [transactionNoticeIsError, setTransactionNoticeIsError] = useState(false);
   const transactionNoticeTimerRef = useRef(null);
@@ -969,9 +989,6 @@ function SimplifiedRecordsPage() {
   const canManage = workspaceRole.canUpdate === true
     && !workspaceRole.isLoading
     && !transactionState.isMutating;
-  const canCreateCategory = workspaceRole.canUpdate === true
-    && !workspaceRole.isLoading
-    && !categoryState.isMutating;
   let budgetCardStatus = 'ready';
   if (!budgetState.hasLoaded) budgetCardStatus = budgetState.error ? 'error' : 'loading';
   const canManageBudget = workspaceRole.canUpdate === true
@@ -1094,10 +1111,6 @@ function SimplifiedRecordsPage() {
     showTransactionNotice(message);
   }
 
-  function showCategorySuccessNotice() {
-    showTransactionNotice('Categoria criada com sucesso.');
-  }
-
   // Movimentação nova: a tela fica na aba em que estava, para a linha nova
   // e a contagem aparecerem onde a pessoa tocou em "+".
   function handleTransactionCreated(transaction) {
@@ -1118,33 +1131,6 @@ function SimplifiedRecordsPage() {
     setFilters({ ...EMPTY_FILTERS, categoryId });
     setVisibleCount(PAGE_SIZE);
     setActiveTab('history');
-  }
-
-  function getCreateCategoryTitle() {
-    if (!workspace?.id) return 'Selecione um espaço de trabalho.';
-    if (workspaceRole.isLoading) return 'Carregando permissões...';
-    if (workspaceRole.canUpdate !== true) {
-      return 'Você não tem permissão para criar categorias neste workspace.';
-    }
-    if (categoryState.isMutating) return 'Aguarde a operação atual terminar.';
-    return 'Criar uma nova categoria.';
-  }
-
-  function openCategoryCreate() {
-    if (!canCreateCategory) return;
-    categoryState.clearError?.();
-    setCategoryCreateOpen(true);
-  }
-
-  async function handleCreateCategory(values) {
-    if (!canCreateCategory) return;
-    const result = await categoryState.saveCategory(values);
-    if (!result.error) {
-      await refresh();
-      setShowAllCategories(true);
-      setCategoryCreateOpen(false);
-      showCategorySuccessNotice();
-    }
   }
 
   // CONTA-OPCIONAL: receita/despesa não exigem mais nenhuma conta cadastrada
@@ -1255,14 +1241,14 @@ function SimplifiedRecordsPage() {
                     transactions={recentTransactions}
                     visibleCount={4}
                   />
-                  <CategoryGrid
-                    canCreate={canCreateCategory}
-                    categories={categorySummaries}
-                    createTitle={getCreateCategoryTitle()}
-                    expanded={showAllCategories}
-                    onCreate={openCategoryCreate}
-                    onExpand={() => setShowAllCategories((current) => !current)}
+                  <CategorySummary
+                    categories={categoryState.categoriasVisiveis}
+                    hiddenCategories={categoryState.categoriasOcultas}
+                    transactions={transactionState.transactions}
+                    monthName={month.label.split(' de ')[0]}
+                    isCurrentMonth={month.dateTo >= todayKey}
                     onSelect={selectCategory}
+                    onShowAll={() => navigate(SIMPLIFIED_ROUTES.CATEGORIAS)}
                   />
                 </>
               ) : (
@@ -1387,21 +1373,6 @@ function SimplifiedRecordsPage() {
         accountState={displayAccountState}
         categoryState={categoryState}
         transactionState={formTransactionState}
-        className={styles.transactionDialogDark}
-        overlayClassName={styles.darkOverlay}
-      />
-
-      <CategoryCreateModal
-        open={categoryCreateOpen}
-        onClose={() => {
-          categoryState.clearError?.();
-          setCategoryCreateOpen(false);
-        }}
-        defaultType="expense"
-        categories={categoryState.categories}
-        onCreate={handleCreateCategory}
-        isMutating={categoryState.isMutating}
-        serverError={categoryCreateOpen && categoryState.error ? categoryState.error.message : ''}
         className={styles.transactionDialogDark}
         overlayClassName={styles.darkOverlay}
       />

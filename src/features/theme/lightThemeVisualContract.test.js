@@ -61,7 +61,6 @@ test('Registros e Agenda usam cards claros no Claro e mantêm semântica por tok
   // Fundo da regra base de cada seletor vem de token do tema (ou é transparente).
   const fundo = (css, seletor) => css.match(new RegExp(`(^|\\n)\\.${seletor}\\s*\\{([^}]*)\\}`))?.[2]
     .match(/background:\s*([^;]+);/)?.[1];
-  assert.equal(fundo(records, 'categoryCard'), 'var(--uf-app-card-surface)');
   assert.equal(fundo(records, 'transactionRow'), 'var(--uf-app-canvas)');
   assert.equal(fundo(agenda, 'monthLabel'), 'transparent');
   assert.equal(fundo(agenda, 'itemButton'), 'transparent');

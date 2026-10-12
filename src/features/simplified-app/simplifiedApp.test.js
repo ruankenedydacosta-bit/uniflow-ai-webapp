@@ -1038,21 +1038,19 @@ test('categorias reais conhecidas e customizadas são agregadas sem inventar val
   assert.equal(summaries[1].category_type, 'expense');
 });
 
-test('Registros cria categoria pelo mesmo estado persistente usado no modal de lançamentos', async () => {
+test('Categorias do Resumo (handoff 25): maiores do mês, Ver todas em Organizar e sem criar categoria', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
-  assert.match(records, /<strong>Criar categoria<\/strong>/);
-  assert.match(records, /const result = await categoryState\.saveCategory\(values\)/);
-  assert.match(records, /await refresh\(\)/);
-  assert.match(records, /showTransactionNotice\('Categoria criada com sucesso\.'\)/);
-  assert.match(records, /<CategoryCreateModal[\s\S]*categories=\{categoryState\.categories\}[\s\S]*onCreate=\{handleCreateCategory\}/);
+  assert.match(records, /const CATEGORY_PREVIEW_SIZE = 5;/);
+  assert.match(records, /maioresCategoriasDoMes\(\{/);
+  assert.match(records, /<CategorySummary[\s\S]*categories=\{categoryState\.categoriasVisiveis\}[\s\S]*hiddenCategories=\{categoryState\.categoriasOcultas\}/);
+  assert.match(records, /onShowAll=\{\(\) => navigate\(SIMPLIFIED_ROUTES\.CATEGORIAS\)\}/);
+  // Criar categoria fica no + de Organizar e na folha de nova movimentação.
+  assert.doesNotMatch(records, /CategoryCreateModal|Criar categoria|showAllCategories/);
   assert.match(records, /<FinanceTransactionModal[\s\S]*categoryState=\{categoryState\}/);
 });
 
-test('criação de categoria em Registros respeita permissão e não altera o fluxo dos lançamentos', async () => {
+test('Registros mantém os avisos de editar e excluir lançamento', async () => {
   const records = await source('./SimplifiedRecordsPage.jsx');
-  assert.match(records, /const canCreateCategory = workspaceRole\.canUpdate === true[\s\S]*&& !categoryState\.isMutating;/);
-  assert.match(records, /function openCategoryCreate\(\) \{\s*if \(!canCreateCategory\) return;/);
-  assert.match(records, /function handleCreateCategory\(values\) \{[\s\S]*if \(!canCreateCategory\) return;/);
   assert.match(records, /completeTransactionMutation\('Lançamento editado com sucesso\.'\)/);
   assert.match(records, /completeTransactionMutation\('Lançamento excluído com sucesso\.'\)/);
 });
@@ -1343,7 +1341,6 @@ test('chat simplificado permanece na malha da shell e acompanha o teclado sem se
 test('CSS de Registros cobre grade responsiva, toque, safe area e movimento reduzido', async () => {
   const css = await source('./simplifiedRecords.module.css');
   assert.match(css, /env\(safe-area-inset-top\)/);
-  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(css, /min-height: 48px/);
   assert.match(css, /@media \(max-width: 359px\)/);

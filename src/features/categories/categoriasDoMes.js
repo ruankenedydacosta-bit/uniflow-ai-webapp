@@ -74,6 +74,29 @@ export function montarListaDeCategorias({ categories, ocultas = [], transactions
   };
 }
 
+/**
+ * Categorias do Resumo do Financeiro (handoff 25): as `limite` maiores do tipo
+ * no mês, só com valor acima de zero. Oculta com lançamento e "Sem categoria"
+ * disputam o lugar, porque o dinheiro saiu do mesmo jeito. `fatia` é a parte
+ * do total do tipo no mês, o mesmo total do card de Entradas ou Saídas.
+ */
+export function maioresCategoriasDoMes({ categories, ocultas = [], transactions, type, limite = 5 }) {
+  const lista = montarListaDeCategorias({ categories, ocultas, transactions, type });
+  const semCategoria = {
+    id: 'sem-categoria',
+    name: 'Sem categoria',
+    semCategoria: true,
+    valor: lista.semCategoria.valor,
+    quantidade: lista.semCategoria.quantidade,
+  };
+  const linhas = [...lista.comLancamento, ...lista.ocultas, semCategoria]
+    .filter((linha) => linha.valor > 0)
+    .sort((a, b) => b.valor - a.valor || a.name.localeCompare(b.name, 'pt-BR'))
+    .slice(0, limite)
+    .map((linha) => ({ ...linha, fatia: lista.total > 0 ? linha.valor / lista.total : 0 }));
+  return { total: lista.total, linhas };
+}
+
 /** Lançamentos concluídos de uma categoria, do mais recente para o mais antigo. */
 export function lancamentosDaCategoria(transactions, categoryId) {
   return (Array.isArray(transactions) ? transactions : [])
