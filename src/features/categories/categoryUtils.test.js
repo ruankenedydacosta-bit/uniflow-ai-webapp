@@ -17,6 +17,8 @@ import {
   normalizeWorkspaceContext,
   canManageCategory,
   getCategoryErrorMessage,
+  categoriasDestinoParaMover,
+  lancamentosQueBloqueiam,
 } from './categoryUtils.js';
 
 const SAMPLE = [
@@ -210,4 +212,37 @@ test('getCategoryErrorMessage nunca mostra erro cru do banco', () => {
   assert.equal(getCategoryErrorMessage({ code: '42501', message: 'permission denied' }, fallback), fallback);
   const dependency = { code: 'CATEGORY_HAS_DEPENDENCIES', message: 'Esta categoria tem lançamentos.' };
   assert.equal(getCategoryErrorMessage(dependency, fallback), dependency.message);
+});
+
+// --- #181: excluir categoria movendo os lançamentos ------------------------
+
+test('lancamentosQueBloqueiam lê a contagem só do erro de dependências', () => {
+  assert.equal(lancamentosQueBloqueiam(null), 0);
+  assert.equal(lancamentosQueBloqueiam({ code: '42501' }), 0);
+  assert.equal(lancamentosQueBloqueiam({ code: 'CATEGORY_HAS_DEPENDENCIES', dependencyCount: 7 }), 7);
+  // Erro sem contagem ainda bloqueia: vale 1 para o texto fazer sentido.
+  assert.equal(lancamentosQueBloqueiam({ code: 'CATEGORY_HAS_DEPENDENCIES' }), 1);
+  assert.equal(lancamentosQueBloqueiam({ code: 'CATEGORY_HAS_DEPENDENCIES', dependencyCount: 'x' }), 1);
+});
+
+test('categoriasDestinoParaMover lista só ativas do mesmo tipo e nunca a própria', () => {
+  const origem = { id: 'a', category_type: 'expense', workspace_id: 'w' };
+  const lista = [
+    { id: 'sys', category_type: 'expense', is_system: true, workspace_id: null, name: 'Alimentação' },
+    origem,
+    { id: 'b', category_type: 'expense', workspace_id: 'w', name: 'Mercado' },
+    { id: 'c', category_type: 'income', workspace_id: 'w', name: 'Salário' },
+    { id: 'd', category_type: 'expense', workspace_id: 'w', is_active: false, name: 'Antiga' },
+    { category_type: 'expense', name: 'sem id' },
+  ];
+  assert.deepEqual(
+    categoriasDestinoParaMover(lista, origem).map((c) => c.id),
+    ['sys', 'b'],
+  );
+});
+
+test('categoriasDestinoParaMover devolve vazio sem categoria ou sem lista', () => {
+  assert.deepEqual(categoriasDestinoParaMover([{ id: 'x', category_type: 'expense' }], null), []);
+  assert.deepEqual(categoriasDestinoParaMover(null, { id: 'a', category_type: 'expense' }), []);
+  assert.deepEqual(categoriasDestinoParaMover([{ id: 'a', category_type: 'expense' }], { id: 'a', category_type: 'expense' }), []);
 });

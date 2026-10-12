@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createCategory,
+  contarLancamentosDaCategoria,
   deleteCategory,
+  excluirCategoriaMovendoLancamentos,
   listCategories,
   updateCategory,
 } from '../services/categoryService.js';
@@ -130,6 +132,40 @@ export function useCategories({
     [workspaceId],
   );
 
+  // Quantos lançamentos a categoria tem. Decide, antes de confirmar a
+  // exclusão, se a pessoa precisa escolher um destino. Sem resposta
+  // (demo, erro) devolve null e o fluxo segue pela confirmação comum.
+  const contarLancamentos = useCallback(
+    async (categoryId) => {
+      if (!isSupabaseConfigured || !workspaceId) return null;
+      const result = await contarLancamentosDaCategoria(workspaceId, categoryId);
+      return result.error ? null : result.data;
+    },
+    [workspaceId],
+  );
+
+  // Move os lançamentos para outra categoria e exclui esta, numa transação só
+  // (migration 064). É a saída quando a categoria tem lançamentos.
+  const removerCategoriaMovendoLancamentos = useCallback(
+    async (categoryId, destinoId) => {
+      setIsMutating(true);
+      setError(null);
+      const result = !isSupabaseConfigured
+        ? createDemoResult({ id: categoryId, movedCount: 0 })
+        : await excluirCategoriaMovendoLancamentos(workspaceId, categoryId, destinoId);
+
+      if (result.error) {
+        setError(result.error);
+      } else {
+        setCategories((current) => removeRecord(current, categoryId));
+      }
+
+      setIsMutating(false);
+      return result;
+    },
+    [workspaceId],
+  );
+
   const visibleCategories = useMemo(
     () => (context ? filterCategoriesForContext(categories, context) : categories),
     [categories, context],
@@ -142,7 +178,9 @@ export function useCategories({
     isLoading,
     isMutating,
     refresh,
+    contarLancamentos,
     removeCategory,
+    removerCategoriaMovendoLancamentos,
     saveCategory,
     clearError: () => setError(null),
   };

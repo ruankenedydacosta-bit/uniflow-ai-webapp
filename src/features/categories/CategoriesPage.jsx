@@ -167,6 +167,22 @@ export default function CategoriesPage() {
     }
   }
 
+  async function handleExcluirMovendo(destinoId) {
+    if (!deletingCategory) return;
+    const result = await categoryState.removerCategoriaMovendoLancamentos(deletingCategory.id, destinoId);
+    if (!result.error) {
+      notifyFinancialDataChanged('categorias');
+      setDeletingCategory(null);
+      setSelectedId(null);
+    }
+  }
+
+  function handleCriarPelaExclusao() {
+    categoryState.clearError?.();
+    setDeletingCategory(null);
+    handleOpenCreate();
+  }
+
   async function handleCreate(values) {
     if (!canManage) return;
     const result = await categoryState.saveCategory(values);
@@ -375,12 +391,13 @@ export default function CategoriesPage() {
       {deletingCategory ? (
         <CategoryDeleteConfirmModal
           category={deletingCategory}
+          categories={categoryState.categories}
           isMutating={categoryState.isMutating}
-          serverError={getCategoryErrorMessage(
-            categoryState.error,
-            'Não foi possível excluir a categoria. Tente novamente.',
-          )}
+          error={categoryState.error}
+          contarLancamentos={categoryState.contarLancamentos}
           onConfirm={handleDelete}
+          onMover={handleExcluirMovendo}
+          onCriarCategoria={canManage ? handleCriarPelaExclusao : undefined}
           onClose={() => {
             categoryState.clearError?.();
             setDeletingCategory(null);
