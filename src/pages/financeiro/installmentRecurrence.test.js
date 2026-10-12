@@ -52,7 +52,12 @@ test('splitInstallmentAmounts rejeita valor invalido ou numero de parcelas inval
 test('addMonthsToDate soma meses corretamente, incluindo virada de ano', () => {
   assert.equal(addMonthsToDate('2026-07-21', 1), '2026-08-21');
   assert.equal(addMonthsToDate('2026-11-15', 3), '2027-02-15');
-  assert.equal(addMonthsToDate('2026-01-31', 1), '2026-03-03');
+  // Dia limitado ao fim do mês, como na RPC (#221): fevereiro não fica sem
+  // parcela.
+  assert.equal(addMonthsToDate('2026-01-31', 1), '2026-02-28');
+  assert.equal(addMonthsToDate('2028-01-31', 1), '2028-02-29');
+  assert.equal(addMonthsToDate('2026-01-31', 2), '2026-03-31');
+  assert.equal(addMonthsToDate('2026-12-31', 2), '2027-02-28');
 });
 
 test('generateInstallmentDates gera N datas mensais a partir da data inicial', () => {

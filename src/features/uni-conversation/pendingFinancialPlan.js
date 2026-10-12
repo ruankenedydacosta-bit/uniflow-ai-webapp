@@ -2,7 +2,12 @@ import { normalizeFinancialText, resolveRelativeDateExpression } from '../uni-in
 import { resolveFinancialAccount } from './accountResolution.js';
 import { buildFinancialIntentAction } from './financialIntentAction.js';
 import { createClientOperationId } from './accountProvisioning.js';
-import { splitInstallmentAmounts } from '../../pages/financeiro/installmentUtils.js';
+import {
+  generateInstallmentDates,
+  MAX_INSTALLMENTS,
+  resolveInstallmentStatus,
+  splitInstallmentAmounts,
+} from '../../pages/financeiro/installmentUtils.js';
 
 // BLOCO E: "Pending Financial Plan" -- estende o padrao ja validado do
 // Bloco B (uma operacao financeira suspensa/retomada) para MULTIPLAS
@@ -11,8 +16,9 @@ import { splitInstallmentAmounts } from '../../pages/financeiro/installmentUtils
 // buildFinancialIntentAction (via financialIntentAction.js), a mesma forma
 // ja usada por uma unica transacao. O plano em si NUNCA e persistido no
 // banco -- vive so em memoria (estado React), ate a confirmacao final de
-// cada operacao passar pelo RPC atomico ja existente
-// (execute_confirmed_financial_action), uma operacao por vez.
+// cada operacao passar por uma RPC atomica, uma operacao por vez:
+// execute_confirmed_financial_action, ou registrar_compra_parcelada na
+// compra parcelada (#221).
 
 export const PLAN_OPERATION_STATUS = Object.freeze({
   NEEDS_CLARIFICATION: 'needs_clarification',
@@ -53,28 +59,21 @@ const CAPABILITY_PENDING_MESSAGES = Object.freeze({
   recurring_income: 'Ainda não consigo criar recorrências automaticamente nesta versão -- entendi a recorrência, mas cada lançamento precisa ser feito manualmente.',
 });
 
-// Mesmo arredondamento da RPC: centavos, e a última parcela absorve a
-// diferença. null sem número de parcelas válido.
-function contarParcelas(operation) {
-  const count = Number(operation.installments?.count);
-  return Number.isInteger(count) && count >= 2 && count <= 360 ? count : null;
+// Número de parcelas: a correção ("foram 12x") vence o que o modelo leu.
+// null fora de 2 a 360, o limite da RPC.
+function contarParcelas(operation, overrides) {
+  const count = Number(overrides.installmentCount ?? operation.installments?.count);
+  return Number.isInteger(count) && count >= 2 && count <= MAX_INSTALLMENTS ? count : null;
 }
 
-// Data da parcela como a RPC calcula: meses somados à primeira, com o dia
-// limitado ao fim do mês (31/01 → 28/02 → 31/03).
-function dataDaParcela(firstDate, index) {
-  const [year, month, day] = firstDate.split('-').map(Number);
-  const target = new Date(Date.UTC(year, month - 1 + index, 1));
-  const lastDay = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate();
-  target.setUTCDate(Math.min(day, lastDay));
-  return target.toISOString().slice(0, 10);
-}
-
-// futureCount: parcelas com data depois de hoje, que nascem previstas.
+// Valores e datas como a RPC grava: centavos, a última parcela absorve a
+// diferença, e o dia fica limitado ao fim do mês. futureCount é a previsão
+// de quantas nascem previstas pela data do aparelho; o texto final usa a
+// contagem que a RPC devolve, no fuso de São Paulo.
 function resumirParcelas(total, count, firstDate, referenceDate) {
   const futureCount = typeof firstDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(firstDate)
-    ? Array.from({ length: count }, (_, index) => dataDaParcela(firstDate, index))
-      .filter((date) => date > referenceDate).length
+    ? generateInstallmentDates(firstDate, count)
+      .filter((date) => resolveInstallmentStatus(date, referenceDate) === 'pending').length
     : null;
   if (!(Number(total) > 0) || Math.round(Number(total) * 100) < count) {
     return { count, installmentAmount: null, lastAmount: null, futureCount };
@@ -135,7 +134,7 @@ function buildOperationState({
     accounts, accountTypes, categories, referenceDate, workspaceType,
   });
 
-  const installmentCount = operation.operationType === 'installment_purchase' ? contarParcelas(operation) : null;
+  const installmentCount = operation.operationType === 'installment_purchase' ? contarParcelas(operation, overrides) : null;
   if (
     !OPERATION_TYPE_TO_INTENT[operation.operationType]
     || (operation.operationType === 'installment_purchase' && !installmentCount)
@@ -335,10 +334,12 @@ export function cancelEntirePlan(planState) {
   return Object.freeze({ ...planState, operations, status: PLAN_STATUS.CANCELLED });
 }
 
-export function markPlanOperationConfirmed(planState, temporaryId) {
+// result: o que a RPC devolveu, para a resposta repetir o que foi gravado
+// (quantas parcelas ficaram previstas) em vez da previsão do card.
+export function markPlanOperationConfirmed(planState, temporaryId, result = null) {
   const operations = planState.operations.map((op) => (
     op.temporaryId === temporaryId
-      ? Object.freeze({ ...op, status: PLAN_OPERATION_STATUS.CONFIRMED })
+      ? Object.freeze({ ...op, status: PLAN_OPERATION_STATUS.CONFIRMED, result })
       : op
   ));
   return Object.freeze({

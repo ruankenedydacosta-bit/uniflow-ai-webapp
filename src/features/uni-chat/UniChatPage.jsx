@@ -836,9 +836,10 @@ export default function UniChatPage({ variant = 'full' }) {
     setExecutionError(null);
 
 // Uma operação por vez, pelo MESMO RPC atômico já usado pelo registro
-    // de uma única transação -- nunca em lote, nunca uma "transação
-    // fantasma" que finge cobrir várias operações. Cada operação usa seu
-    // próprio client_operation_id como chave de idempotência (o mesmo já
+    // de uma única transação -- nunca uma "transação fantasma" que finge
+    // cobrir várias operações. A compra parcelada é a exceção: vai por
+    // registrar_compra_parcelada, que grava todas as parcelas dela juntas.
+    // Cada operação usa seu próprio client_operation_id como chave de idempotência (o mesmo já
     // gerado por operação em createPendingFinancialPlan/
     // buildOperationState) -- confirmar duas vezes nunca duplica, o RPC
     // devolve o mesmo transaction_id (idempotent_replay). Se uma falhar,
@@ -868,7 +869,7 @@ export default function UniChatPage({ variant = 'full' }) {
           transactionType: op.action.transactionType,
           origin: op.action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
         });
-        workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId);
+        workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId, result.data);
         setFinancialPlan(workingPlan);
       }
 

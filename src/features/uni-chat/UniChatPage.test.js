@@ -1214,7 +1214,8 @@ test('BLOCO E: confirmação do plano persiste uma operação por vez pelo mesmo
     /executeFinancialIntentAction\(op\.action, \{\s*executeAtomicAction: op\.action\.installments\s*\? executeConfirmedInstallmentPurchase\s*: executeConfirmedFinancialAction,\s*\}\)/,
   );
   assert.match(slice, /markPlanOperationFailed\(workingPlan, op\.temporaryId\)/);
-  assert.match(slice, /markPlanOperationConfirmed\(workingPlan, op\.temporaryId\)/);
+  // O retorno da RPC vai junto: a resposta repete quantas parcelas ficaram previstas.
+  assert.match(slice, /markPlanOperationConfirmed\(workingPlan, op\.temporaryId, result\.data\)/);
 });
 
 test('BLOCO E: capacidades pendentes (parcelamento/recorrência) nunca são persistidas na confirmação do plano', async () => {
@@ -1918,8 +1919,7 @@ test('S6: confirmFinancialPlan libera isExecutingAction/confirmingPlanRef em fin
 
 test('S6: confirmFinancialPlan preserva o flow de notificação/sucesso SEM prender os flags', async () => {
   const page = await source('UniChatPage.jsx');
-  const idx = page.indexOf('async function confirmFinancialPlan() {');
-  const slice = page.slice(idx, idx + 2800);
+  const { body: slice } = extractFunctionBody(page, 'async function confirmFinancialPlan() {');
   // o fluxo de sucesso continua depois do finally: notify para completed/partial
   assert.match(slice, /notifyFinancialDataChanged\('uni-chat'\)/);
   // e a publicação da resposta acontece dentro do try (antes do finally)

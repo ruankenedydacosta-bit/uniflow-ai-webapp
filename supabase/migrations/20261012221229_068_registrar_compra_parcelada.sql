@@ -10,7 +10,9 @@ begin;
 -- Parcela i cai em p_first_date + (i - 1) meses, sempre contada da primeira:
 -- 31/01 vira 28/02 e depois 31/03. O valor é o total dividido em centavos, e
 -- a última parcela absorve o arredondamento. Parcela com data depois de hoje
--- (fuso São Paulo) nasce prevista ('pending'), como na migration 066.
+-- (fuso São Paulo) nasce prevista ('pending'), como na migration 066. A
+-- função devolve quantas ficaram previstas: o aparelho de quem confirma pode
+-- estar noutro fuso, e a Uni repete esse número na resposta.
 
 create or replace function public.registrar_compra_parcelada(
   p_client_operation_id uuid,
@@ -21,7 +23,7 @@ create or replace function public.registrar_compra_parcelada(
   p_installments integer,
   p_first_date date
 )
-returns table(transaction_id uuid, installment_group_id uuid, installments integer, idempotent_replay boolean)
+returns table(transaction_id uuid, installment_group_id uuid, installments integer, pending_installments integer, idempotent_replay boolean)
 language plpgsql
 security definer
 set search_path to ''
@@ -40,6 +42,7 @@ declare
   v_inserted_id uuid;
   v_date date;
   v_amount numeric;
+  v_pending integer := 0;
   i integer;
 begin
   if v_user_id is null then
@@ -125,7 +128,13 @@ begin
     if v_replay_matches is not true then
       raise exception using errcode = 'P0001', message = 'financial_action_idempotency_conflict';
     end if;
-    return query select v_existing_transaction_id, p_client_operation_id, p_installments, true;
+    select pg_catalog.count(*)::integer
+      into v_pending
+    from public.transactions as transaction
+    where transaction.workspace_id = v_workspace_id
+      and transaction.metadata ->> 'installment_group_id' = p_client_operation_id::text
+      and transaction.status = 'pending';
+    return query select v_existing_transaction_id, p_client_operation_id, p_installments, v_pending, true;
     return;
   end if;
 
@@ -202,9 +211,12 @@ begin
     if i = 1 then
       v_first_transaction_id := v_inserted_id;
     end if;
+    if v_date > v_today then
+      v_pending := v_pending + 1;
+    end if;
   end loop;
 
-  return query select v_first_transaction_id, p_client_operation_id, p_installments, false;
+  return query select v_first_transaction_id, p_client_operation_id, p_installments, v_pending, false;
 end;
 $function$;
 

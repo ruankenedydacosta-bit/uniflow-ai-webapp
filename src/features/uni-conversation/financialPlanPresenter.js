@@ -80,11 +80,18 @@ export function buildOperationClarificationQuestion(op) {
   if (op.operationType === 'transfer' && op.destinationAccountResolution?.status !== 'resolved') {
     return 'Para qual conta foi essa transferência?';
   }
+  // Plano não cria conta nem categoria, nem com uma operação só (compra
+  // parcelada): a pergunta não pode falar em "várias operações".
   if (op.action?.proposedAccount) {
-    return 'Ainda não crio contas novas dentro de um plano com várias operações. Qual conta já existente devo usar?';
+    return 'Essa conta ainda não existe. Qual conta já existente devo usar?';
   }
   if (op.action?.proposedCategory) {
-    return 'Ainda não crio categorias novas dentro de um plano com várias operações. Qual categoria já existente devo usar?';
+    const { id, name } = op.action.proposedCategory;
+    // Com id é uma categoria que já existe, só parecida com o pedido.
+    if (id && name) return `Qual categoria devo usar? A mais parecida é ${name}.`;
+    return name
+      ? `A categoria ${name} ainda não existe. Diga uma categoria que já existe, ou crie antes com "cria a categoria ${name}".`
+      : 'Essa categoria ainda não existe. Qual categoria já existente devo usar?';
   }
   const issue = op.action?.issues?.[0];
   const code = issue?.code;
@@ -170,7 +177,8 @@ export function buildPlanResultText(planState) {
   // Compra parcelada vira várias parcelas: o texto conta a compra, não os
   // lançamentos, e avisa das parcelas futuras, que ficam previstas.
   for (const op of confirmed.filter((item) => item.action?.installments)) {
-    const { count, futureCount } = op.action.installments;
+    const { count } = op.action.installments;
+    const futureCount = op.result?.pending_installments ?? op.action.installments.futureCount;
     parts.push(`Registrei a compra em ${count} parcelas.`);
     if (futureCount === count) {
       parts.push('Todas ficaram previstas. Confirme no Financeiro quando cada uma acontecer.');
@@ -245,6 +253,32 @@ export function parsePlanCorrectionOverrides({
   if (dateWordMatch) {
     const { resolvedDate } = resolveRelativeDateExpression(dateWordMatch[1], referenceDate);
     if (resolvedDate) return { date: resolvedDate };
+  }
+
+  // Compra parcelada: "foram 12x" troca o número de parcelas, e "12x de 250"
+  // traz o valor da parcela, então o total vira 12 vezes 250.
+  if (operation.operationType === 'installment_purchase') {
+    const parcelas = trimmed.match(/\b(\d{1,3})\s*x\b|\bem\s+(\d{1,3})\s+(?:vezes|parcelas)\b|\b(\d{1,3})\s+(?:vezes|parcelas)\b/i);
+    if (parcelas) {
+      const installmentCount = Number(parcelas[1] ?? parcelas[2] ?? parcelas[3]);
+      const overrides = { installmentCount };
+      const porParcela = trimmed
+        .slice(parcelas.index + parcelas[0].length)
+        .match(/^\s*de\s+(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)/i);
+      const valorDaParcela = porParcela ? Number(porParcela[1].replace(',', '.')) : NaN;
+      if (Number.isFinite(valorDaParcela) && valorDaParcela > 0) {
+        overrides.amount = Math.round(installmentCount * valorDaParcela * 100) / 100;
+      }
+      return overrides;
+    }
+  }
+
+  // "Quero alterar o valor para 2000": a frase que o botão Editar do card
+  // deixa no campo.
+  const valorPara = trimmed.match(/\bvalor\s+(?:para|pra)\s+(?:r\$\s*)?(\d+(?:[.,]\d{1,2})?)/i);
+  if (valorPara) {
+    const amount = Number(valorPara[1].replace(',', '.'));
+    if (Number.isFinite(amount) && amount > 0) return { amount };
   }
 
   const hasAmountCue = /\b(na verdade|de verdade|valor certo|foi de|foram)\b/i.test(trimmed);

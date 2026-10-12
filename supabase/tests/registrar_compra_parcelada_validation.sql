@@ -66,7 +66,7 @@ begin
     select * into r from public.registrar_compra_parcelada(v_op, v_conta, c_saida, '  TV da sala ', 1000, 3, v_primeira);
     execute 'reset role';
   end;
-  if r.idempotent_replay or r.installments <> 3 or r.installment_group_id <> v_op then
+  if r.idempotent_replay or r.installments <> 3 or r.pending_installments <> 0 or r.installment_group_id <> v_op then
     raise exception 'FALHOU 1: retorno %', r;
   end if;
   select count(*), sum(amount) into v_n, v_soma from public.transactions where metadata->>'installment_group_id' = v_op::text;
@@ -97,7 +97,7 @@ begin
     select * into r from public.registrar_compra_parcelada(v_op, v_conta, c_saida, 'TV da sala', 1000, 3, v_primeira);
     execute 'reset role';
   end;
-  if not r.idempotent_replay then raise exception 'FALHOU 2: não reconheceu o retry'; end if;
+  if not r.idempotent_replay or r.pending_installments <> 0 then raise exception 'FALHOU 2: não reconheceu o retry (%)', r; end if;
   if (select count(*) from public.transactions where metadata->>'installment_group_id' = v_op::text) <> 3 then
     raise exception 'FALHOU 2: duplicou parcelas';
   end if;
@@ -118,6 +118,13 @@ begin
     select * into r from public.registrar_compra_parcelada(v_op2, null, c_saida, 'Geladeira', 2400, 12, v_hoje);
     execute 'reset role';
   end;
+  if r.pending_installments <> 11 then raise exception 'FALHOU 4: devolveu % previstas', r.pending_installments; end if;
+  begin
+    perform pg_temp.como_221(u_owner);
+    select * into r from public.registrar_compra_parcelada(v_op2, null, c_saida, 'Geladeira', 2400, 12, v_hoje);
+    execute 'reset role';
+  end;
+  if not r.idempotent_replay or r.pending_installments <> 11 then raise exception 'FALHOU 4: retry devolveu %', r; end if;
   if (select count(*) filter (where status = 'completed') from public.transactions where metadata->>'installment_group_id' = v_op2::text) <> 1
     or (select count(*) filter (where status = 'pending') from public.transactions where metadata->>'installment_group_id' = v_op2::text) <> 11
     or exists (select 1 from public.transactions where metadata->>'installment_group_id' = v_op2::text and account_id is not null) then

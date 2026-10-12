@@ -496,3 +496,42 @@ test('BLOCO F: cancelamento de operação nunca persiste nada -- é só uma tran
   assert.notEqual(updated, plan);
   assert.equal(typeof updated.status, 'string');
 });
+
+test('compra parcelada: "foram 12x de 250" troca o número de parcelas e o total (#221)', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'installment_purchase', amount: 3000, installments: { count: 10 } })]);
+  const [operation] = plan.operations;
+  assert.deepEqual(
+    parsePlanCorrectionOverrides({ text: 'na verdade foram 12x de 250', referenceDate: REFERENCE_DATE, accounts: ACCOUNTS, categories: CATEGORIES, operation }),
+    { installmentCount: 12, amount: 3000 },
+  );
+  assert.deepEqual(
+    parsePlanCorrectionOverrides({ text: 'foram 12 vezes', referenceDate: REFERENCE_DATE, accounts: ACCOUNTS, categories: CATEGORIES, operation }),
+    { installmentCount: 12 },
+  );
+  const corrigido = applyPlanOperationCorrection(plan, 'op_1', { installmentCount: 12 });
+  assert.equal(corrigido.operations[0].action.installments.count, 12);
+  assert.equal(corrigido.operations[0].action.installments.installmentAmount, 250);
+});
+
+test('frase do botão Editar ("Quero alterar o valor para 2000") corrige o valor da operação do plano', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'installment_purchase', amount: 3000, installments: { count: 10 } })]);
+  assert.deepEqual(
+    parsePlanCorrectionOverrides({ text: 'Quero alterar o valor para 2000', referenceDate: REFERENCE_DATE, accounts: ACCOUNTS, categories: CATEGORIES, operation: plan.operations[0] }),
+    { amount: 2000 },
+  );
+});
+
+test('categoria a criar numa compra parcelada pede outra sem falar em várias operações', () => {
+  const nova = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedCategory: { name: 'Esporte' } } });
+  assert.equal(nova, 'A categoria Esporte ainda não existe. Diga uma categoria que já existe, ou crie antes com "cria a categoria Esporte".');
+  const parecida = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedCategory: { id: 'cat-lazer', name: 'Lazer' } } });
+  assert.equal(parecida, 'Qual categoria devo usar? A mais parecida é Lazer.');
+  const conta = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedAccount: { name: 'Inter' } } });
+  assert.doesNotMatch(conta, /várias operações/);
+});
+
+test('buildPlanResultText repete quantas parcelas a RPC gravou como previstas, não a previsão do aparelho', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'installment_purchase', amount: 3000, installments: { count: 10 } })]);
+  const confirmed = markPlanOperationConfirmed(plan, 'op_1', { pending_installments: 10 });
+  assert.match(buildPlanResultText(confirmed), /Todas ficaram previstas/);
+});

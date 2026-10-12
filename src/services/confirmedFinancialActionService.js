@@ -115,7 +115,8 @@ export function buildInstallmentPurchaseRpcPayload(action) {
       p_account_id: action.account?.id ?? null,
       p_category_id: action.category?.id ?? action.payload.category_id ?? null,
       p_description: action.payload.description,
-      p_total_amount: action.payload.amount,
+      // O total já em centavos, o mesmo de que o card calculou as parcelas.
+      p_total_amount: action.amount,
       p_installments: action.installments.count,
       p_first_date: action.payload.transaction_date,
     },
@@ -147,6 +148,7 @@ export async function executeConfirmedInstallmentPurchase(action) {
     id: data.transaction_id,
     installment_group_id: data.installment_group_id,
     installments: data.installments,
+    pending_installments: data.pending_installments,
     account_id: action.account?.id ?? null,
     idempotent_replay: Boolean(data.idempotent_replay),
   });
