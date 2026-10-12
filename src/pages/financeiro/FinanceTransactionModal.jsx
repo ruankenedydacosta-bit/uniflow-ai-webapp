@@ -488,6 +488,7 @@ function FinanceTransactionModal({
       // Campos que são intrínsecos a cada parcela individual não devem ser
       // propagados ao editar "esta e as próximas"/"todas".
       delete payload.transaction_date;
+      delete payload.status;
       delete payload.metadata;
 
       for (const id of targetIds) {
@@ -795,7 +796,7 @@ function FinanceTransactionModal({
             required
             fullWidth
           />
-          {isPlanned ? (
+          {isPlanned && !editingGroupId ? (
             <>
               <div className={styles.plannedNotice} role="status">
                 <strong>Fica como previsto</strong>

@@ -18,7 +18,7 @@ test('só confirma previsto com auto_confirm cuja data chegou, no fuso de São P
   assert.match(sql, /set status = 'completed'/);
   assert.match(sql, /where status = 'pending'/);
   assert.match(sql, /metadata ->> 'auto_confirm' = 'true'/);
-  assert.match(sql, /transaction_date <= \(now\(\) at time zone 'America\/Sao_Paulo'\)::date/);
+  assert.match(sql, /transaction_date <= \(pg_catalog\.now\(\) at time zone 'America\/Sao_Paulo'\)::date/);
 });
 
 test('função só roda pelo job: sem execução para anon e authenticated', async () => {

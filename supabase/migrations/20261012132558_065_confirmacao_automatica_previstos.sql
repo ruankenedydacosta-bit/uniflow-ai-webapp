@@ -13,7 +13,7 @@ create or replace function public.confirm_due_planned_transactions()
 returns integer
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_count integer;
@@ -22,7 +22,7 @@ begin
   set status = 'completed'
   where status = 'pending'
     and metadata ->> 'auto_confirm' = 'true'
-    and transaction_date <= (now() at time zone 'America/Sao_Paulo')::date;
+    and transaction_date <= (pg_catalog.now() at time zone 'America/Sao_Paulo')::date;
   get diagnostics v_count = row_count;
   return v_count;
 end;

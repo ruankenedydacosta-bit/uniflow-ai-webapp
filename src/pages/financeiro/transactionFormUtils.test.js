@@ -80,3 +80,22 @@ test('edição lê auto_confirm do metadata', () => {
   });
   assert.equal(form.auto_confirm, true);
 });
+
+import { buildInstallmentMutationPayloads } from './transactionFormUtils.js';
+
+test('parcelas só levam auto_confirm quando o lançamento é mesmo previsto', () => {
+  const base = { transaction_type: 'expense', description: 'TV', amount: '300', installment_count: 3, status: 'completed' };
+  const hoje = localDateKey();
+  const escondido = buildInstallmentMutationPayloads(
+    { ...base, transaction_date: hoje, auto_confirm: true },
+    { groupId: 'g', today: hoje },
+  );
+  assert.equal(escondido.every((p) => !p.metadata.auto_confirm), true);
+
+  const amanha = localDateKey(new Date(Date.now() + 2 * 86400000));
+  const visivel = buildInstallmentMutationPayloads(
+    { ...base, transaction_date: amanha, auto_confirm: true },
+    { groupId: 'g', today: hoje },
+  );
+  assert.equal(visivel.every((p) => p.metadata.auto_confirm === true), true);
+});

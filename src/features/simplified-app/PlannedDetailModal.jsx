@@ -4,7 +4,7 @@ import IconBox from '../../components/ui/IconBox';
 import Modal from '../../components/ui/Modal';
 import OutlineButton from '../../components/ui/OutlineButton';
 import { formatCurrency } from '../../utils/formatters.js';
-import { toDateKey } from './simplifiedRecordsData.js';
+import { toDateKey } from './simplifiedAgendaCalendar.js';
 import styles from './PlannedDetailModal.module.css';
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' });
@@ -29,7 +29,7 @@ function formatDay(dateKey) {
 }
 
 function describeDate(dateKey) {
-  const today = toDateKey();
+  const today = toDateKey(new Date());
   if (dateKey > today) return `Previsto para ${formatDay(dateKey)}`;
   if (dateKey === today) return 'Vence hoje';
   return `Venceu em ${formatDay(dateKey)}`;

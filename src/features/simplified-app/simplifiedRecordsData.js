@@ -1,4 +1,5 @@
 import { normalizeSearchText } from '../../utils/searchText.js';
+import { toDateKey } from './simplifiedAgendaCalendar.js';
 import {
   resolveCategoryIconKey,
   resolveCategoryTone,
@@ -215,11 +216,6 @@ export function formatRelativeTransactionDate(value, referenceDate = new Date())
   }).format(transactionDate);
 }
 
-export function toDateKey(date = new Date()) {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
-}
 
 // Previsto cuja data é hoje ou já passou espera confirmação.
 export function isPlannedDue(transaction, referenceDate = new Date()) {

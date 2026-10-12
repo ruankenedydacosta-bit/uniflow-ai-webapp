@@ -36,11 +36,11 @@ import {
   summarizeMonth,
   summarizePlannedBalance,
   summarizePlannedTotals,
-  toDateKey,
   transactionNoticeDuration,
 } from './simplifiedRecordsData.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import PlannedDetailModal from './PlannedDetailModal.jsx';
+import { toDateKey } from './simplifiedAgendaCalendar.js';
 import styles from './simplifiedRecords.module.css';
 
 const PAGE_SIZE = 20;
@@ -788,7 +788,7 @@ function SimplifiedRecordsPage() {
   });
   // Previstos vencidos de meses anteriores continuam esperando confirmação,
   // então no mês atual e nos futuros a busca não tem data inicial.
-  const todayKey = toDateKey();
+  const todayKey = toDateKey(new Date());
   const plannedState = useTransactions({
     workspaceId: workspace?.id,
     dateFrom: month.dateTo >= todayKey ? undefined : month.dateFrom,
@@ -824,7 +824,6 @@ function SimplifiedRecordsPage() {
         categoryState.refresh(),
         transactionState.refresh(),
         plannedState.refresh(),
-      plannedState.refresh(),
         balanceState.refresh(),
         budgetState.refresh(),
       ]);
@@ -994,11 +993,14 @@ function SimplifiedRecordsPage() {
     if (transactionState.isMutating || !canManage) return false;
     setPlannedError(null);
     const result = await transactionState.saveTransaction(
-      { status: 'completed', transaction_date: toDateKey() },
+      { status: 'completed', transaction_date: toDateKey(new Date()) },
       transaction.id,
     );
     if (result.error) {
-      setPlannedError('Não foi possível confirmar. Tente novamente.');
+      const message = 'Não foi possível confirmar. Tente novamente.';
+      setPlannedError(message);
+      // Confirmar pela linha não abre o detalhe: o aviso vai para o toast.
+      if (!plannedDetail) showTransactionNotice(message);
       return false;
     }
     await refresh();

@@ -171,9 +171,15 @@ export function useTransactions({
           });
           return result;
         },
-        (data) => setTransactions((current) => upsertRecord(current, data)),
+        // Lista filtrada por status: o registro que mudou de status sai dela,
+        // em vez de ficar até o próximo refresh.
+        (data) => setTransactions((current) => (
+          status && data.status !== status
+            ? removeRecord(current, data.id)
+            : upsertRecord(current, data)
+        )),
       ),
-    [performMutation, transactions, workspaceId],
+    [performMutation, status, transactions, workspaceId],
   );
 
   const removeTransaction = useCallback(

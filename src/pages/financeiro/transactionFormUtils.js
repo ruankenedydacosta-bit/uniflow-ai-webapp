@@ -1,12 +1,11 @@
+import { toDateKey } from '../../features/simplified-app/simplifiedAgendaCalendar.js';
 import { buildInstallmentPayloads, validateInstallmentCount } from './installmentUtils.js';
 import { buildRecurrenceRule } from './recurrenceUtils.js';
 
 // Data de hoje no relógio da pessoa (yyyy-mm-dd). toISOString() usa UTC e,
 // depois das 21h em Brasília, já devolve o dia seguinte.
 export function localDateKey(date = new Date()) {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
+  return toDateKey(date);
 }
 
 export function createEmptyTransactionForm(transactionType = 'expense') {
@@ -179,7 +178,7 @@ export function buildInstallmentMutationPayloads(form, { groupId, today }) {
 
   const basePayload = buildTransactionMutationPayload({ ...form, is_recurring: false });
   // As parcelas futuras nascem previstas, mesmo se a primeira for de hoje.
-  if (form.auto_confirm) {
+  if (form.auto_confirm && resolveTransactionStatus(form) === 'pending') {
     basePayload.metadata = { ...(basePayload.metadata ?? {}), auto_confirm: true };
   }
   delete basePayload.is_recurring;
