@@ -28,12 +28,13 @@ const LISTA_VAZIA_POR_ABA = {
 export default function ObjetivosPage() {
   const navigate = useNavegar();
   const { workspace } = useSession();
-  const { goals, isLoading, error, refresh, addGoal, editGoal, removeGoal, addGoalContribution, removeGoalContribution } = useGoals({ workspaceId: workspace?.id });
+  const { goals, isLoading, error, refresh, addGoal, editGoal, removeGoal, addGoalContribution, removeGoalContribution } = useGoals({ workspaceId: workspace?.id, comUltimoAporte: true });
 
   const [aba, setAba] = useState('ativas');
   const [metaAbertaId, setMetaAbertaId] = useState(null);
   const [metaParaExcluir, setMetaParaExcluir] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
+  const [erroAoExcluir, setErroAoExcluir] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [contributionsGoal, setContributionsGoal] = useState(null);
@@ -65,21 +66,22 @@ export default function ObjetivosPage() {
     setFormOpen(true);
   }
 
+  // A folha só fecha quando os aportes chegam, para a tela não ficar vazia
+  // enquanto a consulta roda.
   async function handleContribute(goal) {
-    setMetaAbertaId(null);
     const result = await listContributions(goal.id);
     setContributions(result.data ?? []);
+    setMetaAbertaId(null);
     setContributionsGoal(goal);
   }
 
-  // O refresh traz a data do último aporte, que a linha de apoio usa.
   async function handleAddContribution(goalId, values) {
     await addGoalContribution(goalId, values);
     const result = await listContributions(goalId);
     setContributions(result.data ?? []);
-    void refresh();
   }
 
+  // Sem saber qual aporte passa a ser o último, o refresh traz a data certa.
   async function handleRemoveContribution(goalId, contributionId, amount) {
     await removeGoalContribution(goalId, contributionId, amount);
     const result = await listContributions(goalId);
@@ -100,14 +102,19 @@ export default function ObjetivosPage() {
 
   function handleAskDelete(goal) {
     setMetaAbertaId(null);
+    setErroAoExcluir(null);
     setMetaParaExcluir(goal);
   }
 
   async function handleDelete() {
     if (!metaParaExcluir || excluindo) return;
     setExcluindo(true);
-    await removeGoal(metaParaExcluir.id);
+    const result = await removeGoal(metaParaExcluir.id);
     setExcluindo(false);
+    if (result?.error) {
+      setErroAoExcluir('Não foi possível excluir a meta. Tente de novo.');
+      return;
+    }
     setMetaParaExcluir(null);
   }
 
@@ -127,7 +134,9 @@ export default function ObjetivosPage() {
       {error && !isLoading ? (
         <div className={styles.errorBanner} role="alert">
           <p>{error.message || 'Não foi possível carregar as metas.'}</p>
-          <OutlineButton variant="secondary" onClick={() => refresh()}>Tentar novamente</OutlineButton>
+          {goals.length === 0 ? (
+            <OutlineButton variant="secondary" onClick={() => refresh()}>Tentar novamente</OutlineButton>
+          ) : null}
         </div>
       ) : null}
 
@@ -208,6 +217,7 @@ export default function ObjetivosPage() {
         confirmLabel="Excluir meta"
         onConfirm={handleDelete}
         loading={excluindo}
+        error={erroAoExcluir}
       />
 
       <GoalForm

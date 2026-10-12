@@ -46,24 +46,29 @@ function pickDefined(source, fields) {
 
 // —————— GOALS ——————
 
-export async function listGoals(workspaceId, { status } = {}) {
+export async function listGoals(workspaceId, { status, comUltimoAporte = false } = {}) {
   if (!supabase) return createUnavailableResult([]);
   if (!isValidUuid(workspaceId)) return createValidationResult('Workspace invalido.');
 
-  // Data do último aporte de cada meta, para a lista avisar "Sem aporte há
-  // N meses" (#154). Vem embutida e limitada a uma linha por meta.
   let query = supabase
     .from('financial_goals')
-    .select(`${GOAL_FIELDS}, ultimo_aporte:goal_contributions(contribution_date)`)
+    .select(comUltimoAporte ? `${GOAL_FIELDS}, ultimo_aporte:goal_contributions(contribution_date)` : GOAL_FIELDS)
     .eq('workspace_id', workspaceId)
     .is('archived_at', null)
-    .order('created_at', { ascending: false })
-    .order('contribution_date', { referencedTable: 'ultimo_aporte', ascending: false })
-    .limit(1, { referencedTable: 'ultimo_aporte' });
+    .order('created_at', { ascending: false });
+
+  // Data do último aporte de cada meta, para a lista avisar "Sem aporte há
+  // N meses" (#154). Só a tela de Metas pede; vem limitada a uma linha.
+  if (comUltimoAporte) {
+    query = query
+      .order('contribution_date', { referencedTable: 'ultimo_aporte', ascending: false })
+      .limit(1, { referencedTable: 'ultimo_aporte' });
+  }
 
   if (status) query = query.eq('status', status);
 
   const { data, error } = await query;
+  if (!comUltimoAporte) return createResult(data ?? [], error);
   const goals = (data ?? []).map(({ ultimo_aporte: ultimoAporte, ...goal }) => ({
     ...goal,
     last_contribution_date: ultimoAporte?.[0]?.contribution_date ?? null,

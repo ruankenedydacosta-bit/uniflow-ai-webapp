@@ -11,7 +11,12 @@ const CIRCUNFERENCIA = 2 * Math.PI * RAIO;
 function AnelDeProgresso({ progresso, tom }) {
   const preenchido = (progresso / 100) * CIRCUNFERENCIA;
   return (
-    <svg viewBox="0 0 56 56" className={cx(styles.ring, styles[tom ?? 'azul'])} aria-hidden="true">
+    <svg
+      viewBox="0 0 56 56"
+      className={cx(styles.ring, styles[tom ?? 'azul'])}
+      role="img"
+      aria-label={`${progresso}% guardado`}
+    >
       <circle cx="28" cy="28" r={RAIO} className={styles.ringTrack} />
       {progresso > 0 ? (
         <circle
@@ -23,7 +28,7 @@ function AnelDeProgresso({ progresso, tom }) {
           transform="rotate(-90 28 28)"
         />
       ) : null}
-      <text x="28" y="32" textAnchor="middle" className={styles.ringText}>{progresso}%</text>
+      <text x="28" y="32" textAnchor="middle" className={styles.ringText} aria-hidden="true">{progresso}%</text>
     </svg>
   );
 }
