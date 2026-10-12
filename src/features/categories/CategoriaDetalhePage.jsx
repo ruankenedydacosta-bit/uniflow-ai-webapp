@@ -7,7 +7,7 @@ import { formatCurrency } from '../../utils/formatters.js';
 import SimplifiedSubpageHeader from '../simplified-app/SimplifiedSubpageHeader.jsx';
 import { useNavegar } from '../simplified-app/movimentoDeTelaContext.js';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/simplifiedRoutes.js';
-import { lancamentosDaCategoria } from './categoriasDoMes.js';
+import { lancamentosDaCategoria, resumoDaCategoria } from './categoriasDoMes.js';
 import { CATEGORY_TYPES, getCategoryErrorMessage } from './categoryUtils.js';
 import { CategoryIcon } from './categoryIcons.jsx';
 import CategoryCreateModal from './components/CategoryCreateModal.jsx';
@@ -40,7 +40,10 @@ export default function CategoriaDetalhePage() {
     () => lancamentosDaCategoria(transactionState.transactions, id),
     [transactionState.transactions, id],
   );
-  const valor = lancamentos.reduce((soma, t) => soma + Number(t.amount || 0), 0);
+  const { valor } = useMemo(
+    () => resumoDaCategoria(transactionState.transactions, id),
+    [transactionState.transactions, id],
+  );
   const gerenciavel = podeGerenciar(categoria);
   const voltar = () => navigate(SIMPLIFIED_ROUTES.CATEGORIAS);
   const mesRotulo = mes.label.split(' de ')[0].replace(/^./, (letra) => letra.toUpperCase());
@@ -81,6 +84,8 @@ export default function CategoriaDetalhePage() {
   }
 
   const ehSaida = categoria.category_type === CATEGORY_TYPES.EXPENSE;
+  const doEspaco = Boolean(categoria.workspace_id) && categoria.is_system !== true;
+  const origem = !doEspaco ? 'Padrão' : gerenciavel ? 'Criada por você' : 'Criada no espaço';
 
   return (
     <div className={styles.page}>
@@ -91,7 +96,7 @@ export default function CategoriaDetalhePage() {
           <span className={styles.detailTitle}>
             <span className={styles.detailName}>{categoria.name}</span>
             <span className={styles.rowHint}>
-              {[ehSaida ? 'Saída' : 'Entrada', categoria.workspace_id && categoria.is_system !== true ? 'Criada por você' : 'Padrão']
+              {[ehSaida ? 'Saída' : 'Entrada', origem]
                 .join(' · ')}
             </span>
           </span>
@@ -100,13 +105,21 @@ export default function CategoriaDetalhePage() {
         <div className={styles.months}>
           <div className={styles.monthCard}>
             <span className={styles.summaryLabel}>{mesRotulo}</span>
-            <span className={styles.monthValue}>{formatCurrency(valor)}</span>
-            <span className={styles.rowHint}>{plural(lancamentos.length, 'lançamento', 'lançamentos')}</span>
+            <span className={styles.monthValue}>
+              {transactionState.isLoading ? '...' : formatCurrency(valor)}
+            </span>
+            <span className={styles.rowHint}>
+              {transactionState.isLoading ? 'Carregando' : plural(lancamentos.length, 'lançamento', 'lançamentos')}
+            </span>
           </div>
         </div>
 
         <h2 className={styles.sectionTitle}>Lançamentos</h2>
-        {lancamentos.length === 0 ? (
+        {transactionState.isLoading ? (
+          <p className={styles.state} role="status">Carregando lançamentos...</p>
+        ) : transactionState.error ? (
+          <p className={styles.state} role="alert">Não foi possível carregar os lançamentos.</p>
+        ) : lancamentos.length === 0 ? (
           <p className={styles.state}>Nenhum lançamento neste mês.</p>
         ) : (
           <div>
@@ -155,7 +168,9 @@ export default function CategoriaDetalhePage() {
             </>
           ) : (
             <p className={styles.note}>
-              Esta é uma categoria padrão do UniFlow. Para usar outro nome ou ícone, crie uma categoria sua.
+              {doEspaco
+                ? 'Só quem criou a categoria ou o administrador do espaço pode editar e excluir.'
+                : 'Esta é uma categoria padrão do UniFlow. Para usar outro nome ou ícone, crie uma categoria sua.'}
             </p>
           )}
         </div>

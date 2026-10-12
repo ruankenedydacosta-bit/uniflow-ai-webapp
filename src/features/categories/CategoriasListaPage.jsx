@@ -4,7 +4,7 @@ import ProgressBar from '../../components/ui/ProgressBar';
 import Segmented from '../../components/ui/Segmented';
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { formatCurrency } from '../../utils/formatters.js';
-import { PhCaretDownIcon, PhPlusIcon } from '../simplified-app/SimplifiedIcons.jsx';
+import { PhCaretDownIcon, PhPlusIcon, PhTagIcon } from '../simplified-app/SimplifiedIcons.jsx';
 import SimplifiedSubpageHeader from '../simplified-app/SimplifiedSubpageHeader.jsx';
 import { useNavegar } from '../simplified-app/movimentoDeTelaContext.js';
 import { SIMPLIFIED_ROUTES, categoriaPath } from '../simplified-app/simplifiedRoutes.js';
@@ -41,13 +41,15 @@ export default function CategoriasListaPage() {
 
   const mesCurto = mes.label.split(' de ')[0];
   const mesRotulo = mesCurto.charAt(0).toUpperCase() + mesCurto.slice(1);
-  const vazio = !carregando && lista.comLancamento.length === 0 && lista.semLancamento.length === 0;
+  const vazio = !carregando
+    && lista.comLancamento.length === 0
+    && lista.semLancamento.length === 0
+    && lista.semCategoria.quantidade === 0;
   const ehSaida = tipo === CATEGORY_TYPES.EXPENSE;
 
   async function handleCriar(values) {
     const resultado = await categoryState.saveCategory(values);
     if (!resultado.error) {
-      await categoryState.refresh?.();
       notifyFinancialDataChanged('categorias');
       setCriando(false);
       if (values.category_type !== tipo) setTipo(values.category_type);
@@ -99,7 +101,19 @@ export default function CategoriasListaPage() {
                   : `Nada ${ehSaida ? 'saiu' : 'entrou'} neste mês`}
               </span>
             </div>
-            <div>{lista.comLancamento.map((linha) => renderLinha(linha, { comBarra: true }))}</div>
+            <div>
+              {lista.comLancamento.map((linha) => renderLinha(linha, { comBarra: true }))}
+              {lista.semCategoria.quantidade > 0 ? (
+                <div className={styles.row}>
+                  <IconBox><PhTagIcon /></IconBox>
+                  <span className={styles.rowText}>
+                    <span className={styles.rowTitle}>Sem categoria</span>
+                    <span className={styles.rowHint}>{plural(lista.semCategoria.quantidade, 'lançamento', 'lançamentos')}</span>
+                  </span>
+                  <span className={styles.rowValue}>{formatCurrency(lista.semCategoria.valor)}</span>
+                </div>
+              ) : null}
+            </div>
             {lista.semLancamento.length > 0 ? (
               <div>
                 <button

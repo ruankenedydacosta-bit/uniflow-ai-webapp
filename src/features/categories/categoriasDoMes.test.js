@@ -33,7 +33,7 @@ test('ordena por valor e separa as sem lançamento em ordem alfabética', () => 
   assert.equal(lista.comLancamento[1].quantidade, 2);
 });
 
-test('ignora pendentes, outro tipo, sem categoria e categoria inativa', () => {
+test('ignora pendentes e outro tipo; sem categoria e inativa só somam no total', () => {
   const lista = montarListaDeCategorias({
     categories,
     type: 'expense',
@@ -45,7 +45,9 @@ test('ignora pendentes, outro tipo, sem categoria e categoria inativa', () => {
     ],
   });
   assert.equal(lista.comLancamento.length, 0);
-  assert.equal(lista.total, 0);
+  // Sem categoria e categoria inativa entram no total, fora das linhas.
+  assert.equal(lista.total, 120);
+  assert.deepEqual(lista.semCategoria, { valor: 120, quantidade: 2 });
   assert.ok(lista.semLancamento.every((l) => l.name !== 'Antiga'));
 });
 

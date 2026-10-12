@@ -1,12 +1,12 @@
+import { useLocation } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext';
 import IconBox from '../../components/ui/IconBox';
-import { useAccounts } from '../../hooks';
+import { useAccounts, useCategories } from '../../hooks';
 import { PhCaretRightIcon, PhTagIcon, PhWalletIcon } from '../simplified-app/SimplifiedIcons.jsx';
 import SimplifiedSubpageHeader from '../simplified-app/SimplifiedSubpageHeader.jsx';
 import { useNavegar } from '../simplified-app/movimentoDeTelaContext.js';
 import { ACCOUNT_SUBROUTE_IDS, ACCOUNT_SUBROUTES } from '../simplified-app/simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/simplifiedRoutes.js';
-import { useCategoriasOrganizar } from './useCategoriasOrganizar.js';
 import styles from './organizar.module.css';
 
 const SEM_REGISTROS = Object.freeze([]);
@@ -18,8 +18,11 @@ function plural(quantidade, singular, pluralForma) {
 // Hub Organizar (handoff 10a): Contas e Categorias numa tela só.
 export default function OrganizarPage() {
   const navigate = useNavegar();
+  const location = useLocation();
+  // Quem abre Organizar (Financeiro ou Mais) diz de onde veio, para a seta voltar lá.
+  const origem = location.state?.de ?? SIMPLIFIED_ROUTES.RECORDS;
   const { workspace } = useSession();
-  const { categoryState } = useCategoriasOrganizar();
+  const categoryState = useCategories({ workspaceId: workspace?.id, context: 'personal' });
   const accountState = useAccounts({
     workspaceId: workspace?.id,
     fallbackAccounts: SEM_REGISTROS,
@@ -38,21 +41,21 @@ export default function OrganizarPage() {
       id: 'contas',
       Icon: PhWalletIcon,
       titulo: 'Contas',
-      dica: plural(accountState.accounts.length, 'conta', 'contas'),
+      dica: accountState.isLoading ? '' : plural(accountState.accounts.length, 'conta', 'contas'),
       para: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path,
     },
     {
       id: 'categorias',
       Icon: PhTagIcon,
       titulo: 'Categorias',
-      dica: dicaDeCategorias,
+      dica: categoryState.isLoading ? '' : dicaDeCategorias,
       para: SIMPLIFIED_ROUTES.CATEGORIAS,
     },
   ];
 
   return (
     <div className={styles.page}>
-      <SimplifiedSubpageHeader title="Organizar" onBack={() => navigate(SIMPLIFIED_ROUTES.RECORDS)} />
+      <SimplifiedSubpageHeader title="Organizar" onBack={() => navigate(origem)} />
       <div className={styles.body}>
         <p className={styles.lead}>
           Crie e ajuste onde seu dinheiro fica e como os lançamentos são agrupados.

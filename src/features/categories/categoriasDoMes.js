@@ -10,9 +10,21 @@ import { resolveCategoryIconKey } from './categoryIconCatalog.js';
  */
 export function montarListaDeCategorias({ categories, transactions, type }) {
   const totais = new Map();
+  const idsDaLista = new Set(
+    (Array.isArray(categories) ? categories : [])
+      .filter((categoria) => categoria.is_active !== false && categoria.category_type === type)
+      .map((categoria) => categoria.id),
+  );
+  const semCategoria = { valor: 0, quantidade: 0 };
   for (const transacao of Array.isArray(transactions) ? transactions : []) {
     if (transacao.status !== 'completed' || transacao.transaction_type !== type) continue;
-    if (!transacao.category_id) continue;
+    // Sem categoria, ou numa categoria que não está na lista (inativa, de outro
+    // contexto): conta no total do mês para bater com o Financeiro.
+    if (!transacao.category_id || !idsDaLista.has(transacao.category_id)) {
+      semCategoria.valor += Number(transacao.amount || 0);
+      semCategoria.quantidade += 1;
+      continue;
+    }
     const atual = totais.get(transacao.category_id) ?? { valor: 0, quantidade: 0 };
     totais.set(transacao.category_id, {
       valor: atual.valor + Number(transacao.amount || 0),
@@ -44,7 +56,8 @@ export function montarListaDeCategorias({ categories, transactions, type }) {
 
   const maior = comLancamento[0]?.valor ?? 0;
   return {
-    total: comLancamento.reduce((soma, linha) => soma + linha.valor, 0),
+    total: comLancamento.reduce((soma, linha) => soma + linha.valor, semCategoria.valor),
+    semCategoria,
     comLancamento: comLancamento.map((linha) => ({
       ...linha,
       peso: maior > 0 ? linha.valor / maior : 0,

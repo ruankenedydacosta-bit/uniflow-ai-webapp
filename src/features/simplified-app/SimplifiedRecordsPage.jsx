@@ -1008,7 +1008,7 @@ function SimplifiedRecordsPage() {
       <div ref={recordsPageRef} className={styles.recordsPage} data-simplified-records>
         <RecordsHeader
           onTalkToUni={() => navigate(SIMPLIFIED_ROUTES.UNI)}
-          onOrganize={() => navigate(SIMPLIFIED_ROUTES.ORGANIZAR)}
+          onOrganize={() => navigate(SIMPLIFIED_ROUTES.ORGANIZAR, { state: { de: SIMPLIFIED_ROUTES.RECORDS } })}
         />
 
         <div className={styles.periodBlock}>

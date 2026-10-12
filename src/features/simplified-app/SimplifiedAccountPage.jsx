@@ -180,7 +180,7 @@ function SimplifiedAccountPage() {
       Icon: PhSquaresFourIcon,
       title: 'Contas e categorias',
       subtitle: 'Onde seu dinheiro fica e como se agrupa',
-      to: SIMPLIFIED_ROUTES.ORGANIZAR,
+      onSelect: () => navigate(SIMPLIFIED_ROUTES.ORGANIZAR, { state: { de: SIMPLIFIED_ROUTES.ACCOUNT } }),
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
