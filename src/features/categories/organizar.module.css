@@ -253,3 +253,41 @@
   line-height: 1.45;
   text-wrap: pretty;
 }
+
+/* Aviso de erro com "X" para dispensar (#184). */
+.alertNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--uf-space-8);
+}
+
+.alertNote > p {
+  flex: 1;
+  color: var(--uf-app-text-2);
+}
+
+.dismissButton {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -8px -8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-full);
+  background: none;
+  color: var(--uf-app-text-3);
+  cursor: pointer;
+}
+
+.dismissButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dismissButton:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}

@@ -31,19 +31,22 @@ export default function CategoriasListaPage() {
   const { mes, categoryState, transactionState, podeCriar, carregando } = useCategoriasOrganizar();
   const [tipo, setTipo] = useState(CATEGORY_TYPES.EXPENSE);
   const [semAberto, setSemAberto] = useState(false);
+  const [ocultasAberto, setOcultasAberto] = useState(false);
   const [criando, setCriando] = useState(false);
 
   const lista = useMemo(() => montarListaDeCategorias({
-    categories: categoryState.categories,
+    categories: categoryState.categoriasVisiveis,
+    ocultas: categoryState.categoriasOcultas,
     transactions: transactionState.transactions,
     type: tipo,
-  }), [categoryState.categories, transactionState.transactions, tipo]);
+  }), [categoryState.categoriasVisiveis, categoryState.categoriasOcultas, transactionState.transactions, tipo]);
 
   const mesCurto = mes.label.split(' de ')[0];
   const mesRotulo = mesCurto.charAt(0).toUpperCase() + mesCurto.slice(1);
   const vazio = !carregando
     && lista.comLancamento.length === 0
     && lista.semLancamento.length === 0
+    && lista.ocultas.length === 0
     && lista.semCategoria.quantidade === 0;
   const ehSaida = tipo === CATEGORY_TYPES.EXPENSE;
 
@@ -126,6 +129,27 @@ export default function CategoriasListaPage() {
                   <span>{lista.semLancamento.length} <PhCaretDownIcon /></span>
                 </button>
                 {semAberto ? lista.semLancamento.map((linha) => renderLinha(linha, { comBarra: false })) : null}
+              </div>
+            ) : null}
+            {lista.ocultas.length > 0 ? (
+              <div>
+                <button
+                  type="button"
+                  className={styles.moreButton}
+                  aria-expanded={ocultasAberto}
+                  onClick={() => setOcultasAberto((aberto) => !aberto)}
+                >
+                  <span>Ocultas</span>
+                  <span>{lista.ocultas.length} <PhCaretDownIcon /></span>
+                </button>
+                {ocultasAberto ? (
+                  <>
+                    <p className={styles.note}>
+                      Categoria oculta não aparece ao registrar um lançamento nem nas sugestões da Uni. Toque nela para mostrar de novo.
+                    </p>
+                    {lista.ocultas.map((linha) => renderLinha(linha, { comBarra: linha.quantidade > 0 }))}
+                  </>
+                ) : null}
               </div>
             ) : null}
           </>

@@ -29,7 +29,8 @@ export default function OrganizarPage() {
     fallbackAccountTypes: SEM_REGISTROS,
   });
 
-  const categorias = categoryState.categories.filter((c) => c.is_active !== false);
+  // Ocultas (#184) não contam: o hub mostra o que a lista mostra.
+  const categorias = categoryState.categoriasVisiveis.filter((c) => c.is_active !== false);
   const criadas = categorias.filter((c) => c.workspace_id && c.is_system !== true).length;
   const dicaDeCategorias = [
     plural(categorias.length, 'categoria', 'categorias'),

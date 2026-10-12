@@ -120,6 +120,49 @@ export function categoriasDestinoParaMover(categories, category) {
   );
 }
 
+/**
+ * Separa as categorias ocultas no espaço (#184) das visíveis. `idsOcultos` é
+ * a lista de workspace_hidden_categories. Só `visiveis` vai para a lista, os
+ * seletores e as sugestões da Uni; `ocultas` alimenta o grupo "Ocultas" no
+ * fim da lista de Organizar. A ordem de entrada é mantida nos dois lados.
+ */
+export function separarCategoriasOcultas(categories, idsOcultos) {
+  const list = Array.isArray(categories) ? categories : [];
+  const ocultos = new Set(Array.isArray(idsOcultos) ? idsOcultos : []);
+  if (ocultos.size === 0) return { visiveis: list, ocultas: [] };
+  const visiveis = [];
+  const ocultas = [];
+  for (const category of list) {
+    (ocultos.has(category?.id) ? ocultas : visiveis).push(category);
+  }
+  return { visiveis, ocultas };
+}
+
+// Categorias padrão que recebem o que não se encaixa em outra. A Uni conta
+// com elas como último recurso, então não podem ser ocultadas. A policy de
+// insert de workspace_hidden_categories (migration 067) recusa as mesmas.
+const CATEGORIAS_PADRAO_NAO_OCULTAVEIS = Object.freeze(['outras despesas', 'outras entradas', 'transferência']);
+
+/** Diz se a categoria pode ser ocultada no espaço (#184). */
+export function podeOcultarCategoria(category) {
+  if (!category?.id) return false;
+  const padrao = category.is_system === true && !category.workspace_id;
+  return !(padrao && CATEGORIAS_PADRAO_NAO_OCULTAVEIS.includes(String(category.name ?? '').trim().toLowerCase()));
+}
+
+/**
+ * Opções do seletor de categoria de um lançamento: as visíveis e, quando o
+ * lançamento em edição já está numa categoria oculta, essa categoria também.
+ * Sem ela o seletor ficaria vazio e salvar trocaria a categoria sem a pessoa
+ * pedir. `todas` é a lista completa do hook, para achar a oculta.
+ */
+export function categoriasParaSeletor({ visiveis, todas, selecionadaId = null } = {}) {
+  const lista = Array.isArray(visiveis) ? visiveis : [];
+  if (!selecionadaId || lista.some((category) => category?.id === selecionadaId)) return lista;
+  const selecionada = (Array.isArray(todas) ? todas : []).find((category) => category?.id === selecionadaId);
+  return selecionada ? [...lista, selecionada] : lista;
+}
+
 /** Decide se a busca deve ser exibida para uma dada quantidade de itens. */
 export function shouldShowSearch(itemCount) {
   return Number(itemCount) >= SEARCH_MIN_ITEMS;
