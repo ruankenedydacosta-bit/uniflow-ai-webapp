@@ -63,12 +63,12 @@ Resultado: 12/12 verificacoes aprovadas.
 - dois indices workspace-first presentes;
 - triggers de `updated_at` presentes.
 
-A migration 004 esta aprovada no DEV. Ela ainda nao conecta bancos, nao possui
-credenciais e nao implementa provedor ou Edge Function. Producao nao recebeu a
-migration e permanece intacta.
-
-O proximo passo e pesquisar e selecionar um provedor Open Finance com sandbox,
-usando `docs/00-master/OPEN_FINANCE_PROVIDER_SELECTION.md` como roteiro.
+Situacao em 2026-10-12: as tabelas da 004 existem em producao, vazias, e
+nenhum banco esta conectado. A migration 068 ajustou saldo, protecao e payload
+ao app atual (validacao em
+`tests/open_finance_saldo_do_banco_e_protecao_validation.sql`). O estado e as
+decisoes pendentes ficam em `docs/00-master/OPEN_FINANCE_ARCHITECTURE.md`. O
+roteiro `OPEN_FINANCE_PROVIDER_SELECTION.md` citado antes nunca foi escrito.
 
 ## Validacoes concluidas no DEV
 
@@ -141,7 +141,7 @@ Nao existe criacao automatica de workspace no cadastro nesta migration.
 - Policies privadas nao usam `USING (true)`.
 - A anon/publishable key acessa o nucleo financeiro somente conforme grants e RLS.
 - Tokens Open Finance, credenciais, certificados e segredos nunca ficam em `accounts`, `transactions`, `metadata` ou payload bruto.
-- `raw_provider_data` deve ser sanitizado e nunca consumido diretamente pela interface.
+- O payload do provedor fica em `external_transactions.sanitized_provider_data`, sanitizado e sem grant para a interface (`transactions.raw_provider_data` saiu na 068).
 - Integracoes Open Finance reais exigirao backend seguro ou Edge Function.
 - Consentimentos terao expiracao e revogacao em uma migration futura.
 
