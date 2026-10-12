@@ -11,8 +11,8 @@ Mais → Produto → Metas (`/app/metas`). A rota antiga `/objetivos` redirecion
 ## Passo a passo
 
 1. Criar uma meta com nome, categoria, valor-alvo, valor inicial, aporte mensal planejado, datas de início e de alvo, prioridade e (opcional) conta vinculada.
-2. Adicionar aportes (contribuições) ao longo do tempo pela tela da meta.
-3. Acompanhar o progresso: percentual concluído, valor restante, aporte mensal necessário para chegar ao alvo na data prevista, e um status de ritmo — "no ritmo", "atenção" ou "atrasada" — comparando o progresso real com o esperado para a data atual.
+2. Registrar aportes ao longo do tempo: tocar na meta e escolher "Registrar aporte".
+3. Acompanhar o progresso na lista, separada em "Ativas" e "Concluídas". O topo mostra quanto está guardado nas metas ativas e o percentual do total; meta pausada fica fora dessa conta. Cada meta mostra o percentual, o valor guardado, um selo de ritmo — "No ritmo", "Atenção" ou "Atrasada" — e uma linha de apoio: o valor por mês e o mês do alvo, quanto falta, ou "Sem aporte há N meses" quando a meta está há 2 meses ou mais sem aporte.
 
 ## Diferenças PF/PJ
 

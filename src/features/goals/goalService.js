@@ -50,17 +50,25 @@ export async function listGoals(workspaceId, { status } = {}) {
   if (!supabase) return createUnavailableResult([]);
   if (!isValidUuid(workspaceId)) return createValidationResult('Workspace invalido.');
 
+  // Data do último aporte de cada meta, para a lista avisar "Sem aporte há
+  // N meses" (#154). Vem embutida e limitada a uma linha por meta.
   let query = supabase
     .from('financial_goals')
-    .select(GOAL_FIELDS)
+    .select(`${GOAL_FIELDS}, ultimo_aporte:goal_contributions(contribution_date)`)
     .eq('workspace_id', workspaceId)
     .is('archived_at', null)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .order('contribution_date', { referencedTable: 'ultimo_aporte', ascending: false })
+    .limit(1, { referencedTable: 'ultimo_aporte' });
 
   if (status) query = query.eq('status', status);
 
   const { data, error } = await query;
-  return createResult(data ?? [], error);
+  const goals = (data ?? []).map(({ ultimo_aporte: ultimoAporte, ...goal }) => ({
+    ...goal,
+    last_contribution_date: ultimoAporte?.[0]?.contribution_date ?? null,
+  }));
+  return createResult(goals, error);
 }
 
 export async function getGoal(workspaceId, goalId) {
