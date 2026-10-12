@@ -31,9 +31,10 @@ function formatarDia(data) {
 export default function CategoriaDetalhePage() {
   const { id } = useParams();
   const navigate = useNavegar();
-  const { mes, categoryState, transactionState, podeGerenciar, carregando } = useCategoriasOrganizar();
+  const { mes, categoryState, transactionState, podeCriar, podeGerenciar, carregando } = useCategoriasOrganizar();
   const [editando, setEditando] = useState(null);
   const [excluindo, setExcluindo] = useState(null);
+  const [criando, setCriando] = useState(false);
 
   const categoria = categoryState.categories.find((c) => c.id === id) ?? null;
   const lancamentos = useMemo(
@@ -62,6 +63,32 @@ export default function CategoriaDetalhePage() {
       notifyFinancialDataChanged('categorias');
       setExcluindo(null);
       voltar();
+    }
+  }
+
+  async function handleExcluirMovendo(destinoId) {
+    const resultado = await categoryState.removerCategoriaMovendoLancamentos(excluindo.id, destinoId);
+    if (!resultado.error) {
+      notifyFinancialDataChanged('categorias');
+      setExcluindo(null);
+      voltar();
+    }
+  }
+
+  // Sem categoria do mesmo tipo para receber os lançamentos: a folha de
+  // exclusão fecha e a de criação abre no tipo desta categoria.
+  function handleCriarPelaExclusao() {
+    categoryState.clearError?.();
+    setExcluindo(null);
+    setCriando(true);
+  }
+
+  async function handleCriar(values) {
+    const resultado = await categoryState.saveCategory(values);
+    if (!resultado.error) {
+      await categoryState.refresh?.();
+      notifyFinancialDataChanged('categorias');
+      setCriando(false);
     }
   }
 
@@ -177,17 +204,18 @@ export default function CategoriaDetalhePage() {
       </div>
 
       <CategoryCreateModal
-        open={Boolean(editando)}
+        open={Boolean(editando) || criando}
         onClose={() => {
           categoryState.clearError?.();
           setEditando(null);
+          setCriando(false);
         }}
         defaultType={categoria.category_type}
         categories={categoryState.categories}
         category={editando}
-        onCreate={handleEditar}
+        onCreate={editando ? handleEditar : handleCriar}
         isMutating={categoryState.isMutating}
-        serverError={editando
+        serverError={editando || criando
           ? getCategoryErrorMessage(categoryState.error, 'Não foi possível salvar a categoria. Tente novamente.')
           : ''}
       />
@@ -195,12 +223,13 @@ export default function CategoriaDetalhePage() {
       {excluindo ? (
         <CategoryDeleteConfirmModal
           category={excluindo}
+          categories={categoryState.categories}
           isMutating={categoryState.isMutating}
-          serverError={getCategoryErrorMessage(
-            categoryState.error,
-            'Não foi possível excluir a categoria. Tente novamente.',
-          )}
+          error={categoryState.error}
+          contarLancamentos={categoryState.contarLancamentos}
           onConfirm={handleExcluir}
+          onMover={handleExcluirMovendo}
+          onCriarCategoria={podeCriar ? handleCriarPelaExclusao : undefined}
           onClose={() => {
             categoryState.clearError?.();
             setExcluindo(null);
