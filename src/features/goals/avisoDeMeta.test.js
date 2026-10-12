@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { avisoDeMetaParaLeitura, primeiroDiaDoMes, TIPOS_DE_AVISO_DE_META } from './avisoDeMeta.js';
+import { avisoDeMetaParaLeitura, TIPOS_DE_AVISO_DE_META } from './avisoDeMeta.js';
 
 // O ritmo (goalCalc) olha o relógio de verdade: as datas das metas são
 // relativas a hoje.
@@ -10,6 +10,8 @@ function data(diasAPartirDeHoje) {
   const dia = new Date(HOJE.getFullYear(), HOJE.getMonth(), HOJE.getDate() + diasAPartirDeHoje);
   return `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, '0')}-${String(dia.getDate()).padStart(2, '0')}`;
 }
+
+const INICIO_DO_MES = `${HOJE.getFullYear()}-${String(HOJE.getMonth() + 1).padStart(2, '0')}-01`;
 
 // formatCurrency separa "R$" do número com espaço não separável.
 function texto(aviso) {
@@ -85,7 +87,7 @@ test('várias fora do ritmo: a atrasada vem antes e o detalhe conta as outras', 
 
 test('marco de 50% passado com aporte deste mês', () => {
   const aviso = texto(avisoDeMetaParaLeitura([
-    meta({ current_amount: 6500, aportes_do_periodo: [{ amount: 1000, contribution_date: primeiroDiaDoMes(HOJE) }] }),
+    meta({ current_amount: 6500, aportes_do_periodo: [{ amount: 1000, contribution_date: INICIO_DO_MES }] }),
   ], HOJE));
   assert.equal(aviso.tipo, TIPOS_DE_AVISO_DE_META.MARCO);
   assert.equal(aviso.titulo, 'Você já guardou metade da meta Viagem.');
@@ -94,8 +96,8 @@ test('marco de 50% passado com aporte deste mês', () => {
 
 test('marco de 100% pede para concluir e vence o de 50%', () => {
   const aviso = texto(avisoDeMetaParaLeitura([
-    meta({ id: 'a', current_amount: 6500, aportes_do_periodo: [{ amount: 1000, contribution_date: primeiroDiaDoMes(HOJE) }] }),
-    meta({ id: 'b', name: 'Casa', current_amount: 12000, aportes_do_periodo: [{ amount: 2000, contribution_date: primeiroDiaDoMes(HOJE) }] }),
+    meta({ id: 'a', current_amount: 6500, aportes_do_periodo: [{ amount: 1000, contribution_date: INICIO_DO_MES }] }),
+    meta({ id: 'b', name: 'Casa', current_amount: 12000, aportes_do_periodo: [{ amount: 2000, contribution_date: INICIO_DO_MES }] }),
   ], HOJE));
   assert.equal(aviso.metaId, 'b');
   assert.equal(aviso.titulo, 'Você juntou todo o valor da meta Casa.');
@@ -104,7 +106,7 @@ test('marco de 100% pede para concluir e vence o de 50%', () => {
 
 test('marco: já estava acima antes do mês, ou aporte de outro mês, não avisa', () => {
   assert.equal(avisoDeMetaParaLeitura([
-    meta({ current_amount: 7000, aportes_do_periodo: [{ amount: 500, contribution_date: primeiroDiaDoMes(HOJE) }] }),
+    meta({ current_amount: 7000, aportes_do_periodo: [{ amount: 500, contribution_date: INICIO_DO_MES }] }),
   ], HOJE), null);
   assert.equal(avisoDeMetaParaLeitura([
     meta({ current_amount: 6500, aportes_do_periodo: [{ amount: 1000, contribution_date: data(-40) }] }),
@@ -113,19 +115,37 @@ test('marco: já estava acima antes do mês, ou aporte de outro mês, não avisa
 
 test('retirada no mês que derruba abaixo de 50% não vira marco', () => {
   assert.equal(avisoDeMetaParaLeitura([
-    meta({ current_amount: 6000, aportes_do_periodo: [{ amount: -1000, contribution_date: primeiroDiaDoMes(HOJE) }] }),
+    meta({ current_amount: 6000, aportes_do_periodo: [{ amount: -1000, contribution_date: INICIO_DO_MES }] }),
   ], HOJE), null);
 });
 
 test('fora do ritmo vence marco', () => {
   const aviso = avisoDeMetaParaLeitura([
-    meta({ id: 'a', current_amount: 12000, aportes_do_periodo: [{ amount: 2000, contribution_date: primeiroDiaDoMes(HOJE) }] }),
+    meta({ id: 'a', current_amount: 12000, aportes_do_periodo: [{ amount: 2000, contribution_date: INICIO_DO_MES }] }),
     meta({ id: 'b', current_amount: 1000 }),
   ], HOJE);
   assert.equal(aviso.metaId, 'b');
 });
 
-test('primeiro dia do mês em AAAA-MM-DD', () => {
-  assert.equal(primeiroDiaDoMes(new Date(2026, 0, 31)), '2026-01-01');
-  assert.equal(primeiroDiaDoMes(new Date(2026, 11, 5)), '2026-12-01');
+test('marco compara valores: R$ 11.950 de R$ 12.000 não é 100% nem R$ 5.970 é metade', () => {
+  const aviso = avisoDeMetaParaLeitura([
+    meta({ current_amount: 11950, aportes_do_periodo: [{ amount: 2000, contribution_date: INICIO_DO_MES }] }),
+  ], HOJE);
+  assert.equal(aviso, null);
+  assert.equal(avisoDeMetaParaLeitura([
+    meta({ start_date: data(-10), target_date: data(400), current_amount: 5970, aportes_do_periodo: [{ amount: 1000, contribution_date: INICIO_DO_MES }] }),
+  ], HOJE), null);
+});
+
+test('prazo ainda neste mês: o que falta entra até a data, não o valor planejado', (t) => {
+  const ultimoDia = new Date(HOJE.getFullYear(), HOJE.getMonth() + 1, 0).getDate();
+  if (HOJE.getDate() >= ultimoDia - 1) {
+    t.skip('hoje é o fim do mês');
+    return;
+  }
+  const aviso = texto(avisoDeMetaParaLeitura([
+    meta({ target_date: data(ultimoDia - HOJE.getDate()), current_amount: 1000, planned_monthly_amount: 200 }),
+  ], HOJE));
+  assert.equal(aviso.tipo, TIPOS_DE_AVISO_DE_META.ATRASADA);
+  assert.match(aviso.detalhe, /^Faltam R\$ 11\.000,00 até \d+ de \p{L}+\.$/u);
 });

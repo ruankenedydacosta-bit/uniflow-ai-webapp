@@ -6,7 +6,7 @@ import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { useCategories, useCategoryBudgets, useTransactions } from '../../hooks/index.js';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../services/financialDataEvents.js';
 import { CategoryIcon } from '../categories/categoryIcons.jsx';
-import { avisoDeMetaParaLeitura, primeiroDiaDoMes, TIPOS_DE_AVISO_DE_META } from '../goals/avisoDeMeta.js';
+import { avisoDeMetaParaLeitura, TIPOS_DE_AVISO_DE_META } from '../goals/avisoDeMeta.js';
 import { useGoals } from '../goals/useGoals.js';
 import {
   buildHomeMonthFacts,
@@ -22,6 +22,7 @@ import {
   PhCheckCircleIcon,
   PhWarningCircleIcon,
 } from './SimplifiedIcons.jsx';
+import { getMonthRange } from './simplifiedRecordsData.js';
 import { useHomeMonthUniReading } from './useHomeMonthUniReading.js';
 import { metaPath, SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
@@ -66,15 +67,6 @@ function toGoalReadingItem(aviso) {
   });
 }
 
-// O aviso de meta vem primeiro e ocupa uma das três linhas.
-function withGoalNotice(reading, aviso) {
-  if (!aviso) return reading;
-  return {
-    ...reading,
-    readings: [toGoalReadingItem(aviso), ...reading.readings].slice(0, HOME_MONTH_READING_LIMIT),
-  };
-}
-
 function ReadingIcon({ reading }) {
   if (WARNING_KINDS.has(reading.kind)) return <PhWarningCircleIcon />;
   if (POSITIVE_KINDS.has(reading.kind)) return <PhCheckCircleIcon />;
@@ -108,26 +100,29 @@ function SimplifiedHomeMonthReading() {
     dateTo: range.dateTo,
     status: 'completed',
   });
-  // Os aportes do mês dizem se uma meta passou de 50% ou 100% agora.
-  const goalState = useGoals({ workspaceId, aportesDesde: primeiroDiaDoMes(today) });
+  // Só metas ativas geram aviso. Os aportes do mês dizem se uma delas passou
+  // de 50% ou 100% agora.
+  const goalState = useGoals({ workspaceId, status: 'active', aportesDesde: getMonthRange(today).dateFrom });
 
   // Mesmos gatilhos da seção do mês: lançamento salvo em outra tela e app
   // voltando do background. O ref deixa o listener ser registrado uma vez só.
   const refreshRef = useRef(null);
+  // useGoals já recarrega sozinho quando um lançamento é salvo: as metas só
+  // entram na volta do background.
   useEffect(() => {
-    refreshRef.current = () => {
+    refreshRef.current = ({ withGoals = false } = {}) => {
       setToday(new Date());
       void transactionState.refresh();
       void categoryState.refresh();
       void budgetState.refresh();
-      void goalState.refresh();
+      if (withGoals) void goalState.refresh();
     };
   });
 
   useEffect(() => {
     const handleDataChanged = () => refreshRef.current?.();
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') refreshRef.current?.();
+      if (document.visibilityState === 'visible') refreshRef.current?.({ withGoals: true });
     };
     window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
     document.addEventListener('visibilitychange', handleVisibility);
@@ -189,14 +184,17 @@ function SimplifiedHomeMonthReading() {
   // isso é espera, não falha.
   const isWaitingWorkspace = !workspaceId;
 
+  // A primeira leitura espera as metas, para o aviso não entrar depois e
+  // empurrar as outras linhas. Falha ao ler as metas não segura a leitura:
+  // ela só sai sem o aviso.
+  const goalsPending = goalState.isLoading && goalState.goals.length === 0;
   const isLoadingData = isWaitingWorkspace || transactionState.isLoading
-    || (categoryState.isLoading && !categoriesReady) || !budgetsReady;
+    || (categoryState.isLoading && !categoriesReady) || !budgetsReady || goalsPending;
 
-  // Falha ao ler as metas não segura a leitura: ela só sai sem o aviso.
-  const goalNotice = useMemo(
-    () => avisoDeMetaParaLeitura(goalState.goals, today),
-    [goalState.goals, today],
-  );
+  const goalNotice = useMemo(() => {
+    const aviso = avisoDeMetaParaLeitura(goalState.goals, today);
+    return aviso ? toGoalReadingItem(aviso) : null;
+  }, [goalState.goals, today]);
 
   let reading = calculated;
   let isLoading = isLoadingData;
@@ -214,21 +212,26 @@ function SimplifiedHomeMonthReading() {
     isLoading = true;
   }
 
-  // No esqueleto de carregamento, o aviso espera a leitura chegar.
-  if (!(isLoading && reading.readings.length === 0)) reading = withGoalNotice(reading, goalNotice);
-
   return (
     <SimplifiedHomeMonthReadingView
       isLoading={isLoading}
       error={isWaitingWorkspace ? null : (transactionState.error ?? categoryState.error)}
       reading={reading}
+      goalNotice={goalNotice}
     />
   );
 }
 
 // Parte visual, separada dos dados para a vitrine /dev/redesign?tela=leitura.
-export function SimplifiedHomeMonthReadingView({ isLoading, error, reading }) {
+//
+// goalNotice (#162): linha da meta que precisa de atenção. Vem primeiro e
+// ocupa uma das três linhas. Sem leituras do mês, aparece acima do aviso de
+// erro ou de mês sem saídas.
+export function SimplifiedHomeMonthReadingView({ isLoading, error, reading, goalNotice = null }) {
   const hasReadings = reading.readings.length > 0;
+  const rows = goalNotice
+    ? [goalNotice, ...reading.readings.slice(0, HOME_MONTH_READING_LIMIT - 1)]
+    : reading.readings;
 
   // Ao recarregar, as leituras anteriores ficam na tela até a resposta chegar.
   let body;
@@ -244,38 +247,38 @@ export function SimplifiedHomeMonthReadingView({ isLoading, error, reading }) {
         <span aria-hidden="true" />
       </div>
     );
-  } else if (error && !hasReadings) {
-    body = <p className={styles.homeSectionEmpty}>Não foi possível carregar a leitura do mês.</p>;
-  } else if (!hasReadings) {
-    body = (
-      <p className={styles.homeSectionEmpty}>
-        {`Ainda não há saídas de ${reading.currentMonthName} até hoje.`}
-      </p>
-    );
   } else {
+    let message = null;
+    if (error && !hasReadings) message = 'Não foi possível carregar a leitura do mês.';
+    else if (!hasReadings) message = `Ainda não há saídas de ${reading.currentMonthName} até hoje.`;
     body = (
-      <ul className={styles.homeReadingList}>
-        {reading.readings.map((item) => (
-          <li key={item.id}>
-            <Link
-              to={item.to ?? SIMPLIFIED_ROUTES.RECORDS}
-              state={item.to ? undefined : { categoryId: item.categoryId }}
-              className={styles.homeReadingRow}
-            >
-              <IconBox className={`${styles.homeReadingIcon} ${TONE_CLASS[item.kind]}`}>
-                <ReadingIcon reading={item} />
-              </IconBox>
-              <span className={styles.homeReadingText}>
-                <span className={styles.homeReadingTitle}>{item.title}</span>
-                <span className={styles.homeReadingDetail}>{item.detail}</span>
-              </span>
-              <span className={styles.homeReadingCaret} aria-hidden="true">
-                <PhCaretRightIcon />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <>
+        {rows.length > 0 ? (
+          <ul className={styles.homeReadingList}>
+            {rows.map((item) => (
+              <li key={item.id}>
+                <Link
+                  to={item.to ?? SIMPLIFIED_ROUTES.RECORDS}
+                  state={item.to ? undefined : { categoryId: item.categoryId }}
+                  className={styles.homeReadingRow}
+                >
+                  <IconBox className={`${styles.homeReadingIcon} ${TONE_CLASS[item.kind]}`}>
+                    <ReadingIcon reading={item} />
+                  </IconBox>
+                  <span className={styles.homeReadingText}>
+                    <span className={styles.homeReadingTitle}>{item.title}</span>
+                    <span className={styles.homeReadingDetail}>{item.detail}</span>
+                  </span>
+                  <span className={styles.homeReadingCaret} aria-hidden="true">
+                    <PhCaretRightIcon />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {message ? <p className={styles.homeSectionEmpty}>{message}</p> : null}
+      </>
     );
   }
 
