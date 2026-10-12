@@ -6,11 +6,14 @@ import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { useCategories, useCategoryBudgets, useTransactions } from '../../hooks/index.js';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../../services/financialDataEvents.js';
 import { CategoryIcon } from '../categories/categoryIcons.jsx';
+import { avisoDeMetaParaLeitura, TIPOS_DE_AVISO_DE_META } from '../goals/avisoDeMeta.js';
+import { useGoals } from '../goals/useGoals.js';
 import {
   buildHomeMonthFacts,
   buildHomeMonthReading,
   buildHomeMonthReadingRange,
   HOME_MONTH_READING_KINDS,
+  HOME_MONTH_READING_LIMIT,
 } from './homeMonthReading.js';
 import { buildUniInsightsPayload, fingerprintPayload, toUniReadingItems } from './homeMonthUniReading.js';
 import {
@@ -19,8 +22,9 @@ import {
   PhCheckCircleIcon,
   PhWarningCircleIcon,
 } from './SimplifiedIcons.jsx';
+import { getMonthRange } from './simplifiedRecordsData.js';
 import { useHomeMonthUniReading } from './useHomeMonthUniReading.js';
-import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { metaPath, SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import styles from './simplifiedApp.module.css';
 
 const CLOCK_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -32,14 +36,36 @@ const TONE_CLASS = Object.freeze({
   [HOME_MONTH_READING_KINDS.TOP]: styles.homeReadingIconBlue,
   [HOME_MONTH_READING_KINDS.ON_TRACK]: styles.homeReadingIconGreen,
   [HOME_MONTH_READING_KINDS.DECREASE]: styles.homeReadingIconGreen,
+  [TIPOS_DE_AVISO_DE_META.ATRASADA]: styles.homeReadingIconViolet,
+  [TIPOS_DE_AVISO_DE_META.ATENCAO]: styles.homeReadingIconViolet,
+  [TIPOS_DE_AVISO_DE_META.MARCO]: styles.homeReadingIconGreen,
 });
 
 const WARNING_KINDS = new Set([
   HOME_MONTH_READING_KINDS.OVER_BUDGET,
   HOME_MONTH_READING_KINDS.NEAR_BUDGET,
   HOME_MONTH_READING_KINDS.INCREASE,
+  TIPOS_DE_AVISO_DE_META.ATRASADA,
+  TIPOS_DE_AVISO_DE_META.ATENCAO,
 ]);
-const POSITIVE_KINDS = new Set([HOME_MONTH_READING_KINDS.ON_TRACK, HOME_MONTH_READING_KINDS.DECREASE]);
+const POSITIVE_KINDS = new Set([
+  HOME_MONTH_READING_KINDS.ON_TRACK,
+  HOME_MONTH_READING_KINDS.DECREASE,
+  TIPOS_DE_AVISO_DE_META.MARCO,
+]);
+
+// Aviso de meta (#162) → linha da leitura. Tocar abre o detalhe da meta.
+function toGoalReadingItem(aviso) {
+  return Object.freeze({
+    id: `meta:${aviso.metaId}`,
+    kind: aviso.tipo,
+    categoryId: null,
+    category: null,
+    to: metaPath(aviso.metaId),
+    title: aviso.titulo,
+    detail: aviso.detalhe,
+  });
+}
 
 function ReadingIcon({ reading }) {
   if (WARNING_KINDS.has(reading.kind)) return <PhWarningCircleIcon />;
@@ -55,6 +81,8 @@ function ReadingIcon({ reading }) {
 //
 // As frases são da Uni (#122), escritas com IA a partir dos números do mês.
 // Sem elas (falha, limite do dia, demora), vale a leitura calculada aqui.
+// O aviso de meta (#162) é sempre calculado aqui e entra na frente, para o
+// cache do dia da Uni não esconder uma meta que acabou de atrasar.
 function SimplifiedHomeMonthReading() {
   const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
@@ -72,23 +100,29 @@ function SimplifiedHomeMonthReading() {
     dateTo: range.dateTo,
     status: 'completed',
   });
+  // Só metas ativas geram aviso. Os aportes do mês dizem se uma delas passou
+  // de 50% ou 100% agora.
+  const goalState = useGoals({ workspaceId, status: 'active', aportesDesde: getMonthRange(today).dateFrom });
 
   // Mesmos gatilhos da seção do mês: lançamento salvo em outra tela e app
   // voltando do background. O ref deixa o listener ser registrado uma vez só.
   const refreshRef = useRef(null);
+  // useGoals já recarrega sozinho quando um lançamento é salvo: as metas só
+  // entram na volta do background.
   useEffect(() => {
-    refreshRef.current = () => {
+    refreshRef.current = ({ withGoals = false } = {}) => {
       setToday(new Date());
       void transactionState.refresh();
       void categoryState.refresh();
       void budgetState.refresh();
+      if (withGoals) void goalState.refresh();
     };
   });
 
   useEffect(() => {
     const handleDataChanged = () => refreshRef.current?.();
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') refreshRef.current?.();
+      if (document.visibilityState === 'visible') refreshRef.current?.({ withGoals: true });
     };
     window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, handleDataChanged);
     document.addEventListener('visibilitychange', handleVisibility);
@@ -150,8 +184,17 @@ function SimplifiedHomeMonthReading() {
   // isso é espera, não falha.
   const isWaitingWorkspace = !workspaceId;
 
+  // A primeira leitura espera as metas, para o aviso não entrar depois e
+  // empurrar as outras linhas. Falha ao ler as metas não segura a leitura:
+  // ela só sai sem o aviso.
+  const goalsPending = goalState.isLoading && goalState.goals.length === 0;
   const isLoadingData = isWaitingWorkspace || transactionState.isLoading
-    || (categoryState.isLoading && !categoriesReady) || !budgetsReady;
+    || (categoryState.isLoading && !categoriesReady) || !budgetsReady || goalsPending;
+
+  const goalNotice = useMemo(() => {
+    const aviso = avisoDeMetaParaLeitura(goalState.goals, today);
+    return aviso ? toGoalReadingItem(aviso) : null;
+  }, [goalState.goals, today]);
 
   let reading = calculated;
   let isLoading = isLoadingData;
@@ -174,13 +217,21 @@ function SimplifiedHomeMonthReading() {
       isLoading={isLoading}
       error={isWaitingWorkspace ? null : (transactionState.error ?? categoryState.error)}
       reading={reading}
+      goalNotice={goalNotice}
     />
   );
 }
 
 // Parte visual, separada dos dados para a vitrine /dev/redesign?tela=leitura.
-export function SimplifiedHomeMonthReadingView({ isLoading, error, reading }) {
+//
+// goalNotice (#162): linha da meta que precisa de atenção. Vem primeiro e
+// ocupa uma das três linhas. Sem leituras do mês, aparece acima do aviso de
+// erro ou de mês sem saídas.
+export function SimplifiedHomeMonthReadingView({ isLoading, error, reading, goalNotice = null }) {
   const hasReadings = reading.readings.length > 0;
+  const rows = goalNotice
+    ? [goalNotice, ...reading.readings.slice(0, HOME_MONTH_READING_LIMIT - 1)]
+    : reading.readings;
 
   // Ao recarregar, as leituras anteriores ficam na tela até a resposta chegar.
   let body;
@@ -196,38 +247,38 @@ export function SimplifiedHomeMonthReadingView({ isLoading, error, reading }) {
         <span aria-hidden="true" />
       </div>
     );
-  } else if (error && !hasReadings) {
-    body = <p className={styles.homeSectionEmpty}>Não foi possível carregar a leitura do mês.</p>;
-  } else if (!hasReadings) {
-    body = (
-      <p className={styles.homeSectionEmpty}>
-        {`Ainda não há saídas de ${reading.currentMonthName} até hoje.`}
-      </p>
-    );
   } else {
+    let message = null;
+    if (error && !hasReadings) message = 'Não foi possível carregar a leitura do mês.';
+    else if (!hasReadings) message = `Ainda não há saídas de ${reading.currentMonthName} até hoje.`;
     body = (
-      <ul className={styles.homeReadingList}>
-        {reading.readings.map((item) => (
-          <li key={item.id}>
-            <Link
-              to={SIMPLIFIED_ROUTES.RECORDS}
-              state={{ categoryId: item.categoryId }}
-              className={styles.homeReadingRow}
-            >
-              <IconBox className={`${styles.homeReadingIcon} ${TONE_CLASS[item.kind]}`}>
-                <ReadingIcon reading={item} />
-              </IconBox>
-              <span className={styles.homeReadingText}>
-                <span className={styles.homeReadingTitle}>{item.title}</span>
-                <span className={styles.homeReadingDetail}>{item.detail}</span>
-              </span>
-              <span className={styles.homeReadingCaret} aria-hidden="true">
-                <PhCaretRightIcon />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <>
+        {rows.length > 0 ? (
+          <ul className={styles.homeReadingList}>
+            {rows.map((item) => (
+              <li key={item.id}>
+                <Link
+                  to={item.to ?? SIMPLIFIED_ROUTES.RECORDS}
+                  state={item.to ? undefined : { categoryId: item.categoryId }}
+                  className={styles.homeReadingRow}
+                >
+                  <IconBox className={`${styles.homeReadingIcon} ${TONE_CLASS[item.kind]}`}>
+                    <ReadingIcon reading={item} />
+                  </IconBox>
+                  <span className={styles.homeReadingText}>
+                    <span className={styles.homeReadingTitle}>{item.title}</span>
+                    <span className={styles.homeReadingDetail}>{item.detail}</span>
+                  </span>
+                  <span className={styles.homeReadingCaret} aria-hidden="true">
+                    <PhCaretRightIcon />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {message ? <p className={styles.homeSectionEmpty}>{message}</p> : null}
+      </>
     );
   }
 

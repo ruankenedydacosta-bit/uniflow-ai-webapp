@@ -55,13 +55,17 @@ function pickDefined(source, fields) {
 
 // —————— GOALS ——————
 
-export async function listGoals(workspaceId, { status, comUltimoAporte = false } = {}) {
+export async function listGoals(workspaceId, { status, comUltimoAporte = false, aportesDesde = null } = {}) {
   if (!supabase) return createUnavailableResult([]);
   if (!isValidUuid(workspaceId)) return createValidationResult('Workspace invalido.');
 
+  const campos = [GOAL_FIELDS];
+  if (comUltimoAporte) campos.push('ultimo_aporte:goal_contributions(contribution_date)');
+  if (aportesDesde) campos.push('aportes_do_periodo:goal_contributions(amount, contribution_date)');
+
   let query = supabase
     .from('financial_goals')
-    .select(comUltimoAporte ? `${GOAL_FIELDS}, ultimo_aporte:goal_contributions(contribution_date)` : GOAL_FIELDS)
+    .select(campos.join(', '))
     .eq('workspace_id', workspaceId)
     .is('archived_at', null)
     .order('created_at', { ascending: false });
@@ -74,6 +78,12 @@ export async function listGoals(workspaceId, { status, comUltimoAporte = false }
       .gt('ultimo_aporte.amount', 0)
       .order('contribution_date', { referencedTable: 'ultimo_aporte', ascending: false })
       .limit(1, { referencedTable: 'ultimo_aporte' });
+  }
+
+  // Aportes e retiradas desde uma data (AAAA-MM-DD): a Leitura do mês usa os
+  // do mês para saber se a meta passou de 50% ou 100% agora (#162).
+  if (aportesDesde) {
+    query = query.gte('aportes_do_periodo.contribution_date', aportesDesde);
   }
 
   if (status) query = query.eq('status', status);
