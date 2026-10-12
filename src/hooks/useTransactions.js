@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isSupabaseConfigured } from '../services/supabaseClient.js';
 import {
+  createRecurringSeries,
   createTransaction,
+  deleteSeriesTransactions,
   deleteTransaction,
   listTransactions,
   listTransactionsForPeriod,
+  updateSeriesTransactions,
   updateTransaction,
 } from '../services/transactionService.js';
 import {
@@ -182,6 +185,53 @@ export function useTransactions({
     [performMutation, status, transactions, workspaceId],
   );
 
+  // Série recorrente (#222): mexe em vários lançamentos, inclusive fora da
+  // lista carregada, então a lista é recarregada depois.
+  const runSeriesMutation = useCallback(
+    async (mutationFn) => {
+      const result = await performMutation(
+        () => (!isSupabaseConfigured
+          ? {
+              data: null,
+              error: { code: 'SUPABASE_NOT_CONFIGURED', message: 'Lançamento recorrente não funciona no modo demonstração.' },
+              isConfigured: false,
+            }
+          : mutationFn()),
+        () => {},
+      );
+      if (!result.error) await refresh();
+      return result;
+    },
+    [performMutation, refresh],
+  );
+
+  const createSeries = useCallback(
+    (series, { origin = GA4_PRODUCT_ORIGINS.MANUAL } = {}) => runSeriesMutation(async () => {
+      const result = await createRecurringSeries(series);
+      trackGa4ConfirmedTransactionCreation({
+        confirmed: !result.error && Boolean(result.data?.series_id),
+        transactionType: series.transaction_type,
+        origin,
+      });
+      return result;
+    }),
+    [runSeriesMutation],
+  );
+
+  const saveSeriesTransactions = useCallback(
+    (transactionId, scope, changes) => runSeriesMutation(
+      () => updateSeriesTransactions(transactionId, scope, changes),
+    ),
+    [runSeriesMutation],
+  );
+
+  const removeSeriesTransactions = useCallback(
+    (transactionId, scope) => runSeriesMutation(
+      () => deleteSeriesTransactions(transactionId, scope),
+    ),
+    [runSeriesMutation],
+  );
+
   const removeTransaction = useCallback(
     (transactionId) =>
       performMutation(
@@ -203,6 +253,9 @@ export function useTransactions({
     refresh,
     removeTransaction,
     saveTransaction,
+    createSeries,
+    saveSeriesTransactions,
+    removeSeriesTransactions,
     clearError: () => setError(null),
   };
 }

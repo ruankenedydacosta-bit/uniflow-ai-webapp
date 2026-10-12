@@ -486,3 +486,72 @@ export async function deleteTransaction(workspaceId, transactionId) {
 
   return normalizeSingleResult(data, error, 'Transacao nao encontrada para exclusao.');
 }
+
+// Lançamento recorrente (#222): a série e o alcance "esta e as próximas" ou
+// "todas" vão por RPC, porque as ocorrências futuras nem sempre estão na
+// lista carregada e a regra da série muda junto.
+const SERIES_ERROR_MESSAGES = Object.freeze({
+  recurring_series_rule_invalid: 'Revise a frequência, o intervalo e a data final da repetição.',
+  recurring_series_too_many: 'A repetição começa muito antes de hoje. Use uma data de início mais recente.',
+  recurring_series_scope_invalid: 'Escolha a quais lançamentos da série a mudança vale.',
+  recurring_series_not_found: 'Esse lançamento não faz mais parte de uma série. Atualize a lista.',
+  financial_action_category_invalid: 'Escolha uma categoria do mesmo tipo do lançamento.',
+  financial_action_account_forbidden: 'A conta escolhida não está ativa neste espaço.',
+  financial_action_workspace_forbidden: 'Você não tem permissão para mudar esta série.',
+  financial_action_amount_invalid: 'O valor precisa ser maior que zero.',
+  financial_action_description_invalid: 'A descrição precisa ter de 2 a 160 caracteres.',
+});
+
+function createSeriesResult(data, error) {
+  if (!error) return createResult(data, null);
+  const token = Object.keys(SERIES_ERROR_MESSAGES).find((key) => error.message?.includes(key));
+  return token ? createValidationResult(SERIES_ERROR_MESSAGES[token]) : createResult(null, error);
+}
+
+export async function createRecurringSeries(series = {}) {
+  if (!supabase) return createUnavailableResult(null);
+  const { data, error } = await supabase
+    .rpc('criar_serie_recorrente', {
+      p_client_operation_id: series.clientOperationId ?? null,
+      p_transaction_type: series.transaction_type,
+      p_account_id: series.account_id || null,
+      p_category_id: series.category_id || null,
+      p_description: series.description,
+      p_amount: Number(series.amount),
+      p_frequency: series.frequency,
+      p_interval: Number(series.interval),
+      p_start_date: series.start_date,
+      p_end_date: series.end_date || null,
+      p_auto_confirm: Boolean(series.auto_confirm),
+      p_payment_method: series.payment_method ?? null,
+      p_notes: series.notes ?? null,
+    })
+    .single();
+  return createSeriesResult(data ?? null, error);
+}
+
+export async function updateSeriesTransactions(transactionId, scope, changes = {}) {
+  if (!supabase) return createUnavailableResult(null);
+  if (!isValidUuid(transactionId)) return createValidationResult('Lançamento inválido.');
+  const { data, error } = await supabase.rpc('alterar_lancamentos_da_serie', {
+    p_transaction_id: transactionId,
+    p_scope: scope,
+    p_account_id: changes.account_id || null,
+    p_category_id: changes.category_id || null,
+    p_description: changes.description,
+    p_amount: Number(changes.amount),
+    p_payment_method: changes.payment_method ?? null,
+    p_notes: changes.notes ?? null,
+  });
+  return createSeriesResult(data ?? 0, error);
+}
+
+export async function deleteSeriesTransactions(transactionId, scope) {
+  if (!supabase) return createUnavailableResult(null);
+  if (!isValidUuid(transactionId)) return createValidationResult('Lançamento inválido.');
+  const { data, error } = await supabase.rpc('excluir_lancamentos_da_serie', {
+    p_transaction_id: transactionId,
+    p_scope: scope,
+  });
+  return createSeriesResult(data ?? 0, error);
+}

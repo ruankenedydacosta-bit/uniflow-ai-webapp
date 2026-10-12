@@ -423,7 +423,9 @@ test('performMutation centraliza saveTransaction/removeTransaction -- setIsMutat
 
 test('API publica de useTransactions preservada apos o refactor (mesmos nomes, sem refresh novo pos-mutacao)', async () => {
   const source = await readFile(new URL('./useTransactions.js', import.meta.url), 'utf8');
-  assert.match(source, /refresh,\s*\n\s*removeTransaction,\s*\n\s*saveTransaction,\s*\n\s*clearError: \(\) => setError\(null\),/);
+  // As mutações da série recorrente (#222) entraram depois; os nomes
+  // anteriores seguem iguais.
+  assert.match(source, /refresh,\s*\n\s*removeTransaction,\s*\n\s*saveTransaction,\s*\n\s*createSeries,\s*\n\s*saveSeriesTransactions,\s*\n\s*removeSeriesTransactions,\s*\n\s*clearError: \(\) => setError\(null\),/);
   assert.doesNotMatch(source, /applyLocalUpdate[\s\S]{0,80}refresh\(\)/);
 });
 

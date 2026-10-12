@@ -34,12 +34,14 @@ import {
 } from './transactionFilterUtils.js';
 import {
   buildInstallmentMutationPayloads,
+  buildRecurringSeriesPayload,
   buildTransactionMutationPayload,
   createEmptyTransactionForm,
   createTransactionDuplicateForm,
   createTransactionEditForm,
   getSelectableTransactionAccounts,
   isInstallmentPurchase,
+  isRecurringSeriesForm,
   localDateKey,
 } from './transactionFormUtils';
 
@@ -128,7 +130,7 @@ function DeleteConfirmationDialog({
   className,
   deleteScope,
   error,
-  hasGroup,
+  groupKind,
   isLoading,
   onCancel,
   onConfirm,
@@ -203,19 +205,25 @@ function DeleteConfirmationDialog({
           </div>
         </div>
 
-        {hasGroup ? (
-          <Field label="Quais parcelas você quer excluir?" trailing={<PhCaretDownIcon />}>
+        {groupKind ? (
+          <Field
+            label={groupKind === 'series' ? 'Quais lançamentos da série você quer excluir?' : 'Quais parcelas você quer excluir?'}
+            trailing={<PhCaretDownIcon />}
+          >
             <select
               id="finance-transaction-confirm-delete-scope"
               value={deleteScope}
               onChange={onDeleteScopeChange}
               disabled={isLoading}
             >
-              <option value="only">Somente esta parcela</option>
-              <option value="forward">Esta e as próximas</option>
-              <option value="all">Todas do grupo</option>
+              <option value="only">{groupKind === 'series' ? 'Somente este' : 'Somente esta parcela'}</option>
+              <option value="forward">{groupKind === 'series' ? 'Este e os próximos' : 'Esta e as próximas'}</option>
+              <option value="all">{groupKind === 'series' ? 'Todos da série' : 'Todas do grupo'}</option>
             </select>
           </Field>
+        ) : null}
+        {groupKind === 'series' && deleteScope !== 'only' ? (
+          <p className={styles.deleteConfirmScopeHint}>A série termina aqui e não gera novos lançamentos.</p>
         ) : null}
 
         {error ? (
@@ -402,11 +410,15 @@ function FinanceTransactionModal({
     ? transactionState.transactions.find((t) => t.id === editingId)
     : null;
   const editingGroupId = editingTransaction?.metadata?.installment_group_id ?? null;
+  // Ocorrência de lançamento recorrente (#222): o alcance vai pela série.
+  const editingIsSeries = !editingGroupId && editingTransaction?.is_recurring === true;
   const pendingDeleteTransaction = pendingDeleteId
     ? transactionState.transactions.find((transaction) => transaction.id === pendingDeleteId)
       ?? pendingDeleteSnapshot
     : null;
-  const pendingDeleteHasGroup = Boolean(pendingDeleteTransaction?.metadata?.installment_group_id);
+  let pendingDeleteGroupKind = null;
+  if (pendingDeleteTransaction?.metadata?.installment_group_id) pendingDeleteGroupKind = 'installments';
+  else if (pendingDeleteTransaction?.is_recurring === true) pendingDeleteGroupKind = 'series';
   const isDeleteConfirmOpen = Boolean(pendingDeleteId && pendingDeleteTransaction);
 
   function resetForm() {
@@ -509,6 +521,34 @@ function FinanceTransactionModal({
       return;
     }
 
+    // Ocorrência de série com alcance "este e os próximos" ou "todos" (#222):
+    // a RPC muda os lançamentos e o modelo da série. Data e status ficam,
+    // são de cada ocorrência.
+    if (editingId && editingIsSeries && editScope !== 'only') {
+      const payload = buildTransactionMutationPayload(form);
+      const result = await transactionState.saveSeriesTransactions(editingId, editScope, payload);
+      if (result.error) {
+        setBatchError(result.error);
+        return;
+      }
+      await concludeSave(onEdited && (() => onEdited(editingTransaction)));
+      return;
+    }
+
+    // Novo lançamento recorrente: a série nasce com os previstos dos próximos
+    // 3 meses, e o job diário cria os seguintes.
+    if (!editingId && isRecurringSeriesForm(form)) {
+      const result = await transactionState.createSeries(buildRecurringSeriesPayload(form));
+      if (result.error) {
+        setBatchError(result.error);
+        return;
+      }
+      const first = transactionState.transactions.find((item) => item.id === result.data?.first_transaction_id)
+        ?? { id: result.data?.first_transaction_id, ...buildTransactionMutationPayload(form) };
+      await concludeSave(onCreated && (() => onCreated(first)));
+      return;
+    }
+
     // Criação de compra parcelada: gera N transações reais em sequência.
     if (!editingId && isInstallmentPurchase(form)) {
       let payloads;
@@ -586,6 +626,22 @@ function FinanceTransactionModal({
     if (transactionState.isMutating) return;
     const transaction = transactionState.transactions.find((t) => t.id === transactionId);
     if (!transaction || !canDeleteTransaction(transaction)) return;
+    if (transaction.is_recurring === true && !transaction.metadata?.installment_group_id && deleteScope !== 'only') {
+      const result = await transactionState.removeSeriesTransactions(transactionId, deleteScope);
+      if (result.error) {
+        setBatchError(result.error);
+        return;
+      }
+      await onChanged?.();
+      setPendingDeleteId(null);
+      setPendingDeleteSnapshot(null);
+      if (onDeleted) {
+        await onDeleted(transaction);
+        return;
+      }
+      resetForm();
+      return;
+    }
     const groupId = transaction?.metadata?.installment_group_id ?? null;
     const targetIds = groupId
       ? resolveInstallmentScope(transactionState.transactions, transaction, deleteScope)
@@ -636,7 +692,7 @@ function FinanceTransactionModal({
       className={className}
       overlayClassName={overlayClassName}
       transaction={pendingDeleteTransaction}
-      hasGroup={pendingDeleteHasGroup}
+      groupKind={pendingDeleteGroupKind}
       deleteScope={deleteScope}
       error={batchError}
       isLoading={transactionState.isMutating}
@@ -803,7 +859,7 @@ function FinanceTransactionModal({
             required
             fullWidth
           />
-          {isPlanned && !editingGroupId ? (
+          {isPlanned && !editingGroupId && !(!editingId && form.is_recurring) ? (
             <>
               <div className={styles.plannedNotice} role="status">
                 <strong>Fica como previsto</strong>
@@ -863,7 +919,7 @@ function FinanceTransactionModal({
             </FormMessage>
           ) : null}
 
-          {!editingId && form.transaction_type !== 'transfer' && Number(form.installment_count) <= 1 ? (
+          {!editingId && (form.transaction_type === 'income' || form.transaction_type === 'expense') && Number(form.installment_count) <= 1 ? (
             <label className="uf-flex uf-items-center uf-gap-sm uf-text-caption">
               <input
                 type="checkbox"
@@ -875,7 +931,7 @@ function FinanceTransactionModal({
               <span className="uf-text-primary">Lançamento recorrente</span>
             </label>
           ) : null}
-          {form.is_recurring ? (
+          {!editingId && form.is_recurring ? (
             <div className="uf-flex uf-flex-column uf-gap-sm">
               <SelectField
                 id="finance-transaction-recurrence-frequency"
@@ -912,10 +968,20 @@ function FinanceTransactionModal({
                 }
                 fullWidth
               />
+              <div className={styles.autoConfirmRow}>
+                <div className={styles.autoConfirmText}>
+                  <span>Confirmar automaticamente na data</span>
+                  <small>Use para débito automático. Sem isso, confirme cada lançamento quando ele acontecer.</small>
+                </div>
+                <Toggle
+                  label="Confirmar automaticamente na data"
+                  checked={Boolean(form.auto_confirm)}
+                  onChange={(checked) => setForm((current) => ({ ...current, auto_confirm: checked }))}
+                />
+              </div>
               <FormMessage tone="info">
-                Este lançamento fica marcado como recorrente, mas nenhuma ocorrência futura é
-                criada automaticamente nesta versão — a geração automática depende de um
-                agendador (Edge Function) que ainda não existe.
+                Os lançamentos dos próximos 3 meses já entram como previstos. Os seguintes
+                aparecem conforme os meses passam, até a data final, se houver.
               </FormMessage>
             </div>
           ) : null}
@@ -931,6 +997,24 @@ function FinanceTransactionModal({
               <option value="forward">Esta e as próximas parcelas</option>
               <option value="all">Todas as parcelas deste grupo</option>
             </SelectField>
+          ) : null}
+          {editingId && editingIsSeries ? (
+            <SelectField
+              id="finance-transaction-edit-scope"
+              label="Aplicar alteração a"
+              value={editScope}
+              onChange={(event) => setEditScope(event.target.value)}
+            >
+              <option value="only">Somente este lançamento</option>
+              <option value="forward">Este e os próximos da série</option>
+              <option value="all">Todos da série</option>
+            </SelectField>
+          ) : null}
+          {editingId && editingIsSeries && editScope !== 'only' ? (
+            <FormMessage tone="info">
+              Valor, descrição, conta e categoria mudam nos lançamentos escolhidos e nos que a
+              série ainda vai criar. A data e a situação de cada lançamento continuam iguais.
+            </FormMessage>
           ) : null}
 
           {/* CONTA-OPCIONAL: só transferência/ajuste realmente dependem de

@@ -426,3 +426,32 @@ test('sem usuário autenticado, nunca tenta criar a notificação (guard if (use
   const handlerBody = modal.slice(handlerStart, handlerStart + 700);
   assert.match(handlerBody, /if \(user\?\.id\) \{/);
 });
+
+// ============================================================================
+// Lançamento recorrente (#222): criar a série e mexer nela por alcance.
+// ============================================================================
+
+test('recorrente cria a série pela RPC, e não um lançamento só marcado', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const submit = modal.slice(modal.indexOf('async function handleSubmit(event)'), modal.indexOf('async function concludeSave(onDone)'));
+  assert.match(submit, /if \(!editingId && isRecurringSeriesForm\(form\)\) \{\s*const result = await transactionState\.createSeries\(buildRecurringSeriesPayload\(form\)\);/);
+  assert.doesNotMatch(modal, /nenhuma ocorrência futura é\s+criada/);
+});
+
+test('ocorrência de série: "este e os próximos" e "todos" vão pela RPC; "somente este" segue o update comum', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const submit = modal.slice(modal.indexOf('async function handleSubmit(event)'), modal.indexOf('async function concludeSave(onDone)'));
+  assert.match(submit, /if \(editingId && editingIsSeries && editScope !== 'only'\) \{[\s\S]*?transactionState\.saveSeriesTransactions\(editingId, editScope, payload\)/);
+  assert.match(modal, /<option value="forward">Este e os próximos da série<\/option>/);
+  const remove = modal.slice(modal.indexOf('async function handleDelete(transactionId)'), modal.indexOf('const accountRequiredForSubmit'));
+  assert.match(remove, /deleteScope !== 'only'\) \{\s*const result = await transactionState\.removeSeriesTransactions\(transactionId, deleteScope\);/);
+});
+
+test('bloco de recorrência só aparece na criação e traz a confirmação automática da série', async () => {
+  const modal = await source('./FinanceTransactionModal.jsx');
+  const start = modal.indexOf('{!editingId && form.is_recurring ? (');
+  assert.ok(start > -1);
+  const slice = modal.slice(start, modal.indexOf('{editingId && editingGroupId ? (', start));
+  assert.match(slice, /Confirmar automaticamente na data/);
+  assert.match(slice, /próximos 3 meses já entram como previstos/);
+});
