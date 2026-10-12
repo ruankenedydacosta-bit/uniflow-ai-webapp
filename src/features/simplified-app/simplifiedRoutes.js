@@ -18,6 +18,10 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   ACCOUNT: '/app/conta',
   UNI: '/app/uni',
   METAS: '/app/metas',
+  // Organizar (handoff 10): contas, cartões e categorias em Financeiro.
+  ORGANIZAR: '/app/organizar',
+  CATEGORIAS: '/app/organizar/categorias',
+  CATEGORIA: '/app/organizar/categorias/:id',
   // RELATORIO1: mesmo padrão de Agenda -- rota interna sempre registrada,
   // fora da barra inferior fixa (Home | Registros | Conta). Alcançada pelo
   // card "Relatório da Uni" na Home.
@@ -27,6 +31,10 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   // alcançada pelo CTA "Ver relatório" da Tela 1.
   RELATORIO_PLANILHA: '/app/relatorio/planilha',
 });
+
+export function categoriaPath(id) {
+  return `${SIMPLIFIED_ROUTES.CATEGORIAS}/${encodeURIComponent(id)}`;
+}
 
 // Épico #99 (navegação com a Uni no centro): Hoje | Financeiro | Falar |
 // Agenda | Mais. Os rótulos mudam, as rotas continuam as mesmas. O item

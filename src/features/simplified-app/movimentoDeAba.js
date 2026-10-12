@@ -40,7 +40,11 @@ export function abaDaRota(pathname) {
 }
 
 // Telas fora da barra que abrem por cima de uma aba (pelo Mais ou pela Home).
-const TELAS_ABERTAS_POR_CIMA = [SIMPLIFIED_ROUTES.UNI, SIMPLIFIED_ROUTES.RELATORIO];
+const TELAS_ABERTAS_POR_CIMA = [
+  SIMPLIFIED_ROUTES.UNI,
+  SIMPLIFIED_ROUTES.RELATORIO,
+  SIMPLIFIED_ROUTES.ORGANIZAR,
+];
 
 function telaPorCima(pathname) {
   return TELAS_ABERTAS_POR_CIMA.find((path) => pathname === path || pathname.startsWith(`${path}/`)) ?? null;
