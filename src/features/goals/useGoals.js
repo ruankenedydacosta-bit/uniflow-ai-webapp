@@ -117,27 +117,31 @@ export function useGoals({ workspaceId, comUltimoAporte = false } = {}) {
     return result;
   }, [workspaceId]);
 
+  // A função do banco devolve a meta já com o valor guardado novo; no modo
+  // demo a conta é feita aqui.
   const addGoalContribution = useCallback(async (goalId, values) => {
     setIsMutating(true);
     setError(null);
 
     const result = !isSupabaseConfigured
-      ? createDemoResult(createDemoRecord('demo-contribution', { ...values, goal_id: goalId }))
+      ? createDemoResult({ aporte: createDemoRecord('demo-contribution', { ...values, goal_id: goalId }) })
       : await addContribution(workspaceId, goalId, values);
 
     if (result.error) {
       setError(result.error);
     } else if (result.data) {
+      const { meta, aporte } = result.data;
       setGoals((current) => current.map((g) => {
         if (g.id !== goalId) return g;
-        const dataDoAporte = result.data.contribution_date;
-        const ultimoAporte = g.last_contribution_date && g.last_contribution_date > dataDoAporte
-          ? g.last_contribution_date
-          : dataDoAporte;
+        const dataDoAporte = aporte?.contribution_date;
+        const ultimoAporte = Number(values.amount) > 0 && dataDoAporte
+          && !(g.last_contribution_date && g.last_contribution_date > dataDoAporte)
+          ? dataDoAporte
+          : g.last_contribution_date;
         return {
           ...g,
-          current_amount: Number(g.current_amount) + Number(values.amount),
-          last_contribution_date: ultimoAporte ?? g.last_contribution_date,
+          ...(meta ?? { current_amount: Number(g.current_amount) + Number(values.amount) }),
+          last_contribution_date: ultimoAporte ?? null,
         };
       }));
     }
@@ -151,14 +155,16 @@ export function useGoals({ workspaceId, comUltimoAporte = false } = {}) {
     setError(null);
 
     const result = !isSupabaseConfigured
-      ? createDemoResult({ id: contributionId })
+      ? createDemoResult({ meta: null })
       : await removeContribution(workspaceId, contributionId);
 
     if (result.error) {
       setError(result.error);
     } else {
+      const meta = result.data?.meta;
       setGoals((current) => current.map((g) => {
         if (g.id !== goalId) return g;
+        if (meta) return { ...g, ...meta };
         return { ...g, current_amount: Math.max(0, Number(g.current_amount) - Number(amount)) };
       }));
     }

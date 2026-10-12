@@ -5,9 +5,10 @@ import Modal from '../components/ui/Modal/Modal.jsx';
 import OutlineButton from '../components/ui/OutlineButton/index.js';
 import UniCard from '../components/ui/UniCard/index.js';
 import { useGoals } from '../features/goals/useGoals';
-import GoalContributions from '../features/goals/components/GoalContributions';
+import GoalContributionSheet from '../features/goals/components/GoalContributionSheet';
 import GoalForm from '../features/goals/components/GoalForm';
 import { AnelDeProgresso } from '../features/goals/components/GoalListCard';
+import { mensagemDoErroAoExcluir, MOVIMENTOS } from '../features/goals/aporteDaMeta.js';
 import { calcProgress } from '../features/goals/goalCalc.js';
 import { listContributions } from '../features/goals/goalService';
 import { FINANCIAL_DATA_CHANGED_EVENT } from '../services/financialDataEvents.js';
@@ -24,9 +25,10 @@ import listaStyles from './ObjetivosPage.module.css';
 import styles from './MetaDetalhePage.module.css';
 
 // Detalhe da meta (handoff 08e, #157): anel, números do plano, ações,
-// previsão da Uni e aportes. O menu ⋯ guarda Editar, Pausar, Concluir e
-// Excluir. Retirar chega com a folha de aporte (#158), e Ajustar plano abre
-// a edição até a folha própria (#159) existir.
+// previsão da Uni e aportes. O menu ⋯ guarda Editar, Retirar, Pausar,
+// Concluir e Excluir. Aporte e retirada abrem a mesma folha (#158); tocar
+// num aporte da lista oferece excluí-lo. Ajustar plano abre a edição até a
+// folha própria (#159) existir.
 export default function MetaDetalhePage() {
   const { id } = useParams();
   const navigate = useNavegar();
@@ -38,7 +40,10 @@ export default function MetaDetalhePage() {
   const [erroDosAportes, setErroDosAportes] = useState(null);
   const [menuAberto, setMenuAberto] = useState(false);
   const [editando, setEditando] = useState(false);
-  const [registrando, setRegistrando] = useState(false);
+  const [movimento, setMovimento] = useState(null);
+  const [aporteParaExcluir, setAporteParaExcluir] = useState(null);
+  const [excluindoAporte, setExcluindoAporte] = useState(false);
+  const [erroAoExcluirAporte, setErroAoExcluirAporte] = useState(null);
   const [confirmacao, setConfirmacao] = useState(null);
   const [processando, setProcessando] = useState(false);
   const [erroDaConfirmacao, setErroDaConfirmacao] = useState(null);
@@ -134,16 +139,35 @@ export default function MetaDetalhePage() {
     navigate(concluir ? `${SIMPLIFIED_ROUTES.METAS}?aba=concluidas` : SIMPLIFIED_ROUTES.METAS);
   }
 
-  async function adicionarAporte(goalId, values) {
-    const resultado = await addGoalContribution(goalId, values);
-    if (!resultado?.error) await carregarAportes();
+  async function registrarMovimento(values) {
+    const resultado = await addGoalContribution(meta.id, values);
+    if (resultado?.error) return resultado;
+    setMovimento(null);
+    await carregarAportes();
     return resultado;
   }
 
-  async function removerAporte(goalId, contributionId, amount) {
-    const resultado = await removeGoalContribution(goalId, contributionId, amount);
-    if (!resultado?.error) await carregarAportes();
-    return resultado;
+  function abrirMovimento(tipo) {
+    setMenuAberto(false);
+    setMovimento(tipo);
+  }
+
+  function pedirExclusaoDoAporte(aporte) {
+    setErroAoExcluirAporte(null);
+    setAporteParaExcluir(aporte);
+  }
+
+  async function excluirAporte() {
+    if (excluindoAporte) return;
+    setExcluindoAporte(true);
+    const resultado = await removeGoalContribution(meta.id, aporteParaExcluir.id, aporteParaExcluir.amount);
+    setExcluindoAporte(false);
+    if (resultado?.error) {
+      setErroAoExcluirAporte(mensagemDoErroAoExcluir(resultado.error));
+      return;
+    }
+    setAporteParaExcluir(null);
+    await carregarAportes();
   }
 
   return (
@@ -193,7 +217,7 @@ export default function MetaDetalhePage() {
             <OutlineButton onClick={() => pedirConfirmacao('concluir')}>Concluir meta</OutlineButton>
           ) : null}
           {ativa && !alcancada ? (
-            <OutlineButton onClick={() => setRegistrando(true)}>Registrar aporte</OutlineButton>
+            <OutlineButton onClick={() => abrirMovimento(MOVIMENTOS.APORTE)}>Registrar aporte</OutlineButton>
           ) : null}
           {pausada ? <OutlineButton onClick={alternarPausa}>Retomar meta</OutlineButton> : null}
           {precisaDeAjuste(meta) ? (
@@ -218,15 +242,27 @@ export default function MetaDetalhePage() {
           <p className={styles.empty}>Nenhum aporte registrado.</p>
         ) : (
           <ul className={styles.contributionList}>
-            {aportes.map((aporte) => (
-              <li key={aporte.id} className={styles.contribution}>
-                <span className={styles.contributionText}>
-                  <span>{dataDoAporte(aporte.contribution_date)}</span>
-                  {aporte.note ? <span className={styles.contributionNote}>{aporte.note}</span> : null}
-                </span>
-                <strong className={styles.contributionAmount}>{formatCurrency(aporte.amount)}</strong>
-              </li>
-            ))}
+            {aportes.map((aporte) => {
+              const retirada = Number(aporte.amount) < 0;
+              return (
+                <li key={aporte.id}>
+                  <button
+                    type="button"
+                    className={styles.contribution}
+                    onClick={() => pedirExclusaoDoAporte(aporte)}
+                    aria-label={`${retirada ? 'Retirada' : 'Aporte'} de ${formatCurrency(Math.abs(aporte.amount))} em ${dataDoAporte(aporte.contribution_date)}. Tocar para excluir.`}
+                  >
+                    <span className={styles.contributionText}>
+                      <span>{retirada ? `${dataDoAporte(aporte.contribution_date)} · Retirada` : dataDoAporte(aporte.contribution_date)}</span>
+                      {aporte.note ? <span className={styles.contributionNote}>{aporte.note}</span> : null}
+                    </span>
+                    <strong className={styles.contributionAmount}>
+                      {retirada ? `−${formatCurrency(Math.abs(aporte.amount))}` : formatCurrency(aporte.amount)}
+                    </strong>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -236,6 +272,9 @@ export default function MetaDetalhePage() {
           {!concluida ? (
             <>
               <OutlineButton variant="secondary" onClick={() => { setMenuAberto(false); setEditando(true); }}>Editar meta</OutlineButton>
+              {numeros.guardado > 0 ? (
+                <OutlineButton variant="secondary" onClick={() => abrirMovimento(MOVIMENTOS.RETIRADA)}>Retirar da meta</OutlineButton>
+              ) : null}
               <OutlineButton variant="secondary" onClick={alternarPausa}>{pausada ? 'Retomar meta' : 'Pausar meta'}</OutlineButton>
               <OutlineButton variant="secondary" onClick={() => pedirConfirmacao('concluir')}>Concluir meta</OutlineButton>
             </>
@@ -261,14 +300,26 @@ export default function MetaDetalhePage() {
         <GoalForm open onClose={() => setEditando(false)} goal={meta} onSave={salvarEdicao} />
       ) : null}
 
-      {registrando ? (
-        <GoalContributions
-          open
-          onClose={() => setRegistrando(false)}
-          goal={meta}
-          contributions={aportes}
-          onAdd={adicionarAporte}
-          onRemove={removerAporte}
+      <SimplifiedConfirmModal
+        open={Boolean(aporteParaExcluir)}
+        onClose={() => { if (!excluindoAporte) setAporteParaExcluir(null); }}
+        title={Number(aporteParaExcluir?.amount) < 0 ? 'Excluir a retirada?' : 'Excluir o aporte?'}
+        description={aporteParaExcluir ? [
+          `${formatCurrency(Math.abs(aporteParaExcluir.amount))} de ${dataDoAporte(aporteParaExcluir.contribution_date)} sai da meta.`,
+          aporteParaExcluir.transaction_id ? 'A transferência lançada no Financeiro também será excluída.' : '',
+        ].join(' ').trim() : ''}
+        confirmLabel="Excluir"
+        onConfirm={excluirAporte}
+        loading={excluindoAporte}
+        error={erroAoExcluirAporte}
+      />
+
+      {movimento ? (
+        <GoalContributionSheet
+          meta={meta}
+          movimento={movimento}
+          onClose={() => setMovimento(null)}
+          onSave={registrarMovimento}
         />
       ) : null}
     </div>

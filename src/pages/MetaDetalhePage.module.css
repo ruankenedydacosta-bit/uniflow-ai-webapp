@@ -133,17 +133,30 @@
   list-style: none;
 }
 
+/* Cada aporte é um botão: tocar oferece excluir (#158). */
 .contribution {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--uf-space-12);
+  width: 100%;
   padding: var(--uf-space-12) 0;
+  border: 0;
   border-bottom: 1px solid var(--uf-app-border);
+  background: none;
+  color: inherit;
+  font: inherit;
   font-size: 14px;
+  text-align: left;
+  cursor: pointer;
 }
 
-.contribution:last-child {
+.contribution:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+.contributionList > li:last-child .contribution {
   border-bottom: 0;
 }
 
