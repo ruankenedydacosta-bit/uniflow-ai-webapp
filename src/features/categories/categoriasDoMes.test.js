@@ -92,6 +92,9 @@ test('ocultas (#184) saem das listas, voltam no grupo Ocultas e seguem no total'
   // Só as do tipo, em ordem alfabética; Salário (entrada) fica de fora.
   assert.deepEqual(lista.ocultas.map((l) => l.name), ['Moradia', 'Pet']);
   assert.equal(lista.ocultas[0].valor, 300);
+  // A barra usa a escala das visíveis: oculta maior que todas fica cheia.
+  assert.equal(lista.ocultas[0].peso, 1);
+  assert.equal(lista.ocultas[1].peso, 0);
   assert.equal(lista.total, 400);
   assert.deepEqual(lista.semCategoria, { valor: 0, quantidade: 0 });
 });

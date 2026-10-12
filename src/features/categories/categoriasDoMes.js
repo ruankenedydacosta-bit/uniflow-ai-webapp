@@ -57,17 +57,20 @@ export function montarListaDeCategorias({ categories, ocultas = [], transactions
     .filter((linha) => linha.quantidade === 0)
     .sort(porNome);
 
+  // A barra das ocultas usa a mesma escala das visíveis; uma oculta maior
+  // que todas fica cheia.
   const maior = comLancamento[0]?.valor ?? 0;
+  const comPeso = (linha) => ({
+    ...linha,
+    peso: maior > 0 ? Math.min(1, linha.valor / maior) : (linha.valor > 0 ? 1 : 0),
+  });
   const totalDasOcultas = linhasOcultas.reduce((soma, linha) => soma + linha.valor, 0);
   return {
     total: comLancamento.reduce((soma, linha) => soma + linha.valor, semCategoria.valor + totalDasOcultas),
     semCategoria,
-    comLancamento: comLancamento.map((linha) => ({
-      ...linha,
-      peso: maior > 0 ? linha.valor / maior : 0,
-    })),
+    comLancamento: comLancamento.map(comPeso),
     semLancamento,
-    ocultas: linhasOcultas,
+    ocultas: linhasOcultas.map(comPeso),
   };
 }
 

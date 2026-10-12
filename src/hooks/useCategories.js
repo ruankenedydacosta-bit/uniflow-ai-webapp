@@ -33,9 +33,11 @@ export function useCategories({
   const [categories, setCategories] = useState(() =>
     cloneRecords(fallbackCategories),
   );
-  // Ids das categorias ocultas no espaço (#184). Saem de `categories` e
-  // entram em `categoriasOcultas`; no modo demo ficam só em memória.
-  const [idsOcultos, setIdsOcultos] = useState(EMPTY_ARRAY);
+  // Ids das categorias ocultas (#184), guardados com o espaço de onde vieram.
+  // Ao trocar de espaço, os ids do anterior deixam de valer na hora, antes
+  // da nova leitura: as categorias padrão têm o mesmo id em todo espaço.
+  // No modo demo ficam só em memória.
+  const [ocultosDoEspaco, setOcultosDoEspaco] = useState({ workspaceId: null, ids: EMPTY_ARRAY });
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
@@ -53,7 +55,6 @@ export function useCategories({
 
     if (!workspaceId) {
       setCategories([]);
-      setIdsOcultos(EMPTY_ARRAY);
       setError({ code: 'WORKSPACE_REQUIRED', message: 'Workspace financeiro ausente.' });
       setIsLoading(false);
       return null;
@@ -72,7 +73,10 @@ export function useCategories({
     setCategories(result.data ?? []);
     // Falha ao ler as ocultas não esconde a lista inteira: a categoria
     // volta a aparecer até a próxima leitura.
-    setIdsOcultos(ocultas.error ? EMPTY_ARRAY : ocultas.data ?? EMPTY_ARRAY);
+    setOcultosDoEspaco({
+      workspaceId,
+      ids: ocultas.error ? EMPTY_ARRAY : ocultas.data ?? EMPTY_ARRAY,
+    });
     setError(result.error);
     setIsLoading(false);
     return result;
@@ -195,7 +199,13 @@ export function useCategories({
       if (result.error) {
         setError(result.error);
       } else {
-        setIdsOcultos((current) => (current.includes(categoryId) ? current : [...current, categoryId]));
+        setOcultosDoEspaco((current) => {
+          const ids = current.workspaceId === (workspaceId ?? null) ? current.ids : EMPTY_ARRAY;
+          return {
+            workspaceId: workspaceId ?? null,
+            ids: ids.includes(categoryId) ? ids : [...ids, categoryId],
+          };
+        });
       }
 
       setIsMutating(false);
@@ -215,7 +225,12 @@ export function useCategories({
       if (result.error) {
         setError(result.error);
       } else {
-        setIdsOcultos((current) => current.filter((id) => id !== categoryId));
+        setOcultosDoEspaco((current) => ({
+          workspaceId: workspaceId ?? null,
+          ids: current.workspaceId === (workspaceId ?? null)
+            ? current.ids.filter((id) => id !== categoryId)
+            : EMPTY_ARRAY,
+        }));
       }
 
       setIsMutating(false);
@@ -231,6 +246,9 @@ export function useCategories({
   // `categories` continua completa: relatórios, leituras do mês e nomes de
   // lançamentos antigos precisam achar a categoria oculta. Seletor, lista de
   // Organizar e sugestões da Uni usam `categoriasVisiveis`.
+  const idsOcultos = ocultosDoEspaco.workspaceId === (workspaceId ?? null)
+    ? ocultosDoEspaco.ids
+    : EMPTY_ARRAY;
   const { categoriasVisiveis, categoriasOcultas } = useMemo(() => {
     const { visiveis, ocultas } = separarCategoriasOcultas(visibleCategories, idsOcultos);
     return { categoriasVisiveis: visiveis, categoriasOcultas: ocultas };

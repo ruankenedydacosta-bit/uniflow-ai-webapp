@@ -383,7 +383,7 @@ function FinanceTransactionModal({
   const filteredCategories = useMemo(
     () =>
       categoriasParaSeletor({
-        visiveis: categoryState.categoriasVisiveis ?? categoryState.categories,
+        visiveis: categoryState.categoriasVisiveis,
         todas: categoryState.categories,
         selecionadaId: form.category_id,
       }).filter((category) =>

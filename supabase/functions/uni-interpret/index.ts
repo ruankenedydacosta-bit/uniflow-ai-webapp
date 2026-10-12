@@ -83,7 +83,9 @@ function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, a
           + `&or=(workspace_id.is.null,workspace_id.eq.${workspaceId})`
           + `&order=is_system.desc,name&limit=${MAX_CATEGORIAS}`,
       ),
-      ler(`workspace_hidden_categories?select=category_id&workspace_id=eq.${workspaceId}`),
+      // Falha aqui não derruba a interpretação: sem a lista, nenhuma
+      // categoria é tirada (ex.: função publicada antes da migration 067).
+      ler(`workspace_hidden_categories?select=category_id&workspace_id=eq.${workspaceId}`).catch(() => []),
       ler(`accounts?select=id,name&workspace_id=eq.${workspaceId}&is_active=eq.true&order=name&limit=${MAX_CONTAS}`),
       ler(
         `financial_goals?select=id,name&workspace_id=eq.${workspaceId}&archived_at=is.null`

@@ -46,7 +46,10 @@ to authenticated
 using (public.is_workspace_member(workspace_id));
 
 -- A categoria precisa ser visível no espaço: do próprio espaço ou de
--- sistema. Mesma checagem de category_budgets (060).
+-- sistema. Mesma checagem de category_budgets (060). As padrão de último
+-- recurso (Outras despesas, Outras entradas, Transferência) não podem ser
+-- ocultadas: a Uni conta com elas quando nada mais serve. O cliente aplica
+-- a mesma regra em podeOcultarCategoria (categoryUtils.js).
 drop policy if exists workspace_hidden_categories_insert_contributor on public.workspace_hidden_categories;
 create policy workspace_hidden_categories_insert_contributor
 on public.workspace_hidden_categories
@@ -59,6 +62,10 @@ with check (
     from public.categories as c
     where c.id = category_id
       and (c.workspace_id is null or c.workspace_id = workspace_hidden_categories.workspace_id)
+      and not (
+        c.is_system = true
+        and lower(c.name) in ('outras despesas', 'outras entradas', 'transferência')
+      )
   )
 );
 
@@ -162,7 +169,9 @@ grant execute on function public.verify_card_due_dispatch_secret(text) to servic
 -- - o próximo vencimento está a 2 dias ou menos (0 a 2). O primeiro envio
 --   sai 2 dias antes; os dias 1 e 0 cobrem cartão cadastrado em cima da
 --   hora e rodada que falhou em todos os dispositivos;
--- - a pessoa é membro ativo do espaço do cartão;
+-- - a pessoa é membro ativo do espaço do cartão com papel que registra
+--   lançamento (owner, admin, member). Viewer não paga a fatura pelo app e
+--   não recebe o aviso;
 -- - esse par ainda não recebeu o lembrete deste vencimento.
 --
 -- Cartão sem due_day nunca entra.
@@ -206,6 +215,7 @@ as $$
   join public.workspace_members m
     on m.workspace_id = c.workspace_id
     and m.status = 'active'
+    and m.role in ('owner', 'admin', 'member')
   where c.due_date - c.dia between 0 and 2
     and not exists (
       select 1 from public.card_due_push_dispatches d

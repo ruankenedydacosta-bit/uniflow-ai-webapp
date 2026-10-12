@@ -230,17 +230,18 @@ export function dataDoLembreteDoCartao(cartao, hoje = new Date()) {
 
 /**
  * Linha do detalhe do cartão sobre o lembrete. Com a data do aviso ainda por
- * vir, diz o dia. Entre o aviso e o vencimento, o aviso deste mês já saiu e
- * a linha fala só da regra. Sem `due_day`, diz como ativar.
+ * vir, diz o dia. Entre a data do aviso e o vencimento, o worker ainda envia
+ * (de 0 a 2 dias antes), então a linha diz só a regra, sem data passada. Sem
+ * `due_day`, diz como ativar.
  */
 export function textoDoLembreteDoCartao(cartao, hoje = new Date()) {
   const lembrete = dataDoLembreteDoCartao(cartao, hoje);
   if (!lembrete) {
     return 'Cadastre o dia do vencimento em Editar cartão para receber um aviso antes da fatura vencer.';
   }
-  const regra = `Você recebe uma notificação ${ANTECEDENCIA_DO_LEMBRETE_DIAS} dias antes de cada vencimento.`;
+  const regra = `Com as notificações ativadas, você recebe um aviso ${ANTECEDENCIA_DO_LEMBRETE_DIAS} dias antes de cada vencimento.`;
   if (lembrete < hojeIso(hoje)) return regra;
-  return `${regra} O próximo aviso chega em ${formatarDiaCurto(lembrete)}.`;
+  return `${regra} O próximo chega em ${formatarDiaCurto(lembrete)}.`;
 }
 
 /**

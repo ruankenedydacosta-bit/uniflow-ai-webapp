@@ -138,6 +138,18 @@ export function separarCategoriasOcultas(categories, idsOcultos) {
   return { visiveis, ocultas };
 }
 
+// Categorias padrão que recebem o que não se encaixa em outra. A Uni conta
+// com elas como último recurso, então não podem ser ocultadas. A policy de
+// insert de workspace_hidden_categories (migration 067) recusa as mesmas.
+const CATEGORIAS_PADRAO_NAO_OCULTAVEIS = Object.freeze(['outras despesas', 'outras entradas', 'transferência']);
+
+/** Diz se a categoria pode ser ocultada no espaço (#184). */
+export function podeOcultarCategoria(category) {
+  if (!category?.id) return false;
+  const padrao = category.is_system === true && !category.workspace_id;
+  return !(padrao && CATEGORIAS_PADRAO_NAO_OCULTAVEIS.includes(String(category.name ?? '').trim().toLowerCase()));
+}
+
 /**
  * Opções do seletor de categoria de um lançamento: as visíveis e, quando o
  * lançamento em edição já está numa categoria oculta, essa categoria também.

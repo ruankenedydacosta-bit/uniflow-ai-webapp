@@ -8,7 +8,8 @@ import SimplifiedSubpageHeader from '../simplified-app/SimplifiedSubpageHeader.j
 import { useNavegar } from '../simplified-app/movimentoDeTelaContext.js';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/simplifiedRoutes.js';
 import { lancamentosDaCategoria, resumoDaCategoria } from './categoriasDoMes.js';
-import { CATEGORY_TYPES, getCategoryErrorMessage } from './categoryUtils.js';
+import { CATEGORY_TYPES, getCategoryErrorMessage, podeOcultarCategoria } from './categoryUtils.js';
+import { PhXIcon } from '../simplified-app/SimplifiedIcons.jsx';
 import { CategoryIcon } from './categoryIcons.jsx';
 import CategoryCreateModal from './components/CategoryCreateModal.jsx';
 import CategoryDeleteConfirmModal from './components/CategoryDeleteConfirmModal.jsx';
@@ -192,7 +193,7 @@ export default function CategoriaDetalhePage() {
           >
             Ver no Financeiro
           </OutlineButton>
-          {podeOcultar ? (
+          {podeOcultar && (oculta || podeOcultarCategoria(categoria)) ? (
             <OutlineButton
               variant="secondary"
               disabled={categoryState.isMutating}
@@ -201,7 +202,19 @@ export default function CategoriaDetalhePage() {
               {oculta ? 'Mostrar categoria' : 'Ocultar categoria'}
             </OutlineButton>
           ) : null}
-          {erroDeOcultar ? <p className={styles.note} role="alert">{erroDeOcultar}</p> : null}
+          {erroDeOcultar ? (
+            <div className={styles.alertNote} role="alert">
+              <p className={styles.note}>{erroDeOcultar}</p>
+              <button
+                type="button"
+                className={styles.dismissButton}
+                onClick={() => setErroDeOcultar('')}
+                aria-label="Dispensar aviso"
+              >
+                <PhXIcon />
+              </button>
+            </div>
+          ) : null}
           {oculta ? (
             <p className={styles.note}>
               Esta categoria não aparece ao registrar um lançamento nem nas sugestões da Uni. Os lançamentos já feitos continuam nela.

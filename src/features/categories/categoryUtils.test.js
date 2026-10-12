@@ -20,6 +20,7 @@ import {
   categoriasDestinoParaMover,
   categoriasParaSeletor,
   lancamentosQueBloqueiam,
+  podeOcultarCategoria,
   separarCategoriasOcultas,
 } from './categoryUtils.js';
 import { resolveFinancialCategory } from '../uni-conversation/categoryResolution.js';
@@ -283,6 +284,16 @@ test('categoriasParaSeletor esconde a oculta, menos a que o lançamento já usa'
   );
   assert.equal(categoriasParaSeletor({ visiveis, todas: DO_ESPACO, selecionadaId: 'sis-mer' }), visiveis);
   assert.equal(categoriasParaSeletor({ visiveis, todas: DO_ESPACO, selecionadaId: 'nao-existe' }), visiveis);
+});
+
+test('podeOcultarCategoria recusa as padrão de último recurso', () => {
+  assert.equal(podeOcultarCategoria({ id: '1', name: 'Outras despesas', is_system: true, workspace_id: null }), false);
+  assert.equal(podeOcultarCategoria({ id: '2', name: 'Outras entradas', is_system: true }), false);
+  assert.equal(podeOcultarCategoria({ id: '3', name: 'Transferência', is_system: true }), false);
+  assert.equal(podeOcultarCategoria({ id: '4', name: 'Transporte', is_system: true }), true);
+  // Categoria do espaço com o mesmo nome pode ser ocultada.
+  assert.equal(podeOcultarCategoria({ id: '5', name: 'Outras despesas', workspace_id: 'w1' }), true);
+  assert.equal(podeOcultarCategoria(null), false);
 });
 
 test('a Uni não sugere categoria oculta', () => {

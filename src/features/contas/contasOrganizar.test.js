@@ -235,11 +235,12 @@ test('textoDoLembreteDoCartao: dia do próximo aviso, só a regra depois do avis
   const hoje = new Date(2026, 9, 12);
   assert.equal(
     textoDoLembreteDoCartao({ due_day: 20 }, hoje),
-    'Você recebe uma notificação 2 dias antes de cada vencimento. O próximo aviso chega em 18 out.',
+    'Com as notificações ativadas, você recebe um aviso 2 dias antes de cada vencimento. O próximo chega em 18 out.',
   );
+  // Vence amanhã: o worker ainda envia hoje, então a linha não mostra data passada.
   assert.equal(
     textoDoLembreteDoCartao({ due_day: 13 }, hoje),
-    'Você recebe uma notificação 2 dias antes de cada vencimento.',
+    'Com as notificações ativadas, você recebe um aviso 2 dias antes de cada vencimento.',
   );
   assert.match(textoDoLembreteDoCartao({ due_day: null }, hoje), /Cadastre o dia do vencimento/);
 });

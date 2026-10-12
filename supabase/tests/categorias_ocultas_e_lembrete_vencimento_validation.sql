@@ -17,6 +17,7 @@ declare
   c_sistema uuid;
   c_do_espaco uuid;
   c_de_fora uuid;
+  c_generica uuid;
   v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
   v_cartao uuid;
   v_cartao_sem_dia uuid;
@@ -58,8 +59,13 @@ begin
     (v_ws, u_member, 'member', 'active'),
     (v_ws, u_viewer, 'viewer', 'active');
 
-  select id into c_sistema from public.categories where is_system = true and workspace_id is null and is_active = true limit 1;
+  select id into c_sistema from public.categories
+  where is_system = true and workspace_id is null and is_active = true
+    and lower(name) not in ('outras despesas', 'outras entradas', 'transferência')
+  limit 1;
   if c_sistema is null then raise exception 'FALHOU fixture: sem categoria de sistema'; end if;
+  select id into c_generica from public.categories
+  where is_system = true and workspace_id is null and lower(name) = 'outras despesas' limit 1;
   insert into public.categories (workspace_id, name, category_type, created_by) values (v_ws, 'Do espaço 184', 'expense', u_owner) returning id into c_do_espaco;
   insert into public.categories (workspace_id, name, category_type, created_by) values (v_ws_fora, 'De fora 184', 'expense', u_fora) returning id into c_de_fora;
 
@@ -103,6 +109,19 @@ begin
   end;
   execute 'reset role';
 
+  -- 3b. padrão de último recurso (Outras despesas) não pode ser ocultada
+  if c_generica is not null then
+    begin
+      perform pg_temp.como_184(u_owner);
+      insert into public.workspace_hidden_categories (workspace_id, category_id) values (v_ws, c_generica);
+      raise exception 'FALHOU 3b: ocultou Outras despesas';
+    exception when others then
+      if sqlerrm like 'FALHOU%' then raise; end if;
+      if sqlstate <> '42501' then raise exception 'FALHOU 3b: % (%)', sqlerrm, sqlstate; end if;
+    end;
+    execute 'reset role';
+  end if;
+
   -- 4. quem não é do espaço não vê as ocultas dele
   perform pg_temp.como_184(u_fora);
   select count(*) into v_n from public.workspace_hidden_categories where workspace_id = v_ws;
@@ -134,7 +153,7 @@ begin
   if public.proxima_data_de_vencimento(null, date '2026-10-12') is not null then raise exception 'FALHOU 6g'; end if;
   if public.proxima_data_de_vencimento(40, date '2026-10-12') is not null then raise exception 'FALHOU 6h'; end if;
 
-  -- 7. candidatos: cartão que vence em 2 dias entra para cada membro ativo;
+  -- 7. candidatos: cartão que vence em 2 dias entra para owner e member, não para viewer;
   --    sem due_day, inativo ou longe do vencimento ficam de fora
   v_data := v_hoje + 2;
   insert into public.accounts (workspace_id, name, account_type, due_day, closing_day, created_by)
@@ -147,14 +166,17 @@ begin
     values (v_ws, 'Cartão longe 184', 'credit_card', extract(day from (v_hoje + 10))::int, u_owner) returning id into v_cartao_longe;
 
   select count(*) into v_n from public.card_due_push_candidates() c where c.account_id = v_cartao and c.due_date = v_data and c.days_until_due = 2;
-  if v_n <> 3 then raise exception 'FALHOU 7: % candidatos para o cartão (esperava 3 membros)', v_n; end if;
+  if v_n <> 2 then raise exception 'FALHOU 7: % candidatos para o cartão (esperava owner e member)', v_n; end if;
+  if exists (select 1 from public.card_due_push_candidates() c where c.account_id = v_cartao and c.user_id = u_viewer) then
+    raise exception 'FALHOU 7: viewer recebe o aviso';
+  end if;
   select count(*) into v_n from public.card_due_push_candidates() c where c.account_id in (v_cartao_sem_dia, v_cartao_inativo, v_cartao_longe);
   if v_n <> 0 then raise exception 'FALHOU 7: % candidatos indevidos', v_n; end if;
 
   -- 8. idempotência: depois da linha de disparo, o par some; os outros ficam
   insert into public.card_due_push_dispatches (account_id, user_id, due_date) values (v_cartao, u_member, v_data);
   select count(*) into v_n from public.card_due_push_candidates() c where c.account_id = v_cartao;
-  if v_n <> 2 then raise exception 'FALHOU 8: % candidatos após o disparo', v_n; end if;
+  if v_n <> 1 then raise exception 'FALHOU 8: % candidatos após o disparo', v_n; end if;
   if exists (select 1 from public.card_due_push_candidates() c where c.account_id = v_cartao and c.user_id = u_member) then
     raise exception 'FALHOU 8: member continua candidato';
   end if;
@@ -190,6 +212,6 @@ begin
   if not exists (select 1 from private.card_due_dispatch_secret) then raise exception 'FALHOU 10: sem segredo'; end if;
   if not exists (select 1 from cron.job where jobname = 'card-due-push-dispatch') then raise exception 'FALHOU 10: sem cron'; end if;
 
-  raise exception 'OK_ROLLBACK: 10 casos passaram. Nada foi gravado.';
+  raise exception 'OK_ROLLBACK: 11 casos passaram. Nada foi gravado.';
 end
 $teste$;
