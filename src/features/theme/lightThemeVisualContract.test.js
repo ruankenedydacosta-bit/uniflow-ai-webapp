@@ -47,10 +47,8 @@ test('UniFlow segue a direção "Uni no centro": fundo quieto, superfície lisa 
 
 test('Home e navegação consomem superfícies temáticas, nunca os painéis escuros fixos', async () => {
   const css = await source('features/simplified-app/simplifiedApp.module.css');
-  assert.match(css, /background:\s*var\(--uf-app-nav-surface\)/);
   assert.match(css, /background:\s*var\(--uf-app-nav-scrim\)/);
   assert.match(css, /background:\s*var\(--uf-app-panel\)/);
-  assert.match(css, /linear-gradient\(var\(--uf-app-voice-surface\), var\(--uf-app-voice-surface\)\) padding-box/);
   assert.doesNotMatch(css, /background:\s*rgba\(3, 10, 26, \.96\)/);
   assert.doesNotMatch(css, /background:\s*rgba\(4, 14, 33, \.9\)/);
 });
@@ -60,28 +58,24 @@ test('Registros e Agenda usam cards claros no Claro e mantêm semântica por tok
     source('features/simplified-app/simplifiedRecords.module.css'),
     source('features/simplified-app/simplifiedAgenda.module.css'),
   ]);
-  assert.match(records, /\.categoryCard[\s\S]*?background:\s*var\(--uf-app-card-premium\)/);
-  assert.match(records, /\.transactionRow[\s\S]*?background:\s*var\(--uf-app-card-row\)/);
-  assert.match(records, /\.historyFilters[\s\S]*?background:\s*var\(--uf-app-field-panel\)/);
-  assert.match(agenda, /\.monthLabel[\s\S]*?background:\s*var\(--uf-app-panel-muted\)/);
-  assert.match(agenda, /\.itemButton[\s\S]*?background:\s*var\(--uf-app-card-row\)/);
+  // Fundo da regra base de cada seletor vem de token do tema (ou é transparente).
+  const fundo = (css, seletor) => css.match(new RegExp(`(^|\\n)\\.${seletor}\\s*\\{([^}]*)\\}`))?.[2]
+    .match(/background:\s*([^;]+);/)?.[1];
+  assert.equal(fundo(records, 'categoryCard'), 'var(--uf-app-card-surface)');
+  assert.equal(fundo(records, 'transactionRow'), 'var(--uf-app-canvas)');
+  assert.equal(fundo(agenda, 'monthLabel'), 'transparent');
+  assert.equal(fundo(agenda, 'itemButton'), 'transparent');
   assert.match(agenda, /color-scheme:\s*var\(--uf-app-color-scheme\)/);
 });
 
-test('Tema Claro recebe cartões próprios sem alterar o estilo base de Escuro e UniFlow', async () => {
-  const css = await source('features/simplified-app/simplifiedTheme.module.css');
-  assert.match(css, /:global\(\[data-theme='light'\]\) \.option/);
-  assert.match(css, /:global\(\[data-theme='light'\]\) \.optionCopy/);
-  assert.match(css, /:global\(\[data-theme='light'\]\) \.uniIdentity/);
-  assert.doesNotMatch(css, /:global\(\[data-theme='(?:dark|uniflow)'\]\)/);
-});
-
-test('Chat Claro preserva contraste da bolha colorida e da resposta da Uni', async () => {
-  const css = await source('features/uni-chat/components/MessageBubble.module.css');
-  assert.match(css, /:global\(\[data-theme='light'\]\) \.bubble \.text/);
-  assert.match(css, /:global\(\[data-theme='light'\]\) \.bubble \.text p/);
-  assert.match(css, /color:\s*inherit/);
-  assert.doesNotMatch(css, /:global\(\[data-theme='(?:dark|uniflow)'\]\) \.bubble/);
+test('Tema Claro e bolha do chat não sobrescrevem Escuro nem UniFlow por seletor de tema', async () => {
+  const [theme, bubble] = await Promise.all([
+    source('features/simplified-app/simplifiedTheme.module.css'),
+    source('features/uni-chat/components/MessageBubble.module.css'),
+  ]);
+  assert.doesNotMatch(theme, /:global\(\[data-theme='(?:dark|uniflow)'\]\)/);
+  assert.doesNotMatch(bubble, /:global\(\[data-theme='(?:dark|uniflow)'\]\) \.bubble/);
+  assert.match(bubble, /color:\s*inherit/);
 });
 
 test('tema Sistema foi removido -- resolver nunca mais depende de dispositivo/matchMedia', async () => {

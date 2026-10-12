@@ -77,7 +77,7 @@ Data: 2026-07-30. Cada item marca o estado encontrado nesta auditoria — nada f
 ## Testes
 
 - [x] Suíte completa: 3191/3192 passando.
-- [ ] `npm test` só executa 131 dos 158 arquivos de teste existentes — reconciliar a lista do script com `find src -name "*.test.js"` antes do lançamento, para que a suíte de CI reflita o repositório real.
+- [x] `npm test` só executava parte dos arquivos de teste. Desde a #80 ele roda todo `*.test.js` de `src/` e `scripts/` por glob, sem lista no `package.json`.
 - [ ] `VoiceManager.test.js` — 1 teste falhando por asserção regex ampla demais (não é bug de produto, ver relatório final); decidir explicitamente se corrige a asserção antes do lançamento ou aceita a falha conhecida.
 
 ## Confirmação de execução desta auditoria
