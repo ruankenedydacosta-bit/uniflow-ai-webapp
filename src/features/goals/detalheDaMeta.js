@@ -21,7 +21,8 @@ function plural(quantidade, singular, pluralForma) {
 export function numerosDaMeta(meta) {
   const guardado = Number(meta.current_amount || 0);
   const falta = calcRemaining(guardado, Number(meta.target_amount || 0));
-  const mensal = falta > 0 ? calcRequiredMonthlyAmount(meta) : 0;
+  // Meta concluída antes do valor não pede mais aporte.
+  const mensal = falta > 0 && meta.status !== 'completed' ? calcRequiredMonthlyAmount(meta) : 0;
   const alvo = lerData(meta.target_date);
   return {
     guardado,
@@ -40,8 +41,9 @@ export function precisaDeAjuste(meta) {
 // Previsão da Uni: a média dos últimos 3 aportes (handoff 08e) vira o valor
 // por mês, e o que falta dividido por ela dá o mês de chegada. `aportes`
 // vem do listContributions, do mais recente para o mais antigo.
+// Meta pausada ou concluída não recebe aporte, então fica sem previsão.
 export function previsaoDaUni(meta, aportes, hoje = new Date()) {
-  if (meta.status === 'completed') return null;
+  if (meta.status !== 'active') return null;
   const falta = calcRemaining(Number(meta.current_amount || 0), Number(meta.target_amount || 0));
   if (falta <= 0) return null;
 

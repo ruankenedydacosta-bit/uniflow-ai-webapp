@@ -10,6 +10,7 @@ import GoalForm from '../features/goals/components/GoalForm';
 import { AnelDeProgresso } from '../features/goals/components/GoalListCard';
 import { calcProgress } from '../features/goals/goalCalc.js';
 import { listContributions } from '../features/goals/goalService';
+import { FINANCIAL_DATA_CHANGED_EVENT } from '../services/financialDataEvents.js';
 import { dataDoAporte, numerosDaMeta, precisaDeAjuste, previsaoDaUni } from '../features/goals/detalheDaMeta.js';
 import { linhaDeApoio, seloDaMeta } from '../features/goals/listaDeMetas.js';
 import SimplifiedConfirmModal from '../features/simplified-app/SimplifiedConfirmModal.jsx';
@@ -30,7 +31,7 @@ export default function MetaDetalhePage() {
   const { id } = useParams();
   const navigate = useNavegar();
   const { workspace } = useSession();
-  const { goals, isLoading, error, refresh, editGoal, removeGoal, addGoalContribution, removeGoalContribution } = useGoals({ workspaceId: workspace?.id, comUltimoAporte: true });
+  const { goals, isLoading, error, refresh, editGoal, removeGoal, addGoalContribution, removeGoalContribution } = useGoals({ workspaceId: workspace?.id });
 
   const [aportes, setAportes] = useState([]);
   const [carregandoAportes, setCarregandoAportes] = useState(true);
@@ -42,10 +43,15 @@ export default function MetaDetalhePage() {
   const [processando, setProcessando] = useState(false);
   const [erroDaConfirmacao, setErroDaConfirmacao] = useState(null);
   const [erroDaAcao, setErroDaAcao] = useState(null);
+  const [metaExcluida, setMetaExcluida] = useState(null);
   const tituloDosAportesId = useId();
 
-  const meta = goals.find((goal) => goal.id === id) ?? null;
-  const voltar = () => navigate(SIMPLIFIED_ROUTES.METAS);
+  // Depois de excluir, a meta sai de `goals` antes de a navegação terminar.
+  // A cópia mantém o detalhe na tela durante a saída, em vez do aviso de
+  // meta inexistente.
+  const meta = goals.find((goal) => goal.id === id) ?? metaExcluida;
+  // Meta concluída volta para a aba de onde foi aberta.
+  const voltar = () => navigate(meta?.status === 'completed' ? `${SIMPLIFIED_ROUTES.METAS}?aba=concluidas` : SIMPLIFIED_ROUTES.METAS);
 
   const carregarAportes = useCallback(async () => {
     const resultado = await listContributions(id);
@@ -57,6 +63,14 @@ export default function MetaDetalhePage() {
   useEffect(() => {
     const timeoutId = window.setTimeout(() => carregarAportes(), 0);
     return () => window.clearTimeout(timeoutId);
+  }, [carregarAportes]);
+
+  // Aporte registrado pela Uni enquanto a tela está aberta: o useGoals
+  // recarrega a meta, e a lista de aportes acompanha.
+  useEffect(() => {
+    function recarregar() { carregarAportes(); }
+    window.addEventListener(FINANCIAL_DATA_CHANGED_EVENT, recarregar);
+    return () => window.removeEventListener(FINANCIAL_DATA_CHANGED_EVENT, recarregar);
   }, [carregarAportes]);
 
   const previsao = useMemo(() => (meta ? previsaoDaUni(meta, aportes) : null), [meta, aportes]);
@@ -106,11 +120,13 @@ export default function MetaDetalhePage() {
     if (processando) return;
     setProcessando(true);
     const concluir = confirmacao === 'concluir';
+    if (!concluir) setMetaExcluida(meta);
     const resultado = concluir
       ? await editGoal(meta.id, { status: 'completed', completed_at: new Date().toISOString() })
       : await removeGoal(meta.id);
     setProcessando(false);
     if (resultado?.error) {
+      setMetaExcluida(null);
       setErroDaConfirmacao(concluir ? 'Não foi possível concluir a meta. Tente de novo.' : 'Não foi possível excluir a meta. Tente de novo.');
       return;
     }
@@ -119,15 +135,15 @@ export default function MetaDetalhePage() {
   }
 
   async function adicionarAporte(goalId, values) {
-    await addGoalContribution(goalId, values);
-    await carregarAportes();
+    const resultado = await addGoalContribution(goalId, values);
+    if (!resultado?.error) await carregarAportes();
+    return resultado;
   }
 
-  // Sem saber qual aporte passa a ser o último, o refresh traz a data certa.
   async function removerAporte(goalId, contributionId, amount) {
-    await removeGoalContribution(goalId, contributionId, amount);
-    await carregarAportes();
-    void refresh();
+    const resultado = await removeGoalContribution(goalId, contributionId, amount);
+    if (!resultado?.error) await carregarAportes();
+    return resultado;
   }
 
   return (

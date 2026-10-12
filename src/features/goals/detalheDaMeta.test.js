@@ -35,6 +35,7 @@ test('números da meta: falta, mês do prazo e valor por mês arredondado para c
 
 test('números da meta: valor alcançado não pede valor por mês', () => {
   assert.equal(numerosDaMeta(meta({ current_amount: 4000 })).porMes, null);
+  assert.equal(numerosDaMeta(meta({ status: 'completed' })).porMes, null);
 });
 
 test('previsão da Uni: média dos últimos 3 aportes, ignorando o quarto', () => {
@@ -62,8 +63,9 @@ test('previsão da Uni: sem aporte, convida a registrar', () => {
   assert.equal(previsaoDaUni(meta(), [], HOJE), 'Registre um aporte para a Uni prever quando você chega lá.');
 });
 
-test('previsão da Uni: meta concluída ou valor alcançado não têm previsão', () => {
+test('previsão da Uni: meta concluída, pausada ou com valor alcançado não tem previsão', () => {
   assert.equal(previsaoDaUni(meta({ status: 'completed' }), aportes(500), HOJE), null);
+  assert.equal(previsaoDaUni(meta({ status: 'paused' }), aportes(500), HOJE), null);
   assert.equal(previsaoDaUni(meta({ current_amount: 4000 }), aportes(500), HOJE), null);
 });
 

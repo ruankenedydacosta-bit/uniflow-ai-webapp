@@ -92,3 +92,9 @@
     align-items: flex-start;
   }
 }
+
+.error {
+  margin: 0 0 var(--uf-space-12);
+  color: var(--uf-color-danger);
+  font-size: var(--uf-text-caption-size);
+}
