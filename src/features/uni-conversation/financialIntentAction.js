@@ -363,6 +363,10 @@ export function buildFinancialIntentAction({
 
   issues.sort((left, right) => ISSUE_PRIORITY[left.field] - ISSUE_PRIORITY[right.field]);
 
+  // Data depois de hoje fica como previsto, como no formulário. A RPC decide
+  // o mesmo pela data no fuso de São Paulo; aqui serve ao card e ao texto.
+  const planned = !isAdjustment && isValidDate(date) && isValidDate(referenceDate) && date > referenceDate;
+
   const payload = issues.length
     ? null
     : {
@@ -374,7 +378,7 @@ export function buildFinancialIntentAction({
         description,
         amount: isAdjustment ? Math.abs(balanceDelta) : amount,
         transaction_date: date,
-        status: 'completed',
+        status: planned ? 'pending' : 'completed',
         ...(isAdjustment ? { adjustment_delta: balanceDelta } : {}),
       };
 
@@ -385,6 +389,7 @@ export function buildFinancialIntentAction({
     typeLabel: TYPE_LABELS[isAdjustment ? 'adjustment' : transactionType],
     amount: Number.isFinite(amount) && amount > 0 ? roundMoney(amount) : null,
     date: isValidDate(date) ? date : null,
+    planned,
     description,
     account: accountResultForPayload.account ?? null,
     destinationAccount: transactionType === 'transfer' ? destinationResult?.account ?? null : null,

@@ -1592,9 +1592,9 @@ function serviceErrorText(error) {
   return 'Não consegui atualizar sua agenda agora. Tente novamente em instantes.';
 }
 
+// A data fica no texto: "amanhã" vira um lançamento previsto para amanhã.
 function buildFinancialDraft(originalText) {
   const details = String(originalText ?? '')
-    .replace(/\b(?:hoje|amanhã|amanha|depois\s+de\s+amanhã|depois\s+de\s+amanha)\b/giu, '')
     .replace(/\b(?:eu\s+)?(?:tenho\s+que|preciso|vou)\s+pagar\b/giu, '')
     .replace(/^[\s,.;:]+|[\s,;:]+$/g, '')
     .trim();

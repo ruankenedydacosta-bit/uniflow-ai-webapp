@@ -115,6 +115,19 @@ export function resolveRelativeDateExpression(expression, referenceDate) {
     return { resolvedDate: toIsoDate(shiftDays(reference, 7)), ruleId: 'next_week' };
   }
 
+  // "Dia 10 do mês que vem" fala de um lançamento previsto: o dia N do mês
+  // seguinte. Precisa vir antes do "dia N" solto, que vai para o passado.
+  const nextMonthDayMatch = text.match(/\bdia\s+(\d{1,2})\s+do\s+(?:mes\s+que\s+vem|proximo\s+mes)\b/);
+  if (nextMonthDayMatch) {
+    const day = Number(nextMonthDayMatch[1]);
+    const candidate = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth() + 1, day));
+    const nextMonth = (reference.getUTCMonth() + 1) % 12;
+    if (day >= 1 && candidate.getUTCMonth() === nextMonth) {
+      return { resolvedDate: toIsoDate(candidate), ruleId: 'day_of_next_month' };
+    }
+    return { resolvedDate: null, ruleId: null };
+  }
+
   const dayOfMonthMatch = text.match(/\bdia\s+(\d{1,2})\b/);
   if (dayOfMonthMatch) {
     const resolved = resolveDayOfMonth(reference, Number(dayOfMonthMatch[1]));

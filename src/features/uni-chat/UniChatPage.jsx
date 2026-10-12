@@ -49,6 +49,7 @@ import {
   buildPlanOperationCancelledText,
   buildPlanResultText,
   buildPlanSummaryText,
+  buildPlannedConfirmationText,
   describePlanOperation,
   findPlanOperationCancelTarget,
   getSingleReadyPlanAction,
@@ -761,7 +762,7 @@ export default function UniChatPage({ variant = 'full' }) {
 
     resolveFinancialPlanConfirmation('updated');
 
-    const message = createAssistantResponse('Revise as informações antes de registrar.', {
+    const message = createAssistantResponse(action.planned ? buildPlannedConfirmationText(action) : 'Revise as informações antes de registrar.', {
       type: 'confirmation',
       confirmation: buildConfirmationFromAction(action),
       clientOperationId: action.clientOperationId,

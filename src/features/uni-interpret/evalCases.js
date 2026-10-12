@@ -472,6 +472,28 @@ export const CASOS = [
     frase: 'a conta de luz eu paguei dia 28, foi 213 e 40',
     esperado: { intent: 'lancar_saida', valor: 213.4, categoria: 'Moradia', data: '2026-09-28' },
   },
+  // Lançamento previsto: dinheiro que ainda vai sair ou entrar leva a data
+  // futura. "Dia N" no futuro é a próxima ocorrência a partir de hoje.
+  {
+    id: 'futuro-internet-dia-20',
+    frase: 'vou pagar 180 da internet dia 20',
+    esperado: { intent: 'lancar_saida', valor: 180, categoria: 'Moradia', data: '2026-10-20' },
+  },
+  {
+    id: 'futuro-salario-dia-5',
+    frase: 'meu salário de 4.200 cai dia 5',
+    esperado: { intent: 'lancar_entrada', valor: 4200, categoria: 'Salário', data: '2026-11-05' },
+  },
+  {
+    id: 'futuro-seguro-mes-que-vem',
+    frase: 'lança o seguro do carro de 310 pro dia 12 do mês que vem',
+    esperado: { intent: 'lancar_saida', valor: 310, categoria: 'Transporte', aceitas: ['Outras despesas'], data: '2026-11-12' },
+  },
+  {
+    id: 'futuro-freela-amanha',
+    frase: 'amanhã entra 900 de um freela',
+    esperado: { intent: 'lancar_entrada', valor: 900, categoria: 'Freelance', aceitas: ['Outras entradas'], data: '2026-10-03' },
+  },
   {
     id: 'segunda-veterinario',
     reservado: true,
@@ -1126,9 +1148,11 @@ export const CASOS = [
     esperado: { intent: 'saldo' },
   },
   {
+    // Conta a pagar com valor e sem pedido de lembrete virou lançamento
+    // previsto. A referência é uma sexta: "sexta" no futuro é hoje.
     id: 'to-com-conta-a-pagar',
     frase: 'to com 300 de conta de luz pra pagar sexta',
-    esperado: { intent: 'agenda' },
+    esperado: { intent: 'lancar_saida', valor: 300, categoria: 'Moradia', data: '2026-10-02' },
   },
   {
     id: 'meta-juntar',

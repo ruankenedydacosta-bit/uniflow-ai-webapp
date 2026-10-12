@@ -214,6 +214,31 @@ test('buildPlanResultText resume confirmados, falhos e bloqueados sem inventar s
   assert.doesNotMatch(text, /Registrei/);
 });
 
+test('plano com operação de data futura mostra o dia previsto e avisa depois de registrar', () => {
+  const plan = buildPlan([
+    rawOperation({ temporary_id: 'op_1', date_expression: 'amanhã' }),
+    rawOperation({ temporary_id: 'op_2', description: 'Gasolina', category_reference: 'Transporte' }),
+  ]);
+  const [futura, hoje] = plan.operations;
+  assert.equal(futura.action.planned, true);
+  assert.match(describePlanOperation(futura), /, prevista para 30\/07$/);
+  assert.doesNotMatch(describePlanOperation(hoje), /prevista/);
+
+  const confirmado = {
+    ...plan,
+    operations: plan.operations.map((op) => ({ ...op, status: 'confirmed' })),
+  };
+  assert.equal(
+    buildPlanResultText(confirmado),
+    'Registrei 2 lançamentos com sucesso. Um deles ficou previsto. Confirme no Financeiro quando acontecerem.',
+  );
+  const soOFuturo = { ...confirmado, operations: [confirmado.operations[0]] };
+  assert.equal(
+    buildPlanResultText(soOFuturo),
+    'Registrei o lançamento com sucesso. Ele ficou previsto. Confirme no Financeiro quando acontecer.',
+  );
+});
+
 test('parsePlanCorrectionOverrides: "Foi ontem" corrige a data usando o resolvedor determinístico', () => {
   const plan = buildPlan([rawOperation()]);
   const overrides = parsePlanCorrectionOverrides({

@@ -44,10 +44,12 @@ test('conjunto reservado: marca booleana, ao menos 30 casos e cobre lançamentos
   assert.ok(CASOS.length - reservados.length >= 30, 'conjunto de ajuste ficou pequeno demais');
 });
 
-test('data esperada é ISO válida e não fica no futuro em lançamentos', () => {
+// Lançamento com data futura vira previsto; o contrato aceita até um ano
+// para frente ou para trás da referência.
+test('data esperada é ISO válida e fica a até um ano da referência', () => {
   for (const caso of CASOS.filter((item) => item.esperado.data)) {
     assert.match(caso.esperado.data, /^\d{4}-\d{2}-\d{2}$/, caso.id);
-    assert.ok(caso.esperado.data <= '2026-10-02', `${caso.id}: data no futuro`);
+    assert.ok(caso.esperado.data >= '2025-10-02' && caso.esperado.data <= '2027-10-02', `${caso.id}: data fora de um ano`);
   }
 });
 

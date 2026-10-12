@@ -47,6 +47,15 @@ test('"dia N" resolve para a ocorrência mais recente que não seja futura', () 
   assert.equal(resolveRelativeDateExpression('dia 30', REFERENCE).resolvedDate, '2026-06-30');
 });
 
+test('"dia N do mês que vem" resolve para o dia N do mês seguinte', () => {
+  assert.equal(resolveRelativeDateExpression('lança o aluguel de 1500 pro dia 10 do mês que vem', REFERENCE).resolvedDate, '2026-08-10');
+  assert.equal(resolveRelativeDateExpression('dia 5 do próximo mês', REFERENCE).ruleId, 'day_of_next_month');
+  // Virada do ano.
+  assert.equal(resolveRelativeDateExpression('dia 3 do mês que vem', '2026-12-20').resolvedDate, '2027-01-03');
+  // Agosto tem 31 dias, setembro não: "dia 31" fica sem data.
+  assert.equal(resolveRelativeDateExpression('dia 31 do mês que vem', '2026-08-15').resolvedDate, null);
+});
+
 test('"dia N" inválido para o mês (ex.: dia 31 em mês de 30 dias) é rejeitado', () => {
   // Junho tem 30 dias -- "dia 31" cairia em julho, então é rejeitado no mês anterior.
   const result = resolveRelativeDateExpression('dia 31', '2026-07-01');

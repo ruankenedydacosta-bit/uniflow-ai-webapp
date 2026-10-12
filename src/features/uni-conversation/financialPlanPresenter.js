@@ -56,11 +56,18 @@ export function describePlanOperation(op) {
     const destName = op.destinationAccountResolution?.account?.name
       ?? raw.destinationAccountReference
       ?? 'conta a definir';
-    return `• Transferência de ${amountText} de ${originName} para ${destName}`;
+    return `• Transferência de ${amountText} de ${originName} para ${destName}${describePlannedDate(op)}`;
   }
   const label = op.operationType === 'income' ? 'Entrada' : 'Saída';
   const categoryName = op.action?.category?.name;
-  return `• ${label} de ${amountText}${description}${categoryName ? ` em ${categoryName}` : ''}`;
+  return `• ${label} de ${amountText}${description}${categoryName ? ` em ${categoryName}` : ''}${describePlannedDate(op)}`;
+}
+
+// Operação com data futura fica como previsto: o resumo mostra o dia.
+function describePlannedDate(op) {
+  if (!op.action?.planned) return '';
+  const [, month, day] = String(op.action.date ?? '').split('-');
+  return month && day ? `, prevista para ${day}/${month}` : ', prevista';
 }
 
 export function buildOperationClarificationQuestion(op) {
@@ -157,6 +164,13 @@ export function buildPlanResultText(planState) {
   const parts = [];
   if (confirmed.length) {
     parts.push(`Registrei ${confirmed.length === 1 ? 'o lançamento' : `${confirmed.length} lançamentos`} com sucesso.`);
+    const planned = confirmed.filter((op) => op.action?.planned).length;
+    if (planned === 1 && confirmed.length === 1) {
+      parts.push('Ele ficou previsto. Confirme no Financeiro quando acontecer.');
+    } else if (planned) {
+      const who = planned === confirmed.length ? 'Todos ficaram previstos' : planned === 1 ? 'Um deles ficou previsto' : `${planned} deles ficaram previstos`;
+      parts.push(`${who}. Confirme no Financeiro quando acontecerem.`);
+    }
   }
   if (failed.length) {
     parts.push(`Não consegui registrar ${failed.length === 1 ? 'um dos lançamentos' : `${failed.length} lançamentos`}. Nada foi perdido -- pode tentar de novo.`);

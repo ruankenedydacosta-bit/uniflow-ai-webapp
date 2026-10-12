@@ -100,9 +100,32 @@ function resolveCopy(options = {}) {
 // expense/income/transfer, independente de personalidade.
 const READY_FOR_CONFIRMATION_TEXT = 'Perfeito. Revise as informações abaixo antes de registrar.';
 
+// Lançamento com data futura fica como previsto. O texto diz isso antes e
+// depois de registrar: na voz, a Uni só fala o que está na resposta.
+function formatShortDate(isoDate) {
+  const [, month, day] = String(isoDate ?? '').split('-');
+  return month && day ? `${day}/${month}` : null;
+}
+
+export function buildPlannedConfirmationText(action) {
+  const date = formatShortDate(action?.date);
+  return date
+    ? `Perfeito. Revise as informações abaixo. A data é ${date}, então o lançamento fica previsto até você confirmar.`
+    : 'Perfeito. Revise as informações abaixo. A data é futura, então o lançamento fica previsto até você confirmar.';
+}
+
+export function buildPlannedCompletionText(action) {
+  const date = formatShortDate(action?.date);
+  const when = date ? ` para ${date}` : '';
+  if (action?.transactionType === 'transfer') {
+    return `Pronto. A transferência ficou prevista${when}. Confirme no Financeiro quando ela acontecer.`;
+  }
+  return `Pronto. O lançamento ficou previsto${when}. Confirme no Financeiro quando ele acontecer.`;
+}
+
 export function buildConfirmationResponse(action, options = {}) {
   const resolved = resolveCopy(options);
-  return { text: READY_FOR_CONFIRMATION_TEXT, ...resolved };
+  return { text: action?.planned ? buildPlannedConfirmationText(action) : READY_FOR_CONFIRMATION_TEXT, ...resolved };
 }
 
 export function buildClarificationResponse(action, options = {}) {
@@ -119,6 +142,9 @@ export function buildClarificationResponse(action, options = {}) {
 
 export function buildCompletionResponse(action, options = {}) {
   const resolved = resolveCopy(options);
+  if (action?.planned) {
+    return { text: buildPlannedCompletionText(action), ...resolved };
+  }
   // BUG REAL (BUG 2): transferência executada precisa dizer exatamente o
   // que foi feito ("Pronto. Transferi R$ 100 do Nubank para o Inter.") --
   // nunca o texto genérico de lançamento.

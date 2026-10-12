@@ -248,3 +248,12 @@ test('aggregateFinancialRange nunca lança com range nulo/malformado', () => {
   assert.doesNotThrow(() => aggregateFinancialRange(snapshot, null));
   assert.doesNotThrow(() => aggregateFinancialRange(null, { start: '2026-01-01', end: '2026-01-31' }));
 });
+
+test('lançamento previsto (pending) fica fora dos totais do mês e do último lançamento', () => {
+  const previsto = { id: 't10', account_id: 'acc-nubank', category_id: 'cat-food', transaction_type: 'expense', amount: 700, description: 'Aluguel previsto', transaction_date: '2026-07-25', status: 'pending' };
+  const semPrevisto = buildSnapshot();
+  const comPrevisto = buildSnapshot({ transactions: [...TRANSACTIONS, previsto] });
+  assert.equal(comPrevisto.monthlyExpense, semPrevisto.monthlyExpense);
+  assert.equal(comPrevisto.lastTransaction?.id, semPrevisto.lastTransaction?.id);
+  assert.equal(queryTransactionsInRange(comPrevisto, { start: '2026-07-01', end: '2026-07-31' }).some((tx) => tx.id === 't10'), false);
+});

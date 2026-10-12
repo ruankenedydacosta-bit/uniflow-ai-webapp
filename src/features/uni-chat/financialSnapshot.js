@@ -116,7 +116,10 @@ export function buildFinancialSnapshot({
       (tx) =>
         VALID_TRANSACTION_TYPES.has(tx.transaction_type)
         && roundMoney(tx.amount) > 0
-        && tx.status !== 'canceled',
+        // Previsto (pending) ainda não aconteceu: fica fora dos totais e do
+        // "último lançamento", como nos Registros.
+        && tx.status !== 'canceled'
+        && tx.status !== 'pending',
     ),
   );
 
