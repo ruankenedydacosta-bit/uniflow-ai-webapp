@@ -181,7 +181,8 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
       consulta,
       pedido: validada.categoria
         ? { acao: validada.categoria.acao, nome: validada.categoria.nome, alvo: validada.categoria.alvo?.name ?? null }
-        : validada.agenda?.acao
+        // Criar segue a régua do título; o pedido é só sobre item existente.
+        : validada.agenda?.acao && validada.agenda.acao !== 'criar'
           ? { acao: validada.agenda.acao, nome: validada.agenda.titulo, alvo: validada.agenda.alvo }
           : null,
     };

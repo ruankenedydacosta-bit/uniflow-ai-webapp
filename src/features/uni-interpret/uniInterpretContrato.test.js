@@ -227,6 +227,10 @@ test('agenda: ação da lista e alvo limpo; ação inventada vira null e criar n
   assert.deepEqual(agenda({ acao: 'concluir', alvo: '  ', titulo: null, valor: null }), {
     acao: 'concluir', alvo: null, titulo: null, valor: null,
   });
+  // Título só vale em criar e editar; em editar, igual ao alvo é eco.
+  assert.equal(agenda({ acao: 'excluir', alvo: null, titulo: 'Dentista', valor: null }).titulo, null);
+  assert.equal(agenda({ acao: 'editar', alvo: 'Reunião com o contador', titulo: 'reuniao com o Contador', valor: null }).titulo, null);
+  assert.equal(agenda({ acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João', valor: null }).titulo, 'Reunião com o João');
 });
 
 // #80, etapa 2b: o app público não ajusta saldo nem cria meta pela

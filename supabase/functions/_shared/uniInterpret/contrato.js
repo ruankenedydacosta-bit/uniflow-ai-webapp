@@ -299,15 +299,24 @@ function tituloDeAgenda(valor) {
   return titulo || null;
 }
 
+function semAcentoNemCaixa(texto) {
+  return String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
 // Título vazio vira null: o fluxo da agenda usa o parser próprio ou pergunta.
 // Ação fora da lista vira null, e o app segue como antes do campo existir.
-// Alvo só vale sobre um compromisso que já existe; em criar, é null.
+// Alvo só vale sobre um compromisso que já existe; em criar, é null. Título
+// só vale em criar e, em editar, como nome novo: igual ao alvo é eco do
+// modelo, e renomearia o compromisso numa remarcação.
 function validarAgenda(bruta) {
   const acao = ACOES_AGENDA.includes(bruta?.acao) ? bruta.acao : null;
   const alvo = acao && acao !== 'criar' ? tituloDeAgenda(bruta?.alvo) : null;
+  let titulo = tituloDeAgenda(bruta?.titulo);
+  if (acao && acao !== 'criar' && acao !== 'editar') titulo = null;
+  if (acao === 'editar' && titulo && alvo && semAcentoNemCaixa(titulo) === semAcentoNemCaixa(alvo)) titulo = null;
   const valorBruto = Number(bruta?.valor);
   const valor = Number.isFinite(valorBruto) ? Math.round(valorBruto * 100) / 100 : 0;
-  return { acao, alvo, titulo: tituloDeAgenda(bruta?.titulo), valor: valor > 0 ? valor : null };
+  return { acao, alvo, titulo, valor: valor > 0 ? valor : null };
 }
 
 // Apelido inventado vira alvo null, e o app diz que não achou a categoria.

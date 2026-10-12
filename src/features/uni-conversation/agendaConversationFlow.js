@@ -52,11 +52,24 @@ const ACAO_INTERPRETADA = Object.freeze({
   excluir: { intent: 'agenda_cancel', action: 'delete' },
 });
 
-// Resposta à pergunta "Quer mesmo cancelar X?". Por voz chega "pode
-// excluir", "pode sim", "isso"; a lista curta de antes só aceitava "sim".
-const CONFIRMA_CANCELAMENTO = /^(?:sim|confirmo|confirmar|pode|pode\s+(?:sim|ser|cancelar|excluir|apagar|concluir|remover))[.!]?$/;
+// Resposta à pergunta "Quer mesmo cancelar X?". Por voz chega "sim, cancela",
+// "pode excluir", "pode sim", "isso"; a lista curta de antes só aceitava
+// "sim". Aqui "cancela" confirma: é o verbo da própria pergunta, nunca a
+// desistência que o classificador genérico de rascunho vê nele.
+const ABERTURA_AFIRMATIVA = /^(?:sim|ok|isso|claro|pode|beleza|certo)[,.!]?\s+/;
+const FECHO_AFIRMATIVO = /\s+(?:sim|por favor)[.!]?$/;
+const CONFIRMA_CANCELAMENTO = /^(?:sim|confirmo|confirmar|confirma|isso|pode|pode\s+(?:sim|ser)|(?:pode\s+)?(?:cancelar|cancela|excluir|exclui|apagar|apaga|remover|remove|concluir|conclui)(?:\s+(?:isso|esse|essa|ele|ela))?)[.!]?$/;
 // "não", "não, deixa", "não quero": começou com não, é recusa.
 const RECUSA_CANCELAMENTO = /^(?:nao|não)\b/;
+
+function respostaAoCancelamento(text) {
+  const normalized = normalizeFinancialText(text).replace(/[!?]+$/g, '');
+  if (RECUSA_CANCELAMENTO.test(normalized)) return 'recusa';
+  const semAbertura = normalized.replace(ABERTURA_AFIRMATIVA, '').replace(FECHO_AFIRMATIVO, '').trim() || normalized;
+  if (CONFIRMA_CANCELAMENTO.test(normalized) || CONFIRMA_CANCELAMENTO.test(semAbertura)) return 'confirma';
+  if (classifyPendingActionReply(text) === 'confirm') return 'confirma';
+  return 'outra';
+}
 
 const PENDING_TYPES = Object.freeze({
   CREATE: 'agenda_create',
@@ -1492,15 +1505,23 @@ function matchesTitle(item, subject) {
 // Palavras que não distinguem um compromisso de outro.
 const PALAVRAS_DE_LIGACAO = new Set(['com', 'para', 'pra', 'das', 'dos', 'uma', 'que', 'sobre', 'meu', 'minha', 'nos', 'nas']);
 
-// O alvo do modelo é como a pessoa chamou o compromisso ("Reunião com o
-// João"), não o título salvo ("Reunião João"): basta cada palavra do alvo
-// aparecer no item, em qualquer ordem.
-function matchesSubjectWords(item, subject) {
-  const candidate = normalizeIdentity(`${item.title ?? ''} ${item.description ?? ''}`);
-  const palavras = normalizeIdentity(subject)
+function palavrasDistintivas(subject) {
+  return normalizeIdentity(subject)
     .split(' ')
     .filter((palavra) => palavra.length >= 3 && !PALAVRAS_DE_LIGACAO.has(palavra));
-  return palavras.length > 0 && palavras.every((palavra) => candidate.includes(palavra));
+}
+
+// O alvo do modelo é como a pessoa chamou o compromisso ("Consulta no
+// dentista"), não o título salvo ("Dentista"). Primeiro valem os itens com
+// todas as palavras do alvo; sem nenhum, qualquer palavra distintiva basta,
+// e mais de um candidato cai na desambiguação.
+function filtrarPeloAlvo(items, subject) {
+  const palavras = palavrasDistintivas(subject);
+  if (palavras.length === 0) return items.filter((item) => matchesTitle(item, subject));
+  const texto = (item) => normalizeIdentity(`${item.title ?? ''} ${item.description ?? ''}`);
+  const todas = items.filter((item) => palavras.every((palavra) => texto(item).includes(palavra)));
+  if (todas.length > 0) return todas;
+  return items.filter((item) => palavras.some((palavra) => texto(item).includes(palavra)));
 }
 
 function selectUniqueCandidate(items, text) {
@@ -1737,10 +1758,11 @@ export function createAgendaConversationFlow({
       status: 'scheduled',
     });
     if (result.error) return result;
-    const casa = (item) => matchesTitle(item, subject) || (porPalavras && matchesSubjectWords(item, subject));
+    const items = result.data ?? [];
+    if (!subject) return { ...result, data: items };
     return {
       ...result,
-      data: (result.data ?? []).filter((item) => !subject || casa(item)),
+      data: porPalavras ? filtrarPeloAlvo(items, subject) : items.filter((item) => matchesTitle(item, subject)),
     };
   }
 
@@ -1792,7 +1814,12 @@ export function createAgendaConversationFlow({
     if (!active) return null;
     const normalized = normalizeFinancialText(text);
 
-    if (/^(?:cancela|cancelar|deixa|deixa pra la|nao quero|nao agenda(?:r)?)[.!]?$/.test(normalized)) {
+    // "Cancela." respondendo a "Quer mesmo cancelar X?" é a confirmação,
+    // tratada no ramo da pendência; aqui só vale para as outras pendências.
+    if (
+      active.type !== PENDING_TYPES.CANCEL
+      && /^(?:cancela|cancelar|deixa|deixa pra la|nao quero|nao agenda(?:r)?)[.!]?$/.test(normalized)
+    ) {
       if (active.type === PENDING_TYPES.CREATE) {
         await clearCreationOperation(identity, active.fields.clientOperationId);
       }
@@ -2000,13 +2027,13 @@ export function createAgendaConversationFlow({
     }
 
     if (active.type === PENDING_TYPES.CANCEL) {
-      const resposta = classifyPendingActionReply(text);
-      if (RECUSA_CANCELAMENTO.test(normalized) || resposta === 'cancel') {
+      const resposta = respostaAoCancelamento(text);
+      if (resposta === 'recusa') {
         const transition = cancelPendingAction(stack, active.id, { cascade: true });
         setStack(identity, transition.stack);
         return { handled: true, text: 'Tudo bem. Mantive o compromisso na sua agenda.' };
       }
-      if (CONFIRMA_CANCELAMENTO.test(normalized) || resposta === 'confirm') {
+      if (resposta === 'confirma') {
         const result = await executeSelected(identity, active.fields.action, active.fields.item);
         finishPending(identity, active, result);
         return result;

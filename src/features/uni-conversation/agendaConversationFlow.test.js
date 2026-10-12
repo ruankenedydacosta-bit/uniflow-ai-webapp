@@ -3382,3 +3382,50 @@ test('alvo interpretado que não está na agenda responde sem inventar', async (
   assert.match(result.text, /Não encontrei esse compromisso/);
   assert.ok(calls.every((call) => call.operation === 'list'));
 });
+
+// Achados da revisão (#191).
+test('confirmação falada com o verbo da pergunta cancela, em vez de desistir', async () => {
+  for (const resposta of ['Sim, cancela.', 'Cancela.', 'ok, pode cancelar isso', 'pode cancelar sim', 'sim, exclui']) {
+    const { flow, items } = makeHarness([
+      { id: 'dentista', workspace_id: IDENTITY.workspaceId, title: 'Dentista', starts_at: '2026-08-13T12:00:00.000Z' },
+    ]);
+    await flow.handle({
+      text: 'Cancela o dentista',
+      identity: IDENTITY,
+      referenceDate: REFERENCE_DATE,
+      interpretado: { acao: 'cancelar', alvo: 'Dentista', titulo: null },
+    });
+    const result = await turn(flow, resposta);
+    assert.match(result.text, /Cancelei/, resposta);
+    assert.equal(items[0].status, 'cancelled', resposta);
+  }
+});
+
+test('alvo do modelo com palavras a mais ainda acha o compromisso salvo com nome curto', async () => {
+  const { flow, items } = makeHarness([
+    { id: 'dentista', workspace_id: IDENTITY.workspaceId, title: 'Dentista', starts_at: '2026-08-13T12:00:00.000Z' },
+    { id: 'mercado', workspace_id: IDENTITY.workspaceId, title: 'Mercado', starts_at: '2026-08-13T15:00:00.000Z' },
+  ]);
+  const result = await flow.handle({
+    text: 'Cancela a consulta no dentista de quinta',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'cancelar', alvo: 'Consulta no dentista', titulo: null },
+  });
+  assert.match(result.text, /Quer mesmo cancelar Dentista/);
+  assert.ok(items.every((item) => item.status === 'scheduled'));
+});
+
+test('alvo do modelo prefere o item com todas as palavras antes de abrir para qualquer uma', async () => {
+  const { flow } = makeHarness([
+    { id: 'a', workspace_id: IDENTITY.workspaceId, title: 'Reunião contador', starts_at: '2026-08-13T12:00:00.000Z' },
+    { id: 'b', workspace_id: IDENTITY.workspaceId, title: 'Reunião escola', starts_at: '2026-08-14T12:00:00.000Z' },
+  ]);
+  const result = await flow.handle({
+    text: 'Desmarca a reunião com o contador',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'cancelar', alvo: 'Reunião com o contador', titulo: null },
+  });
+  assert.match(result.text, /Quer mesmo cancelar Reunião contador/);
+});
