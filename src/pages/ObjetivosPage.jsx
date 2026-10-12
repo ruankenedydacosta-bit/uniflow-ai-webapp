@@ -7,6 +7,7 @@ import ProgressBar from '../components/ui/ProgressBar/index.js';
 import { useGoals } from '../features/goals/useGoals';
 import GoalListCard from '../features/goals/components/GoalListCard';
 import GoalForm from '../features/goals/components/GoalForm';
+import GoalCreateFlow from '../features/goals/components/GoalCreateFlow';
 import GoalContributions from '../features/goals/components/GoalContributions';
 import { listContributions } from '../features/goals/goalService';
 import { ABAS_DE_METAS, linhaDeApoio, resumirMetasAtivas, separarPorAba } from '../features/goals/listaDeMetas.js';
@@ -35,7 +36,7 @@ export default function ObjetivosPage() {
   const [metaParaExcluir, setMetaParaExcluir] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
   const [erroAoExcluir, setErroAoExcluir] = useState(null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [criando, setCriando] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
   const [contributionsGoal, setContributionsGoal] = useState(null);
   const [contributions, setContributions] = useState([]);
@@ -48,22 +49,24 @@ export default function ObjetivosPage() {
   const metaAberta = goals.find((goal) => goal.id === metaAbertaId) ?? null;
 
   async function handleSave(values, goalId) {
-    if (goalId) {
-      await editGoal(goalId, values);
-    } else {
-      await addGoal(values);
-    }
+    await editGoal(goalId, values);
   }
 
-  function handleNewGoal() {
-    setEditingGoal(null);
-    setFormOpen(true);
+  // A meta nova entra no topo de Ativas (useGoals põe o registro novo na
+  // frente da lista).
+  async function handleCreate(values) {
+    const result = await addGoal(values);
+    if (!result?.error) {
+      setCriando(false);
+      setAba('ativas');
+      window.scrollTo({ top: 0 });
+    }
+    return result;
   }
 
   function handleEdit(goal) {
     setMetaAbertaId(null);
     setEditingGoal(goal);
-    setFormOpen(true);
   }
 
   // A folha só fecha quando os aportes chegam, para a tela não ficar vazia
@@ -125,7 +128,7 @@ export default function ObjetivosPage() {
         onBack={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
         backLabel="Voltar para Mais"
         action={(
-          <button type="button" className={styles.headerAction} onClick={handleNewGoal} aria-label="Criar meta">
+          <button type="button" className={styles.headerAction} onClick={() => setCriando(true)} aria-label="Criar meta">
             <PhPlusIcon />
           </button>
         )}
@@ -147,7 +150,7 @@ export default function ObjetivosPage() {
           <div className={styles.state}>
             <p className={styles.stateTitle}>Nenhuma meta ainda</p>
             <p>Crie uma meta para ver quanto falta e quanto guardar por mês.</p>
-            <OutlineButton onClick={handleNewGoal}>Criar meta</OutlineButton>
+            <OutlineButton onClick={() => setCriando(true)}>Criar meta</OutlineButton>
           </div>
         )
       ) : (
@@ -220,12 +223,19 @@ export default function ObjetivosPage() {
         error={erroAoExcluir}
       />
 
-      <GoalForm
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        goal={editingGoal}
-        onSave={handleSave}
-      />
+      {criando ? (
+        <GoalCreateFlow onClose={() => setCriando(false)} onCreate={handleCreate} />
+      ) : null}
+
+      {editingGoal ? (
+        <GoalForm
+          key={editingGoal.id}
+          open
+          onClose={() => setEditingGoal(null)}
+          goal={editingGoal}
+          onSave={handleSave}
+        />
+      ) : null}
 
       {contributionsGoal ? (
         <GoalContributions
