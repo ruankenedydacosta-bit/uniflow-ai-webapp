@@ -88,7 +88,16 @@ export function resolveTransactionDescription(form) {
   return NEUTRAL_DESCRIPTION_BY_TYPE[form.transaction_type] ?? 'Lançamento';
 }
 
-export function buildTransactionMutationPayload(form) {
+// Data depois de hoje grava 'pending' (previsto); hoje ou passada mantém o
+// status do formulário. Um previsto vencido continua 'pending' até a pessoa
+// confirmar, então editar a descrição dele não o transforma em realizado.
+export function resolveTransactionStatus(form, today = new Date().toISOString().slice(0, 10)) {
+  if (form.status === 'canceled' || form.status === 'failed') return form.status;
+  if (String(form.transaction_date) > String(today)) return 'pending';
+  return form.status ?? 'completed';
+}
+
+export function buildTransactionMutationPayload(form, today) {
   const payload = {
     // CONTA-OPCIONAL: '' (valor inicial do campo, ou form de um tipo que não
     // mostra mais "Conta") precisa virar null -- string vazia não é um UUID
@@ -101,7 +110,7 @@ export function buildTransactionMutationPayload(form) {
     description: resolveTransactionDescription(form),
     amount: form.amount,
     transaction_date: form.transaction_date,
-    status: form.status ?? 'completed',
+    status: resolveTransactionStatus(form, today),
     payment_method: form.payment_method?.trim() ? form.payment_method.trim() : null,
     notes: form.notes?.trim() ? form.notes.trim() : null,
   };
