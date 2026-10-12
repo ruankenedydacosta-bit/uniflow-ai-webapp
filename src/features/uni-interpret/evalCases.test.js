@@ -5,7 +5,7 @@ import { catalogoDoWorkspace } from './evalCatalog.js';
 import { CASOS } from './evalCases.js';
 import { avaliarCaso, INTENTS_DE_LANCAMENTO, resumirAvaliacao } from './evalScoring.js';
 
-const INTENTS_VALIDOS = new Set([...INTENTS_DE_LANCAMENTO, 'saldo', 'meta', 'consulta', 'agenda', 'conversa']);
+const INTENTS_VALIDOS = new Set([...INTENTS_DE_LANCAMENTO, 'saldo', 'meta', 'consulta', 'agenda', 'categoria', 'conversa']);
 
 test('cada caso tem id único e intent conhecido', () => {
   const ids = CASOS.map((caso) => caso.id);
@@ -75,7 +75,7 @@ function resultado(campos) {
 
 test('acerta quando todos os campos batem, inclusive categoria aceita', () => {
   assert.deepEqual(avaliarCaso(CASO_ESCOLA, resultado()), {
-    intent: true, valor: true, data: true, categoria: true, modalidade: true, titulo: null, consulta: null,
+    intent: true, valor: true, data: true, categoria: true, modalidade: true, titulo: null, consulta: null, pedido: null,
   });
   assert.equal(avaliarCaso(CASO_ESCOLA, resultado({ categoria: 'Outras despesas' })).categoria, true);
 });
@@ -93,21 +93,21 @@ test('caso sem base para categoria só acerta quando a Uni pergunta', () => {
 
 test('intent errado derruba os outros campos do lançamento', () => {
   assert.deepEqual(avaliarCaso(CASO_ESCOLA, resultado({ intent: 'consulta' })), {
-    intent: false, valor: false, data: false, categoria: false, modalidade: false, titulo: null, consulta: null,
+    intent: false, valor: false, data: false, categoria: false, modalidade: false, titulo: null, consulta: null, pedido: null,
   });
 });
 
 test('casos que não são lançamento só medem o intent', () => {
   const caso = { id: 'saldo', frase: 'Qual meu saldo?', esperado: { intent: 'consulta' } };
   assert.deepEqual(avaliarCaso(caso, { intent: 'consulta' }), {
-    intent: true, valor: null, data: null, categoria: null, modalidade: null, titulo: null, consulta: null,
+    intent: true, valor: null, data: null, categoria: null, modalidade: null, titulo: null, consulta: null, pedido: null,
   });
 });
 
 test('resumo ignora campos que não se aplicam', () => {
   const resumo = resumirAvaliacao([
-    { intent: true, valor: true, data: false, categoria: null, modalidade: true, titulo: null, consulta: null },
-    { intent: false, valor: null, data: null, categoria: null, modalidade: null, titulo: true, consulta: null },
+    { intent: true, valor: true, data: false, categoria: null, modalidade: true, titulo: null, consulta: null, pedido: null },
+    { intent: false, valor: null, data: null, categoria: null, modalidade: null, titulo: true, consulta: null, pedido: null },
   ]);
   assert.deepEqual(resumo, {
     intent: { acertos: 1, total: 2 },
@@ -117,6 +117,7 @@ test('resumo ignora campos que não se aplicam', () => {
     modalidade: { acertos: 1, total: 1 },
     titulo: { acertos: 1, total: 1 },
     consulta: { acertos: 0, total: 0 },
+    pedido: { acertos: 0, total: 0 },
   });
 });
 

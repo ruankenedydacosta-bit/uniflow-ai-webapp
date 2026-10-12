@@ -883,12 +883,14 @@ test('BLOCO VOZ 1: erro relevante ao usuário fala -- os 5 pontos de erro de han
   const callSites = page.match(/reportConfirmationError\(id, [^)]*\);/g) ?? [];
   // O sexto é a edição no card que não pôde ser aplicada (handleSaveEditAction).
   // O sétimo é o toque em Confirmar numa alteração de lançamento vencida.
-  assert.equal(callSites.length, 7, 'esperava 7 pontos de erro do card usando reportConfirmationError');
+  // O oitavo é o toque em Confirmar num pedido de categoria vencido.
+  assert.equal(callSites.length, 8, 'esperava 8 pontos de erro do card usando reportConfirmationError');
   // Nenhum setExecutionError fora do ponto central (sem duplicação de
   // registro/narração) -- só o reset neutro (null) continua nos fluxos.
   assert.equal((page.match(/setExecutionError\(errorText\);/g) ?? []).length, 1);
   // 14: os dois últimos são confirmar e cancelar a edição de lançamento salvo.
-  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 14);
+  // 16: mais confirmar e cancelar o pedido de categoria.
+  assert.equal((page.match(/setExecutionError\(null\);/g) ?? []).length, 16);
 });
 
 test('BLOCO VOZ 1: narração de erro é gated pela experiência simplificada + preferência de voz -- chat completo permanece manual', async () => {
@@ -2016,9 +2018,10 @@ test('edição de lançamento salvo: pedido e resposta só são tratados sem ras
 test('edição de lançamento salvo: o toque no card confirma ou cancela a edição antes de qualquer outra pendência', async () => {
   const page = await source('UniChatPage.jsx');
   const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
-  assert.match(confirmar.slice(0, 400), /if \(edicaoPendenteRef\.current\?\.messageId === id\) \{\s*if \(edicaoAtiva\(\)\) \{\s*await confirmarEdicao\(id\);\s*\} else \{\s*encerrarEdicao\('expired'\);\s*reportConfirmationError\(id, TEXTO_EDICAO_VENCIDA\);/);
+  // O pedido de categoria vem antes: são cards paralelos, cada um pelo id.
+  assert.match(confirmar.slice(0, 900), /if \(edicaoPendenteRef\.current\?\.messageId === id\) \{\s*if \(edicaoAtiva\(\)\) \{\s*await confirmarEdicao\(id\);\s*\} else \{\s*encerrarEdicao\('expired'\);\s*reportConfirmationError\(id, TEXTO_EDICAO_VENCIDA\);/);
   const cancelar = page.slice(page.indexOf('function handleCancelAction(id, { cascade = false } = {}) {'));
-  assert.match(cancelar.slice(0, 300), /if \(edicaoPendenteRef\.current\?\.messageId === id\) \{\s*cancelarEdicao\(id\);/);
+  assert.match(cancelar.slice(0, 500), /if \(edicaoPendenteRef\.current\?\.messageId === id\) \{\s*cancelarEdicao\(id\);/);
 });
 
 test('edição de lançamento salvo: grava só a versão lida e recarrega saldos depois', async () => {
@@ -2191,4 +2194,39 @@ test('#80: resposta ao rascunho vai ao uni-interpret antes das regras, que ficam
   assert.match(leitura, /uniTurnTokenRef\.current !== turnToken/);
   // Com o modelo lendo primeiro, a segunda chamada depois das regras sobra.
   assert.doesNotMatch(page, /correctPendingWithAi/);
+});
+
+// Conversa por voz de 11/10/2026: pedir a categoria Impostos virou um
+// lançamento sem valor. Pedido de categoria tem card próprio.
+test('pedido de categoria: card próprio, confirmado e cancelado pelo id antes das outras pendências', async () => {
+  const page = await source('UniChatPage.jsx');
+  const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
+  assert.match(confirmar.slice(0, 400), /if \(categoriaPendenteRef\.current\?\.messageId === id\) \{\s*if \(pedidoDeCategoriaAtivo\(\)\) \{\s*await confirmarPedidoDeCategoria\(id\);\s*\} else \{\s*encerrarPedidoDeCategoria\('expired'\);\s*reportConfirmationError\(id, TEXTO_CATEGORIA_VENCIDA\);/);
+  const cancelar = page.slice(page.indexOf('function handleCancelAction(id, { cascade = false } = {}) {'));
+  assert.match(cancelar.slice(0, 300), /if \(categoriaPendenteRef\.current\?\.messageId === id\) \{\s*cancelarPedidoDeCategoria\(id\);/);
+  assert.match(page, /case ROTAS_INTERPRETACAO\.CATEGORIA:\s*setIsTyping\(false\);\s*iniciarPedidoDeCategoria\(interpretacao\.categoria\);/);
+  // Confirmar falando chega como "Confirmar" pelo sendText.
+  assert.match(page, /if \(tratarPedidoDeCategoriaPendente\(functionalText, userMsg\)\) return;/);
+  // Card vencido: "Confirmar" ouve que nada foi salvo, como na edição.
+  const pendente = extractFunctionBody(page, 'function tratarPedidoDeCategoriaPendente(texto, userMsg) {').body;
+  assert.match(pendente, /if \(respostaAoPedidoDeCategoria\(texto, pendente\.pronto\) === 'input'\) return false;\s*syncMessageToSupabase\(userMsg\);\s*createAssistantResponse\(TEXTO_CATEGORIA_VENCIDA/);
+  // Trocar de assunto abandona também o pedido de categoria.
+  const abandono = extractFunctionBody(page, 'function abandonStalePendingState() {').body;
+  assert.match(abandono, /encerrarPedidoDeCategoria\('expired'\);/);
+  // Papel ainda carregando não vira "sem permissão".
+  assert.match(page, /if \(workspaceRole\.isLoading\) \{\s*createAssistantResponse\('Ainda estou carregando as permissões/);
+});
+
+test('pedido de categoria: grava pelo hook da tela, com o texto de erro de lá', async () => {
+  const page = await source('UniChatPage.jsx');
+  const corpo = page.slice(page.indexOf('async function confirmarPedidoDeCategoria(id) {'), page.indexOf('function cancelarPedidoDeCategoria(id) {'));
+  assert.match(corpo, /categoryState\.saveCategory\(\{ name: pronto\.nome, category_type: pronto\.categoryType \}\)/);
+  assert.match(corpo, /categoryState\.saveCategory\(\{ name: pronto\.nome \}, pronto\.categoria\.id\)/);
+  assert.match(corpo, /categoryState\.removeCategory\(pronto\.categoria\.id\)/);
+  assert.match(corpo, /getCategoryErrorMessage\(resultado\.error,/);
+  assert.match(corpo, /createAssistantResponse\(withFollowUpQuestion\(textoDoPedidoFeito\(pronto\)\)\)/);
+  // Gravou: o pedido acaba antes de conferir a conversa, e as outras telas
+  // recarregam as categorias.
+  assert.ok(corpo.indexOf('categoriaPendenteRef.current = null;') < corpo.indexOf('if (activeIdRef.current !== pendente.conversationId) return;'));
+  assert.match(corpo, /notifyFinancialDataChanged\('uni-chat'\);/);
 });

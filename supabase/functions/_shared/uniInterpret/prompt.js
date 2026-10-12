@@ -13,7 +13,8 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - consulta: pergunta sobre os dados dele (gastos, entradas, quanto falta para uma meta).
 - agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento).
 - correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
-- conversa: cumprimento, agradecimento, papo. Também o pedido para criar, renomear ou excluir uma categoria sem registrar dinheiro ("cria uma categoria chamada Impostos", "apaga a categoria Carro"): a Uni ainda não faz isso pela conversa, e a resposta diz para abrir Categorias, no menu Mais. Com valor gasto ou recebido na frase, é lancamento com nova_categoria.
+- categoria: criar, renomear ou excluir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
+- conversa: cumprimento, agradecimento, papo.
 - nao_entendi: nenhuma das anteriores com segurança.
 
 ## Cada operação de lançamento
@@ -47,6 +48,13 @@ Só quando o intent é agenda; nos outros, titulo e valor são null. Em agenda, 
 - Palavras no começo da frase que são o nome da Uni mal transcrito ("O meu", "Uni,") não entram no título.
 - titulo é null quando a frase não diz do que se trata ("marca um compromisso pra sexta"): a Uni vai perguntar.
 - valor: em reais, quando a frase cita quanto pagar ou receber. null se não cita.
+
+## categoria
+Só quando o intent é categoria; nos outros, todos os campos são null.
+- acao: criar, renomear ou excluir.
+- nome: em criar, o nome da categoria nova; em renomear, o nome novo. Com acentos e inicial maiúscula, sem aspas e sem a finalidade ("para vincular essa despesa"). null em excluir.
+- alvo: em renomear e excluir, o apelido da categoria do catálogo que muda ou sai. null se ela não estiver no catálogo. null em criar.
+- tipo: em criar, entrada quando a pessoa fala de receita, entrada ou ganho; senão saida.
 
 ## resposta
 Só para conversa e nao_entendi: uma frase curta em português, para ser falada. Para nao_entendi, peça para a pessoa dizer de outro jeito. Nos outros intents, string vazia.
