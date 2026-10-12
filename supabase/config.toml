@@ -104,3 +104,8 @@ verify_jwt = false
 
 [functions.uni-updates-push-dispatch]
 verify_jwt = false
+
+# Lembrete mensal do aporte da meta (#160). Chamada pelo pg_cron com o
+# segredo de private.goal_reminder_dispatch_secret.
+[functions.goal-reminder-push-dispatch]
+verify_jwt = false
