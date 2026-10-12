@@ -8,6 +8,7 @@ import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import OutlineButton from '../../components/ui/OutlineButton';
 import Segmented from '../../components/ui/Segmented/index.js';
+import Toggle from '../../components/ui/Toggle/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { PhCaretDownIcon, PhCheckIcon, PhTrashIcon } from '../../features/simplified-app/SimplifiedIcons.jsx';
 import { celebrarSalvar, fecharFolha } from '../../features/simplified-app/movimentoDeSalvar.js';
@@ -38,6 +39,7 @@ import {
   createTransactionEditForm,
   getSelectableTransactionAccounts,
   isInstallmentPurchase,
+  localDateKey,
 } from './transactionFormUtils';
 
 const SORT_OPTIONS = [
@@ -81,7 +83,7 @@ function generateGroupId() {
 }
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateKey();
 }
 
 // Mesmos rótulos honestos já usados no seletor "Tipo" deste formulário
@@ -102,6 +104,14 @@ const SHEET_SUBMIT_LABELS = {
   income: 'Salvar entrada',
   transfer: 'Salvar transferência',
   adjustment: 'Salvar ajuste',
+};
+
+// Aviso da data futura (handoff 24d): o lançamento vira previsto e só entra
+// no saldo quando a pessoa confirma.
+const PLANNED_EFFECT = {
+  income: 'A data é depois de hoje. O valor entra no saldo quando você confirmar o recebimento.',
+  expense: 'A data é depois de hoje. O valor sai do saldo quando você confirmar o pagamento.',
+  transfer: 'A data é depois de hoje. As contas mudam de saldo quando você confirmar a transferência.',
 };
 
 const MANAGE_BLOCKED_TITLE = 'Você não possui permissão para gerenciar lançamentos deste espaço.';
@@ -290,6 +300,11 @@ function FinanceTransactionModal({
     return createEmptyTransactionForm(initialType);
   });
   const [editingId, setEditingId] = useState(() => editingTransactionId ?? null);
+  // Data depois de hoje salva como previsto (handoff 24d).
+  const isPlanned = form.transaction_type !== 'adjustment'
+    && form.status !== 'canceled'
+    && form.status !== 'failed'
+    && String(form.transaction_date) > localDateKey();
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [pendingDeleteSnapshot, setPendingDeleteSnapshot] = useState(null);
   const [deleteScope, setDeleteScope] = useState('only');
@@ -473,6 +488,7 @@ function FinanceTransactionModal({
       // Campos que são intrínsecos a cada parcela individual não devem ser
       // propagados ao editar "esta e as próximas"/"todas".
       delete payload.transaction_date;
+      delete payload.metadata;
 
       for (const id of targetIds) {
         const result = await transactionState.saveTransaction(payload, id);
@@ -779,6 +795,25 @@ function FinanceTransactionModal({
             required
             fullWidth
           />
+          {isPlanned ? (
+            <>
+              <div className={styles.plannedNotice} role="status">
+                <strong>Fica como previsto</strong>
+                <span>{PLANNED_EFFECT[form.transaction_type] ?? PLANNED_EFFECT.expense}</span>
+              </div>
+              <div className={styles.autoConfirmRow}>
+                <div className={styles.autoConfirmText}>
+                  <span>Confirmar automaticamente na data</span>
+                  <small>Use para débito automático.</small>
+                </div>
+                <Toggle
+                  label="Confirmar automaticamente na data"
+                  checked={Boolean(form.auto_confirm)}
+                  onChange={(checked) => setForm((current) => ({ ...current, auto_confirm: checked }))}
+                />
+              </div>
+            </>
+          ) : null}
           </section>
 
           <section className={styles.formBlock} aria-label="Informações opcionais">
@@ -940,7 +975,7 @@ function FinanceTransactionModal({
                 {isSheet ? (
                   <>
                     <span className={styles.saveLabel} data-salvar-rotulo>
-                      {SHEET_SUBMIT_LABELS[form.transaction_type] ?? 'Salvar movimentação'}
+                      {isPlanned ? 'Salvar como previsto' : SHEET_SUBMIT_LABELS[form.transaction_type] ?? 'Salvar movimentação'}
                     </span>
                     <span className={styles.saveCheck} data-salvar-check aria-hidden="true">
                       <PhCheckIcon />

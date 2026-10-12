@@ -36,3 +36,47 @@ test('o payload usa o status resolvido pela data', () => {
   );
   assert.equal(payload.status, 'pending');
 });
+
+import { createTransactionEditForm, localDateKey, resolveTransactionMetadata } from './transactionFormUtils.js';
+
+test('localDateKey usa o dia do relógio local, não o UTC', () => {
+  assert.equal(localDateKey(new Date(2026, 9, 12, 23, 30)), '2026-10-12');
+});
+
+test('previsto com confirmação automática grava metadata.auto_confirm sem perder o resto', () => {
+  assert.deepEqual(
+    resolveTransactionMetadata({ auto_confirm: true, metadata_base: { installment_group_id: 'g1' } }, 'pending'),
+    { installment_group_id: 'g1', auto_confirm: true },
+  );
+});
+
+test('sem confirmação automática e sem metadata antigo, a chave metadata fica de fora', () => {
+  assert.equal(resolveTransactionMetadata({ auto_confirm: false }, 'pending'), undefined);
+  const payload = buildTransactionMutationPayload(
+    { transaction_type: 'expense', description: 'x', amount: '1', transaction_date: '2026-10-15', status: 'completed' },
+    HOJE,
+  );
+  assert.equal('metadata' in payload, false);
+});
+
+test('desligar a confirmação automática remove só essa chave do metadata', () => {
+  assert.deepEqual(
+    resolveTransactionMetadata({ auto_confirm: false, metadata_base: { installment_group_id: 'g1', auto_confirm: true } }, 'pending'),
+    { installment_group_id: 'g1' },
+  );
+});
+
+test('virar realizado também remove auto_confirm', () => {
+  assert.deepEqual(
+    resolveTransactionMetadata({ auto_confirm: true, metadata_base: { auto_confirm: true } }, 'completed'),
+    {},
+  );
+});
+
+test('edição lê auto_confirm do metadata', () => {
+  const form = createTransactionEditForm({
+    account_id: 'a', transaction_type: 'expense', description: 'x', amount: 1,
+    transaction_date: '2026-10-15', status: 'pending', metadata: { auto_confirm: true },
+  });
+  assert.equal(form.auto_confirm, true);
+});

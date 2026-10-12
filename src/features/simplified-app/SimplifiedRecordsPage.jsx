@@ -882,6 +882,11 @@ function SimplifiedRecordsPage() {
     }).slice(0, 3),
     [plannedState.transactions],
   );
+  // O formulário edita pelo id: precisa achar também os previstos.
+  const formTransactionState = useMemo(() => ({
+    ...transactionState,
+    transactions: [...transactionState.transactions, ...plannedState.transactions],
+  }), [plannedState.transactions, transactionState]);
   const accountsWithDerivedBalance = useMemo(() => {
     const balanceMap = new Map(
       balanceState.accountBalances.map((balance) => [balance.account_id, balance.derived_balance]),
@@ -1358,7 +1363,7 @@ function SimplifiedRecordsPage() {
         presentation="sheet"
         accountState={displayAccountState}
         categoryState={categoryState}
-        transactionState={transactionState}
+        transactionState={formTransactionState}
         className={styles.transactionDialogDark}
         overlayClassName={styles.darkOverlay}
       />

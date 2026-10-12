@@ -1,6 +1,14 @@
 import { buildInstallmentPayloads, validateInstallmentCount } from './installmentUtils.js';
 import { buildRecurrenceRule } from './recurrenceUtils.js';
 
+// Data de hoje no relógio da pessoa (yyyy-mm-dd). toISOString() usa UTC e,
+// depois das 21h em Brasília, já devolve o dia seguinte.
+export function localDateKey(date = new Date()) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 export function createEmptyTransactionForm(transactionType = 'expense') {
   return {
     account_id: '',
@@ -9,8 +17,9 @@ export function createEmptyTransactionForm(transactionType = 'expense') {
     transaction_type: transactionType,
     description: '',
     amount: '',
-    transaction_date: new Date().toISOString().slice(0, 10),
+    transaction_date: localDateKey(),
     status: 'completed',
+    auto_confirm: false,
     payment_method: '',
     notes: '',
     installment_count: 1,
@@ -31,6 +40,9 @@ export function createTransactionEditForm(transaction) {
     amount: String(transaction.amount),
     transaction_date: transaction.transaction_date,
     status: transaction.status ?? 'completed',
+    auto_confirm: Boolean(transaction.metadata?.auto_confirm),
+    // Guarda o metadata atual: o update troca o jsonb inteiro.
+    metadata_base: transaction.metadata ?? null,
     payment_method: transaction.payment_method ?? '',
     notes: transaction.notes ?? '',
     // Edição nunca gera novas parcelas — o campo fica travado em 1 (ver UI).
@@ -54,8 +66,9 @@ export function createTransactionDuplicateForm(transaction) {
     transaction_type: transaction.transaction_type,
     description: transaction.description,
     amount: String(transaction.amount),
-    transaction_date: new Date().toISOString().slice(0, 10),
+    transaction_date: localDateKey(),
     status: 'completed',
+    auto_confirm: false,
     payment_method: transaction.payment_method ?? '',
     notes: transaction.notes ?? '',
     installment_count: 1,
@@ -91,10 +104,25 @@ export function resolveTransactionDescription(form) {
 // Data depois de hoje grava 'pending' (previsto); hoje ou passada mantém o
 // status do formulário. Um previsto vencido continua 'pending' até a pessoa
 // confirmar, então editar a descrição dele não o transforma em realizado.
-export function resolveTransactionStatus(form, today = new Date().toISOString().slice(0, 10)) {
+export function resolveTransactionStatus(form, today = localDateKey()) {
   if (form.status === 'canceled' || form.status === 'failed') return form.status;
   if (String(form.transaction_date) > String(today)) return 'pending';
   return form.status ?? 'completed';
+}
+
+// "Confirmar automaticamente na data" vive em metadata.auto_confirm e só
+// vale para previsto. Sem mudança no metadata, a chave fica de fora do
+// payload para o update não tocar nele.
+export function resolveTransactionMetadata(form, status) {
+  const base = form.metadata_base ?? null;
+  const wantsAuto = status === 'pending' && Boolean(form.auto_confirm);
+  if (wantsAuto) return { ...(base ?? {}), auto_confirm: true };
+  if (base && 'auto_confirm' in base) {
+    const resto = { ...base };
+    delete resto.auto_confirm;
+    return resto;
+  }
+  return undefined;
 }
 
 export function buildTransactionMutationPayload(form, today) {
@@ -114,6 +142,9 @@ export function buildTransactionMutationPayload(form, today) {
     payment_method: form.payment_method?.trim() ? form.payment_method.trim() : null,
     notes: form.notes?.trim() ? form.notes.trim() : null,
   };
+
+  const metadata = resolveTransactionMetadata(form, payload.status);
+  if (metadata !== undefined) payload.metadata = metadata;
 
   if (form.is_recurring) {
     const rule = buildRecurrenceRule({
@@ -147,6 +178,10 @@ export function buildInstallmentMutationPayloads(form, { groupId, today }) {
   }
 
   const basePayload = buildTransactionMutationPayload({ ...form, is_recurring: false });
+  // As parcelas futuras nascem previstas, mesmo se a primeira for de hoje.
+  if (form.auto_confirm) {
+    basePayload.metadata = { ...(basePayload.metadata ?? {}), auto_confirm: true };
+  }
   delete basePayload.is_recurring;
   delete basePayload.recurrence_rule;
 
