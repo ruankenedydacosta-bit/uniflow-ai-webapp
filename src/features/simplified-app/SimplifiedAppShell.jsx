@@ -73,6 +73,9 @@ function SimplifiedAppShell({ children }) {
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ACCOUNT}/`)
     // #154: Metas é tela interna do Mais (seta voltar + "Criar meta").
     || location.pathname === SIMPLIFIED_ROUTES.METAS
+    // Organizar (handoff 10): hub, lista e detalhe de categoria têm cabeçalho próprio.
+    || location.pathname === SIMPLIFIED_ROUTES.ORGANIZAR
+    || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ORGANIZAR}/`)
     // RELATORIO1/RELATORIO-FLATTEN1: cabeçalho próprio (← Relatório da
     // Uni + mês + resumo + planilha, tudo na mesma tela) -- nunca o
     // genérico (marca + sino) duplicado por cima.

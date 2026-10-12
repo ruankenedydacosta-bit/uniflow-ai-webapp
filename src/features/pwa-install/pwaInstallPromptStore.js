@@ -1,4 +1,9 @@
 import { PWA_INSTALL_ENABLED } from './pwaInstallConfig.js';
+import {
+  clearPwaInstalledMark,
+  isStandaloneDisplay,
+  persistPwaInstalledMark,
+} from './pwaInstallPlatform.js';
 
 let deferredPrompt = null;
 let removeCaptureListeners = null;
@@ -23,13 +28,17 @@ export function initializePwaInstallCapture({ runtime = globalThis, enabled = PW
     return () => {};
   }
 
+  if (isStandaloneDisplay(runtime)) persistPwaInstalledMark(runtime);
+
   function handleBeforeInstallPrompt(event) {
     event.preventDefault?.();
+    clearPwaInstalledMark(runtime);
     deferredPrompt = event;
     notifySubscribers();
   }
 
   function handleAppInstalled() {
+    persistPwaInstalledMark(runtime);
     deferredPrompt = null;
     notifySubscribers();
   }

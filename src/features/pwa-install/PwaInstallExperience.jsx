@@ -9,6 +9,7 @@ import {
   persistPwaInstallCooldown,
   PWA_INSTALL_PLATFORM,
   readPwaInstallCooldown,
+  readPwaInstalledMark,
 } from './pwaInstallPlatform.js';
 import {
   getDeferredPwaInstallPrompt,
@@ -26,6 +27,7 @@ function PwaInstallExperience() {
   const platform = detectPwaInstallPlatform();
   const canOffer = PWA_INSTALL_ENABLED
     && !isStandaloneDisplay()
+    && !readPwaInstalledMark()
     && !readPwaInstallCooldown(globalThis.sessionStorage)
     && platform !== PWA_INSTALL_PLATFORM.UNSUPPORTED;
 

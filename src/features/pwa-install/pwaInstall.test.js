@@ -12,6 +12,7 @@ import {
   persistPwaInstallCooldown,
   PWA_INSTALL_PLATFORM,
   readPwaInstallCooldown,
+  readPwaInstalledMark,
 } from './pwaInstallPlatform.js';
 import {
   getDeferredPwaInstallPrompt,
@@ -148,6 +149,50 @@ test('lifecycle PWA remove o helper de console e para o manager no cleanup, sem 
   assert.match(lifecycle, /return \(\) => \{\s*\n\s*stop\(\);\s*\n\s*removeConsoleHelper\(\);\s*\n\s*\};/);
 });
 
+function memoryStorage() {
+  const values = new Map();
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+  };
+}
+
+test('abrir o app instalado marca a instalação para a aba do navegador', () => {
+  const runtime = Object.assign(new EventTarget(), {
+    matchMedia: () => ({ matches: true }),
+    navigator: {},
+    localStorage: memoryStorage(),
+  });
+  initializePwaInstallCapture({ runtime, enabled: true });
+  assert.equal(readPwaInstalledMark(runtime), true);
+});
+
+test('appinstalled marca a instalação e beforeinstallprompt desfaz a marca (app desinstalado)', () => {
+  const runtime = Object.assign(new EventTarget(), {
+    matchMedia: () => ({ matches: false }),
+    navigator: {},
+    localStorage: memoryStorage(),
+  });
+  initializePwaInstallCapture({ runtime, enabled: true });
+  assert.equal(readPwaInstalledMark(runtime), false);
+
+  runtime.dispatchEvent(new Event('appinstalled'));
+  assert.equal(readPwaInstalledMark(runtime), true);
+
+  runtime.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: async () => {} }));
+  assert.equal(readPwaInstalledMark(runtime), false);
+});
+
+test('storage bloqueado nunca quebra a leitura da marca de instalação', () => {
+  const blocked = Object.defineProperty({}, 'localStorage', {
+    get: () => { throw new Error('SecurityError'); },
+  });
+  assert.equal(readPwaInstalledMark(blocked), false);
+  assert.equal(readPwaInstalledMark({ localStorage: { getItem: () => { throw new Error('blocked'); } } }), false);
+  assert.equal(readPwaInstalledMark({}), false);
+});
+
 test('UI aparece imediatamente, mesmo sem prompt nativo, e orienta Chrome e iOS', async () => {
   const [component, css] = await Promise.all([
     source('./PwaInstallExperience.jsx'),
@@ -161,6 +206,8 @@ test('UI aparece imediatamente, mesmo sem prompt nativo, e orienta Chrome e iOS'
   // TESTE IPHONE INSTALL 4: standalone precisa fazer parte da condição de
   // exibição -- nunca mostrar o CTA para quem já instalou.
   assert.match(component, /!isStandaloneDisplay\(\)/);
+  // Na aba do navegador, a marca deixada pelo app instalado esconde o card.
+  assert.match(component, /!readPwaInstalledMark\(\)/);
   assert.match(component, /platform !== PWA_INSTALL_PLATFORM\.UNSUPPORTED/);
   assert.doesNotMatch(component, /setTimeout|PWA_INSTALL_INITIAL_DELAY_MS/);
   assert.match(component, /aria-labelledby="pwa-install-title"/);
