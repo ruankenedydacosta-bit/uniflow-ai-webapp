@@ -99,7 +99,8 @@ export default function GoalCreateFlow({ inicial = null, onClose, onCreate }) {
   const [tipo, setTipo] = useState(tipoInicial.value);
   const [nome, setNome] = useState(tipoInicial.nome);
   const [nomeEditado, setNomeEditado] = useState(false);
-  const [alvoCentavos, setAlvoCentavos] = useState(() => Math.round(Number(inicial?.alvo || 0) * 100));
+  const [alvoSugerido] = useState(() => Math.round(Number(inicial?.alvo || 0) * 100));
+  const [alvoCentavos, setAlvoCentavos] = useState(alvoSugerido);
   const [guardadoCentavos, setGuardadoCentavos] = useState(0);
   const [modo, setModo] = useState('data');
   const [prazo, setPrazo] = useState('');
@@ -137,9 +138,16 @@ export default function GoalCreateFlow({ inicial = null, onClose, onCreate }) {
   }
 
   // O nome acompanha o tipo até a pessoa escrever outro.
+  // O valor sugerido (#155) só vale para o tipo da sugestão: se a pessoa
+  // volta e troca o tipo sem ter mexido no valor, ele sai, e volta com o tipo.
   function escolherTipo(opcao) {
     setTipo(opcao.value);
     if (!nomeEditado) setNome(opcao.nome);
+    if (alvoSugerido) {
+      const doTipoSugerido = opcao.value === inicial?.tipo;
+      if (!doTipoSugerido && alvoCentavos === alvoSugerido) setAlvoCentavos(0);
+      if (doTipoSugerido && alvoCentavos === 0) setAlvoCentavos(alvoSugerido);
+    }
     setErro(null);
   }
 

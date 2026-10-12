@@ -15,8 +15,9 @@ export function periodoDaMediaDeSaidas(hoje = new Date()) {
   return { dateFrom: dataIsoLocal(inicio), dateTo: dataIsoLocal(fim) };
 }
 
-// Média das saídas por mês, contando só os meses com movimentação: quem
-// começou a usar o app no mês passado não tem a média dividida por 3.
+// Média das saídas por mês, contando só os meses com saída: quem começou
+// a usar o app no mês passado não tem a média dividida por 3, e um mês só
+// com entradas lançadas não puxa a reserva para baixo.
 // Usa summarizeMonth, a mesma soma do Financeiro (com os ajustes de saída).
 export function mediaDeSaidasMensais(transacoes) {
   const porMes = new Map();
@@ -26,11 +27,15 @@ export function mediaDeSaidasMensais(transacoes) {
     if (!porMes.has(mes)) porMes.set(mes, []);
     porMes.get(mes).push(transacao);
   }
-  if (porMes.size === 0) return null;
   let total = 0;
-  for (const doMes of porMes.values()) total += summarizeMonth(doMes).expense;
-  const media = total / porMes.size;
-  return media > 0 ? media : null;
+  let mesesComSaida = 0;
+  for (const doMes of porMes.values()) {
+    const saidas = summarizeMonth(doMes).expense;
+    if (saidas <= 0) continue;
+    total += saidas;
+    mesesComSaida += 1;
+  }
+  return mesesComSaida > 0 ? total / mesesComSaida : null;
 }
 
 export function sugestoesDeMeta(mediaDeSaidas) {

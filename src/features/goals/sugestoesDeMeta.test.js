@@ -17,6 +17,13 @@ test('a média de saídas divide só pelos meses com movimentação', () => {
 
   const umMes = [saida('2026-09-01', 2500)];
   assert.equal(mediaDeSaidasMensais(umMes), 2500);
+
+  const mesSoComEntrada = [
+    { transaction_date: '2026-07-05', transaction_type: 'income', status: 'completed', amount: 5000 },
+    saida('2026-08-10', 3000),
+    saida('2026-09-01', 3000),
+  ];
+  assert.equal(mediaDeSaidasMensais(mesSoComEntrada), 3000);
 });
 
 test('entradas não entram na média e sem saídas não há média', () => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useSession } from '../../../app/SessionContext.jsx';
 import OutlineButton from '../../../components/ui/OutlineButton';
 import { useTransactions } from '../../../hooks';
@@ -12,6 +12,7 @@ import styles from './GoalSuggestions.module.css';
 // passo 1 (onEscolher recebe null).
 export default function GoalSuggestions({ onEscolher }) {
   const { workspace } = useSession();
+  const tituloId = useId();
   const [periodo] = useState(() => periodoDaMediaDeSaidas());
   const { transactions, isLoading } = useTransactions({
     workspaceId: workspace?.id,
@@ -25,8 +26,8 @@ export default function GoalSuggestions({ onEscolher }) {
   );
 
   return (
-    <section className={styles.empty} aria-labelledby="metas-vazio-titulo">
-      <h2 id="metas-vazio-titulo" className={styles.title}>Nenhuma meta ainda</h2>
+    <section className={styles.empty} aria-labelledby={tituloId}>
+      <h2 id={tituloId} className={styles.title}>Nenhuma meta ainda</h2>
       <p className={styles.text}>Crie uma meta para ver quanto falta e quanto guardar por mês. Comece por uma sugestão:</p>
       <ul className={styles.list}>
         {sugestoes.map((sugestao) => (
@@ -34,6 +35,10 @@ export default function GoalSuggestions({ onEscolher }) {
             <button
               type="button"
               className={styles.option}
+              // A reserva espera a média carregar: sem isso, o passo 2
+              // abriria com o valor zerado.
+              disabled={isLoading && sugestao.tipo === 'emergency_reserve'}
+              aria-busy={isLoading && sugestao.tipo === 'emergency_reserve' ? true : undefined}
               onClick={() => onEscolher({ tipo: sugestao.tipo, alvo: sugestao.alvo })}
             >
               <span className={styles.optionText}>
