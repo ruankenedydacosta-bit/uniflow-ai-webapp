@@ -4,7 +4,6 @@ import {
   CONVERSATION_STYLES,
   resolveConversationStyle,
 } from '../uni-llm/conversationStyle.js';
-import { VOICE_PROVIDER_IDS } from '../uni-voice-tts/voiceProviderRegistry.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedVoice.module.css';
@@ -38,7 +37,7 @@ function BackIcon() {
 
 function SimplifiedVoicePage() {
   const navigate = useNavegar();
-  const { profile, updateVoicePreferences } = useSession();
+  const { profile, updateConversationStyle } = useSession();
   const activeStyle = resolveConversationStyle(profile?.conversation_style);
   const [selectedStyle, setSelectedStyle] = useState(activeStyle);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,11 +56,7 @@ function SimplifiedVoicePage() {
     setIsSaving(true);
     setFeedback(null);
 
-    const result = await updateVoicePreferences({
-      conversationStyle: selectedStyle,
-      // A voz do navegador saiu do produto: a Uni fala só com a voz dela.
-      voiceProvider: VOICE_PROVIDER_IDS.ELEVENLABS,
-    });
+    const result = await updateConversationStyle(selectedStyle);
     setIsSaving(false);
 
     if (result.error) {

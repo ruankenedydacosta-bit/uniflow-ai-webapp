@@ -1,5 +1,13 @@
 # Uni Voice Output Premium Demo V1
 
+> **Removido em 13/10/2026.** A voz fora da conversa em tempo real saiu do app:
+> `src/features/uni-voice-output/`, `src/features/uni-voice-tts/` (botão
+> "Ouvir" e narração das respostas) e as pastas das Edge Functions
+> `generate-uni-premium-voice` e `uni-voice-tts` foram apagadas do repositório.
+> As funções publicadas no Supabase saem com `supabase functions delete`. A voz
+> da Uni é só a conversa em tempo real (`src/features/uni-voice-realtime/`). O
+> texto abaixo fica como registro histórico.
+
 ## 1. Objetivo
 
 A Saída de Voz Premium V1 permite comparar, em apresentações internas e

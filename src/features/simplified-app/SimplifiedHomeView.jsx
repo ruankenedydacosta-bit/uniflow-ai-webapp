@@ -4,7 +4,6 @@ import { useSession } from '../../app/SessionContext.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import UniCard from '../../components/ui/UniCard/index.js';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
-import { VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import QuickSuggestions from '../uni-chat/components/QuickSuggestions.jsx';
 import { PwaInstallExperience, usePwaAutoUpdateBlock } from '../pwa-install/index.js';
 import SimplifiedHomeAgenda from './SimplifiedHomeAgenda.jsx';
@@ -16,7 +15,6 @@ import {
 } from './simplifiedHomeState.js';
 import { getPageLoadGreetingOpening, resolveSimplifiedGreeting } from './simplifiedGreeting.js';
 import { useUniProcessingMessage } from '../uni-chat/useUniProcessingMessage.js';
-import { useTextAudioSync } from '../uni-chat/useTextAudioSync.js';
 import { SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.js';
 import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
@@ -58,8 +56,8 @@ const CLOCK_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minu
 // processamento rotativa NO LUGAR da última resposta (em vez da resposta
 // do turno anterior, que ficaria "presa" na tela enquanto um novo turno já
 // está em andamento). waiting_confirmation fica de fora -- o próprio card
-// de confirmação já comunica "aguardando você"; speaking/success/error/idle
-// já têm sua própria UI (texto final, já revelado ou já visível).
+// de confirmação já comunica "aguardando você"; error/idle já têm sua
+// própria UI.
 const PROCESSING_DISPLAY_STATES = new Set([
   SIMPLIFIED_UNI_STATES.INTERPRETING,
   SIMPLIFIED_UNI_STATES.EXECUTING,
@@ -78,8 +76,6 @@ function CompactResponse({
   categoryChoices = [],
   onChooseCategory,
   interactionState,
-  voiceStatus,
-  voiceMessageId,
   interpretingOperationHint,
   // "voice": dentro da tela de voz (redesign, épico #91). O pedido da pessoa
   // já aparece sob o orb, então sai daqui; a resposta fica centralizada e o
@@ -98,56 +94,18 @@ function CompactResponse({
   const pendingConfirmationMessage = [...messages].reverse()
     .find((message) => message.confirmation?.status === 'pending') ?? null;
 
-  // HOTFIX P0 (2ª investigação) -- CAUSA RAIZ REAL: antes, `activeMessage`
-  // apontava para `lastUni` INCONDICIONALMENTE, então TODA montagem (ex.:
-  // reload da Home) via `useTextAudioSync` nascer em fase 'pending' para a
-  // ÚLTIMA resposta JÁ CONCLUÍDA e persistida -- tratando-a como se
-  // estivesse prestes a tocar (mostrando "Entendendo seu pedido..." e,
-  // depois, revelando-a do zero). `voiceMessageId` é a MESMA fonte de
-  // verdade que o chat completo já usa (UniChatPage.jsx, setVoiceMessageId
-  // em handleSpeakMessage) para saber qual mensagem a voz está REALMENTE
-  // visando -- nasce null a cada mount e só é setado no instante exato de
-  // um speak() real (autoplay de uma resposta nova OU clique manual em
-  // "Ouvir resposta"), nunca por hidratação/reload. Ao gatear
-  // `activeMessage` por essa identidade (em vez de "a última mensagem
-  // qualquer"), uma resposta concluída e persistida nunca mais é tratada
-  // como candidata a reveal/processing só por existir -- ela só entra
-  // nesse fluxo quando ALGUÉM (autoplay do turno vivo ou o próprio
-  // usuário) pede explicitamente para ouvi-la.
-  const isVoiceTargetingLastUni = Boolean(voiceMessageId) && lastUni?.id === voiceMessageId;
-  const textAudioSync = useTextAudioSync({
-    activeMessage: isVoiceTargetingLastUni ? { id: lastUni.id, text: lastUni.text } : null,
-    ttsStatus: voiceStatus,
-  });
-
-  // HOTFIX (bug 2 -- resposta nova aparecia completa e "voltava" para
-  // parcial): enquanto a mensagem ativa de voz ainda está em fase
-  // 'pending' (publicada, mas o áudio real ainda não começou a tocar),
-  // nunca mostra o texto -- nem o antigo, nem uma prévia do novo.
-  const isVoicePendingPlayback = Boolean(
-    lastUni
-    && textAudioSync.activeMessageId === lastUni.id
-    && textAudioSync.phase === 'pending',
-  );
-  // HOTFIX P1.1: nunca expõe o detalhe técnico "preparando o áudio" --
-  // enquanto o áudio ainda não começou a tocar de verdade, continua
-  // mostrando um estado natural já existente do produto (a mesma família
-  // de mensagens do "interpreting"), nunca um estágio novo.
-  const processingState = isVoicePendingPlayback ? 'interpreting' : interactionState;
-
   // Hooks SEMPRE chamados, nunca depois de um return condicional (ver
   // early return "sem lastUser/lastUni" logo abaixo) -- usam valores de
   // fallback seguros quando ainda não há nada para processar/revelar.
-  const processingMessage = useUniProcessingMessage(processingState, {
+  const processingMessage = useUniProcessingMessage(interactionState, {
     actionKind: pendingConfirmationMessage?.confirmation?.actionKind ?? null,
-    operationHint: processingState === 'interpreting' ? interpretingOperationHint : null,
+    operationHint: interactionState === 'interpreting' ? interpretingOperationHint : null,
   });
 
   if (!lastUser && !lastUni) return null;
 
   const showProcessingIndicator = Boolean(
-    isVoicePendingPlayback
-    || (processingMessage && PROCESSING_DISPLAY_STATES.has(interactionState)),
+    processingMessage && PROCESSING_DISPLAY_STATES.has(interactionState),
   );
   // Fallback honesto para estados sem mensagem própria: nunca inventa uma
   // operação específica, reaproveita a mesma frase genérica já usada por
@@ -155,12 +113,6 @@ function CompactResponse({
   const displayedProcessingMessage = processingMessage ?? 'Entendendo seu pedido…';
   const showHomeReply = Boolean(homeReplyBaseline && lastUni && lastUni.id !== homeReplyBaseline.uniId);
   if (!isVoicePresentation && !showProcessingIndicator && !pendingConfirmationMessage && !showHomeReply) return null;
-  // HOTFIX (abandono da revelação progressiva): a resposta nunca aparece
-  // parcialmente -- ou está oculta (pending, cai no indicador de
-  // processamento acima) ou está 100% visível de uma vez, junto com a voz.
-  const uniDisplayText = lastUni && textAudioSync.activeMessageId === lastUni.id
-    ? textAudioSync.displayText
-    : lastUni?.text;
 
   return (
     <section
@@ -176,7 +128,7 @@ function CompactResponse({
         </p>
       ) : (isVoicePresentation || showHomeReply) && lastUni?.text ? (
         <>
-          <p className={styles.uniResponse}>{uniDisplayText}</p>
+          <p className={styles.uniResponse}>{lastUni.text}</p>
           {/* Exclusão recente (#189): o botão fica enquanto o chat ainda
               consegue trazer o lançamento de volta. */}
           {lastUni.undo?.status === 'available' && typeof onUndoAction === 'function' ? (
@@ -196,10 +148,6 @@ function CompactResponse({
           ) : null}
         </>
       ) : null}
-      {/* HOTFIX P1.4: "Ouvir resposta" removido do card compacto da Home --
-          o fluxo principal aqui é sempre automático (autoplay). O botão
-          continua existindo no chat completo (MessageBubble.jsx), que
-          preserva a experiência de replay manual já aprovada. */}
       {/* O rascunho continua na tela enquanto espera confirmação, mesmo
           depois de outra resposta da Uni: é ele que "Confirma" grava. */}
       {pendingConfirmationMessage ? (
@@ -229,11 +177,8 @@ function SimplifiedHomeView({
   isExecuting,
   executionError,
   aiStatus,
-  voiceController,
-  voiceMessageId,
   interpretingOperationHint,
   onSendTranscript,
-  onBeforeVoiceStart,
   onConfirmAction,
   onCancelAction,
   onUndoAction,
@@ -241,7 +186,6 @@ function SimplifiedHomeView({
   onSaveEditAction,
   categoryChoices = [],
   onChooseCategory,
-  onRealtimeVoiceActiveChange,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -260,13 +204,11 @@ function SimplifiedHomeView({
   const pendingConfirmation = messages.some(
     (message) => message.confirmation?.status === 'pending',
   );
-  const isSpeaking = voiceController.status === VOICE_TTS_STATUS.PLAYING;
   const interactionState = resolveSimplifiedUniState({
     isTyping,
     isExecuting,
     hasPendingConfirmation: pendingConfirmation,
     hasError: Boolean(executionError) || aiStatus === 'error',
-    isSpeaking,
   });
   const isInteractionBusy = isTyping || isExecuting;
 
@@ -305,7 +247,6 @@ function SimplifiedHomeView({
     messages,
     isBusy: isTyping || isExecuting,
     onSendTranscript,
-    onActiveChange: onRealtimeVoiceActiveChange,
     onSaveNamePronunciation: saveNamePronunciation,
   });
   const stopRealtime = realtime.stop;
@@ -373,9 +314,6 @@ function SimplifiedHomeView({
 
   // Chamado dentro do toque: o iOS só libera microfone e áudio ali.
   function beginRealtimeConversation() {
-    // Para a voz do chat (UniChatPage.handleBeforeVoiceStart): a Uni da
-    // conversa não fala por cima dela.
-    onBeforeVoiceStart?.();
     setVoiceConversationPreviousIds(snapshotVoiceConversationStart(messages));
     void realtime.start({
       workspaceId: workspace?.id,
@@ -488,8 +426,6 @@ function SimplifiedHomeView({
       onCancelAction={handleCardCancel}
       onUndoAction={handleCardUndo}
       interactionState={interactionState}
-      voiceStatus={voiceController.status}
-      voiceMessageId={voiceMessageId}
       interpretingOperationHint={interpretingOperationHint}
       presentation={isVoiceModeOpen ? 'voice' : 'home'}
       homeReplyBaseline={homeReplyBaseline}

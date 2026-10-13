@@ -163,23 +163,15 @@ test('falha não marca o clip e permite nova tentativa', async () => {
   assert.equal(manager.hasPlayed('greeting.welcome'), false);
 });
 
-test('provider persiste acima das rotas e o botão não possui player paralelo', async () => {
-  const [mainSource, buttonSource, gestureSource] = await Promise.all([
+test('provider persiste acima das rotas e o botão central não toca áudio gravado', async () => {
+  const [mainSource, buttonSource] = await Promise.all([
     readFile(new URL('../../main.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../../layouts/mobile-app-shell/UniCenterButton.jsx', import.meta.url), 'utf8'),
-    readFile(new URL('../uni-instant/usePressAndHold.js', import.meta.url), 'utf8'),
   ]);
   assert.match(mainSource, /<VoiceProvider>[\s\S]*?<App \/>/);
-  assert.match(buttonSource, /useVoiceManager\(\)/);
-  assert.match(buttonSource, /playContext\('returning_user'/);
-  assert.match(buttonSource, /Promise\.race\([\s\S]*?700/);
-  assert.doesNotMatch(buttonSource, /createVoiceManager|new Audio/);
-  // O botão não grava mais (segurar para falar saiu): nenhum .stop() ou
-  // .dispose() no arquivo, que indicaria um player de áudio paralelo.
-  assert.doesNotMatch(buttonSource, /\.stop\(\)|\.dispose\(\)/);
-  assert.ok(buttonSource.indexOf("playContext('returning_user'") < buttonSource.indexOf('navigate(path)'));
-  assert.match(buttonSource, /playContext\('returning_user'[\s\S]*?\.catch\(\(\) => false\)[\s\S]*?navigate\(path\)/);
-  assert.match(gestureSource, /if \(wasHolding\)[\s\S]*?onHoldEnd[\s\S]*?else if \(wasPressing/);
+  // A voz fora da conversa em tempo real saiu: o toque só navega.
+  assert.doesNotMatch(buttonSource, /useVoiceManager|playContext|createVoiceManager|new Audio|\.stop\(\)|\.dispose\(\)/);
+  assert.match(buttonSource, /navigate\(path\)/);
 });
 
 test('playContext registra histórico somente após playing confirmado', async () => {

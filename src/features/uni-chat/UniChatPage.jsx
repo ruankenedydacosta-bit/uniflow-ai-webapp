@@ -137,22 +137,8 @@ import {
 } from '../uni-interpret/uniInterpretConsulta.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
-import {
-  useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS, MAX_TTS_TEXT_LENGTH, buildSpeechText,
-  normalizeFinancialTextForSpeech,
-} from '../uni-voice-tts';
-import {
-  hasAutoSpokenMessage,
-  markAutoSpokenMessage,
-  markRestoredMessagesAsSpoken,
-} from '../uni-voice-tts/spokenMessageSession.js';
-import {
-  hasNarratedText,
-  markNarratedText,
-} from '../uni-voice-tts/narratedTextSession.js';
 import { useUniProcessingMessage } from './useUniProcessingMessage.js';
 import { resolveOperationHintFromIntent } from './uniProcessingMessages.js';
-import { useTextAudioSync } from './useTextAudioSync.js';
 import { useAccounts, useCategories, useTransactions, useFinancialBalances, useWorkspaceRole } from '../../hooks';
 import { useGoals } from '../goals/useGoals';
 import { buildFutureProjections } from '../future/futureService';
@@ -357,9 +343,6 @@ export default function UniChatPage({ variant = 'full' }) {
   const location = useLocation();
   const initialContextRef = useRef(false);
   const isSimplifiedExperience = variant === 'simplified-home' || variant === 'simplified';
-  const automaticVoiceSource = variant === 'simplified-home'
-    ? 'home_response'
-    : 'chat_response';
   const effectiveWorkspace = isSimplifiedExperience
     ? simplifiedProduct?.workspace ?? null
     : workspace;
@@ -371,18 +354,7 @@ export default function UniChatPage({ variant = 'full' }) {
   const conversationStyle = resolveConversationStyle(profile?.conversation_style);
   const financialWorkspaceType = workspaceContextType;
 
-  // ELEVEN2: fundacao geral de TTS (ELEVEN1) conectada ao chat -- substitui
-  // o uso anterior de useUniVoiceOutput (infra de demo com allowlist) NESTE
-  // ponto de integracao. uni-voice-output continua existindo/testado, so
-  // deixou de ser consumido pelo chat principal (evita dois players/estados
-  // de voz ativos ao mesmo tempo).
-  const uniVoice = useUniVoiceTts();
-  const voicePreference = useVoicePreference();
   const uniLlm = useUniLlm();
-  // Qual mensagem o estado COMPARTILHADO de uniVoice.status representa
-  // agora -- so essa mensagem mostra Gerando/Reproduzindo/Pausado/Erro;
-  // as demais sempre veem IDLE (botao "Ouvir" neutro).
-  const [voiceMessageId, setVoiceMessageId] = useState(null);
 
   // Texto da última pergunta do usuário, para a política de resposta
   // financeira pública saber o que foi pedido.
@@ -392,66 +364,9 @@ export default function UniChatPage({ variant = 'full' }) {
   // Resetado na troca de conversa.
   const conversationalMemoryRef = useRef(createConversationalMemory());
 
-  // BLOCO VOZ 1: SEMPRE fala, mesmo quando o texto é longo demais para o
-  // limite da Edge Function (MAX_TTS_TEXT_LENGTH) -- gera uma versão curta e
-  // natural (buildSpeechText) para a voz, mas nunca altera o texto completo
-  // exibido na tela (message.text no MessageBubble continua intacto).
-  // HOTFIX FINAL P3: normalizeFinancialTextForSpeech roda ANTES de
-  // buildSpeechText (nunca depois) -- o corte por tamanho precisa operar
-  // sobre o texto já por extenso (mais longo que "R$ 497,80"), senão o
-  // corte poderia terminar no meio de uma expressão monetária. Só afeta o
-  // texto enviado ao provider de TTS -- message.text (visual/persistido)
-  // nunca é tocado.
-  const handleSpeakMessage = useCallback((message, requestMetadata = {}) => {
-    if (!message?.text) return;
-    setVoiceMessageId(message.id);
-    void uniVoice.speak(
-      buildSpeechText(normalizeFinancialTextForSpeech(message.text), MAX_TTS_TEXT_LENGTH),
-      {
-        messageId: message.id,
-        source: requestMetadata.source ?? 'manual_replay',
-      },
-    );
-  }, [uniVoice]);
-
-  // Com a conversa em tempo real aberta, quem fala é a Uni da conversa:
-  // a voz antiga não narra as respostas por cima dela (épico #116).
-  const realtimeVoiceActiveRef = useRef(false);
-  const handleRealtimeVoiceActiveChange = useCallback((active) => {
-    realtimeVoiceActiveRef.current = active;
-    if (active) uniVoice.stop();
-  }, [uniVoice]);
-
-  const handleAutomaticSpeakMessage = useCallback((message) => {
-    if (realtimeVoiceActiveRef.current) return;
-    handleSpeakMessage(message, { source: automaticVoiceSource });
-  }, [automaticVoiceSource, handleSpeakMessage]);
-
-  // BLOCO VOZ 1: ponto ÚNICO para narrar um efeito colateral que NÃO gera
-  // uma nova mensagem no array `messages` (ex.: erro de confirmação escrito
-  // em message.confirmation.confirmationError) -- sem isso, esses avisos
-  // nunca eram falados, pois o autoplay só observa `messages.at(-1).text`.
-  // Só chamado por reportConfirmationError (nunca espalhado pelo arquivo).
-  // Mesma política de narração do restante da Home: só quando simplificada
-  // e com a preferência de voz ligada. Falha de voz é fire-and-forget
-  // (void + hook que nunca lança) -- nunca quebra o fluxo de confirmação.
-  const speakSideEffectNotice = useCallback((text) => {
-    if (!isSimplifiedExperience || !voicePreference.enabled) return;
-    if (!text) return;
-    if (realtimeVoiceActiveRef.current) return;
-    void uniVoice.speak(buildSpeechText(normalizeFinancialTextForSpeech(text), MAX_TTS_TEXT_LENGTH), {
-      messageId: null,
-      source: automaticVoiceSource,
-    });
-  }, [automaticVoiceSource, isSimplifiedExperience, voicePreference.enabled, uniVoice]);
-
-  // BLOCO VOZ 1: registro + narração de erro de confirmação num ponto
-  // central único (conta/categoria/transação). O erro fica visível no card
-  // (confirmationError) mas NUNCA entra em `messages` -- por isso o
-  // autoplay jamais o falaria sem esta chamada. Narra uma única vez por
-  // erro; mensagens que entram em `messages` (pergunta, confirmação,
-  // sucesso) continuam sendo faladas exclusivamente pelo autoplay, sem
-  // duplicação.
+  // Registro de erro de confirmação num ponto central único (conta/
+  // categoria/transação). O erro fica visível no card (confirmationError)
+  // e nunca entra em `messages`.
   function reportConfirmationError(id, errorText) {
     setExecutionError(errorText);
     setMessages((prev) => prev.map((message) => (
@@ -459,20 +374,7 @@ export default function UniChatPage({ variant = 'full' }) {
         ? { ...message, confirmation: { ...message.confirmation, confirmationError: errorText } }
         : message
     )));
-    speakSideEffectNotice(errorText);
   }
-
-  const handlePauseResumeVoice = useCallback(() => {
-    if (uniVoice.status === VOICE_TTS_STATUS.PLAYING) {
-      uniVoice.pause();
-    } else if (uniVoice.status === VOICE_TTS_STATUS.PAUSED) {
-      uniVoice.resume();
-    }
-  }, [uniVoice]);
-
-  const handleStopVoice = useCallback(() => {
-    uniVoice.stop();
-  }, [uniVoice]);
 
   const financialFallback = isSimplifiedExperience
     ? EMPTY_FINANCIAL_FALLBACK
@@ -2639,11 +2541,9 @@ export default function UniChatPage({ variant = 'full' }) {
       workspaceId: effectiveWorkspace?.id,
       mode: correctMode,
     });
-    uniVoice.stop();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
     saveHistory(updated);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConversations(updated);
     setMode(correctMode);
     setPendingAction(null);
@@ -2675,9 +2575,8 @@ export default function UniChatPage({ variant = 'full' }) {
       saveActiveId(c.id);
     } else {
       // FASE UNI PIPE: o aviso de perfil alterado é uma resposta da Uni e
-      // passa pelo pipeline oficial (render + autoplay + persistência) --
-      // nunca um setMessages/buildUniMessage solto que o autoplay precisaria
-      // "pegar de carona" para narrar.
+      // passa pelo pipeline oficial (render + persistência) -- nunca um
+      // setMessages/buildUniMessage solto.
       createAssistantResponse(
         correctMode === 'empresa'
           ? 'Perfil alterado para Empresa. Vamos falar sobre o financeiro do seu negócio.'
@@ -2702,43 +2601,20 @@ export default function UniChatPage({ variant = 'full' }) {
     setConversations(updated);
   }, [messages, activeId, mode, conversations]);
 
-  // BLOCO VOZ HIDRATAÇÃO (reload/login): distinção explícita entre a fase
-  // de hidratação inicial, as mensagens restauradas e as mensagens novas
-  // da sessão atual -- o autoplay NUNCA narra conteúdo restaurado.
-  //
-  // PROBLEMA REAL: spokenMessageSession.js é um registro em memória de
-  // módulo -- sobrevive a unmount/remount e troca de rota (navegação
-  // Home → Registros/Conta/Uni → Home), mas é DESCARTADO em reload de
-  // página e no logout (resetAutoSpokenMessages). Com o registro vazio,
-  // o histórico restaurado parecia mensagem nova e o autoplay narrava a
-  // última resposta antiga AO MESMO TEMPO que a saudação tocava (duas
-  // vozes sobrepostas).
-  //
-  // Solução determinística (sem timeout):
-  // 1. `historyHydrated`/`historyHydratedRef` -- marco `autoplayArmed`: o
-  //    autoplay só dispara depois que a hidratação terminou;
-  // 2. `pendingRestoresRef` -- conta restaurações assíncronas do Supabase
-  //    ainda em voo (a fase de hidratação não terminou enquanto houver
-  //    alguma);
-  // 3. snapshot no armamento: TODAS as mensagens presentes (histórico
-  //    restaurado) são marcadas como já narradas ANTES de o autoplay ser
-  //    habilitado -- conteúdo antigo nunca volta a falar;
-  // 4. marcas também nos próprios pontos de restauração
-  //    (loadMessages/switchConversation): mesmo uma restauração que assente
-  //    depois do armamento nunca fala;
+  // Hidratação (reload/login): `historyHydrated` marca o fim da fase de
+  // hidratação inicial. `pendingRestoresRef` conta restaurações assíncronas
+  // do Supabase ainda em voo; a hidratação só termina quando não houver
+  // nenhuma. O posicionamento da rolagem reage a esse marco.
   const [historyHydrated, setHistoryHydrated] = useState(false);
   const historyHydratedRef = useRef(false);
   const pendingRestoresRef = useRef(0);
 
-  const maybeArmAutoplay = useCallback(() => {
+  const maybeMarkHistoryHydrated = useCallback(() => {
     if (historyHydratedRef.current) return;
     if (pendingRestoresRef.current > 0) return;
     // Sessão ainda não carregada (modo configurado): espera o user.id.
     if (isSupabaseConfigured && !user?.id) return;
     historyHydratedRef.current = true;
-    // Snapshot da hidratação: o histórico restaurado presente neste
-    // instante é marcado como já narrado -- nunca fala.
-    markRestoredMessagesAsSpoken(user?.id, messages);
     // BLOCO VOZ ID: reserva os IDs deste snapshot -- mensagens novas nunca
     // colidem com o histórico restaurado.
     reserveMessageIds(messages);
@@ -2746,77 +2622,30 @@ export default function UniChatPage({ variant = 'full' }) {
   }, [messages, user]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- armamento controlado do autoplay: só dispara UMA vez (guarda historyHydratedRef), nunca em loop; sem ele, o autoplay poderia narrar histórico restaurado antes da hidratação concluir.
-    maybeArmAutoplay();
-  }, [maybeArmAutoplay]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- marco da hidratação: só dispara UMA vez (guarda historyHydratedRef), nunca em loop.
+    maybeMarkHistoryHydrated();
+  }, [maybeMarkHistoryHydrated]);
 
   // BLOCO VOZ HIDRATAÇÃO: reserva os IDs do histórico restaurado já no
   // primeiro render (mensagens iniciais vêm de resolveInitialConversationState)
   // -- nextMessageId nunca devolve um id reservado, então uma mensagem NOVA
-  // nunca colide com uma mensagem restaurada (nem antes do armamento).
-  // Idempotente: também roda no snapshot do armamento e nos pontos de
+  // nunca colide com uma mensagem restaurada (nem antes da hidratação).
+  // Idempotente: também roda no fim da hidratação e nos pontos de
   // restauração assíncrona sem efeito colateral.
   useEffect(() => {
     reserveMessageIds(messages);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // BLOCO UNI 2 / BLOCO VOZ 1: reprodução automática da resposta ATUAL da
-  // Uni -- causa raiz da regressão original relatada era a AUSÊNCIA total
-  // deste efeito (só a saudação tinha reprodução automática, ver
-  // SimplifiedHomeView.jsx). BLOCO VOZ 1: toda resposta final, curta ou
-  // longa, fala -- textos acima do limite da Edge Function ganham versão
-  // curta e natural (buildSpeechText) dentro de handleSpeakMessage, sem
-  // alterar o texto visível. Só vale para Home/`/app/uni`
-  // (isSimplifiedExperience); o chat completo continua manual (botão
-  // "Ouvir" por mensagem). Guardas:
-  // - hasAutoSpokenMessage/markAutoSpokenMessage (spokenMessageSession.js):
-  //   registro em nível de MÓDULO separado por usuário (user.id) -- sobrevive
-  //   a unmount/remount e troca de rota. Um useRef local morria ao sair da
-  //   Home e o histórico restaurado ao voltar refazia a narração da mensagem
-  //   antiga; o registro nunca fala a MESMA mensagem duas vezes na sessão nem
-  //   refala uma mensagem restaurada (cada id só é narrado uma vez, na ordem
-  //   em que chega);
-  // - só considera a ÚLTIMA mensagem (messages.at(-1)) -- se ela for do
-  //   usuário (acabou de enviar, Uni ainda não respondeu), não há nada
-  //   novo para falar ainda;
-  // - handleSpeakMessage já encerra qualquer áudio anterior antes de
-  //   iniciar o novo, internamente (ver o provider de TTS em
-  //   uni-voice-tts/), então uma resposta nova sempre interrompe a
-  //   anterior corretamente,
-  //   sem que este efeito precise de nenhuma limpeza (cleanup) própria --
-  //   um cleanup aqui que chamasse stop() poderia cancelar por engano a
-  //   fala que ACABOU de começar para a mensagem seguinte.
-  useEffect(() => {
-    if (!isSimplifiedExperience || !voicePreference.enabled) return;
-    // BLOCO VOZ HIDRATAÇÃO: autoplay só depois da hidratação inicial
-    // (sessão carregada + histórico restaurado) --
-    // mensagens restauradas já foram marcadas como narradas e nunca falam.
-    if (!historyHydrated) return;
-    const lastMessage = messages.at(-1);
-    if (!lastMessage || lastMessage.from !== 'uni' || !lastMessage.text) return;
-    if (hasAutoSpokenMessage(user?.id, lastMessage.id)) return;
-    markAutoSpokenMessage(user?.id, lastMessage.id);
-    handleAutomaticSpeakMessage(lastMessage);
-  }, [messages, isSimplifiedExperience, voicePreference.enabled, handleAutomaticSpeakMessage, user?.id, historyHydrated]);
-
-  // FASE UNI PIPE: pipeline oficial de resposta da Uni (texto + voz).
+  // FASE UNI PIPE: pipeline oficial de resposta da Uni.
   //
   // createAssistantResponse é o ÚNICO ponto de saída de resposta do chat:
-  // cria a mensagem → persiste (quando aplicável) → render → autoplay →
-  // buildSpeechText → uniVoice.speak, na ordem exata. Todo fluxo de
-  // resposta (FinancialQueryEngine, LLM, Pending Actions, confirmações,
-  // planos financeiros, avisos, erros e fluxos intermediários) passa por
-  // ele — nenhum pushMessage solto volta a falar por fora.
-  //
-  // Gates do autoplay imediato: idênticos aos do efeito de autoplay
-  // (experiência simplificada + voz habilitada + hidratação concluída).
-  // Se os gates fecham neste instante, a mensagem
-  // fica sem marca e o efeito de autoplay a narra assim que abrirem — a
-  // marcação só acontece no momento de falar, nunca há duplicação.
+  // cria a mensagem → persiste (quando aplicável) → render, na ordem exata.
+  // Todo fluxo de resposta (FinancialQueryEngine, LLM, Pending Actions,
+  // confirmações, planos financeiros, avisos, erros e fluxos intermediários)
+  // passa por ele.
   // A política de resposta financeira pública entra no ÚNICO ponto de
-  // construção de mensagem do pipeline oficial (buildMessage) — nenhum
-  // caminho de resposta fala por fora.
+  // construção de mensagem do pipeline oficial (buildMessage).
   const buildGuidedUniMessage = useCallback((text, messageOptions = {}) => {
     const publicText = enforcePublicFinancialResponsePolicy({
       text: typeof text === 'string' ? text : '',
@@ -2830,17 +2659,6 @@ export default function UniChatPage({ variant = 'full' }) {
     buildMessage: buildGuidedUniMessage,
     pushMessage,
     persistMessage: syncMessageToSupabase,
-    shouldAutoSpeak: () => (
-      isSimplifiedExperience
-      && voicePreference.enabled
-      && historyHydrated
-    ),
-    hasSpoken: hasAutoSpokenMessage,
-    markSpoken: markAutoSpokenMessage,
-    hasNarratedText,
-    markNarratedText,
-    speakMessage: handleAutomaticSpeakMessage,
-    userId: user?.id,
   });
 
   useEffect(() => {
@@ -2850,8 +2668,8 @@ export default function UniChatPage({ variant = 'full' }) {
     if (current.source !== 'supabase') return;
 
     const requestId = ++loadRequestIdRef.current;
-    // BLOCO VOZ HIDRATAÇÃO: restauração assíncrona em voo -- o autoplay
-    // só é armado quando TODAS as restaurações assentarem.
+    // Restauração assíncrona em voo: a hidratação só termina quando TODAS
+    // as restaurações assentarem.
     pendingRestoresRef.current += 1;
 
     dataService.loadMessages(activeId).then((loadedMessages) => {
@@ -2859,11 +2677,8 @@ export default function UniChatPage({ variant = 'full' }) {
       if (!loadedMessages || loadedMessages.length === 0) return;
       if (activeIdRef.current !== activeId) return;
 
-      // BLOCO VOZ HIDRATAÇÃO: o que chega aqui é histórico RESTAURADO
-      // (conteúdo antigo, não evento novo) -- marcado como já narrado para
-      // o autoplay, mesmo que esta restauração assente depois do
-      // armamento.
-      markRestoredMessagesAsSpoken(user?.id, loadedMessages);
+      // O que chega aqui é histórico RESTAURADO: os ids são reservados,
+      // mesmo que esta restauração assente depois da hidratação.
       reserveMessageIds(loadedMessages);
 
       // BUG 1 (Sprint 4, Bloco 4.0): merge por identidade estável -- ver
@@ -2880,11 +2695,11 @@ export default function UniChatPage({ variant = 'full' }) {
       );
     }).catch(() => {
       // S8: falha de restore nunca pode deixar pendingRestoresRef preso --
-      // senão o autoplay de voz fica desarmado para sempre. O estado da
+      // senão a hidratação nunca termina. O estado da
       // conversa segue recuperável: o usuário pode tentar de novo.
       if (requestId !== loadRequestIdRef.current) return;
     }).finally(() => {
-      // decremento SEMPRE roda (sucesso ou erro), rearmando o autoplay.
+      // decremento SEMPRE roda (sucesso ou erro), liberando a hidratação.
       pendingRestoresRef.current -= 1;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3072,9 +2887,6 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!conv || (isSimplifiedExperience && conv.mode !== SIMPLIFIED_CHAT_MODE)) return;
     const convMode = conv.mode || mode;
 
-    uniVoice.stop();
-    setVoiceMessageId(null);
-
     const requestId = ++loadRequestIdRef.current;
 
     // Limpar pending action da conversa ANTIGA no sessionStorage antes de trocar.
@@ -3094,11 +2906,8 @@ export default function UniChatPage({ variant = 'full' }) {
     invalidateAgendaRequest({ conversationId: id, mode: convMode });
     setActiveId(id);
     setMessages(conv.messages || []);
-    // BLOCO VOZ HIDRATAÇÃO: trocar de conversa RESTAURA conteúdo antigo
-    // (seleção no Histórico, reconcile inicial pós-reload, troca de
-    // perfil) -- nunca é autoplay; as mensagens restauradas são marcadas
-    // como já narradas.
-    markRestoredMessagesAsSpoken(user?.id, conv.messages || []);
+    // Trocar de conversa RESTAURA conteúdo antigo (seleção no Histórico,
+    // reconcile inicial pós-reload, troca de perfil): os ids são reservados.
     reserveMessageIds(conv.messages || []);
     if (!isSimplifiedExperience && convMode !== mode) {
       switchWorkspace(modeToWorkspaceType(convMode));
@@ -3134,8 +2943,6 @@ export default function UniChatPage({ variant = 'full' }) {
         if (!loadedMessages || loadedMessages.length === 0) return;
         if (activeIdRef.current !== id) return;
         if (loadedMessages.length > conv.messages.length) {
-          // BLOCO VOZ HIDRATAÇÃO: histórico restaurado -- nunca fala.
-          markRestoredMessagesAsSpoken(user?.id, loadedMessages);
           reserveMessageIds(loadedMessages);
           setMessages(loadedMessages);
           setConversations((prev) =>
@@ -3831,9 +3638,7 @@ export default function UniChatPage({ variant = 'full' }) {
             });
           }
           // FASE UNI PIPE: a resposta do FinancialQueryEngine passa pelo
-          // pipeline oficial (cria → persiste → render → autoplay → fala),
-          // garantindo que TODA consulta respondida com dados estruturados
-          // também seja narrada pela voz, sem chamada direta de speak.
+          // pipeline oficial (cria → persiste → render).
           createAssistantResponse(
             engineOutcome.response.text,
             { highlight: engineOutcome.response.highlight },
@@ -4334,8 +4139,6 @@ export default function UniChatPage({ variant = 'full' }) {
     if (isSimplifiedExperience || next === mode) return;
     invalidateAgendaRequest({ mode: next });
     setIsTyping(false);
-    uniVoice.stop();
-    setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
     saveHistory(updated);
     setConversations(updated);
@@ -4381,8 +4184,6 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function handleNewChat() {
-    uniVoice.stop();
-    setVoiceMessageId(null);
     const updated = persistConversation(conversations, activeId, messages, mode);
     const conv = createLocalConversation(mode);
     invalidateAgendaRequest({ conversationId: conv.id, mode });
@@ -4434,8 +4235,6 @@ export default function UniChatPage({ variant = 'full' }) {
 
     const withRemoval = conversations.filter((c) => c.id !== id);
     if (deletingActive) {
-      uniVoice.stop();
-      setVoiceMessageId(null);
       const conv = createLocalConversation(mode);
       invalidateAgendaRequest({ conversationId: conv.id, mode });
       const nextList = [...withRemoval, conv];
@@ -4999,14 +4798,9 @@ export default function UniChatPage({ variant = 'full' }) {
     setPendingActionStack(null);
   }
 
-  function handleBeforeVoiceStart() {
-    uniVoice.stop();
-    setVoiceMessageId(null);
-  }
-
   // FASE ESTADOS DE PROCESSAMENTO: fonte única (hooks compartilhados com
   // SimplifiedHomeView -- ver CompactResponse) para a mensagem rotativa de
-  // processamento e a revelação de texto sincronizada à voz. Calculado
+  // processamento. Calculado
   // ANTES do branch de retorno de `variant === 'simplified-home'` (hooks
   // nunca podem ficar depois de um return condicional).
   const pendingConfirmationMessage = useMemo(
@@ -5053,12 +4847,6 @@ export default function UniChatPage({ variant = 'full' }) {
     actionKind: pendingConfirmationMessage?.confirmation?.actionKind ?? null,
     operationHint: interpretingOperationHint,
   });
-  const activeVoiceMessage = useMemo(() => {
-    if (!voiceMessageId) return null;
-    const found = messages.find((m) => m.id === voiceMessageId);
-    return found ? { id: found.id, text: found.text } : null;
-  }, [voiceMessageId, messages]);
-  const textAudioSync = useTextAudioSync({ activeMessage: activeVoiceMessage, ttsStatus: uniVoice.status });
   // HOTFIX FINAL (chaves duplicadas ainda chegando ao render): barreira
   // final de segurança, aplicada só na lista que o chat completo realmente
   // renderiza (ver dedupeMessagesForRender em mergeRestoredMessages.js) --
@@ -5082,11 +4870,8 @@ export default function UniChatPage({ variant = 'full' }) {
         isExecuting={isExecutingAction}
         executionError={executionError}
         aiStatus={aiStatus}
-        voiceController={uniVoice}
-        voiceMessageId={voiceMessageId}
         interpretingOperationHint={interpretingOperationHint}
         onSendTranscript={sendText}
-        onBeforeVoiceStart={handleBeforeVoiceStart}
         onConfirmAction={handleConfirmAction}
         onCancelAction={handleCancelAction}
         onUndoAction={handleDesfazerExclusao}
@@ -5094,7 +4879,6 @@ export default function UniChatPage({ variant = 'full' }) {
         onSaveEditAction={handleSaveEditAction}
         categoryChoices={categoryChoices}
         onChooseCategory={handleCategoryChoice}
-        onRealtimeVoiceActiveChange={handleRealtimeVoiceActiveChange}
       />
     );
   }
@@ -5153,16 +4937,6 @@ export default function UniChatPage({ variant = 'full' }) {
                 onSaveEditAction={handleSaveEditAction}
                 isExecuting={isExecutingAction}
                 executionError={message.confirmation?.status === 'pending' ? executionError : null}
-                voiceEnabled={voicePreference.enabled}
-                voiceStatus={uniVoice.status}
-                voiceError={uniVoice.error}
-                isActiveVoiceMessage={voiceMessageId === message.id}
-                onSpeakMessage={handleSpeakMessage}
-                onPauseResumeVoice={handlePauseResumeVoice}
-                onStopVoice={handleStopVoice}
-                displayText={
-                  textAudioSync.activeMessageId === message.id ? textAudioSync.displayText : undefined
-                }
                 processingLabel={
                   message.confirmation?.status === 'pending' ? chatProcessingMessage ?? undefined : undefined
                 }

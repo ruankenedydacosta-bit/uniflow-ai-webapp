@@ -4,15 +4,14 @@
 // Por que existe: nextId() antigo era um contador de módulo que recomeçava a
 // cada reload -- com o histórico restaurado (mensagens restauradas preservam
 // os IDs originais via client_message_id), um contador reiniciado podia gerar
-// o MESMO id de uma mensagem restaurada (ex.: msg-7). Como o autoplay marca
-// mensagens restauradas como já narradas (markRestoredMessagesAsSpoken), a
-// mensagem NOVA com o id colidido era considerada já narrada e nunca falava.
+// o MESMO id de uma mensagem restaurada (ex.: msg-7), e duas mensagens com a
+// mesma chave se confundiam na tela e na persistência.
 //
 // Solução (sem Date.now/Math.random, 100% determinística):
 // 1. todo id gerado é msg-N com N monotonicamente crescente;
-// 2. mensagens restauradas são RESERVADAS (reserveMessageIds) nos mesmos
-//    pontos em que o autoplay as marca como já narradas -- IDs reservados
-//    nunca são reutilizados e elevam o piso do contador;
+// 2. mensagens restauradas são RESERVADAS (reserveMessageIds) em todo ponto
+//    de restauração -- IDs reservados nunca são reutilizados e elevam o
+//    piso do contador;
 // 3. assim, um id novo nunca coincide com um id restaurado, em qualquer
 //    ordem de restauração, em qualquer reload.
 //

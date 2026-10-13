@@ -1100,9 +1100,9 @@ test('preferência de movimento reduzido continua desligando a análise de voz v
 });
 
 // ============================================================================
-// HOTFIX P1.4: "Ouvir resposta" foi removido do card compacto da Home --
-// o fluxo principal ali é sempre automático (autoplay). O replay manual
-// continua existindo apenas no chat completo (MessageBubble.jsx).
+// HOTFIX P1.4: o card compacto da Home não tem "Ouvir resposta". Desde
+// 13/10/2026 nenhuma resposta é lida em voz alta fora da conversa em tempo
+// real.
 // ============================================================================
 
 test('HOTFIX P1.4: CompactResponse não tem botão "Ouvir resposta" nem showManualSpeak', async () => {
@@ -1126,12 +1126,11 @@ test('HOTFIX P1.4: SimplifiedHomeView não repassa onSpeakMessage/voiceEnabled p
   assert.doesNotMatch(block, /onSpeakMessage=\{onSpeakMessage\}/);
 });
 
-test('abrir a conversa em tempo real para a voz do chat antes de conectar', async () => {
+test('abrir a conversa em tempo real não depende da voz do chat, que saiu', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const begin = home.slice(home.indexOf('function beginRealtimeConversation() {'));
-  assert.match(begin, /^[^}]*onBeforeVoiceStart\?\.\(\);[^}]*realtime\.start\(/);
-  const chat = await source('../uni-chat/UniChatPage.jsx');
-  assert.match(chat, /function handleBeforeVoiceStart\(\) \{\s*uniVoice\.stop\(\);/);
+  assert.match(begin, /^[^}]*realtime\.start\(/);
+  assert.doesNotMatch(home, /voiceController|onBeforeVoiceStart|uni-voice-tts/);
 });
 
 test('rótulos do botão central usam tipografia menor sem alterar o orb', async () => {

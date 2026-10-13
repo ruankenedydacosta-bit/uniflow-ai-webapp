@@ -41,14 +41,10 @@ export function isRealtimeConversationActive(status) {
 //
 // announceScreenAction(acao) vem antes de o chat tratar um toque no card
 // (REALTIME_SCREEN_ACTIONS): quando a resposta do chat chega, a Uni a fala.
-//
-// onActiveChange avisa o chat para não falar as respostas com a voz antiga
-// enquanto a conversa está aberta: quem fala é a Uni da conversa.
 export function useRealtimeUniConversation({
   messages,
   isBusy,
   onSendTranscript,
-  onActiveChange,
   onSaveNamePronunciation,
 }) {
   const messagesRef = useRef(messages);
@@ -178,14 +174,6 @@ export function useRealtimeUniConversation({
     if (outcome.discard) return;
     narrateScreenEvent(buildScreenActionInstructions(screenAction.action, outcome));
   }, [messages, isBusy, narrateScreenEvent]);
-
-  const onActiveChangeRef = useRef(onActiveChange);
-  useEffect(() => {
-    onActiveChangeRef.current = onActiveChange;
-  });
-  useEffect(() => {
-    onActiveChangeRef.current?.(isActive);
-  }, [isActive]);
 
   return { ...session, isActive, announceScreenAction };
 }

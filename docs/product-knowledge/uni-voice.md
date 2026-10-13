@@ -2,13 +2,13 @@
 
 ## Finalidade
 
-Falar com a Uni e ouvir respostas escolhidas pelo usuário.
+Conversar com a Uni por voz, em tempo real.
 
 ## Onde encontrar
 
-Toque na Uni, no centro da barra inferior, para abrir a tela de voz. Falar com
-a Uni é só por ela: o campo da conversa (`/app/uni`) recebe apenas texto. Na
-conversa, o botão "Ouvir" fica abaixo das respostas.
+Toque na Uni, no centro da barra inferior, para abrir a tela de voz. A voz da
+Uni existe só nessa conversa. Na conversa por texto (`/app/uni`), o campo
+recebe apenas texto e as respostas não são lidas em voz alta.
 
 ## Passo a passo
 
@@ -86,14 +86,8 @@ Cada plano tem uma cota mensal de minutos de conversa por voz (Essencial 20,
 Uni Voz 60, Uni Voz Plus 180). Os minutos restantes ficam em Conta → Seu plano.
 Quando eles acabam, use o texto, que não tem limite.
 
-1. Tocar em "Ouvir" abaixo de uma resposta da Uni.
-2. O áudio é gerado (ou reaproveitado do cache) e tocado automaticamente após esse toque — **não existe reprodução automática sem essa ação do usuário**.
-3. É possível pausar, retomar ou parar a reprodução a qualquer momento.
-4. Iniciar a reprodução de outra mensagem interrompe automaticamente a que estava tocando.
-
-**Reaproveitamento de áudio (cache)**: se a mesma resposta (mesmo texto, mesma voz, mesmo usuário) já foi gerada antes, o aplicativo reproduz o áudio já existente em vez de gerar de novo — isso significa que ouvir a mesma resposta outra vez, mesmo depois de atualizar a página ou de sair e entrar novamente na conta, **não consome créditos adicionais de geração de voz**. O cache é privado por usuário — outro usuário nunca tem acesso ao áudio já gerado por você, mesmo com o texto idêntico.
-
-**Desativar a voz**: em Configurações → Preferências, desligar o interruptor "Permitir voz nas respostas da Uni". Com a voz desativada, o botão "Ouvir" some das respostas.
+Para não usar a voz, escreva na conversa por texto: ela não fala nem gasta
+minutos.
 
 ## Diferenças PF/PJ
 
@@ -106,29 +100,26 @@ Mesma experiência em ambos.
 
 ## Permissões
 
-Cada usuário só ouve e reaproveita o próprio áudio em cache; nunca o de outro usuário.
+A conversa por voz usa só os dados do usuário que está nela.
 
 ## Pré-requisitos
 
-Saída de voz precisa estar habilitada nas Preferências. A conversa por voz
-precisa da permissão do microfone e de minutos de voz no plano. Sem eles, a
-digitação continua funcionando.
+A conversa por voz precisa da permissão do microfone, de assinatura ativa e de
+minutos de voz no plano. Sem eles, a digitação continua funcionando.
 
 ## Limitações atuais
 
-- Fora da conversa por voz em tempo real, ouvir uma resposta exige tocar em "Ouvir".
+- A conversa por texto não lê as respostas em voz alta. Não existe botão "Ouvir".
 - Transferências e pagamentos não podem ser executados por voz nesta versão.
   Alterar ou excluir transferências, ajustes de saldo, parcelas e movimentações
   importadas também não.
 - A Uni exclui uma movimentação por vez.
-- O cache de áudio tem validade de 30 dias; depois disso, uma nova geração pode ocorrer mesmo para o mesmo texto.
-- Configurações adicionais de voz (além do interruptor liga/desliga) ainda não estão disponíveis ("Voz e interação" está marcado "em breve").
+- Não é possível escolher outra voz para a Uni.
 
 ## Mensagens de erro conhecidas
 
-Se a geração de voz falhar ou não estiver configurada no servidor, a interface indica isso de forma clara, sem travar o restante do chat.
+Se a conversa por voz não conectar, a tela de voz mostra "Não consegui conectar". Toque na Uni para tentar de novo ou toque em Escrever para continuar pelo texto.
 
 ## Funcionalidades ainda não disponíveis
 
-- Reprodução automática de respostas.
-- Configurações avançadas de voz e interação.
+- Escolha de voz e configurações avançadas de voz.

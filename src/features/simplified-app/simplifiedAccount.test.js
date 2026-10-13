@@ -409,18 +409,15 @@ test('SimplifiedAccountSubpagePlaceholder tem título, botão voltar (para /app/
   assert.match(placeholder, /<p>\{description\}<\/p>/);
 });
 
-test('Voz da Uni oferece só os estilos de conversa e salva sempre a voz da Uni', async () => {
+test('Voz da Uni oferece só os estilos de conversa e salva só o estilo', async () => {
   const page = await source('./SimplifiedVoicePage.jsx');
-  assert.match(page, /const \{ profile, updateVoicePreferences \} = useSession\(\);/);
-  // A voz do navegador saiu do produto: não há mais escolha de voz.
-  assert.doesNotMatch(page, /VOICE_PROVIDER_OPTIONS|Estilo de voz|name="voice-provider"/);
-  assert.match(page, /voiceProvider: VOICE_PROVIDER_IDS\.ELEVENLABS/);
+  assert.match(page, /const \{ profile, updateConversationStyle \} = useSession\(\);/);
+  assert.doesNotMatch(page, /VOICE_PROVIDER_OPTIONS|Estilo de voz|name="voice-provider"|voiceProvider|uni-voice-tts/);
   assert.match(page, /resolveConversationStyle\(profile\?\.conversation_style\)/);
   assert.match(page, /id: 'simple'/);
   assert.match(page, /id: 'normal'/);
   assert.match(page, /id: 'detailed'/);
-  assert.match(page, /await updateVoicePreferences\(\{/);
-  assert.match(page, /conversationStyle: selectedStyle/);
+  assert.match(page, /await updateConversationStyle\(selectedStyle\);/);
   assert.match(page, /<legend>Estilo de conversa<\/legend>/);
   assert.doesNotMatch(page, /supabase|fetch\s*\(|localStorage/);
 });

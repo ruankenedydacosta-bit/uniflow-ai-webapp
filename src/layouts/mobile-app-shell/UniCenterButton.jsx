@@ -1,8 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { UniInstantButton } from '../../features/uni-instant/index.js';
-import { useVoiceManager } from '../../features/uni-audio/index.js';
-import { useSession } from '../../app/SessionContext.jsx';
 
 function UniCenterButtonSession({
   pathname,
@@ -11,23 +9,14 @@ function UniCenterButtonSession({
   onNavigate,
 }) {
   const navigate = useNavigate();
-  const { user } = useSession();
-  const voiceManager = useVoiceManager();
   const buttonRef = useRef(null);
 
-  const handleTap = useCallback(async () => {
-    const playback = voiceManager.playContext('returning_user', {
-      maxStartWaitMs: 700,
-      userId: user?.id,
-      userGesture: true,
-    }).catch(() => false);
-    await Promise.race([
-      playback,
-      new Promise((resolve) => setTimeout(resolve, 700)),
-    ]);
+  // O toque só navega: o áudio gravado de boas-vindas ("returning_user")
+  // saiu com a voz fora da conversa em tempo real.
+  const handleTap = useCallback(() => {
     onNavigate?.({ label, path });
     navigate(path);
-  }, [label, navigate, onNavigate, path, user?.id, voiceManager]);
+  }, [label, navigate, onNavigate, path]);
 
   return (
     <UniInstantButton

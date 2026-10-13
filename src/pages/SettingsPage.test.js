@@ -282,29 +282,8 @@ test('Modo de uso e Espaços migraram para a secao Preferências (nao ficam mais
   assert.match(preferenciasBlock, /<ThemeSelector \/>/);
 });
 
-// ============================================================================
-// ELEVEN2 -- preferência real "Permitir voz nas respostas da Uni", fonte
-// única (useVoicePreference) compartilhada com o chat.
-// ============================================================================
-
-test('SettingsPage usa useVoicePreference como fonte única da preferência de voz', async () => {
+test('Configurações não tem mais o interruptor de voz nas respostas: o chat não fala', async () => {
   const page = await source('SettingsPage.jsx');
-  assert.match(page, /import \{ useVoicePreference \} from '\.\.\/features\/uni-voice-tts';/);
-  assert.match(page, /const voicePreference = useVoicePreference\(\);/);
+  assert.doesNotMatch(page, /useVoicePreference|uni-voice-tts|voice-preference-toggle|Permitir voz nas respostas/);
 });
 
-test('toggle é um checkbox role="switch" acessível, refletindo e escrevendo o mesmo estado (aria-checked + checked + onChange)', async () => {
-  const page = await source('SettingsPage.jsx');
-  assert.match(page, /id="voice-preference-toggle"/);
-  assert.match(page, /type="checkbox"/);
-  assert.match(page, /role="switch"/);
-  assert.match(page, /aria-checked=\{voicePreference\.enabled\}/);
-  assert.match(page, /checked=\{voicePreference\.enabled\}/);
-  assert.match(page, /onChange=\{\(event\) => voicePreference\.setEnabled\(event\.target\.checked\)\}/);
-});
-
-test('label deixa explícito que a voz nunca toca sozinha (sem autoplay) -- texto acessível além do controle', async () => {
-  const page = await source('SettingsPage.jsx');
-  assert.match(page, /Nunca toca sozinha/);
-  assert.match(page, /htmlFor="voice-preference-toggle"/);
-});

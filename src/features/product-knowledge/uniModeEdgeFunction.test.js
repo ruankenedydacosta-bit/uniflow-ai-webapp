@@ -2,7 +2,6 @@
 // supabase/functions/uni-chat-llm/index.ts com UNI_MODE.FINANCIAL/SUPPORT
 // e o contexto de produto. Mesmo padrao ja usado no projeto para Edge
 // Functions Deno (sem runtime Deno disponivel em `npm test`) -- ver
-// src/features/uni-voice-tts/uniVoiceCache.test.js e
 // src/features/uni-llm/uniLlm.test.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
