@@ -869,34 +869,6 @@ html[data-uf-transicao="voltar"]::view-transition-new(uf-tela) {
   min-height: 36px;
 }
 
-.voiceActivation {
-  display: grid;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.voiceActivationButton {
-  white-space: normal;
-}
-
-.voiceActivationButton:disabled {
-  cursor: wait;
-}
-
-.voiceActivation small {
-  max-width: 440px;
-  color: var(--uf-app-text-3);
-  font-size: var(--uf-text-micro-size);
-  line-height: 1.45;
-}
-
-.voiceActivation p {
-  margin: 0;
-  color: var(--uf-app-danger-text);
-  font-size: var(--uf-text-micro-size);
-  line-height: 1.45;
-}
-
 /* Seções da Home (redesign, #89): título 15/500 e link 13 em azul de
    marca, como "Amanhã · Ver agenda" e "Outubro · Ver Financeiro". */
 .homeSection {

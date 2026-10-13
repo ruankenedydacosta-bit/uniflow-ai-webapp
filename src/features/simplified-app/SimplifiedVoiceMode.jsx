@@ -12,7 +12,6 @@ import {
 } from './SimplifiedIcons.jsx';
 import {
   resolveVoiceModeStage,
-  resolveVoiceModeView,
   VOICE_MODE_ACTION_LABELS,
   VOICE_MODE_ACTIONS,
   VOICE_MODE_MUTE_LABELS,
@@ -60,18 +59,13 @@ function VoiceWave() {
 
 const PRIMARY_ICONS = Object.freeze({
   [VOICE_MODE_ACTIONS.START]: PhMicrophoneIcon,
-  [VOICE_MODE_ACTIONS.STOP_LISTENING]: PhStopFillIcon,
-  [VOICE_MODE_ACTIONS.STOP_SPEAKING]: PhStopFillIcon,
   [VOICE_MODE_ACTIONS.END_CONVERSATION]: PhStopFillIcon,
-  [VOICE_MODE_ACTIONS.NONE]: PhStopFillIcon,
 });
 
 function SimplifiedVoiceMode({
   open,
-  interactionState,
-  // Na conversa em tempo real, a Home manda a visão pronta
-  // (resolveRealtimeVoiceModeView) no lugar do estado da captura antiga.
-  view: viewOverride = null,
+  // Visão pronta da conversa em tempo real (resolveRealtimeVoiceModeView).
+  view,
   hint,
   response,
   // Redesign (épico #91, tela 03): o que a pessoa disse aparece grande sob o
@@ -89,7 +83,6 @@ function SimplifiedVoiceMode({
   // mutar ocupa o lugar de Escrever, que leva ao mesmo chat que Conversa.
   microphone = null,
   getVoiceStream,
-  getVoiceSessionId,
   onAction,
   onClose,
   onWrite,
@@ -99,10 +92,8 @@ function SimplifiedVoiceMode({
   const titleId = useId();
   const primaryButtonRef = useRef(null);
   const onCloseRef = useRef(onClose);
-  const view = viewOverride ?? resolveVoiceModeView(interactionState);
   const actionCopy = VOICE_MODE_ACTION_LABELS[view.action];
   const PrimaryIcon = PRIMARY_ICONS[view.action];
-  const isActionDisabled = view.action === VOICE_MODE_ACTIONS.NONE;
   const stage = resolveVoiceModeStage({ view, isUserSpeaking, hasReply });
   const cleanTranscript = String(transcript ?? '').trim();
   const minutesChip = describeVoiceMinutesChip(voiceMinutes);
@@ -144,7 +135,7 @@ function SimplifiedVoiceMode({
   if (!open) return null;
 
   function handleAction() {
-    if (!isActionDisabled) onAction(view.action);
+    onAction(view.action);
   }
 
   return createPortal(
@@ -198,7 +189,6 @@ function SimplifiedVoiceMode({
           className={styles.orbButton}
           data-compact={stage.compact}
           onClick={handleAction}
-          disabled={isActionDisabled}
           aria-label={actionCopy.aria}
           data-uni-voice-control
         >
@@ -206,7 +196,6 @@ function SimplifiedVoiceMode({
             size={stage.compact ? 120 : 180}
             state={view.orb}
             getVoiceStream={getVoiceStream}
-            getVoiceSessionId={getVoiceSessionId}
           />
         </button>
 
@@ -277,7 +266,6 @@ function SimplifiedVoiceMode({
               className={styles.primaryButton}
               data-action={view.action}
               onClick={handleAction}
-              disabled={isActionDisabled}
               aria-label={actionCopy.aria}
               data-uni-voice-control
             >

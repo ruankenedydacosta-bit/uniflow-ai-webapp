@@ -19,19 +19,11 @@ import {
   markNarratedText,
   resetNarratedTexts,
 } from '../uni-voice-tts/narratedTextSession.js';
-import {
-  buildWelcomeSessionKey,
-  claimWelcomeVoice,
-  isWelcomeVoicePending,
-  markWelcomeVoiceSettled,
-  resetWelcomeVoiceSessions,
-} from '../simplified-app/welcomeVoiceSession.js';
 
 const USER_ID = 'user-1';
 
 beforeEach(() => {
   resetAutoSpokenMessages();
-  resetWelcomeVoiceSessions();
   resetNarratedTexts();
 });
 
@@ -121,56 +113,6 @@ test('gates de autoplay fechados (ex.: saudação ainda tocando): NÃO fala agor
   assert.equal(calls.push.length, 1, 'mensagem sempre renderiza');
   assert.equal(calls.speak.length, 0, 'gates fechados: não fala agora');
   assert.equal(hasAutoSpokenMessage(USER_ID, result.id), false, 'não marca: o efeito de autoplay ainda vai narrar');
-});
-
-test('deadlock da saudação corrigido: claim → settled (markWelcomeVoiceSettled) → pending liberado → gates abrem → speakMessage volta a executar', () => {
-  const key = buildWelcomeSessionKey({ id: USER_ID }, { expires_at: 12345 });
-
-  // Saudação reivindicada: pending bloqueia o autoplay (gates fechados).
-  assert.equal(claimWelcomeVoice(key), true);
-  assert.equal(isWelcomeVoicePending(key), true);
-  const shouldAutoSpeak = () => !isWelcomeVoicePending(key);
-  const buildMessage = (text) => ({ id: 'msg-1', from: 'uni', text });
-  const spoken = [];
-
-  // Resposta chega com a saudação ainda pendente: renderiza, NÃO fala,
-  // NÃO marca -- o efeito de autoplay narra depois que os gates abrirem.
-  runAssistantResponsePipeline({
-    text: 'Olá!',
-    options: {},
-    buildMessage,
-    pushMessage: () => {},
-    persistMessage: () => {},
-    shouldAutoSpeak,
-    hasSpoken: hasAutoSpokenMessage,
-    markSpoken: markAutoSpokenMessage,
-    speakMessage: (msg) => spoken.push(msg.id),
-    userId: USER_ID,
-  });
-  assert.equal(spoken.length, 0, 'saudação pendente: não fala');
-  assert.equal(hasAutoSpokenMessage(USER_ID, 'msg-1'), false, 'não marca: o efeito ainda vai narrar');
-
-  // Saudação terminou ou falhou: finally → onWelcomeVoiceSettled →
-  // markWelcomeVoiceSettled libera a chave (fix do deadlock).
-  markWelcomeVoiceSettled(key);
-  assert.equal(isWelcomeVoicePending(key), false, 'pendingWelcome não permanece preso');
-
-  // Gates agora abrem: a MESMA mensagem (ainda sem marca) volta a ser
-  // narrada pelo pipeline/efeito -- speakMessage é executado de novo.
-  runAssistantResponsePipeline({
-    text: 'Olá!',
-    options: {},
-    buildMessage,
-    pushMessage: () => {},
-    persistMessage: () => {},
-    shouldAutoSpeak,
-    hasSpoken: hasAutoSpokenMessage,
-    markSpoken: markAutoSpokenMessage,
-    speakMessage: (msg) => spoken.push(msg.id),
-    userId: USER_ID,
-  });
-  assert.deepEqual(spoken, ['msg-1'], 'settled → speakMessage volta a ser executado');
-  assert.equal(hasAutoSpokenMessage(USER_ID, 'msg-1'), true, 'marca no momento de falar');
 });
 
 test('autoplay=false (ex.: aviso de carregamento): mensagem renderiza, fica SEM marca e nunca fala no pipeline', () => {

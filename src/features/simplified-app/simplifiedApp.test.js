@@ -26,19 +26,6 @@ import {
   summarizeMonth,
 } from './simplifiedRecordsData.js';
 import {
-  buildWelcomeSessionKey,
-  claimWelcomeVoice,
-  clearWelcomeVoiceBlocked,
-  getWelcomeVoiceBlocked,
-  isWelcomeVoiceActivated,
-  isWelcomeVoicePending,
-  markWelcomeVoiceActivated,
-  markWelcomeVoiceBlocked,
-  markWelcomeVoiceSettled,
-  releaseWelcomeVoice,
-  resetWelcomeVoiceSessions,
-} from './welcomeVoiceSession.js';
-import {
   createVoicePointerGesture,
   isVoicePointerEventForGesture,
   recoverVoicePointerCapture,
@@ -263,14 +250,14 @@ test('saudação respeita tratamento explícito e usa fallback seguro', () => {
   assert.doesNotMatch(resolveSimplifiedGreeting({ full_name: 'Ana Souza' }).heading, /senhora/i);
 });
 
-test('Home usa a mesma saudação estruturada no texto e no TTS', async () => {
+test('Home usa a mesma saudação estruturada no texto e na voz da conversa', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   // A abertura (Bom dia, Oi, Olá...) é sorteada uma vez por carga da página.
   assert.match(home, /useMemo\(\s*\(\) => resolveSimplifiedGreeting\(profile, user, getPageLoadGreetingOpening\(\)\),\s*\[profile, user\]/);
   assert.match(home, /greeting\.visualGreeting\.eyebrow/);
   assert.match(home, /greeting\.displayName/);
   assert.doesNotMatch(home, /<h1[^>]*>\{greeting\.addressedName\}<\/h1>/);
-  assert.match(home, /voiceController\.speak\(greeting\.spokenGreeting,\s*\{/);
+  assert.match(home, /suggestedGreeting: greeting\.spokenGreeting,/);
   assert.doesNotMatch(home, /<p>Seja bem-vindo,/);
 });
 
@@ -285,11 +272,11 @@ test('Home pede só a novidade mais recente (limit:1) -- nunca carrega o histór
   assert.match(home, /const \{ pendingUpdate: pendingUniUpdate \} = useUniUpdates\(\{ limit: 1 \}\);/);
 });
 
-test('sem novidade pendente, a frase institucional original continua exatamente igual', async () => {
+test('sem novidade pendente, a Home diz como começar a conversa por voz', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(
     home,
-    /Estou aqui para ajudar você a tomar as <strong>melhores decisões<\/strong> financeiras\./,
+    /Toque na <strong>Uni<\/strong>, no centro da barra abaixo, para conversar por voz\./,
   );
 });
 
@@ -302,209 +289,10 @@ test('com novidade pendente, mostra "🚀 A Uni evoluiu" e o botão "Ver novidad
   assert.match(bannerSlice, /navigate\(buildNovidadeUrl\(pendingUniUpdate\.id\)\)/);
 });
 
-test('saudação automática usa o gesto seguinte somente quando o Safari bloqueia o autoplay', async () => {
+test('Home não grava áudio: o microfone é só da conversa em tempo real', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /retryWelcomeOnGestureRef\.current = autoplayBlocked/);
-  assert.match(home, /attemptWelcomeVoice\(\{ userInitiated: true \}\)/);
-  assert.match(home, /window\.addEventListener\('pointerdown', retryAfterUserGesture, true\)/);
-  // Voltar à Home não repete a saudação: sair dela descarta o retry
-  // pendente, e o toque que sai da Home não inicia a fala.
-  assert.match(home, /return \(\) => clearWelcomeVoiceBlocked\(sessionKey\);/);
-  assert.match(home, /closest\('\[data-uni-voice-control\], a\[href\]'\)/);
-  assert.match(home, /source: 'greeting',[\s\S]{0,80}\.\.\.requestMetadata/);
-  assert.doesNotMatch(home, />\s*Ouvir saudação\s*</);
-});
-
-test('boas-vindas por voz são reivindicadas uma vez por sessão autenticada', () => {
-  resetWelcomeVoiceSessions();
-  const sessionKey = buildWelcomeSessionKey(
-    { id: 'user-a' },
-    { expires_at: 12345 },
-  );
-
-  assert.equal(claimWelcomeVoice(sessionKey), true);
-  assert.equal(claimWelcomeVoice(sessionKey), false);
-  releaseWelcomeVoice(sessionKey);
-  assert.equal(claimWelcomeVoice(sessionKey), true);
-  resetWelcomeVoiceSessions();
-});
-
-test('ativação de voz persiste na navegação interna e é liberada ao retornar do background', () => {
-  resetWelcomeVoiceSessions();
-  const sessionKey = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
-
-  assert.equal(isWelcomeVoiceActivated(sessionKey), false);
-  markWelcomeVoiceActivated(sessionKey);
-  assert.equal(isWelcomeVoiceActivated(sessionKey), true);
-  releaseWelcomeVoice(sessionKey);
-  assert.equal(isWelcomeVoiceActivated(sessionKey), false);
-  resetWelcomeVoiceSessions();
-});
-
-test('Safari exige um único CTA que prepara microfone e áudio antes da saudação', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /isAppleWebKitRuntime\(window\)/);
-  assert.match(home, /voiceController\.preparePlayback\?\.\(\)/);
-  assert.match(home, /voiceInput\.prepareMicrophone\(\)/);
-  assert.match(home, /await Promise\.all\(\[/);
-  assert.match(home, /ATIVAR VOZ E MICROFONE/);
-  assert.match(home, /playbackPreparationAttempted: true/);
-  assert.match(home, /void attemptWelcomeVoice\(\{/);
-  assert.doesNotMatch(home, /await attemptWelcomeVoice\(\{\s*userInitiated: true/);
-  // Antes da ativação, o orb da barra leva à Home, mas a tela de voz não abre.
-  assert.match(home, /if \(!voiceActivationRequired && !voiceActivationPending\) openVoiceModeRef\.current\?\.\(\);/);
-  assert.doesNotMatch(home, />\s*Ouvir saudação\s*</);
-});
-
-test('chave da saudação é ESTÁVEL durante o login -- preferência a last_sign_in_at sobre expires_at (TOKEN_REFRESHED silencioso não refaz a saudação ao voltar para Home)', () => {
-  resetWelcomeVoiceSessions();
-  const user = { id: 'user-a' };
-  const primeiraChave = buildWelcomeSessionKey(user, {
-    user: { last_sign_in_at: '2026-07-01T10:00:00.000Z' },
-    expires_at: 1000,
-  });
-  // Token expira e renova silenciosamente enquanto o usuário navega
-  // Home → Registros/Conta/Uni → Home: expires_at muda, last_sign_in_at não.
-  const aposRefresh = buildWelcomeSessionKey(user, {
-    user: { last_sign_in_at: '2026-07-01T10:00:00.000Z' },
-    expires_at: 2000,
-  });
-  assert.equal(aposRefresh, primeiraChave, 'a chave NÃO deve mudar quando o token renova');
-  assert.equal(claimWelcomeVoice(aposRefresh), true);
-  assert.equal(claimWelcomeVoice(primeiraChave), false, 'voltar para Home não refaz a saudação');
-  resetWelcomeVoiceSessions();
-});
-
-test('chave da saudação muda entre logins distintos do mesmo usuário -- novo login volta a dar boas-vindas', () => {
-  resetWelcomeVoiceSessions();
-  const user = { id: 'user-a' };
-  const primeiroLogin = buildWelcomeSessionKey(user, {
-    user: { last_sign_in_at: '2026-07-01T10:00:00.000Z' },
-  });
-  const segundoLogin = buildWelcomeSessionKey(user, {
-    user: { last_sign_in_at: '2026-07-02T10:00:00.000Z' },
-  });
-  assert.notEqual(segundoLogin, primeiroLogin);
-  assert.equal(claimWelcomeVoice(primeiroLogin), true);
-  assert.equal(claimWelcomeVoice(segundoLogin), true);
-  resetWelcomeVoiceSessions();
-});
-
-test('chave da saudação é nula sem usuário autenticado -- modo demo nunca bloqueia', () => {
-  resetWelcomeVoiceSessions();
-  assert.equal(buildWelcomeSessionKey(null, null), null);
-  assert.equal(buildWelcomeSessionKey({ id: '' }, { expires_at: 1 }), null);
-  resetWelcomeVoiceSessions();
-});
-
-// ============================================================================
-// BLOCO VOZ HIDRATAÇÃO (reload/login): a saudação tem prioridade exclusiva
-// sobre o autoplay de mensagens. Enquanto a voz da saudação estiver
-// preparando/carregando/tocando (claimWelcomeVoice sem markWelcomeVoiceSettled),
-// o autoplay de mensagens fica bloqueado; terminar OU falhar libera.
-// ============================================================================
-
-test('saudação pendente bloqueia o autoplay: claim marca pending e markWelcomeVoiceSettled libera (terminou ou falhou)', () => {
-  resetWelcomeVoiceSessions();
-  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
-  assert.equal(isWelcomeVoicePending(key), false, 'antes de reivindicar nunca está pendente');
-  assert.equal(claimWelcomeVoice(key), true);
-  assert.equal(isWelcomeVoicePending(key), true, 'reivindicada mas ainda preparando/carregando/tocando -> pendente (autoplay bloqueado)');
-  markWelcomeVoiceSettled(key);
-  assert.equal(isWelcomeVoicePending(key), false, 'terminou ou falhou -> autoplay liberado');
-  resetWelcomeVoiceSessions();
-});
-
-test('releaseWelcomeVoice também limpa o estado pendente -- reivindicação nova volta a tocar sem travar o autoplay', () => {
-  resetWelcomeVoiceSessions();
-  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
-  claimWelcomeVoice(key);
-  assert.equal(isWelcomeVoicePending(key), true);
-  releaseWelcomeVoice(key);
-  assert.equal(isWelcomeVoicePending(key), false);
-  assert.equal(claimWelcomeVoice(key), true);
-  assert.equal(isWelcomeVoicePending(key), true);
-  resetWelcomeVoiceSessions();
-});
-
-test('chave nula ou vazia nunca fica pendente -- modo demo não bloqueia o autoplay', () => {
-  resetWelcomeVoiceSessions();
-  assert.equal(isWelcomeVoicePending(null), false);
-  assert.equal(isWelcomeVoicePending(''), false);
-  markWelcomeVoiceSettled(null);
-  markWelcomeVoiceSettled('');
-  resetWelcomeVoiceSessions();
-});
-
-// ============================================================================
-// BUGFIX iOS (saudação perdida ao remontar a Home): autoplay bloqueado pelo
-// Safari (NotAllowedError) precisa sobreviver a Home desmontar/remontar, já
-// que claimWelcomeVoice só libera UMA tentativa automática por sessão.
-// ============================================================================
-
-test('markWelcomeVoiceBlocked persiste o erro -- sobrevive a "remontagem" (nova leitura simulando useState novo)', () => {
-  resetWelcomeVoiceSessions();
-  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
-  assert.equal(getWelcomeVoiceBlocked(key), null, 'antes de qualquer tentativa não há erro bloqueado');
-  const autoplayError = { code: 'AUTOPLAY_BLOCKED', message: 'Não foi possível tocar automaticamente.' };
-  markWelcomeVoiceBlocked(key, autoplayError);
-  assert.deepEqual(getWelcomeVoiceBlocked(key), autoplayError, 'erro persiste para uma nova leitura, como um remount faria');
-  resetWelcomeVoiceSessions();
-});
-
-test('clearWelcomeVoiceBlocked remove o erro quando a saudação finalmente toca com sucesso', () => {
-  resetWelcomeVoiceSessions();
-  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
-  markWelcomeVoiceBlocked(key, { code: 'AUTOPLAY_BLOCKED' });
-  assert.notEqual(getWelcomeVoiceBlocked(key), null);
-  clearWelcomeVoiceBlocked(key);
-  assert.equal(getWelcomeVoiceBlocked(key), null);
-  resetWelcomeVoiceSessions();
-});
-
-test('releaseWelcomeVoice também limpa o erro bloqueado persistido', () => {
-  resetWelcomeVoiceSessions();
-  const key = buildWelcomeSessionKey({ id: 'user-a' }, { expires_at: 12345 });
-  markWelcomeVoiceBlocked(key, { code: 'AUTOPLAY_BLOCKED' });
-  releaseWelcomeVoice(key);
-  assert.equal(getWelcomeVoiceBlocked(key), null);
-  resetWelcomeVoiceSessions();
-});
-
-test('chave nula ou vazia nunca é marcada/lida como bloqueada', () => {
-  resetWelcomeVoiceSessions();
-  markWelcomeVoiceBlocked(null, { code: 'AUTOPLAY_BLOCKED' });
-  markWelcomeVoiceBlocked('', { code: 'AUTOPLAY_BLOCKED' });
-  assert.equal(getWelcomeVoiceBlocked(null), null);
-  assert.equal(getWelcomeVoiceBlocked(''), null);
-  resetWelcomeVoiceSessions();
-});
-
-test('SimplifiedHomeView recupera bloqueio persistido sem renderizar fallback manual', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(
-    home,
-    /retryWelcomeOnGestureRef\.current = getWelcomeVoiceBlocked\(sessionKey\)\?\.code/,
-    'bloqueio deve rearmar a tentativa invisível no próximo gesto',
-  );
-  assert.doesNotMatch(home, /welcomeVoiceError/);
-  assert.doesNotMatch(home, /greetingVoiceFallback/);
-});
-
-test('SimplifiedHomeView persiste sucesso/erro da saudação via markWelcomeVoiceBlocked/clearWelcomeVoiceBlocked', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /markWelcomeVoiceBlocked\(sessionKey, error\)/);
-  assert.match(home, /clearWelcomeVoiceBlocked\(sessionKey\)/);
-});
-
-test('Home reutiliza o controlador compartilhado e não cria capturador paralelo', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /useSharedUniVoiceInput\(\)/);
-  assert.match(home, /voiceInput\.start\(\)/);
-  assert.match(home, /voiceInput\.stop\(\)/);
-  assert.match(home, /voiceInput\.cancel/);
-  assert.match(home, /voiceInput\.registerHandlers/);
-  assert.doesNotMatch(home, /new MediaRecorder|navigator\.mediaDevices|getUserMedia/);
+  assert.doesNotMatch(home, /new MediaRecorder|navigator\.mediaDevices|getUserMedia|uni-voice\//);
+  assert.match(home, /useRealtimeUniConversation\(\{/);
 });
 
 test('retorno do background: evento terminal atrasado com pointerId reutilizado não pertence ao novo gesto', () => {
@@ -548,37 +336,6 @@ test('lostpointercapture recupera somente um pointer ainda ativo e visível', ()
   }), false);
 });
 
-test('beginVoiceCapture chama voiceInput.start() e nunca navega, mesmo em erro de permissão anterior', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  const idx = home.indexOf('function beginVoiceCapture() {');
-  const endIdx = home.indexOf('function finishVoiceCapture', idx);
-  assert.ok(idx > -1 && endIdx > idx);
-  const slice = home.slice(idx, endIdx);
-  assert.match(slice, /if \(plan\.resetError\) voiceInput\.reset\(\);/);
-  assert.match(
-    slice,
-    /if \(plan\.startCapture\) \{\s*(?:\/\/[^\n]*\n\s*)*onBeforeVoiceStart\?\.\(\);\s*setTurnStartToken\(\(token\) => token \+ 1\);\s*void voiceInput\.start\(\);[\s\S]*?\}/,
-  );
-  assert.doesNotMatch(slice, /navigate\(/);
-});
-
-// HOTFIX (barge-in): pressionar o botão enquanto a Uni fala interrompe a
-// fala (voiceController.stop()) E inicia a captura no MESMO gesto -- nunca
-// exige soltar e apertar de novo (ver resolveBargeInPlan, simplifiedHomeState.js).
-test('HOTFIX: beginVoiceCapture interrompe a fala (voiceController.stop()) E inicia a captura no MESMO gesto quando isSpeaking é true', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  const idx = home.indexOf('function beginVoiceCapture() {');
-  const endIdx = home.indexOf('function finishVoiceCapture', idx);
-  const slice = home.slice(idx, endIdx);
-  assert.match(slice, /const plan = resolveBargeInPlan\(\{/);
-  assert.match(slice, /if \(plan\.interruptSpeech\) voiceController\.stop\(\);/);
-  assert.match(slice, /if \(!plan\.proceed\) return false;/);
-  const interruptIdx = slice.indexOf('if (plan.interruptSpeech)');
-  const startIdx = slice.indexOf('if (plan.startCapture) {');
-  assert.ok(interruptIdx > -1 && startIdx > interruptIdx, 'interromper a fala deve vir ANTES de iniciar a captura, no mesmo gesto');
-  assert.match(slice, /return true;\s*\}/, 'quando o plano prossegue (mesmo interrompendo a fala), o gesto é tratado como iniciado (true)');
-});
-
 test('conversa em tempo real só encerra ao sair da página, não ao trocar de aba', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('const endOnPageExit = () => {');
@@ -588,39 +345,6 @@ test('conversa em tempo real só encerra ao sair da página, não ao trocar de a
   assert.match(slice, /window\.addEventListener\('pagehide', endOnPageExit\)/);
   assert.match(slice, /window\.removeEventListener\('pagehide', endOnPageExit\)/);
   assert.doesNotMatch(slice, /visibilitychange/);
-});
-
-test('ir para segundo plano descarta a captura em andamento sem enviar e sem exigir reload', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /const cancelOnBackground = \(\) => cancelVoiceCaptureRef\.current\?\.\('lifecycle'\);/);
-  assert.match(home, /window\.addEventListener\('pagehide', cancelOnBackground\)/);
-  assert.match(home, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
-  assert.match(home, /window\.removeEventListener\('pagehide', cancelOnBackground\)/);
-  const idx = home.indexOf('function cancelVoiceCapture(reason) {');
-  assert.ok(idx > -1);
-  const slice = home.slice(idx, home.indexOf('\n  }\n', idx));
-  assert.match(slice, /if \(!voiceInput\.isActive\) return;/);
-  assert.match(slice, /voiceInput\.cancel\(\);/);
-  assert.doesNotMatch(slice, /voiceInput\.stop\(\)/);
-});
-
-// ============================================================================
-// WATCHDOG DE SEGURANÇA (última barreira): se voiceInput.isActive mas
-// nenhum gesto está sendo rastreado, força voiceInput.cancel() -- nunca
-// deveria disparar na prática (a rede de segurança em window e o timeout
-// por gesto já cobrem os casos reais), mas garante que nenhuma combinação
-// de bugs futuros consiga deixar a Uni presa em "Ouvindo..." sem saída.
-// Nunca recarrega a página.
-// ============================================================================
-
-test('watchdog de estado: com a UI ouvindo e o gravador parado por fora, cancela periodicamente -- nunca via reload', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /if \(!voiceInput\.isActive\) return undefined;/);
-  assert.match(home, /const recorderState = voiceInput\.getRecorderState\?\.\(\) \?\? 'inactive';/);
-  assert.match(home, /if \(recorderState !== 'recording' && voiceInput\.isListening\) voiceInput\.cancel\(\);/);
-  assert.match(home, /const interval = setInterval\(\(\) => \{/);
-  assert.doesNotMatch(home, /window\.location\.reload/);
-  assert.doesNotMatch(home, /location\.reload\(\)/);
 });
 
 test('botão central tem alvo visual ~300px; touch-action continua none (gesto aprovado preservado)', async () => {
@@ -647,15 +371,6 @@ test('botão central não adiciona círculo rígido ou pseudo-elemento ao redor 
   assert.doesNotMatch(home, /styles\.uniButtonRing|styles\.uniVoiceLevelRing/);
 });
 
-test('não inicia nova gravação durante o processamento (isInteractionBusy inclui capture busy/typing/executing)', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /const isCaptureBusy = \[\s*VOICE_CAPTURE_STATES\.REQUESTING_PERMISSION,\s*VOICE_CAPTURE_STATES\.PROCESSING,\s*\]\.includes\(voiceInput\.status\);/);
-  assert.match(home, /const isInteractionBusy = isTyping \|\| isExecuting \|\| isCaptureBusy;/);
-  const beginIdx = home.indexOf('function beginVoiceCapture() {');
-  const beginEndIdx = home.indexOf('function finishVoiceCapture', beginIdx);
-  assert.match(home.slice(beginIdx, beginEndIdx), /if \(!plan\.proceed\) return false;/);
-});
-
 test('só editar uma confirmação e sair da tela de voz navegam para /app/uni', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const navigateCalls = [...home.matchAll(/navigate\(([^)]*)\)/g)].map((match) => match[1]);
@@ -664,19 +379,12 @@ test('só editar uma confirmação e sair da tela de voz navegam para /app/uni',
   const uniNavigateCalls = navigateCalls.filter((call) => call === 'SIMPLIFIED_ROUTES.UNI');
   assert.deepEqual(uniNavigateCalls, ['SIMPLIFIED_ROUTES.UNI', 'SIMPLIFIED_ROUTES.UNI']);
   assert.match(home, /onEditAction={\(\) => navigate\(SIMPLIFIED_ROUTES\.UNI\)}/);
-  // Sair da tela de voz para o chat descarta a gravação antes de navegar:
+  // Sair da tela de voz para o chat encerra a conversa antes de navegar:
   // nunca deixa o microfone aberto atrás de outra rota.
   assert.match(
     home,
-    /function handleLeaveVoiceModeToChat\(\) \{\s*cancelVoiceCapture\('open-chat'\);\s*setIsVoiceModeOpen\(false\);\s*navigate\(SIMPLIFIED_ROUTES\.UNI\);/,
+    /function handleLeaveRealtimeVoiceModeToChat\(\) \{\s*stopRealtime\('user'\);\s*setIsVoiceModeOpen\(false\);\s*navigate\(SIMPLIFIED_ROUTES\.UNI\);/,
   );
-});
-
-test('erro de permissão de microfone aparece com mensagem clara na tela de voz (nunca genérica demais)', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /const voiceErrorMessage = isVoiceErrorState\(voiceInput\.status\) \? voiceInput\.message : null;/);
-  assert.match(home, /if \(voiceErrorMessage\) return voiceErrorMessage;/);
-  assert.match(home, /hint=\{voiceModeHint\}/);
 });
 
 test('Home expõe estados, acessibilidade e confirmação do fluxo real', async () => {
@@ -686,14 +394,6 @@ test('Home expõe estados, acessibilidade e confirmação do fluxo real', async 
   assert.match(home, /onConfirmAction/);
   assert.match(home, /aria-live="polite"/);
   assert.match(home, /<SimplifiedVoiceMode/);
-  assert.match(home, /claimWelcomeVoice\(sessionKey\)/);
-});
-
-test('Home remove o card visual de boas-vindas sem remover o TTS por sessão', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.doesNotMatch(home, /Boas-vindas reproduzidas por voz|VoiceWelcomeCard/);
-  assert.match(home, /claimWelcomeVoice\(sessionKey\)/);
-  assert.match(home, /voiceController\.speak\(greeting\.spokenGreeting,\s*\{/);
 });
 
 test('UniChat mantém a orquestração e entrega o snapshot à variante compacta', async () => {
@@ -1377,10 +1077,9 @@ test('o orb da barra inferior é o UniRingOrb e a Home não tem mais orb própri
   assert.doesNotMatch(home, /<RadialVoiceWaveform/);
 });
 
-test('orbe recebe o mesmo stream e session id do pipeline estabilizado', async () => {
+test('orbe recebe o stream do microfone da conversa em tempo real', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /getVoiceStream=\{voiceInput\.getActiveStream\}/);
-  assert.match(home, /getVoiceSessionId=\{voiceInput\.getActiveSessionId\}/);
+  assert.match(home, /getVoiceStream=\{realtime\.getLocalStream\}/);
   assert.doesNotMatch(home, /getUserMedia|MediaRecorder/);
 });
 
@@ -1392,7 +1091,7 @@ test('o orb da barra tem nome acessível e rótulo visível "Falar"', async () =
 });
 
 test('preferência de movimento reduzido continua desligando a análise de voz visual e as animações do orb', async () => {
-  const hook = await source('../uni-voice/useVoiceIntensity.js');
+  const hook = await source('../uni-voice-realtime/useVoiceIntensity.js');
   const theme = await source('../../styles/theme.css');
   assert.match(hook, /if \(prefersReducedMotion\(browserRuntime\)\) return undefined;/);
   // O UniRingOrb anima só em CSS; a regra global do tema encurta toda
@@ -1418,24 +1117,6 @@ test('HOTFIX P1.4: CompactResponse não tem botão "Ouvir resposta" nem showManu
   assert.match(block, /lastUni\.text/);
 });
 
-test('falha de autoplay não cria botão e mantém uma única reivindicação inicial da sessão', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /const error = result\?\.error \?\? null;/);
-  assert.match(home, /markWelcomeVoiceBlocked\(sessionKey, error\)/);
-  assert.doesNotMatch(home, />\s*Ouvir saudação\s*</);
-  assert.match(home, /if \(!claimWelcomeVoice\(sessionKey\)\) return;/);
-});
-
-test('retorno real do background exige nova ativação no Safari e rearma saudação nos demais navegadores', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /welcomeWasBackgroundedRef\.current = true/);
-  assert.match(home, /releaseWelcomeVoice\(sessionKey\)/);
-  assert.match(home, /if \(isAppleVoiceRuntime\) \{\s*setVoiceActivationError\(null\);\s*setVoiceActivationRequired\(true\);/);
-  assert.match(home, /window\.addEventListener\('pagehide', markBackgrounded\)/);
-  assert.match(home, /window\.addEventListener\('pageshow', greetAfterForegroundReturn\)/);
-  assert.match(home, /document\.addEventListener\('visibilitychange', handleVisibilityChange\)/);
-});
-
 test('HOTFIX P1.4: SimplifiedHomeView não repassa onSpeakMessage/voiceEnabled para CompactResponse', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const idx = home.indexOf('<CompactResponse');
@@ -1445,16 +1126,13 @@ test('HOTFIX P1.4: SimplifiedHomeView não repassa onSpeakMessage/voiceEnabled p
   assert.doesNotMatch(block, /onSpeakMessage=\{onSpeakMessage\}/);
 });
 
-test('HOTFIX: somente PLAYING exibe TOQUE PARA PARAR; LOADING permanece cancelável pelo barge-in', async () => {
+test('a voz do chat carregando ou tocando para quando a conversa em tempo real começa', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   assert.match(home, /const INTERRUPTIBLE_VOICE_STATUSES = new Set\(\[\s*VOICE_TTS_STATUS\.LOADING,\s*VOICE_TTS_STATUS\.PLAYING,\s*\]\);/);
   assert.match(home, /const isSpeaking = voiceController\.status === VOICE_TTS_STATUS\.PLAYING;/);
   assert.match(home, /const isVoicePlaybackInterruptible = INTERRUPTIBLE_VOICE_STATUSES\.has\(\s*voiceController\.status,\s*\);/);
-
-  const beginIdx = home.indexOf('function beginVoiceCapture() {');
-  const endIdx = home.indexOf('function finishVoiceCapture', beginIdx);
-  const beginVoiceCapture = home.slice(beginIdx, endIdx);
-  assert.match(beginVoiceCapture, /isSpeaking: isVoicePlaybackInterruptible,/);
+  const begin = home.slice(home.indexOf('function beginRealtimeConversation() {'));
+  assert.match(begin, /^[^}]*if \(isVoicePlaybackInterruptible\) voiceController\.stop\(\);/);
 });
 
 test('rótulos do botão central usam tipografia menor sem alterar o orb', async () => {
@@ -1470,24 +1148,6 @@ test('Requisito 4 — o orb da barra só escuta click e só navega para a Home c
   const slice = navigation.slice(start, navigation.indexOf('</button>', start));
   assert.match(slice, /onClick=\{\(\) => navigate\(buildVoiceModeUrl\(\)\)\}/);
   assert.doesNotMatch(slice, /onPointerDown|onTouchStart|onTouchEnd|onKeyDown|onMouseDown/);
-});
-
-test('Requisito 6 — nenhuma mensagem é publicada duas vezes: onFinalTranscript ignora transcrição vazia e useUniVoiceInput descarta resultado de transcrição obsoleto (requestId)', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  const finalIdx = home.indexOf('onFinalTranscript: (transcript) => {');
-  const finalEndIdx = home.indexOf('}),', finalIdx);
-  const finalSlice = home.slice(finalIdx, finalEndIdx);
-  assert.match(finalSlice, /if \(cleanTranscript\) onSendTranscript\(cleanTranscript, \{ source: 'voice' \}\);/, 'transcrição vazia nunca publica mensagem e preserva origem de voz');
-
-  const voiceInput = await source('../uni-voice/useUniVoiceInput.js');
-  // requestIdRef garante que só o resultado da transcrição MAIS RECENTE
-  // dispara COMPLETE/onFinalTranscript -- uma segunda gravação disparada
-  // por engano nunca deixa a primeira publicar uma mensagem atrasada.
-  assert.match(voiceInput, /const requestId = \+\+requestIdRef\.current;/);
-  assert.match(voiceInput, /if \(requestId !== requestIdRef\.current\) return;/);
-  // start() recusa uma segunda gravação enquanto a anterior ainda está
-  // ativa (adapter já existe OU status já é de captura em andamento).
-  assert.match(voiceInput, /if \(adapterRef\.current \|\| isVoiceCaptureActive\(state\.status\) \|\| !workspaceId\) return false;/);
 });
 
 test('aviso do Histórico fica o tempo de ler: piso de 4 s, cresce com o texto e para em 15 s', async () => {

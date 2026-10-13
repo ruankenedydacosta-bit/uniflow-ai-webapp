@@ -4,37 +4,18 @@ import { useSession } from '../../app/SessionContext.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import UniCard from '../../components/ui/UniCard/index.js';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
-import {
-  isAppleWebKitRuntime,
-  recordVoicePipelineDiagnostic,
-  VOICE_CAPTURE_STATES,
-  useSharedUniVoiceInput,
-  useStableVoiceInputHandlers,
-} from '../uni-voice/index.js';
-import { VOICE_TTS_ERROR_CODES, VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
+import { VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
 import { PwaInstallExperience, usePwaAutoUpdateBlock } from '../pwa-install/index.js';
 import SimplifiedHomeAgenda from './SimplifiedHomeAgenda.jsx';
 import SimplifiedHomeFinancialGraph from './SimplifiedHomeFinancialGraph.jsx';
 import SimplifiedHomeMonthReading from './SimplifiedHomeMonthReading.jsx';
 import {
-  isVoiceErrorState,
-  resolveBargeInPlan,
   resolveSimplifiedUniState,
   SIMPLIFIED_UNI_STATES,
 } from './simplifiedHomeState.js';
 import { getPageLoadGreetingOpening, resolveSimplifiedGreeting } from './simplifiedGreeting.js';
 import { useUniProcessingMessage } from '../uni-chat/useUniProcessingMessage.js';
 import { useTextAudioSync } from '../uni-chat/useTextAudioSync.js';
-import {
-  buildWelcomeSessionKey,
-  claimWelcomeVoice,
-  clearWelcomeVoiceBlocked,
-  getWelcomeVoiceBlocked,
-  isWelcomeVoiceActivated,
-  markWelcomeVoiceBlocked,
-  markWelcomeVoiceActivated,
-  releaseWelcomeVoice,
-} from './welcomeVoiceSession.js';
 import { SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.js';
 import { buildNovidadeUrl } from './uniUpdatesData.js';
 import { useUniUpdates } from './useUniUpdates.js';
@@ -54,7 +35,6 @@ import {
   snapshotVoiceConversationStart,
   VOICE_MODE_ACTIONS,
 } from './voiceModeState.js';
-import { SIMPLIFIED_FEATURE_FLAGS } from './simplifiedFeatureFlags.js';
 import {
   REALTIME_SCREEN_ACTIONS,
   REALTIME_STATUS,
@@ -63,10 +43,6 @@ import {
 import { buildRealtimeGreetingInstructions } from '../uni-voice-realtime/realtimeGreeting.js';
 import styles from './simplifiedApp.module.css';
 
-// LOADING significa apenas que a voz está sendo preparada. O rótulo
-// "TOQUE PARA PARAR" só pode aparecer quando existe reprodução real
-// (PLAYING), mas o carregamento continua interrompível pelo mesmo gesto de
-// barge-in para nunca iniciar por cima de uma nova captura.
 // Recusas da conversa em tempo real que mandam a pessoa para o texto:
 // minutos do mês esgotados ou sem assinatura.
 const REALTIME_TEXT_FALLBACK_CODES = new Set(['VOICE_QUOTA_EXHAUSTED', 'SUBSCRIPTION_INACTIVE']);
@@ -74,20 +50,12 @@ const REALTIME_TEXT_FALLBACK_CODES = new Set(['VOICE_QUOTA_EXHAUSTED', 'SUBSCRIP
 // Depois que a conversa termina, o orb e o botão central abrem outra.
 const REALTIME_RESTART_HINT = 'Toque na Uni para começar uma nova conversa.';
 
+// A voz do chat (carregando ou tocando) para quando a conversa em tempo real
+// começa: a Uni da conversa não fala por cima dela.
 const INTERRUPTIBLE_VOICE_STATUSES = new Set([
   VOICE_TTS_STATUS.LOADING,
   VOICE_TTS_STATUS.PLAYING,
 ]);
-
-function getVoiceActivationError(errorCode) {
-  if (errorCode === 'permission_denied') {
-    return 'Permita o acesso ao microfone nos ajustes do Safari e tente novamente.';
-  }
-  if (errorCode === 'microphone_not_found') {
-    return 'Nenhum microfone foi encontrado neste dispositivo.';
-  }
-  return 'Não consegui ativar o microfone. Tente novamente.';
-}
 
 // Hora do cabeçalho do card da Uni ("Uni · 21:40"), fixada na abertura da Home.
 const CLOCK_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -99,8 +67,6 @@ const CLOCK_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minu
 // de confirmação já comunica "aguardando você"; speaking/success/error/idle
 // já têm sua própria UI (texto final, já revelado ou já visível).
 const PROCESSING_DISPLAY_STATES = new Set([
-  SIMPLIFIED_UNI_STATES.LISTENING,
-  SIMPLIFIED_UNI_STATES.TRANSCRIBING,
   SIMPLIFIED_UNI_STATES.INTERPRETING,
   SIMPLIFIED_UNI_STATES.EXECUTING,
 ]);
@@ -117,9 +83,7 @@ function CompactResponse({
   onSaveEditAction,
   interactionState,
   voiceStatus,
-  voiceCaptureStatus,
   voiceMessageId,
-  turnStartToken,
   interpretingOperationHint,
   // "voice": dentro da tela de voz (redesign, épico #91). O pedido da pessoa
   // já aparece sob o orb, então sai daqui; a resposta fica centralizada e o
@@ -160,66 +124,6 @@ function CompactResponse({
     ttsStatus: voiceStatus,
   });
 
-  // HOTFIX P0.1 (identidade de turno -- resposta antiga reaparecendo):
-  // `turnStartToken` muda toda vez que um NOVO turno de verdade começa
-  // (ver beginVoiceCapture em SimplifiedHomeView). Ao mudar, guarda qual
-  // era o ÚLTIMO id de mensagem da Uni NESSE instante (baseline) -- até
-  // que um id REALMENTE NOVO apareça em `lastUni`, o turno é considerado
-  // "aguardando resposta nova" independente de qualquer nuance de
-  // interactionState/voiceInput.status (não depende de enumerar estados
-  // "de processamento" -- é uma comparação de IDENTIDADE, robusta a
-  // qualquer race entre captura, TTS e publicação). Ajustado durante a
-  // renderização (nunca em efeito), mesmo padrão de reset-por-key já
-  // usado no projeto.
-  const currentLastUniId = lastUni?.id ?? null;
-  const [turnState, setTurnState] = useState(() => ({
-    token: turnStartToken,
-    baselineUniId: currentLastUniId,
-    awaitingFreshResponse: false,
-  }));
-  // Rede de segurança (evita P0.4 -- fluxo travado): se a captura for
-  // cancelada/falhar sem NUNCA produzir uma mensagem nova (ex.: usuário
-  // solta fora do botão sem falar, cancela explicitamente, ou permissão
-  // negada), o turno precisa de uma saída sem que `currentLastUniId` jamais
-  // mude -- senão `awaitingFreshResponse` ficaria travado em true para
-  // sempre, escondendo a última resposta real indefinidamente.
-  //
-  // HOTFIX FINAL (causa raiz real da "resposta fantasma" intermitente,
-  // confirmada por rastreamento do pipeline em UniChatPage.jsx): `interactionState
-  // === IDLE` sozinho é uma FALSA saída. `sendText` zera `isTyping` (via
-  // setTimeout, UNI_THINK_MIN_MS) ANTES de o pipeline de resposta
-  // (determinístico -> semântico/LLM -> handleUnresolvedMessage) sequer
-  // começar a trabalhar de verdade -- `handleUnresolvedMessage` só volta a
-  // marcar `isTyping=true` bem mais tarde, já dentro do await da chamada ao
-  // LLM. Nesse intervalo (que pode durar segundos, com round-trip de LLM),
-  // se o reset automático de `voiceInput` (1600ms após COMPLETED, ver
-  // efeito abaixo) já tiver zerado `voiceInput.status` para IDLE,
-  // `resolveSimplifiedUniState` cai no `return IDLE` final -- mesmo com o
-  // pipeline de resposta genuinamente ainda em andamento. Essa era
-  // exatamente a janela em que a resposta ANTERIOR reaparecia: "Entendendo
-  // seu pedido..." -> IDLE espúrio (abandona o turno por engano) ->
-  // `lastUni` antigo reaparece -> `handleUnresolvedMessage` marca
-  // isTyping=true de novo -> "Entendendo seu pedido..." reaparece -> só
-  // então a resposta nova chega. `interactionState === ERROR` já cobre
-  // TODO abandono real por falha (permissão negada/sem fala/não suportado
-  // -- ver isVoiceErrorState, todos mapeados para ERROR, nunca IDLE); o
-  // único abandono real que caía em IDLE é cancelamento explícito da
-  // captura (`voiceInput.cancel()`), coberto agora por
-  // `voiceCaptureStatus === CANCELED` diretamente -- identidade real do
-  // estado de captura, não inferência por enumeração de um estado agregado
-  // que também é o valor de repouso "nada está acontecendo".
-  const isTurnAbandoned = (
-    interactionState === SIMPLIFIED_UNI_STATES.ERROR
-    || voiceCaptureStatus === VOICE_CAPTURE_STATES.CANCELED
-  );
-  if (turnStartToken !== turnState.token) {
-    setTurnState({ token: turnStartToken, baselineUniId: currentLastUniId, awaitingFreshResponse: true });
-  } else if (turnState.awaitingFreshResponse
-    && (currentLastUniId !== turnState.baselineUniId || isTurnAbandoned)) {
-    setTurnState((prev) => ({ ...prev, awaitingFreshResponse: false }));
-  }
-  const isTurnAwaitingFreshResponse = turnState.awaitingFreshResponse;
-
   // HOTFIX (bug 2 -- resposta nova aparecia completa e "voltava" para
   // parcial): enquanto a mensagem ativa de voz ainda está em fase
   // 'pending' (publicada, mas o áudio real ainda não começou a tocar),
@@ -245,44 +149,12 @@ function CompactResponse({
 
   if (!lastUser && !lastUni) return null;
 
-  // HOTFIX P0 (2ª investigação): `isAwaitingNewResponse` (baseado em "a
-  // última mensagem do array é do usuário") foi REMOVIDO -- além de já
-  // redundante frente a `isTurnAwaitingFreshResponse` (que cobre o MESMO
-  // intervalo com identidade de turno real, nunca apenas inferindo pelo
-  // remetente da última mensagem), ele era PERIGOSO no reload: se a
-  // conversa persistida terminar com uma mensagem do usuário sem resposta
-  // (ex.: aba fechada no meio de um turno), essa condição ficava
-  // permanentemente true numa montagem nova (nada nunca faria isTyping
-  // virar true de novo), prendendo o indicador de processamento para
-  // sempre. `isTurnAwaitingFreshResponse` nasce SEMPRE false no mount.
-  //
-  // HOTFIX P0 (4ª investigação) -- CAUSA RAIZ REAL do "resposta antiga
-  // reaparece no meio do turno": `showProcessingIndicator` exigia
-  // `processingMessage` truthy, mas `processingMessage` deriva de
-  // `interactionState`, que passa por sub-estados SEM mensagem própria no
-  // meio de um turno real -- ex.: `resolveSimplifiedUniState` devolve
-  // 'success' assim que `voiceInput.status` vira COMPLETED, um instante
-  // ANTES de `isTyping` virar true (sendText/setIsTyping roda depois, no
-  // callback onFinalTranscript). Nesse render intermediário,
-  // `isTurnAwaitingFreshResponse` já está corretamente true (nenhuma
-  // resposta nova chegou ainda) mas `getProcessingMessageSequence('success')`
-  // devolve [] -- `processingMessage` vira null, `showProcessingIndicator`
-  // vira false, e o código caía no fallback `lastUni?.text`, reexibindo a
-  // resposta do turno ANTERIOR por um instante. A identidade de turno
-  // (`isTurnAwaitingFreshResponse`) já era a fonte de verdade correta; o bug
-  // era deixar a DECISÃO de esconder `lastUni` também depender de existir
-  // um texto de processamento bonito para o sub-estado exato. Agora a
-  // decisão é só: turno aguardando resposta fresca -> NUNCA mostra
-  // `lastUni`, mesmo sem um label específico (usa o fallback genérico
-  // abaixo, nunca deixa a tela em branco nem volta ao texto antigo).
   const showProcessingIndicator = Boolean(
-    isTurnAwaitingFreshResponse
-    || isVoicePendingPlayback
+    isVoicePendingPlayback
     || (processingMessage && PROCESSING_DISPLAY_STATES.has(interactionState)),
   );
-  // Fallback honesto para sub-estados de turno ativo sem mensagem própria
-  // (ex.: a janela 'success' descrita acima) -- nunca inventa uma operação
-  // específica, reaproveita a mesma frase genérica já usada por
+  // Fallback honesto para estados sem mensagem própria: nunca inventa uma
+  // operação específica, reaproveita a mesma frase genérica já usada por
   // "interpreting" sem hint reconhecido.
   const displayedProcessingMessage = processingMessage ?? 'Entendendo seu pedido…';
   const showHomeReply = Boolean(homeReplyBaseline && lastUni && lastUni.id !== homeReplyBaseline.uniId);
@@ -346,13 +218,11 @@ function CompactResponse({
 function SimplifiedHomeView({
   profile,
   user,
-  session,
   messages,
   isTyping,
   isExecuting,
   executionError,
   aiStatus,
-  voiceEnabled: voicePreferenceEnabled,
   voiceController,
   voiceMessageId,
   interpretingOperationHint,
@@ -363,261 +233,41 @@ function SimplifiedHomeView({
   onUndoAction,
   editForm = null,
   onSaveEditAction,
-  onWelcomeVoiceSettled,
   onRealtimeVoiceActiveChange,
-  realtimeVoiceEnabled = SIMPLIFIED_FEATURE_FLAGS.realtimeVoiceEnabled,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const voiceInput = useSharedUniVoiceInput();
   const [clockLabel] = useState(() => CLOCK_FORMATTER.format(new Date()));
-  // Saudação falada ao abrir o app. Com a conversa em tempo real (épico
-  // #116), a Home não fala sozinha: a saudação é visual, e a Uni fala
-  // primeiro quando a pessoa toca no orb, com a mesma voz da conversa. Sem
-  // saudação falada, também não há o botão "Ativar voz e microfone": o
-  // microfone é pedido no toque que abre a conversa.
-  const voiceEnabled = voicePreferenceEnabled && !realtimeVoiceEnabled;
   // UNIUPD1: limit:1 -- a Home so precisa saber "existe novidade pendente?",
   // nunca carrega o historico inteiro (isso fica com Sobre a UniFlow AI).
   const { pendingUpdate: pendingUniUpdate } = useUniUpdates({ limit: 1 });
+  // A saudação da Home é visual. A Uni fala primeiro quando a pessoa toca no
+  // orb, com a voz da conversa em tempo real (buildRealtimeGreetingInstructions).
   const greeting = useMemo(
     () => resolveSimplifiedGreeting(profile, user, getPageLoadGreetingOpening()),
     [profile, user],
   );
-  const sessionKey = buildWelcomeSessionKey(user, session);
-  const isAppleVoiceRuntime = useMemo(
-    () => typeof window !== 'undefined' && isAppleWebKitRuntime(window),
-    [],
-  );
-  const welcomeAttemptInFlightRef = useRef(false);
-  const retryWelcomeOnGestureRef = useRef(false);
-  const welcomeWasBackgroundedRef = useRef(false);
-  const [voiceActivationRequired, setVoiceActivationRequired] = useState(
-    () => Boolean(
-      voiceEnabled
-      && sessionKey
-      && isAppleVoiceRuntime
-      && !isWelcomeVoiceActivated(sessionKey)
-    ),
-  );
-  const [voiceActivationPending, setVoiceActivationPending] = useState(false);
-  const [voiceActivationError, setVoiceActivationError] = useState(null);
-
-  const requestWelcomeVoice = useCallback(
-    (requestMetadata = {}) => voiceController.speak(greeting.spokenGreeting, {
-      messageId: 'welcome',
-      source: 'greeting',
-      ...requestMetadata,
-    }),
-    [greeting.spokenGreeting, voiceController],
-  );
-  const attemptWelcomeVoice = useCallback(async ({ userInitiated = false, ...requestMetadata } = {}) => {
-    if (!voiceEnabled || !sessionKey || welcomeAttemptInFlightRef.current) return null;
-
-    welcomeAttemptInFlightRef.current = true;
-    try {
-      const result = await requestWelcomeVoice({ userInitiated, ...requestMetadata });
-      const error = result?.error ?? null;
-      const autoplayBlocked = error?.code === VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED;
-      retryWelcomeOnGestureRef.current = autoplayBlocked;
-
-      if (autoplayBlocked) markWelcomeVoiceBlocked(sessionKey, error);
-      else if (!error) clearWelcomeVoiceBlocked(sessionKey);
-
-      return result;
-    } finally {
-      welcomeAttemptInFlightRef.current = false;
-      onWelcomeVoiceSettled?.();
-    }
-  }, [onWelcomeVoiceSettled, requestWelcomeVoice, sessionKey, voiceEnabled]);
-
-  const voiceInputHandlers = useMemo(() => ({
-    onBeforeStart: onBeforeVoiceStart,
-    onFinalTranscript: (transcript) => {
-      const cleanTranscript = String(transcript ?? '').trim();
-      if (cleanTranscript) onSendTranscript(cleanTranscript, { source: 'voice' });
-    },
-  }), [onBeforeVoiceStart, onSendTranscript]);
-  useStableVoiceInputHandlers(voiceInput.registerHandlers, voiceInputHandlers);
-
-  useEffect(() => {
-    if (!voiceEnabled) return;
-    if (!claimWelcomeVoice(sessionKey)) return;
-
-    if (isAppleVoiceRuntime) return;
-
-    // BLOCO VOZ HIDRATAÇÃO: a saudação tem prioridade exclusiva -- o
-    // autoplay de mensagens (UniChatPage) só é armado quando a fala da
-    // saudação TERMINA ou FALHA (finally), nunca antes (preparando/
-    // carregando/tocando ficam bloqueando). Sucesso e falha liberam igual.
-    void attemptWelcomeVoice();
-  }, [
-    attemptWelcomeVoice,
-    isAppleVoiceRuntime,
-    sessionKey,
-    voiceEnabled,
-  ]);
-
-  useEffect(() => {
-    if (isAppleVoiceRuntime) return undefined;
-    retryWelcomeOnGestureRef.current = getWelcomeVoiceBlocked(sessionKey)?.code
-      === VOICE_TTS_ERROR_CODES.AUTOPLAY_BLOCKED;
-    // A saudação só toca na primeira visita à Home da carga. Quem sai sem
-    // ouvir (autoplay bloqueado e nenhum toque na Home) não a ouve ao voltar.
-    return () => clearWelcomeVoiceBlocked(sessionKey);
-  }, [isAppleVoiceRuntime, sessionKey]);
-
-  useEffect(() => {
-    if (
-      !voiceEnabled
-      || isAppleVoiceRuntime
-      || typeof window === 'undefined'
-      || typeof document === 'undefined'
-    ) {
-      return undefined;
-    }
-
-    const retryAfterUserGesture = (event) => {
-      if (!retryWelcomeOnGestureRef.current || document.visibilityState === 'hidden') return;
-      // Toque que sai da Home (aba da barra, link) não inicia a saudação.
-      if (event.target instanceof Element && event.target.closest('[data-uni-voice-control], a[href]')) return;
-      retryWelcomeOnGestureRef.current = false;
-      void attemptWelcomeVoice({ userInitiated: true });
-    };
-
-    window.addEventListener('pointerdown', retryAfterUserGesture, true);
-    window.addEventListener('keydown', retryAfterUserGesture, true);
-    return () => {
-      window.removeEventListener('pointerdown', retryAfterUserGesture, true);
-      window.removeEventListener('keydown', retryAfterUserGesture, true);
-    };
-  }, [attemptWelcomeVoice, isAppleVoiceRuntime, voiceEnabled]);
-
-  useEffect(() => {
-    if (!voiceEnabled || !sessionKey || typeof window === 'undefined' || typeof document === 'undefined') {
-      return undefined;
-    }
-
-    const markBackgrounded = () => {
-      welcomeWasBackgroundedRef.current = true;
-    };
-    const greetAfterForegroundReturn = () => {
-      if (!welcomeWasBackgroundedRef.current || document.visibilityState === 'hidden') return;
-      welcomeWasBackgroundedRef.current = false;
-      releaseWelcomeVoice(sessionKey);
-      if (!claimWelcomeVoice(sessionKey)) return;
-      if (isAppleVoiceRuntime) {
-        setVoiceActivationError(null);
-        setVoiceActivationRequired(true);
-        return;
-      }
-      void attemptWelcomeVoice();
-    };
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') markBackgrounded();
-      else greetAfterForegroundReturn();
-    };
-
-    window.addEventListener('pagehide', markBackgrounded);
-    window.addEventListener('pageshow', greetAfterForegroundReturn);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      window.removeEventListener('pagehide', markBackgrounded);
-      window.removeEventListener('pageshow', greetAfterForegroundReturn);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [attemptWelcomeVoice, isAppleVoiceRuntime, sessionKey, voiceEnabled]);
-
-  const handleActivateVoice = useCallback(async () => {
-    if (voiceActivationPending || !sessionKey) return;
-
-    setVoiceActivationPending(true);
-    setVoiceActivationError(null);
-    claimWelcomeVoice(sessionKey);
-
-    try {
-      const playbackPreparation = voiceController.preparePlayback?.() ?? Promise.resolve(false);
-      const microphonePreparation = voiceInput.prepareMicrophone();
-      const [, microphoneResult] = await Promise.all([
-        playbackPreparation,
-        microphonePreparation,
-      ]);
-
-      if (!microphoneResult?.granted) {
-        setVoiceActivationError(getVoiceActivationError(microphoneResult?.errorCode));
-        return;
-      }
-
-      markWelcomeVoiceActivated(sessionKey);
-      setVoiceActivationRequired(false);
-      setVoiceActivationPending(false);
-      void attemptWelcomeVoice({
-        userInitiated: true,
-        playbackPreparationAttempted: true,
-      });
-    } catch {
-      setVoiceActivationError('Não consegui concluir a ativação. Tente novamente.');
-    } finally {
-      setVoiceActivationPending(false);
-    }
-  }, [
-    attemptWelcomeVoice,
-    sessionKey,
-    voiceActivationPending,
-    voiceController,
-    voiceInput,
-  ]);
-
-  useEffect(() => {
-    if (
-      voiceInput.status !== VOICE_CAPTURE_STATES.COMPLETED
-      && !isVoiceErrorState(voiceInput.status)
-    ) {
-      return undefined;
-    }
-    const timeoutId = window.setTimeout(
-      () => voiceInput.reset(),
-      voiceInput.status === VOICE_CAPTURE_STATES.COMPLETED ? 1600 : 3200,
-    );
-    return () => window.clearTimeout(timeoutId);
-  }, [voiceInput]);
 
   const pendingConfirmation = messages.some(
     (message) => message.confirmation?.status === 'pending',
   );
-  // Estado visual e estado cancelável são deliberadamente diferentes:
-  // LOADING ainda não é fala audível, então não pode mostrar "TOQUE PARA
-  // PARAR"; porém precisa continuar cancelável antes de abrir o microfone.
   const isSpeaking = voiceController.status === VOICE_TTS_STATUS.PLAYING;
   const isVoicePlaybackInterruptible = INTERRUPTIBLE_VOICE_STATUSES.has(
     voiceController.status,
   );
   const interactionState = resolveSimplifiedUniState({
-    voiceStatus: voiceInput.status,
     isTyping,
     isExecuting,
     hasPendingConfirmation: pendingConfirmation,
     hasError: Boolean(executionError) || aiStatus === 'error',
     isSpeaking,
   });
-  const isListening = voiceInput.status === VOICE_CAPTURE_STATES.LISTENING;
-  const isCaptureBusy = [
-    VOICE_CAPTURE_STATES.REQUESTING_PERMISSION,
-    VOICE_CAPTURE_STATES.PROCESSING,
-  ].includes(voiceInput.status);
-  const isInteractionBusy = isTyping || isExecuting || isCaptureBusy;
-  usePwaAutoUpdateBlock(
-    voiceInput.isActive || isInteractionBusy || pendingConfirmation || voiceActivationPending,
-  );
-  const voiceErrorMessage = isVoiceErrorState(voiceInput.status) ? voiceInput.message : null;
+  const isInteractionBusy = isTyping || isExecuting;
 
-  // TAP-TO-TALK (épico #99): um toque no orb abre a tela de voz e começa a
-  // ouvir no MESMO gesto (o iOS só libera microfone e áudio dentro de uma
-  // ativação do usuário). Enviar encerra e manda para a transcrição; fechar
-  // a tela ou sair do app descarta. Sem pointer capture: o toque é um click
-  // comum, então os bugs de "solta sozinho" do segurar para falar não se
-  // aplicam aqui.
+  // Um toque no orb abre a tela de voz e já começa a conversa em tempo real,
+  // no MESMO gesto (o iOS só libera microfone e áudio dentro de uma ativação
+  // do usuário).
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
   // Mensagens que já existiam quando a conversa por voz começou: a tela de
   // voz não as mostra (ver snapshotVoiceConversationStart).
@@ -627,7 +277,7 @@ function SimplifiedHomeView({
   // Confirmar, Editar e Cancelar no card da Home e para o pedido que ainda
   // estava em andamento quando a tela de voz fechou. Sem isso, "Lançamento
   // salvo" ou o erro da gravação sumiam com o card. Abrir a tela de voz
-  // limpa. Ajustado durante a renderização, como o turnState do card.
+  // limpa. Ajustado durante a renderização, não em efeito.
   const lastUniMessageId = [...messages].reverse().find((message) => message.from === 'uni')?.id ?? null;
   const [homeReplyBaseline, setHomeReplyBaseline] = useState(null);
   const [wasVoiceModeOpen, setWasVoiceModeOpen] = useState(isVoiceModeOpen);
@@ -638,19 +288,6 @@ function SimplifiedHomeView({
   function markHomeReply() {
     if (!isVoiceModeOpen) setHomeReplyBaseline({ uniId: lastUniMessageId });
   }
-
-  // Watchdog de ESTADO (última barreira): a UI diz "ouvindo", mas o gravador
-  // já parou por fora (track encerrada, permissão revogada). Nunca age por
-  // tempo decorrido sozinho.
-  useEffect(() => {
-    if (!voiceInput.isActive) return undefined;
-    const interval = setInterval(() => {
-      const recorderState = voiceInput.getRecorderState?.() ?? 'inactive';
-      if (recorderState !== 'recording' && voiceInput.isListening) voiceInput.cancel();
-    }, 1500);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceInput.isActive, voiceInput.cancel]);
 
   // Conversa em tempo real (épico #116): a Uni ouve e fala continuamente, e
   // o que envolve dinheiro passa pelo mesmo envio do texto.
@@ -674,7 +311,7 @@ function SimplifiedHomeView({
   // andamento, e o saldo é relido depois que ela termina (useVoiceMinutes).
   const userId = user?.id ?? null;
   const { voiceMinutes, refresh: refreshVoiceMinutes } = useVoiceMinutes({
-    enabled: realtimeVoiceEnabled,
+    enabled: true,
     userId,
     sessionStartedAt: realtime.state.startedAt,
     sessionEndedAt: realtime.state.endedAt,
@@ -689,6 +326,8 @@ function SimplifiedHomeView({
   // minutos": ela perderia o botão de encerrar.
   const isRealtimeLive = isRealtimeActive || realtimeStatus === REALTIME_STATUS.CONNECTING;
   const isVoiceMinutesOut = voiceMinutes?.isOut === true && !isRealtimeLive;
+  // Recarregar o app para atualizar derrubaria a conversa por voz aberta.
+  usePwaAutoUpdateBlock(isRealtimeLive || isInteractionBusy || pendingConfirmation);
   const voiceMinutesNotice = describeVoiceMinutesNotice(voiceMinutes);
   const voiceMinutesNoticeKey = voiceMinutesNotice?.key ?? null;
   const [dismissedVoiceNoticeKey, setDismissedVoiceNoticeKey] = useState(null);
@@ -709,74 +348,10 @@ function SimplifiedHomeView({
     navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].path);
   }
 
-  const cancelVoiceCaptureRef = useRef(null);
   const openVoiceModeRef = useRef(null);
   const isRealtimeActiveRef = useRef(false);
   const stopRealtimeRef = useRef(null);
   useEffect(() => {
-    const cancelOnBackground = () => cancelVoiceCaptureRef.current?.('lifecycle');
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') cancelOnBackground();
-    };
-
-    window.addEventListener('pagehide', cancelOnBackground);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      window.removeEventListener('pagehide', cancelOnBackground);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-  // HOTFIX P0.1: token monotônico que identifica um NOVO turno de voz --
-  // incrementado só quando uma captura de verdade começa (plan.proceed &&
-  // plan.startCapture), nunca num toque recusado. CompactResponse usa a
-  // MUDANÇA deste valor para saber com certeza que uma resposta antiga não
-  // pode mais representar o turno atual, até que uma mensagem da Uni
-  // REALMENTE NOVA (id diferente) apareça.
-  const [turnStartToken, setTurnStartToken] = useState(0);
-
-  function beginVoiceCapture() {
-    // HOTFIX (barge-in): tocar enquanto a Uni fala INTERROMPE a fala E
-    // inicia a captura no MESMO toque. voiceController.stop() é síncrono e
-    // já limpa o <audio>/AbortController antes de retornar, então nenhum
-    // callback tardio da fala interrompida mexe na gravação que começa.
-    const plan = resolveBargeInPlan({
-      isInteractionBusy,
-      isSpeaking: isVoicePlaybackInterruptible,
-      isVoiceError: isVoiceErrorState(voiceInput.status),
-    });
-    if (!plan.proceed) return false;
-    if (plan.interruptSpeech) voiceController.stop();
-    if (plan.resetError) voiceInput.reset();
-    if (plan.startCapture) {
-      // HOTFIX P0 (3ª investigação): `onBeforeVoiceStart` (que zera
-      // voiceMessageId em UniChatPage.jsx) é chamado aqui, DIRETO e
-      // incondicional, porque voiceInput.start() tem early-returns que podem
-      // pular o onBeforeStart registrado. Sem isso, a resposta anterior
-      // continuava "ativa" e reaparecia com o STOPPED do stop() acima.
-      // Idempotente.
-      onBeforeVoiceStart?.();
-      setTurnStartToken((token) => token + 1);
-      void voiceInput.start();
-      if (import.meta.env.DEV) console.debug('[voice] voice_capture_started');
-    }
-    return true;
-  }
-
-  function finishVoiceCapture() {
-    if (!voiceInput.isActive) return;
-    voiceInput.stop();
-    recordVoicePipelineDiagnostic('CAPTURE_RELEASED', { finishReason: 'send-button' });
-  }
-
-  function cancelVoiceCapture(reason) {
-    if (!voiceInput.isActive) return;
-    voiceInput.cancel();
-    recordVoicePipelineDiagnostic('CAPTURE_CANCELLED', { finishReason: reason });
-  }
-
-  useEffect(() => {
-    cancelVoiceCaptureRef.current = cancelVoiceCapture;
     isRealtimeActiveRef.current = isRealtimeActive;
     stopRealtimeRef.current = stopRealtime;
   });
@@ -805,12 +380,6 @@ function SimplifiedHomeView({
     });
   }
 
-  function handleOpenVoiceMode() {
-    setVoiceConversationPreviousIds(snapshotVoiceConversationStart(messages));
-    setIsVoiceModeOpen(true);
-    beginVoiceCapture();
-  }
-
   // Sem minutos, a tela abre no estado de saldo zerado e não tenta conectar.
   // O saldo é relido: se o plano mudou, a tela volta ao orb para conversar.
   // Com saldo, não se relê aqui: a reserva da conversa que começa entraria
@@ -823,14 +392,12 @@ function SimplifiedHomeView({
 
   // Declarado antes do efeito que lê a ref: efeitos rodam na ordem do código.
   useEffect(() => {
-    openVoiceModeRef.current = handleOpenVoiceMode;
-    if (realtimeVoiceEnabled) openVoiceModeRef.current = handleOpenRealtimeVoiceMode;
+    openVoiceModeRef.current = handleOpenRealtimeVoiceMode;
   });
 
   // O orb da barra inferior chega aqui como /app/home?falar=1, de qualquer
   // aba. O parâmetro é consumido uma vez (replace, sem entrada nova no
-  // histórico). No Safari antes do "Ativar voz e microfone", a tela não abre:
-  // a Home mostra o botão de ativação.
+  // histórico).
   // Cada toque no orb é uma navegação com key própria: a ref garante uma
   // abertura por toque, mesmo com o efeito rodando duas vezes no StrictMode.
   const wantsVoiceMode = searchParams.has(VOICE_MODE_SEARCH_PARAM);
@@ -844,8 +411,8 @@ function SimplifiedHomeView({
       next.delete(VOICE_MODE_SEARCH_PARAM);
       return next;
     }, { replace: true });
-    if (!voiceActivationRequired && !voiceActivationPending) openVoiceModeRef.current?.();
-  }, [setSearchParams, voiceActivationPending, voiceActivationRequired, voiceRequestKey, wantsVoiceMode]);
+    openVoiceModeRef.current?.();
+  }, [setSearchParams, voiceRequestKey, wantsVoiceMode]);
 
   function handleRealtimeVoiceModeAction(action) {
     if (action === VOICE_MODE_ACTIONS.START) beginRealtimeConversation();
@@ -859,31 +426,14 @@ function SimplifiedHomeView({
 
   function handleLeaveRealtimeVoiceModeToChat() {
     stopRealtime('user');
-    handleLeaveVoiceModeToChat();
+    setIsVoiceModeOpen(false);
+    navigate(SIMPLIFIED_ROUTES.UNI);
   }
 
   function handleOpenPlanFromVoiceMode() {
     stopRealtime('user');
     setIsVoiceModeOpen(false);
     handleOpenVoicePlan();
-  }
-
-  function handleVoiceModeAction(action) {
-    if (action === VOICE_MODE_ACTIONS.START) beginVoiceCapture();
-    else if (action === VOICE_MODE_ACTIONS.STOP_LISTENING) finishVoiceCapture();
-    else if (action === VOICE_MODE_ACTIONS.STOP_SPEAKING) voiceController.stop();
-  }
-
-  function handleCloseVoiceMode() {
-    cancelVoiceCapture('close-button');
-    if (isVoicePlaybackInterruptible) voiceController.stop();
-    setIsVoiceModeOpen(false);
-  }
-
-  function handleLeaveVoiceModeToChat() {
-    cancelVoiceCapture('open-chat');
-    setIsVoiceModeOpen(false);
-    navigate(SIMPLIFIED_ROUTES.UNI);
   }
 
   // Toques no card: com a conversa por voz aberta, a Uni fala a resposta.
@@ -925,9 +475,7 @@ function SimplifiedHomeView({
       onUndoAction={handleCardUndo}
       interactionState={interactionState}
       voiceStatus={voiceController.status}
-      voiceCaptureStatus={voiceInput.status}
       voiceMessageId={voiceMessageId}
-      turnStartToken={turnStartToken}
       interpretingOperationHint={interpretingOperationHint}
       presentation={isVoiceModeOpen ? 'voice' : 'home'}
       homeReplyBaseline={homeReplyBaseline}
@@ -945,11 +493,6 @@ function SimplifiedHomeView({
   const voiceLastUserText = isVoiceModeOpen
     ? ([...compactResponseMessages].reverse().find((message) => message.from === 'user')?.text ?? '')
     : '';
-  // Na captura antiga, enquanto grava e transcreve, o pedido novo ainda não
-  // está na conversa: a última mensagem seria a do turno anterior.
-  const isLegacyVoiceTurnPending = isListening
-    || interactionState === SIMPLIFIED_UNI_STATES.TRANSCRIBING
-    || interactionState === SIMPLIFIED_UNI_STATES.SUCCESS;
   const isRealtimeUserSpeaking = realtime.state.status === REALTIME_STATUS.USER_SPEAKING;
   // Antes da primeira fala da conversa, a tela mostra o pedido do rascunho
   // que ficou pendente. Depois, só o que a pessoa disse nesta conversa.
@@ -984,15 +527,6 @@ function SimplifiedHomeView({
     return null;
   })();
 
-  const voiceModeHint = (() => {
-    if (voiceErrorMessage) return voiceErrorMessage;
-    if (voiceInput.status === VOICE_CAPTURE_STATES.REQUESTING_PERMISSION) {
-      return 'Se o navegador pedir, permita o uso do microfone.';
-    }
-    if (isListening) return 'Fale com calma. Toque em Enviar quando terminar.';
-    return null;
-  })();
-
   return (
     <div className={styles.home} data-simplified-home>
       <h1 id="simplified-home-title" className={styles.srOnly}>Hoje</h1>
@@ -1009,15 +543,6 @@ function SimplifiedHomeView({
             {greeting.visualGreeting.eyebrow} {greeting.displayName}.
           </span>
         )}
-        actions={voiceActivationRequired ? (
-          <OutlineButton
-            className={styles.voiceActivationButton}
-            onClick={handleActivateVoice}
-            disabled={voiceActivationPending}
-          >
-            {voiceActivationPending ? 'ATIVANDO...' : 'ATIVAR VOZ E MICROFONE'}
-          </OutlineButton>
-        ) : null}
       >
         {pendingUniUpdate ? (
           <div className={styles.uniUpdateBanner}>
@@ -1032,25 +557,13 @@ function SimplifiedHomeView({
               Ver novidades
             </OutlineButton>
           </div>
-        ) : realtimeVoiceEnabled ? (
+        ) : (
           // A saudação é visual: a Home diz como começar a conversa, e a Uni
           // fala quando a pessoa toca nela.
           <p className={styles.greetingMessage}>
             Toque na <strong>Uni</strong>, no centro da barra abaixo, para conversar por voz.
           </p>
-        ) : (
-          <p className={styles.greetingMessage}>
-            Estou aqui para ajudar você a tomar as <strong>melhores decisões</strong> financeiras.
-          </p>
         )}
-        {voiceActivationRequired ? (
-          <div className={styles.voiceActivation}>
-            <small>
-              Toque uma vez para permitir o microfone e ouvir a saudação da Uni.
-            </small>
-            {voiceActivationError ? <p role="alert">{voiceActivationError}</p> : null}
-          </div>
-        ) : null}
       </UniCard>
 
       {showVoiceMinutesNotice ? (
@@ -1070,49 +583,29 @@ function SimplifiedHomeView({
 
       <SimplifiedHomeAgenda />
 
-
-      {realtimeVoiceEnabled ? (
-        <SimplifiedVoiceMode
-          open={isVoiceModeOpen}
-          interactionState={interactionState}
-          view={resolveRealtimeVoiceModeView(realtime.state.status, {
-            hasPendingDraft: voiceHasPendingDraft,
-            isMuted: realtime.isMuted,
-          })}
-          hint={realtimeHint}
-          response={isVoiceModeOpen ? compactResponse : null}
-          transcript={realtimeTranscript}
-          isUserSpeaking={isRealtimeUserSpeaking}
-          hasReply={voiceHasReply}
-          getVoiceStream={realtime.getLocalStream}
-          microphone={canMuteRealtimeConversation(realtime.state.status)
-            ? { isMuted: realtime.isMuted, onToggle: () => realtime.setMuted(!realtime.isMuted) }
-            : null}
-          voiceMinutes={voiceMinutes}
-          isVoiceMinutesOut={isVoiceMinutesOut}
-          onAction={handleRealtimeVoiceModeAction}
-          onClose={handleCloseRealtimeVoiceMode}
-          onWrite={handleLeaveRealtimeVoiceModeToChat}
-          onOpenConversation={handleLeaveRealtimeVoiceModeToChat}
-          onOpenPlan={handleOpenPlanFromVoiceMode}
-        />
-      ) : (
-        <SimplifiedVoiceMode
-          open={isVoiceModeOpen}
-          interactionState={interactionState}
-          hint={voiceModeHint}
-          response={isVoiceModeOpen ? compactResponse : null}
-          transcript={isLegacyVoiceTurnPending ? '' : voiceLastUserText}
-          isUserSpeaking={isListening}
-          hasReply={voiceHasReply}
-          getVoiceStream={voiceInput.getActiveStream}
-          getVoiceSessionId={voiceInput.getActiveSessionId}
-          onAction={handleVoiceModeAction}
-          onClose={handleCloseVoiceMode}
-          onWrite={handleLeaveVoiceModeToChat}
-          onOpenConversation={handleLeaveVoiceModeToChat}
-        />
-      )}
+      <SimplifiedVoiceMode
+        open={isVoiceModeOpen}
+        view={resolveRealtimeVoiceModeView(realtime.state.status, {
+          hasPendingDraft: voiceHasPendingDraft,
+          isMuted: realtime.isMuted,
+        })}
+        hint={realtimeHint}
+        response={isVoiceModeOpen ? compactResponse : null}
+        transcript={realtimeTranscript}
+        isUserSpeaking={isRealtimeUserSpeaking}
+        hasReply={voiceHasReply}
+        getVoiceStream={realtime.getLocalStream}
+        microphone={canMuteRealtimeConversation(realtime.state.status)
+          ? { isMuted: realtime.isMuted, onToggle: () => realtime.setMuted(!realtime.isMuted) }
+          : null}
+        voiceMinutes={voiceMinutes}
+        isVoiceMinutesOut={isVoiceMinutesOut}
+        onAction={handleRealtimeVoiceModeAction}
+        onClose={handleCloseRealtimeVoiceMode}
+        onWrite={handleLeaveRealtimeVoiceModeToChat}
+        onOpenConversation={handleLeaveRealtimeVoiceModeToChat}
+        onOpenPlan={handleOpenPlanFromVoiceMode}
+      />
 
       <SimplifiedHomeFinancialGraph />
     </div>

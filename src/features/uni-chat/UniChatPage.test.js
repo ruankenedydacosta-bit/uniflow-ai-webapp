@@ -449,25 +449,6 @@ test('nenhuma frase de incapacidade operacional ("não consigo registrar daqui" 
 // Voz: entrada não sobrescreve texto existente; saída não bloqueia renderização
 // ============================================================================
 
-test('entrada por voz concatena, envia a transcrição e usa o workspace ativo', async () => {
-  const chatInput = await source('components/ChatInput.jsx');
-  const provider = await source('../uni-voice/UniVoiceInputProvider.jsx');
-  assert.match(chatInput, /const next = current \? `\$\{current\} \$\{clean\}` : clean;/);
-  assert.match(chatInput, /onSend\(next, \{ source: 'voice' \}\);/);
-  assert.match(chatInput, /onBeforeStart: onBeforeVoiceStart/);
-  assert.match(provider, /workspaceId=\{workspace\?\.id\}/);
-});
-
-test('long press central inicia e encerra a captura no controlador compartilhado', async () => {
-  const chatInput = await source('components/ChatInput.jsx');
-  const centerButton = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(centerButton, /void voiceInput\.start\(\);/);
-  assert.match(centerButton, /voiceInput\.stop\(\);/);
-  assert.match(centerButton, /voiceInput\.cancel\(\);/);
-  assert.match(chatInput, /useSharedUniVoiceInput\(\)/);
-  assert.doesNotMatch(centerButton, /startVoiceCapture: true/);
-});
-
 test('falha/ausência de suporte a voz mantém a digitação funcional (input sempre habilitado)', async () => {
   const chatInput = await source('components/ChatInput.jsx');
   assert.doesNotMatch(chatInput, /input[\s\S]{0,120}disabled=\{.*voice/i);
@@ -995,13 +976,13 @@ test('BLOCO VOZ HIDRATAÇÃO: maybeArmAutoplay é o ÚNICO ponto que arma o auto
   const page = await source('UniChatPage.jsx');
   const idx = page.indexOf('const maybeArmAutoplay = useCallback');
   assert.ok(idx > -1, 'esperava maybeArmAutoplay definido');
-  const block = page.slice(idx, page.indexOf('const handleWelcomeVoiceSettled = useCallback', idx));
+  const block = page.slice(idx, page.indexOf('}, [messages, user]);', idx));
   // Guardas determinísticas da hidratação: marco já armado, restaurações
-  // em voo, sessão ainda não carregada e saudação pendente.
+  // em voo e sessão ainda não carregada.
   assert.match(block, /if \(historyHydratedRef\.current\) return;/);
   assert.match(block, /if \(pendingRestoresRef\.current > 0\) return;/);
   assert.match(block, /if \(isSupabaseConfigured && !user\?\.id\) return;/);
-  assert.match(block, /if \(isWelcomeVoicePending\(buildWelcomeSessionKey\(user, session\)\)\) return;/);
+  assert.doesNotMatch(block, /isWelcomeVoicePending/);
   // Snapshot: marcar o histórico restaurado como já narrado ANTES de armar.
   const markIdx = block.indexOf('markRestoredMessagesAsSpoken(user?.id, messages);');
   const armIdx = block.indexOf('setHistoryHydrated(true);');
@@ -1027,39 +1008,6 @@ test('BLOCO VOZ HIDRATAÇÃO: switchConversation marca mensagens restauradas com
   assert.match(block, /markRestoredMessagesAsSpoken\(user\?\.id, conv\.messages \|\| \[\]\);/);
   assert.match(block, /pendingRestoresRef\.current \+= 1;/);
   assert.match(block, /markRestoredMessagesAsSpoken\(user\?\.id, loadedMessages\);/);
-});
-
-test('BLOCO VOZ HIDRATAÇÃO: a saudação tem prioridade exclusiva -- UniChatPage passa onWelcomeVoiceSettled e SimplifiedHomeView libera o autoplay no finally (sucesso ou falha)', async () => {
-  const page = await source('UniChatPage.jsx');
-  assert.match(page, /const handleWelcomeVoiceSettled = useCallback/);
-  assert.match(page, /onWelcomeVoiceSettled=\{handleWelcomeVoiceSettled\}/);
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /onWelcomeVoiceSettled,/);
-  assert.match(
-    home,
-    /finally \{\s*\n\s*welcomeAttemptInFlightRef\.current = false;\s*\n\s*onWelcomeVoiceSettled\?\.\(\);\s*\n\s*\}/,
-  );
-});
-
-test('BLOCO VOZ HIDRATAÇÃO (deadlock corrigido): handleWelcomeVoiceSettled chama markWelcomeVoiceSettled ANTES de maybeArmAutoplay -- pendingWelcome nunca fica preso e historyHydrated é armado após settled', async () => {
-  const page = await source('UniChatPage.jsx');
-  // O callback de settled precisa LIBERAR a chave pendente da saudação antes
-  // de tentar armar -- sem isso, isWelcomeVoicePending fica true para sempre,
-  // historyHydrated nunca arma e speakMessage nunca é chamado.
-  assert.match(
-    page,
-    /import \{ buildWelcomeSessionKey, isWelcomeVoicePending, markWelcomeVoiceSettled \} from '\.\.\/simplified-app\/welcomeVoiceSession\.js';/,
-  );
-  const block = page.slice(
-    page.indexOf('const handleWelcomeVoiceSettled = useCallback'),
-    page.indexOf('const handleWelcomeVoiceSettled = useCallback') + 800,
-  );
-  const markIdx = block.indexOf('markWelcomeVoiceSettled(buildWelcomeSessionKey(user, session));');
-  const armIdx = block.indexOf('maybeArmAutoplay();');
-  assert.ok(markIdx > -1, 'handleWelcomeVoiceSettled deve liberar a chave (markWelcomeVoiceSettled)');
-  assert.ok(armIdx > -1, 'handleWelcomeVoiceSettled deve tentar armar depois (maybeArmAutoplay)');
-  assert.ok(markIdx < armIdx, 'markWelcomeVoiceSettled deve rodar ANTES de maybeArmAutoplay -- settled → pending=false → armamento');
-  assert.ok(!/setTimeout|setInterval/.test(block), 'a liberação é determinística -- nunca timeout');
 });
 
 test('BLOCO VOZ ID: pontos de restauração reservam IDs restaurados (reserveMessageIds) -- mensagens novas nunca colidem com histórico', async () => {

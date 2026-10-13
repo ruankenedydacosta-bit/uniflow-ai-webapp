@@ -13,13 +13,14 @@ continuam disponíveis e não foram removidos.
 
 ## Voz
 
-A Home usa o `UniVoiceInputProvider` persistente do shell e a variante compacta
-do `UniChatPage`. Assim, captura, transcrição, intents, confirmações, Pending
-Action Stack, RPC atômica e proteção contra duplicidade continuam no motor já
-existente.
+A Home usa a variante compacta do `UniChatPage`. A voz é só a conversa em tempo
+real (`uni-voice-realtime`): o orb da barra inferior abre a tela de voz, e o que
+a pessoa pede passa pelo mesmo envio do texto. Assim, intents, confirmações,
+Pending Action Stack, RPC atômica e proteção contra duplicidade continuam no
+motor já existente.
 
-A saudação utiliza o TTS já disponível e é tentada uma vez por sessão
-autenticada. Falhas de autoplay ou do provedor não bloqueiam a interface.
+A saudação da Home é visual. Quem cumprimenta em voz é a Uni da conversa em
+tempo real, ao abrir a conversa.
 
 ## Assinatura
 

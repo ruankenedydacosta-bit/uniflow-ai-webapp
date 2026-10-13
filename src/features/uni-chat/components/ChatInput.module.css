@@ -1,5 +1,5 @@
 /* Campo da conversa no redesign (épico #91, tela 02): pílula sobre o fundo,
-   com um botão redondo à direita (voz ou enviar). */
+   com o botão redondo de enviar à direita. */
 .form {
   padding: var(--uf-space-8) var(--uf-space-16) 0;
   padding-bottom: max(10px, env(safe-area-inset-bottom));
@@ -48,7 +48,6 @@
   font-size: 14px;
 }
 
-.voiceBtn,
 .sendBtn {
   flex-shrink: 0;
   width: 40px;
@@ -66,26 +65,16 @@
   transition: background-color var(--uf-duration-fast) ease, transform var(--uf-duration-fast) ease;
 }
 
-.voiceBtn svg,
 .sendBtn svg {
   width: 18px;
   height: 18px;
   display: block;
 }
 
-/* Com o enviar ao lado, o microfone vira secundário: sem contorno roxo. */
-.voiceBtn[data-secondary="true"] {
-  border-color: transparent;
-  color: var(--uf-app-text-2);
-  box-shadow: none;
-}
-
-.voiceBtn:hover,
 .sendBtn:hover:not(:disabled) {
   background: var(--uf-app-ai-subtle);
 }
 
-.voiceBtn:focus-visible,
 .sendBtn:focus-visible {
   outline: 2px solid var(--uf-app-focus);
   outline-offset: 2px;
@@ -98,35 +87,6 @@
 }
 
 /* No app simplificado a escala vem do toque com mola (#143). */
-:global(body:not([data-simplified-app-mounted])) .sendBtn:not(:disabled):active,
-:global(body:not([data-simplified-app-mounted])) .voiceBtn:active {
+:global(body:not([data-simplified-app-mounted])) .sendBtn:not(:disabled):active {
   transform: scale(.94);
-}
-
-.voiceBtnActive {
-  background: var(--uf-app-ai-subtle);
-  animation: voicePulse 1.4s ease-in-out infinite;
-}
-
-@keyframes voicePulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--uf-app-brand-violet) 35%, transparent); }
-  50% { box-shadow: 0 0 0 6px transparent; }
-}
-
-.voiceStatus {
-  margin: 0 0 var(--uf-space-8);
-  padding: 0 var(--uf-space-8);
-  color: var(--uf-app-text-3);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.voiceStatusActive {
-  color: var(--uf-app-brand-violet-text);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .voiceBtnActive {
-    animation: none;
-  }
 }

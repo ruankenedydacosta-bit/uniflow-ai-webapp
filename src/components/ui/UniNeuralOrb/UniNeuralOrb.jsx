@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { Mesh, Program, Renderer, Triangle, Vec3 } from 'ogl';
 import uniflowMarkAsset from '../../../assets/branding/uniflow-mark.png';
-import { useVoiceIntensity } from '../../../features/uni-voice/useVoiceIntensity.js';
+import { useVoiceIntensity } from '../../../features/uni-voice-realtime/useVoiceIntensity.js';
 import { cx } from '../../../utils/cx.js';
 import {
   clampUniNeuralVoiceLevel,

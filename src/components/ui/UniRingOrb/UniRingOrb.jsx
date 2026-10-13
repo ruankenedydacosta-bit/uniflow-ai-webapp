@@ -1,5 +1,5 @@
 import { useCallback, useId, useRef } from 'react';
-import { useVoiceIntensity } from '../../../features/uni-voice/useVoiceIntensity.js';
+import { useVoiceIntensity } from '../../../features/uni-voice-realtime/useVoiceIntensity.js';
 import { cx } from '../../../utils/cx.js';
 import {
   resolveUniRingOrbMotion,

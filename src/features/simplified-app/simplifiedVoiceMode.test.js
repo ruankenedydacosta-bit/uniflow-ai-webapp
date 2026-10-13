@@ -2,14 +2,12 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { UNI_RING_ORB_STATES } from '../../components/ui/UniRingOrb/uniRingOrbModel.js';
-import { SIMPLIFIED_UNI_STATES } from './simplifiedHomeState.js';
 import { buildVoiceModeUrl, SIMPLIFIED_ROUTES, VOICE_MODE_SEARCH_PARAM } from './simplifiedRoutes.js';
 import { REALTIME_STATUS } from '../uni-voice-realtime/realtimeSessionModel.js';
 import {
   canMuteRealtimeConversation,
   resolveRealtimeVoiceModeView,
   resolveVoiceModeStage,
-  resolveVoiceModeView,
   selectVoiceConversationMessages,
   snapshotVoiceConversationStart,
   VOICE_MODE_ACTION_LABELS,
@@ -23,80 +21,6 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // ============================================================================
 // Épico #99 — tela de voz em tela cheia, aberta por um toque.
 // ============================================================================
-
-test('todo estado da Home tem visão própria na tela de voz', () => {
-  for (const state of Object.values(SIMPLIFIED_UNI_STATES)) {
-    const view = resolveVoiceModeView(state);
-    assert.ok(Object.values(UNI_RING_ORB_STATES).includes(view.orb), state);
-    assert.ok(Object.values(VOICE_MODE_TONES).includes(view.tone), state);
-    assert.ok(Object.values(VOICE_MODE_ACTIONS).includes(view.action), state);
-    assert.ok(view.status, state);
-  }
-  assert.deepEqual(resolveVoiceModeView('desconhecido'), resolveVoiceModeView(SIMPLIFIED_UNI_STATES.IDLE));
-});
-
-test('ouvir, entender e rascunho seguem o design: Ouvindo, Entendendo, Rascunho pronto', () => {
-  assert.equal(resolveVoiceModeView(SIMPLIFIED_UNI_STATES.LISTENING).status, 'Ouvindo');
-  assert.equal(resolveVoiceModeView(SIMPLIFIED_UNI_STATES.LISTENING).orb, UNI_RING_ORB_STATES.LISTENING);
-  for (const state of [
-    SIMPLIFIED_UNI_STATES.TRANSCRIBING,
-    SIMPLIFIED_UNI_STATES.INTERPRETING,
-    SIMPLIFIED_UNI_STATES.SUCCESS,
-  ]) {
-    assert.equal(resolveVoiceModeView(state).status, 'Entendendo', state);
-    assert.equal(resolveVoiceModeView(state).orb, UNI_RING_ORB_STATES.THINKING, state);
-  }
-  const draft = resolveVoiceModeView(SIMPLIFIED_UNI_STATES.WAITING_CONFIRMATION);
-  assert.equal(draft.status, 'Rascunho pronto');
-  assert.equal(draft.tone, VOICE_MODE_TONES.READY);
-  assert.equal(resolveVoiceModeView(SIMPLIFIED_UNI_STATES.SPEAKING).orb, UNI_RING_ORB_STATES.SPEAKING);
-});
-
-test('o botão central faz uma coisa por estado: falar, enviar, parar a Uni ou aguardar', () => {
-  assert.equal(resolveVoiceModeView(SIMPLIFIED_UNI_STATES.IDLE).action, VOICE_MODE_ACTIONS.START);
-  assert.equal(resolveVoiceModeView(SIMPLIFIED_UNI_STATES.ERROR).action, VOICE_MODE_ACTIONS.START);
-  assert.equal(resolveVoiceModeView(SIMPLIFIED_UNI_STATES.LISTENING).action, VOICE_MODE_ACTIONS.STOP_LISTENING);
-  assert.equal(resolveVoiceModeView(SIMPLIFIED_UNI_STATES.SPEAKING).action, VOICE_MODE_ACTIONS.STOP_SPEAKING);
-  // Enquanto a Uni processa, um toque não pode iniciar outra gravação.
-  for (const state of [
-    SIMPLIFIED_UNI_STATES.TRANSCRIBING,
-    SIMPLIFIED_UNI_STATES.INTERPRETING,
-    SIMPLIFIED_UNI_STATES.EXECUTING,
-    SIMPLIFIED_UNI_STATES.SUCCESS,
-  ]) {
-    assert.equal(resolveVoiceModeView(state).action, VOICE_MODE_ACTIONS.NONE, state);
-  }
-  for (const action of Object.values(VOICE_MODE_ACTIONS)) {
-    assert.ok(VOICE_MODE_ACTION_LABELS[action]?.label, action);
-    assert.ok(VOICE_MODE_ACTION_LABELS[action]?.aria, action);
-  }
-});
-
-test('um toque abre a tela e começa a ouvir no mesmo gesto (ativação exigida pelo iOS)', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(
-    home,
-    /function handleOpenVoiceMode\(\) \{\s*setVoiceConversationPreviousIds\(snapshotVoiceConversationStart\(messages\)\);\s*setIsVoiceModeOpen\(true\);\s*beginVoiceCapture\(\);\s*\}/,
-  );
-});
-
-test('Enviar encerra e manda para a transcrição; fechar descarta e para a fala da Uni', async () => {
-  const home = await source('./SimplifiedHomeView.jsx');
-  const finishIdx = home.indexOf('function finishVoiceCapture() {');
-  const finish = home.slice(finishIdx, home.indexOf('\n  }\n', finishIdx));
-  assert.match(finish, /if \(!voiceInput\.isActive\) return;/);
-  assert.match(finish, /voiceInput\.stop\(\);/);
-  assert.doesNotMatch(finish, /voiceInput\.cancel\(\)/);
-
-  assert.match(
-    home,
-    /function handleVoiceModeAction\(action\) \{\s*if \(action === VOICE_MODE_ACTIONS\.START\) beginVoiceCapture\(\);\s*else if \(action === VOICE_MODE_ACTIONS\.STOP_LISTENING\) finishVoiceCapture\(\);\s*else if \(action === VOICE_MODE_ACTIONS\.STOP_SPEAKING\) voiceController\.stop\(\);\s*\}/,
-  );
-  assert.match(
-    home,
-    /function handleCloseVoiceMode\(\) \{\s*cancelVoiceCapture\('close-button'\);\s*if \(isVoicePlaybackInterruptible\) voiceController\.stop\(\);\s*setIsVoiceModeOpen\(false\);\s*\}/,
-  );
-});
 
 // #128 tirou a última conversa da Home. O rascunho pendente e o pedido em
 // andamento continuam nela: sem o card não há como confirmar ou cancelar, e
@@ -143,14 +67,9 @@ test('tela de voz é um diálogo modal no body, fecha com Esc e devolve a rolage
   assert.match(modal, /aria-label="Fechar"/);
 });
 
-test('controles de voz ficam fora do reenvio da saudação e não iniciam captura duas vezes', async () => {
+test('controles de voz agem no clique, uma vez por toque', async () => {
   const modal = await source('./SimplifiedVoiceMode.jsx');
-  // O listener da saudação (retryAfterUserGesture) ignora toques em
-  // [data-uni-voice-control]; orb, botão central e Mutar precisam da
-  // marcação. Mutar não sai da conversa, então o toque nele não pode tocar a
-  // saudação antiga.
-  assert.equal((modal.match(/data-uni-voice-control/g) ?? []).length, 3);
-  assert.match(modal, /if \(!isActionDisabled\) onAction\(view\.action\);/);
+  assert.match(modal, /function handleAction\(\) \{\s*onAction\(view\.action\);\s*\}/);
   assert.doesNotMatch(modal, /onPointerDown|onTouchStart/);
 });
 
@@ -278,7 +197,7 @@ test('a Home consome ?falar uma vez, sem nova entrada no histórico, e abre a te
   assert.match(home, /const wantsVoiceMode = searchParams\.has\(VOICE_MODE_SEARCH_PARAM\);/);
   assert.match(home, /next\.delete\(VOICE_MODE_SEARCH_PARAM\);/);
   assert.match(home, /\}, \{ replace: true \}\);/);
-  assert.match(home, /openVoiceModeRef\.current = handleOpenVoiceMode;/);
+  assert.match(home, /openVoiceModeRef\.current = handleOpenRealtimeVoiceMode;/);
 });
 
 test('cada toque no orb abre a tela uma vez, mesmo com o efeito rodando duas vezes', async () => {
@@ -291,7 +210,7 @@ test('cada toque no orb abre a tela uma vez, mesmo com o efeito rodando duas vez
   // A ref que abre a tela é preenchida por um efeito declarado ANTES do que
   // a lê: efeitos rodam na ordem do código.
   assert.ok(
-    home.indexOf('openVoiceModeRef.current = handleOpenVoiceMode;')
+    home.indexOf('openVoiceModeRef.current = handleOpenRealtimeVoiceMode;')
       < home.indexOf('const wantsVoiceMode = searchParams.has'),
   );
 });
@@ -343,11 +262,10 @@ test('na conversa em tempo real não existe Enviar: o botão central só encerra
   assert.equal(resolveRealtimeVoiceModeView(REALTIME_STATUS.SPEAKING).orb, UNI_RING_ORB_STATES.SPEAKING);
 });
 
-test('com a flag, a tela de voz abre a conversa em tempo real no mesmo toque e o botão central encerra', async () => {
+test('a tela de voz abre a conversa em tempo real no mesmo toque e o botão central encerra', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   // A conexão continua no mesmo toque; só não acontece com o saldo zerado.
   assert.match(home, /function handleOpenRealtimeVoiceMode\(\) \{\s*setIsVoiceModeOpen\(true\);\s*if \(isVoiceMinutesOut\) refreshVoiceMinutes\(\);\s*else beginRealtimeConversation\(\);\s*\}/);
-  assert.match(home, /if \(realtimeVoiceEnabled\) openVoiceModeRef\.current = handleOpenRealtimeVoiceMode;/);
   assert.match(home, /action === VOICE_MODE_ACTIONS\.END_CONVERSATION\) stopRealtime\('user'\)/);
   assert.match(home, /view=\{resolveRealtimeVoiceModeView\(realtime\.state\.status, \{\s*hasPendingDraft: voiceHasPendingDraft,\s*isMuted: realtime\.isMuted,\s*\}\)\}/);
 });
@@ -366,11 +284,11 @@ test('com a conversa em tempo real aberta, a voz antiga não narra as respostas'
   assert.match(chat, /onRealtimeVoiceActiveChange=\{handleRealtimeVoiceActiveChange\}/);
 });
 
-test('a flag da conversa em tempo real só liga com "true"', async () => {
+test('a conversa em tempo real é o padrão: não existe flag para desligá-la', async () => {
   const { resolveSimplifiedFeatureFlags } = await import('./simplifiedFeatureFlags.js');
-  assert.equal(resolveSimplifiedFeatureFlags({ VITE_UNI_REALTIME_VOICE_ENABLED: 'true' }).realtimeVoiceEnabled, true);
-  assert.equal(resolveSimplifiedFeatureFlags({ VITE_UNI_REALTIME_VOICE_ENABLED: '1' }).realtimeVoiceEnabled, false);
-  assert.equal(resolveSimplifiedFeatureFlags({}).realtimeVoiceEnabled, false);
+  assert.equal('realtimeVoiceEnabled' in resolveSimplifiedFeatureFlags({ VITE_UNI_REALTIME_VOICE_ENABLED: 'true' }), false);
+  const env = await source('../../../.env.example');
+  assert.doesNotMatch(env, /VITE_UNI_REALTIME_VOICE_ENABLED/);
 });
 
 test('sem minutos ou sem assinatura, a tela de voz manda a pessoa para o texto', async () => {
