@@ -72,3 +72,12 @@ export async function setUserBlocked({ userId, blocked, note }) {
   });
   return createResult(data ?? null, error);
 }
+
+// Uso por pessoa nos últimos `days` dias, hoje incluído (migration 068): tempo
+// e acessos no app, prompts à Uni e minutos de voz. Só vem quem teve uso.
+export async function getPlatformUsageReport({ days }) {
+  if (!supabase) return createUnavailableResult([]);
+
+  const { data, error } = await supabase.rpc('admin_usage_report', { p_days: days });
+  return createResult(data ?? [], error);
+}

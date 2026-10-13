@@ -12,13 +12,14 @@ import { useMovimentoDeAba, useToqueComMola } from './movimentoDeAba.js';
 import { MovimentoDeTelaContext } from './movimentoDeTelaContext.js';
 import { SimplifiedNotificationsContext } from './simplifiedNotificationsContext.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useRegistroDeUsoDoApp } from './useRegistroDeUsoDoApp.js';
 import { useVisualViewport, VisualViewportContext } from './useVisualViewport.js';
 import styles from './simplifiedApp.module.css';
 
 function SimplifiedAppShell({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile } = useSession();
+  const { user, profile } = useSession();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isNotificationsRendered, setIsNotificationsRendered] = useState(false);
   const notificationButtonRef = useRef(null);
@@ -30,6 +31,7 @@ function SimplifiedAppShell({ children }) {
   const viewportState = useVisualViewport();
   const { irParaAba, navegar } = useMovimentoDeAba({ shellRef, mainContentRef });
   useToqueComMola();
+  useRegistroDeUsoDoApp(Boolean(user));
   // Fase 3 (#90): única instância de useNotifications() do app. A página de
   // notificações e a linha do Mais consomem este mesmo estado por contexto.
   const notificationsState = useNotifications();
