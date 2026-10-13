@@ -140,11 +140,18 @@ const CAMPOS_RECRIAVEIS = [
 ];
 
 export function camposParaRecriar(transacao) {
-  return Object.fromEntries(
+  const campos = Object.fromEntries(
     CAMPOS_RECRIAVEIS
       .filter((campo) => transacao?.[campo] !== undefined && transacao?.[campo] !== null)
       .map((campo) => [campo, transacao[campo]]),
   );
+  // O lançamento recriado não volta para a série (#222): sem a ligação no
+  // banco, a tela ofereceria mexer numa série que ele não tem.
+  if (campos.metadata?.recurring_series_id) {
+    campos.metadata = { ...campos.metadata };
+    delete campos.metadata.recurring_series_id;
+  }
+  return campos;
 }
 
 function escaparRegex(texto) {

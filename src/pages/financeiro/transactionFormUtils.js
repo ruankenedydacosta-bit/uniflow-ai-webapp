@@ -145,7 +145,9 @@ export function buildTransactionMutationPayload(form, today) {
   const metadata = resolveTransactionMetadata(form, payload.status);
   if (metadata !== undefined) payload.metadata = metadata;
 
-  if (form.is_recurring) {
+  // Transferência e ajuste não têm recorrência: a marca não fica pendurada
+  // se o tipo mudou depois de ligar "Lançamento recorrente".
+  if (form.is_recurring && (form.transaction_type === 'income' || form.transaction_type === 'expense')) {
     const rule = buildRecurrenceRule({
       frequency: form.recurrence_frequency,
       interval: form.recurrence_interval,
@@ -159,6 +161,31 @@ export function buildTransactionMutationPayload(form, today) {
   }
 
   return payload;
+}
+
+// Lançamento recorrente de verdade (#222): entrada ou saída marcada como
+// recorrente vira uma série, que gera os próximos lançamentos.
+export function isRecurringSeriesForm(form) {
+  return Boolean(form.is_recurring)
+    && (form.transaction_type === 'income' || form.transaction_type === 'expense')
+    && Number(form.installment_count) <= 1;
+}
+
+export function buildRecurringSeriesPayload(form) {
+  return {
+    transaction_type: form.transaction_type,
+    account_id: form.account_id || null,
+    category_id: form.category_id || null,
+    description: resolveTransactionDescription(form),
+    amount: form.amount,
+    frequency: form.recurrence_frequency,
+    interval: form.recurrence_interval,
+    start_date: form.transaction_date,
+    end_date: form.recurrence_end_date || null,
+    auto_confirm: Boolean(form.auto_confirm),
+    payment_method: form.payment_method?.trim() ? form.payment_method.trim() : null,
+    notes: form.notes?.trim() ? form.notes.trim() : null,
+  };
 }
 
 // Indica se o formulário atual deve gerar N transações parceladas em vez de

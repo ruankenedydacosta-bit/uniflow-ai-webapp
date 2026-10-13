@@ -99,3 +99,61 @@ test('parcelas só levam auto_confirm quando o lançamento é mesmo previsto', (
   );
   assert.equal(visivel.every((p) => p.metadata.auto_confirm === true), true);
 });
+
+import { buildRecurringSeriesPayload, isRecurringSeriesForm } from './transactionFormUtils.js';
+
+test('recorrente vira série só em entrada ou saída, sem parcelas (#222)', () => {
+  const base = { is_recurring: true, transaction_type: 'expense', installment_count: 1 };
+  assert.equal(isRecurringSeriesForm(base), true);
+  assert.equal(isRecurringSeriesForm({ ...base, transaction_type: 'income' }), true);
+  assert.equal(isRecurringSeriesForm({ ...base, transaction_type: 'transfer' }), false);
+  assert.equal(isRecurringSeriesForm({ ...base, installment_count: 3 }), false);
+  assert.equal(isRecurringSeriesForm({ ...base, is_recurring: false }), false);
+});
+
+test('série leva a regra, a primeira data e a confirmação automática do formulário', () => {
+  assert.deepEqual(buildRecurringSeriesPayload({
+    transaction_type: 'expense',
+    account_id: '',
+    category_id: 'cat-moradia',
+    description: '  ',
+    amount: '1500',
+    recurrence_frequency: 'monthly',
+    recurrence_interval: 1,
+    transaction_date: '2026-10-05',
+    recurrence_end_date: '',
+    auto_confirm: true,
+    payment_method: ' Pix ',
+    notes: '',
+  }), {
+    transaction_type: 'expense',
+    account_id: null,
+    category_id: 'cat-moradia',
+    description: 'Saída',
+    amount: '1500',
+    frequency: 'monthly',
+    interval: 1,
+    start_date: '2026-10-05',
+    end_date: null,
+    auto_confirm: true,
+    payment_method: 'Pix',
+    notes: null,
+  });
+});
+
+
+test('trocar para transferência depois de ligar a recorrência não grava a marca', () => {
+  const payload = buildTransactionMutationPayload({
+    transaction_type: 'transfer',
+    account_id: 'a',
+    destination_account_id: 'b',
+    amount: '100',
+    transaction_date: '2026-10-12',
+    is_recurring: true,
+    recurrence_frequency: 'monthly',
+    recurrence_interval: 1,
+    recurrence_end_date: '',
+  }, '2026-10-12');
+  assert.equal(payload.is_recurring, false);
+  assert.equal(payload.recurrence_rule, null);
+});

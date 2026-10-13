@@ -293,7 +293,7 @@ const TEXTO_SEM_MODELO = Object.freeze({
   varias: 'Não consegui separar esses lançamentos agora. Diga um de cada vez, com o valor e do que se trata.',
   parcela: 'Não consegui ler o parcelamento agora. Tente de novo em instantes ou lance pelo Financeiro.',
 });
-const TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO = 'Esse rascunho vale só para este lançamento. A Uni ainda não repete lançamentos sozinha.';
+const TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO = 'Esse rascunho vale só para este lançamento. Para repetir, crie o lançamento recorrente na tela Financeiro.';
 const TEXTO_META_SEM_CRIACAO = 'Ainda não posso criar metas pela conversa com segurança. Posso consultar suas metas ou orientar você a criá-las na área de Metas.';
 const EMPTY_FINANCIAL_FALLBACK = Object.freeze({
   accounts: Object.freeze([]),

@@ -14,7 +14,14 @@ Registrar, organizar e analisar movimentações financeiras (receitas, despesas,
 
 **Parcelamento**: ao registrar, é possível definir de 1 a 360 parcelas. O sistema cria uma movimentação real por parcela (uma por mês), todas ligadas por um mesmo grupo. As parcelas são gravadas juntas: se algo falhar, nenhuma é salva. Pela conversa com a Uni dá para registrar uma compra de 2 a 72 parcelas, como "comprei uma TV de 3 mil em 10 vezes". Editar ou excluir permite escolher o alcance: "somente esta", "esta e as futuras" ou "todas".
 
-**Recorrência**: existe um campo "recorrente" com frequência e data final, mas ele apenas **marca** a movimentação como recorrente — o sistema não gera automaticamente as ocorrências futuras. Isso ainda depende de uma automação que não existe.
+**Recorrência**: em entrada ou saída, ligue "Lançamento recorrente" e escolha a frequência (diária, semanal, mensal ou anual), de quanto em quanto tempo repete e, se quiser, a data final. A data do formulário é a do primeiro lançamento.
+
+- Os lançamentos dos próximos 3 meses já entram como previstos. Todo dia, o app cria os seguintes, até a data final.
+- No mensal, o dia é contado a partir do primeiro lançamento. Um aluguel no dia 31 cai no último dia dos meses mais curtos e volta ao 31 no mês seguinte.
+- Se a data do primeiro lançamento já passou, os lançamentos até hoje entram como realizados.
+- Ligue "Confirmar automaticamente na data" para débito automático. Sem isso, os lançamentos futuros esperam você confirmar.
+- Ao editar ou excluir um lançamento da série, escolha o alcance: "Somente este", "Este e os próximos" ou "Todos da série". Mudar o valor, a descrição, a conta ou a categoria em "Este e os próximos" também vale para os lançamentos que a série ainda vai criar. Excluir "Este e os próximos" ou "Todos" encerra a série.
+- Transferência e ajuste de saldo não têm recorrência.
 
 **Filtrar**: por texto, período (semana/mês/trimestre/ano/tudo), tipo, conta, categoria, forma de pagamento, status de parcela e status de recorrência.
 
@@ -44,7 +51,7 @@ Ao menos uma conta cadastrada para registrar uma movimentação.
 
 ## Limitações atuais
 
-- Recorrência é apenas um rótulo — não gera lançamentos futuros automaticamente.
+- Pela conversa com a Uni, um pedido recorrente ("pago 120 de academia todo mês") ainda registra só o lançamento do dia. Para criar a série, use a tela Financeiro.
 - Open Finance é 100% demonstrativo.
 - Relatórios têm ao menos um recurso ainda desabilitado ("Disponível em breve" em um dos botões da tela).
 - Registro por voz está limitado a receita e despesa, exige a Edge de
@@ -57,6 +64,5 @@ Validação de formulário: campos obrigatórios não preenchidos impedem o envi
 ## Funcionalidades ainda não disponíveis
 
 - Conexão bancária real (Open Finance).
-- Geração automática de lançamentos recorrentes.
 - Exportação em PDF.
 - Transferência, edição e exclusão por voz.
