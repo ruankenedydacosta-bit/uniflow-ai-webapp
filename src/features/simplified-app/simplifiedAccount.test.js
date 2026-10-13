@@ -307,7 +307,7 @@ test('nenhuma rota nova foi criada para Web Push -- as rotas novas são notifica
   assert.ok(!paths.some((path) => /push/i.test(path)), 'nenhum path novo relacionado a push');
 });
 
-test('Google Agenda fica fora do menu do Mais até a #102', async () => {
+test('Google Agenda fica fora do Mais: a entrada é em Configurações → Preferências (#102)', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
   assert.doesNotMatch(page, /GOOGLE_CALENDAR|google-agenda/);
 });

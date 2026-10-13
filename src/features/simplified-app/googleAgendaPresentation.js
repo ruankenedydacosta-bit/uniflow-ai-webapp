@@ -119,3 +119,147 @@ export function nomeDaAgendaDoEspaco(nomeDoEspaco) {
   const nome = typeof nomeDoEspaco === 'string' ? nomeDoEspaco.trim() : '';
   return `UniFlow · ${(nome || 'Meu espaço').slice(0, 80)}`;
 }
+
+// ---------- #102: agendas, destino e sincronização ----------
+
+// Só agenda própria pode ser destino ou ser lida. Os triggers da 055
+// recusam o resto; a tela desabilita antes.
+export function agendaPropria(calendario) {
+  return calendario?.access_role === 'owner';
+}
+
+// Agenda do UniFlow primeiro, depois a principal, depois as outras por nome.
+export function ordenarAgendas(calendarios) {
+  const lista = Array.isArray(calendarios) ? calendarios.filter(Boolean) : [];
+  const peso = (calendario) => (calendario.is_app_created ? 0 : calendario.is_primary ? 1 : 2);
+  return [...lista].sort((a, b) => (
+    peso(a) - peso(b)
+    || String(a.summary ?? '').localeCompare(String(b.summary ?? ''), 'pt-BR', { sensitivity: 'base' })
+  ));
+}
+
+export function opcoesDeDestino(calendarios) {
+  return ordenarAgendas(calendarios).filter(agendaPropria);
+}
+
+export function nomeDaAgenda(calendario) {
+  const nome = typeof calendario?.summary === 'string' ? calendario.summary.trim() : '';
+  return nome || 'Agenda sem nome';
+}
+
+// Apoio da opção de destino.
+export function descricaoDaAgenda(calendario) {
+  if (calendario?.is_app_created) return 'Criada pelo UniFlow para este espaço';
+  if (calendario?.is_primary) return 'Agenda principal da conta';
+  return null;
+}
+
+// Apoio da linha de leitura: explica a caixa desabilitada e a leitura que
+// falhou. Com a conexão em erro, "Sincronizar agora" some da tela e o aviso
+// de reconectar já explica a falha.
+export function descricaoDaLeitura(calendario, { conexaoComErro = false } = {}) {
+  if (!agendaPropria(calendario)) return 'Compartilhada com você. Só agendas suas podem ser lidas.';
+  if (calendario.is_read && calendario.last_sync_error && !conexaoComErro) {
+    return 'A última leitura falhou. Toque em Sincronizar agora.';
+  }
+  return descricaoDaAgenda(calendario);
+}
+
+// Troca is_read de uma agenda na lista, sem mexer nas outras.
+export function comLeitura(calendarios, calendarioId, lido) {
+  return (Array.isArray(calendarios) ? calendarios : []).map((calendario) => (
+    calendario.id === calendarioId ? { ...calendario, is_read: lido } : calendario
+  ));
+}
+
+function partesDaData(data, timeZone) {
+  const partes = new Intl.DateTimeFormat('pt-BR', {
+    timeZone,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(data);
+  return Object.fromEntries(partes.map(({ type, value }) => [type, value]));
+}
+
+// "Hoje às 14:32", "Ontem às 09:05" ou "12/10/2026 às 18:00".
+export function textoDoUltimoSync(valor, { agora = new Date(), timeZone } = {}) {
+  const data = valor ? new Date(valor) : null;
+  if (!data || Number.isNaN(data.getTime())) return 'Ainda não sincronizado';
+  const quando = partesDaData(data, timeZone);
+  const hoje = partesDaData(agora, timeZone);
+  const ontem = partesDaData(new Date(agora.getTime() - 24 * 60 * 60 * 1000), timeZone);
+  const mesmoDia = (a, b) => a.day === b.day && a.month === b.month && a.year === b.year;
+  const hora = `${quando.hour}:${quando.minute}`;
+  if (mesmoDia(quando, hoje)) return `Hoje às ${hora}`;
+  if (mesmoDia(quando, ontem)) return `Ontem às ${hora}`;
+  return `${quando.day}/${quando.month}/${quando.year} às ${hora}`;
+}
+
+function contagem(total, singular, plural) {
+  return `${total} ${total === 1 ? singular : plural}`;
+}
+
+// Aviso do "Sincronizar agora". Os códigos vêm de google-calendar-sync-now
+// (#101). Enquanto a função não existir, a resposta cai no aviso genérico.
+export function avisoDaSincronizacao({ data, error } = {}) {
+  if (error) {
+    if (error.code === 'NOT_CONNECTED') {
+      return { tone: 'alert', message: 'O Google Agenda não está conectado neste espaço. Conecte a sua conta para sincronizar.' };
+    }
+    if (error.code === 'RECONNECT_REQUIRED') {
+      return { tone: 'alert', message: 'O Google não autoriza mais o acesso a esta conta. Toque em Conectar de novo para continuar.' };
+    }
+    if (error.code === 'GOOGLE_UNAVAILABLE') {
+      return { tone: 'alert', message: 'O Google não respondeu. Tente sincronizar de novo em alguns minutos.' };
+    }
+    return { tone: 'alert', message: 'Não foi possível sincronizar agora. Tente de novo mais tarde.' };
+  }
+
+  const calendarios = Array.isArray(data?.calendarios) ? data.calendarios : [];
+  const comErro = calendarios.filter((calendario) => calendario?.status === 'erro').length;
+  if (comErro > 0) {
+    return {
+      tone: 'alert',
+      message: `${contagem(comErro, 'agenda não foi sincronizada', 'agendas não foram sincronizadas')}. Tente de novo em alguns minutos.`,
+    };
+  }
+  if (calendarios.length > 0 && calendarios.every((calendario) => calendario?.status === 'skipped')) {
+    return { tone: 'success', message: 'A agenda acabou de ser sincronizada. Para sincronizar de novo, aguarde 30 segundos.' };
+  }
+
+  const somar = (campo) => calendarios.reduce((total, calendario) => total + (Number(calendario?.[campo]) || 0), 0);
+  const partes = [
+    [somar('inseridos'), 'evento novo', 'eventos novos'],
+    [somar('atualizados'), 'evento alterado', 'eventos alterados'],
+    [somar('cancelados'), 'evento cancelado', 'eventos cancelados'],
+  ].filter(([total]) => total > 0).map(([total, singular, plural]) => contagem(total, singular, plural));
+  if (partes.length === 0) return { tone: 'success', message: 'Agenda sincronizada. Não há mudanças no Google.' };
+  const lista = partes.length === 1 ? partes[0] : `${partes.slice(0, -1).join(', ')} e ${partes.at(-1)}`;
+  return { tone: 'success', message: `Agenda sincronizada. ${lista[0].toUpperCase()}${lista.slice(1)}.` };
+}
+
+export function avisoDoDestinoSalvo(nome) {
+  return {
+    tone: 'success',
+    message: `Os próximos compromissos vão para a agenda “${nome}”. Os que já estão no Google continuam onde estão.`,
+  };
+}
+
+export function avisoDaLeituraSalva(nome, lido) {
+  return lido
+    ? { tone: 'success', message: `Os eventos da agenda “${nome}” vão aparecer no UniFlow.` }
+    : { tone: 'success', message: `A agenda “${nome}” não é mais lida. Os eventos já trazidos continuam no UniFlow.` };
+}
+
+export function mensagemDeErroAoSalvar(error) {
+  if (error?.code === 'DESTINATION_NOT_ALLOWED' || error?.code === 'READ_NOT_ALLOWED') {
+    return 'Só agendas suas podem ser usadas. Escolha outra agenda.';
+  }
+  return 'Não foi possível salvar a escolha. Tente de novo.';
+}
+
+export const MENSAGEM_ERRO_AO_CARREGAR_AGENDAS = 'Não foi possível carregar as agendas do Google. Tente de novo.';

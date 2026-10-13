@@ -9,7 +9,8 @@
 //
 // O callback do OAuth deixa a conexão pendente; confirmarConexao a ativa.
 //
-// #101 acrescenta sincronizarAgora e #102 acrescenta salvarPreferencias.
+// #102 acrescenta listarCalendarios, salvarPreferencias e sincronizarAgora
+// (google-calendar-sync-now, do #101).
 
 import { isSupabaseConfigured, supabase, supabaseAnonKey, supabaseUrl } from './supabaseClient.js';
 
@@ -29,6 +30,26 @@ export const CONNECTION_FIELDS = [
   'destination_calendar_id',
   'connected_at',
 ].join(', ');
+
+// #102: colunas de calendar_connection_calendars com grant de leitura.
+export const CALENDAR_FIELDS = [
+  'id',
+  'external_calendar_id',
+  'summary',
+  'access_role',
+  'is_primary',
+  'is_app_created',
+  'is_read',
+  'last_synced_at',
+  'last_sync_error',
+].join(', ');
+
+// #102: o trigger de calendar_connections e o de calendar_connection_calendars
+// recusam destino ou leitura de agenda que não é da pessoa (errcode 23514).
+function erroAoSalvar(error, codigoRecusado) {
+  if (error?.code === '23514') return { code: codigoRecusado, message: 'google_calendar_not_owner' };
+  return { code: 'PREFERENCES_SAVE_FAILED', message: 'google_calendar_preferences_unavailable' };
+}
 
 export function createGoogleCalendarService({
   supabase: supabaseClient,
@@ -132,6 +153,75 @@ export function createGoogleCalendarService({
         return { data: null, error: { code: 'CONNECTION_QUERY_FAILED', message: 'google_calendar_connection_unavailable' } };
       }
     },
+    // #102: agendas da conexão, lidas pela RLS.
+    async listarCalendarios({ connectionId } = {}) {
+      if (!supabaseClient) {
+        return { data: null, error: { code: 'SUPABASE_NOT_CONFIGURED', message: 'google_calendar_unavailable' } };
+      }
+      if (!connectionId) return { data: [], error: null };
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('calendar_connection_calendars')
+          .select(CALENDAR_FIELDS)
+          .eq('connection_id', connectionId);
+        if (error) {
+          return { data: null, error: { code: 'CALENDARS_QUERY_FAILED', message: 'google_calendar_calendars_unavailable' } };
+        }
+        return { data: Array.isArray(data) ? data : [], error: null };
+      } catch {
+        return { data: null, error: { code: 'CALENDARS_QUERY_FAILED', message: 'google_calendar_calendars_unavailable' } };
+      }
+    },
+    // #102: grava a agenda de destino (destinationCalendarId, o id no Google)
+    // ou a leitura de uma agenda (calendarioId, o id da linha, e lido).
+    // UPDATE direto: os grants só deixam mudar essas duas colunas.
+    async salvarPreferencias({ connectionId, destinationCalendarId, calendarioId, lido } = {}) {
+      if (!supabaseClient) {
+        return { data: null, error: { code: 'SUPABASE_NOT_CONFIGURED', message: 'google_calendar_unavailable' } };
+      }
+      const mudaDestino = typeof destinationCalendarId === 'string' && destinationCalendarId !== '';
+      const mudaLeitura = typeof calendarioId === 'string' && calendarioId !== '' && typeof lido === 'boolean';
+      if (!connectionId || (!mudaDestino && !mudaLeitura)) {
+        return { data: null, error: { code: 'INVALID_PREFERENCES', message: 'google_calendar_preferences_required' } };
+      }
+
+      const resultado = {};
+      try {
+        if (mudaDestino) {
+          const { data, error } = await supabaseClient
+            .from('calendar_connections')
+            .update({ destination_calendar_id: destinationCalendarId })
+            .eq('id', connectionId)
+            .select('id, destination_calendar_id')
+            .maybeSingle();
+          if (error || !data) return { data: null, error: erroAoSalvar(error, 'DESTINATION_NOT_ALLOWED') };
+          resultado.destination_calendar_id = data.destination_calendar_id;
+        }
+        if (mudaLeitura) {
+          const { data, error } = await supabaseClient
+            .from('calendar_connection_calendars')
+            .update({ is_read: lido })
+            .eq('id', calendarioId)
+            .eq('connection_id', connectionId)
+            .select('id, is_read')
+            .maybeSingle();
+          if (error || !data) return { data: null, error: erroAoSalvar(error, 'READ_NOT_ALLOWED') };
+          resultado.calendario = data;
+        }
+      } catch {
+        return { data: null, error: erroAoSalvar(null) };
+      }
+      return { data: resultado, error: null };
+    },
+    // #102 chama google-calendar-sync-now, do #101. Sucesso:
+    // { sincronizado_em, calendarios: [{ external_calendar_id, status, ... }] }.
+    sincronizarAgora({ workspaceId } = {}) {
+      if (!workspaceId) {
+        return Promise.resolve({ data: null, error: { code: 'INVALID_WORKSPACE', message: 'workspace_required' } });
+      }
+      return invokeFunction('google-calendar-sync-now', { workspace_id: workspaceId });
+    },
   };
 }
 
@@ -145,3 +235,6 @@ export const iniciarConexao = defaultGoogleCalendarService.iniciarConexao;
 export const confirmarConexao = defaultGoogleCalendarService.confirmarConexao;
 export const desconectar = defaultGoogleCalendarService.desconectar;
 export const obterConexao = defaultGoogleCalendarService.obterConexao;
+export const listarCalendarios = defaultGoogleCalendarService.listarCalendarios;
+export const salvarPreferencias = defaultGoogleCalendarService.salvarPreferencias;
+export const sincronizarAgora = defaultGoogleCalendarService.sincronizarAgora;
