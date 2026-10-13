@@ -26,7 +26,7 @@ const DOCS_DIR = join(REPO_ROOT, 'docs', 'product-knowledge');
 const KNOWN_APP_ROUTES = new Set([
   '/', '/welcome', '/login', '/redefinir-senha', '/auth/callback',
   '/apresentacao', '/plano-pessoal', '/app/home', '/app/uni', '/app/registros', '/app/conta',
-  '/app/agenda', '/app/metas', '/app/conta/suporte', '/app/conta/voz', '/app/conta/google-agenda',
+  '/app/agenda', '/app/metas', '/app/conta/suporte', '/app/conta/voz', '/app/conta/google-agenda', '/app/agenda/google',
   '/dashboard', '/uni-ai', '/financeiro', '/categorias', '/open-finance', '/metas', '/objetivos',
   '/futuro', '/crm', '/clientes', '/projetos', '/agenda', '/relatorios', '/configuracoes',
 ]);

@@ -225,6 +225,15 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedAgendaPage />,
   },
+  // Épico #98: Google Agenda aberto pelo topo da Agenda. Mesma tela de
+  // Configurações, com voltar e retorno do OAuth para a Agenda.
+  {
+    path: SIMPLIFIED_ROUTES.AGENDA_GOOGLE,
+    label: 'Google Agenda',
+    title: 'Google Agenda',
+    simplified: true,
+    element: <SimplifiedGoogleAgendaPage origem="agenda" />,
+  },
   // RELATORIO1: rota interna sempre registrada, mesmo padrão de Agenda --
   // fora da barra inferior, alcançada pelo card "Relatório da Uni" na Home.
   {

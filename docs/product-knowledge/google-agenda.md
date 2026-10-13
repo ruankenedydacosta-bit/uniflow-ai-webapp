@@ -6,7 +6,8 @@ Ver os compromissos do UniFlow no Google Agenda e trazer para o UniFlow os event
 
 ## Onde encontrar
 
-Mais → Configurações → Preferências → Integrações → Google Agenda (`/app/conta/google-agenda`).
+- Na Agenda, toque na linha **Google Agenda**, no topo da tela (`/app/agenda/google`). A linha mostra se a conta está conectada e a hora da última sincronização.
+- Ou em Mais → Configurações → Preferências → Integrações → Google Agenda (`/app/conta/google-agenda`).
 
 ## Passo a passo
 
@@ -62,4 +63,4 @@ Uma conta Google e um espaço ativo no UniFlow.
 
 ## Limitações atuais
 
-O Google Agenda está disponível só para algumas contas nesta fase. Nas demais, a linha Google Agenda não aparece em Preferências, ou a tela mostra "O Google Agenda ainda não está disponível para a sua conta." ao tocar em Conectar ao Google Agenda.
+O Google Agenda está disponível só para algumas contas nesta fase. Nas demais, a tela mostra "O Google Agenda ainda não está disponível para a sua conta." ao tocar em Conectar ao Google Agenda.

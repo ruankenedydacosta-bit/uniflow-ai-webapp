@@ -19,6 +19,7 @@ export const GA4_PAGE_CATALOG = Object.freeze({
   '/app/uni': createPage('/app/uni', 'Uni'),
   '/app/registros': createPage('/app/registros', 'Registros'),
   '/app/agenda': createPage('/app/agenda', 'Agenda'),
+  '/app/agenda/google': createPage('/app/agenda/google', 'Agenda - Google Agenda'),
   '/app/conta': createPage('/app/conta', 'Conta'),
   '/app/conta/editar-perfil': createPage('/app/conta/editar-perfil', 'Conta - Editar Perfil'),
   '/app/conta/seguranca': createPage('/app/conta/seguranca', 'Conta - Seguranca'),

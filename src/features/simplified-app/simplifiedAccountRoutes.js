@@ -28,8 +28,8 @@ export const ACCOUNT_SUBROUTE_IDS = Object.freeze({
   // header continua abrindo o painel rápido nas telas que o têm.
   NOTIFICATIONS: 'notifications',
   // Épico #98 (#99): conexão com o Google Agenda. Fora do Mais: a entrada
-  // fica em Configurações → Preferências, atrás de VITE_AGENDA_GOOGLE_ENABLED
-  // (#102).
+  // fica em Configurações → Preferências. A mesma tela abre pelo topo da
+  // Agenda em SIMPLIFIED_ROUTES.AGENDA_GOOGLE.
   GOOGLE_CALENDAR: 'google-calendar',
 });
 

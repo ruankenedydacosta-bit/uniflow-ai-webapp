@@ -5,7 +5,6 @@ import { PhCaretRightIcon } from './SimplifiedIcons.jsx';
 import SimplifiedSettingsTabs from './SimplifiedSettingsTabs.jsx';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
-import { SIMPLIFIED_FEATURE_FLAGS } from './simplifiedFeatureFlags.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
@@ -24,8 +23,8 @@ const THEME_ORDER = Object.freeze([THEME_IDS.LIGHT, THEME_IDS.UNIFLOW]);
  * (voz nas respostas, animações do botão, notificações) ficam de fora,
  * porque placeholder é promessa vazia (ver simplifiedAccountRoutes.js).
  * "Trocar senha por e-mail" só aparece para quem entra com senha.
- * O grupo Integrações (Google Agenda, épico #98) só aparece com
- * VITE_AGENDA_GOOGLE_ENABLED=true.
+ * O grupo Integrações leva ao Google Agenda (épico #98), que também abre
+ * pelo topo da Agenda.
  */
 function SimplifiedThemePage() {
   const navigate = useNavegar();
@@ -98,24 +97,22 @@ function SimplifiedThemePage() {
         </div>
       </section>
 
-      {SIMPLIFIED_FEATURE_FLAGS.googleAgendaEnabled ? (
-        <section className={groups.group} aria-label="Integrações">
-          <h2 className={groups.groupLabel}>Integrações</h2>
-          <div className={groups.list}>
-            <button
-              type="button"
-              className={cx(groups.row, groups.rowPlain)}
-              onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR].path)}
-            >
-              <span className={groups.rowText}>
-                <span className={groups.rowTitle}>Google Agenda</span>
-                <span className={groups.rowSubtitle}>Conecte a agenda do UniFlow à sua conta Google</span>
-              </span>
-              <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
-            </button>
-          </div>
-        </section>
-      ) : null}
+      <section className={groups.group} aria-label="Integrações">
+        <h2 className={groups.groupLabel}>Integrações</h2>
+        <div className={groups.list}>
+          <button
+            type="button"
+            className={cx(groups.row, groups.rowPlain)}
+            onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR].path)}
+          >
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Google Agenda</span>
+              <span className={groups.rowSubtitle}>Conecte a agenda do UniFlow à sua conta Google</span>
+            </span>
+            <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
+          </button>
+        </div>
+      </section>
 
       {hasPasswordIdentity ? (
         <section className={groups.group} aria-label="Conta">
