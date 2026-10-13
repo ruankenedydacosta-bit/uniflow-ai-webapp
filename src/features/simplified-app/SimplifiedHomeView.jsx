@@ -4,6 +4,7 @@ import { useSession } from '../../app/SessionContext.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import UniCard from '../../components/ui/UniCard/index.js';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
+import QuickSuggestions from '../uni-chat/components/QuickSuggestions.jsx';
 import {
   isAppleWebKitRuntime,
   recordVoicePipelineDiagnostic,
@@ -115,6 +116,8 @@ function CompactResponse({
   onUndoAction,
   editForm = null,
   onSaveEditAction,
+  categoryChoices = [],
+  onChooseCategory,
   interactionState,
   voiceStatus,
   voiceCaptureStatus,
@@ -316,6 +319,16 @@ function CompactResponse({
               Desfazer
             </OutlineButton>
           ) : null}
+          {/* Rascunho esperando a categoria (#80). Na tela de voz a pessoa
+              diz o nome: o toque não chegaria à conversa falada. */}
+          {!isVoicePresentation && categoryChoices.length > 0 && typeof onChooseCategory === 'function' ? (
+            <QuickSuggestions
+              items={categoryChoices}
+              onSelect={onChooseCategory}
+              variant="rail"
+              label="Escolha a categoria"
+            />
+          ) : null}
         </>
       ) : null}
       {/* HOTFIX P1.4: "Ouvir resposta" removido do card compacto da Home --
@@ -363,6 +376,7 @@ function SimplifiedHomeView({
   onUndoAction,
   editForm = null,
   onSaveEditAction,
+  categoryChoices = [],
   onWelcomeVoiceSettled,
   onRealtimeVoiceActiveChange,
   realtimeVoiceEnabled = SIMPLIFIED_FEATURE_FLAGS.realtimeVoiceEnabled,
@@ -911,6 +925,11 @@ function SimplifiedHomeView({
     onSaveEditAction(id, overrides);
   }
 
+  function handleChooseCategory(item) {
+    markHomeReply();
+    onSendTranscript(item.label);
+  }
+
   const compactResponseMessages = isVoiceModeOpen
     ? selectVoiceConversationMessages(messages, voiceConversationPreviousIds)
     : messages;
@@ -933,6 +952,8 @@ function SimplifiedHomeView({
       homeReplyBaseline={homeReplyBaseline}
       editForm={editForm}
       onSaveEditAction={onSaveEditAction ? handleCardSaveEdit : undefined}
+      categoryChoices={categoryChoices}
+      onChooseCategory={handleChooseCategory}
     />
   );
 

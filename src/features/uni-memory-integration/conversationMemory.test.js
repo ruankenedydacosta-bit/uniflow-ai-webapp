@@ -127,7 +127,11 @@ test('memória expirada é ignorada', () => {
 });
 
 test('conflito relevante exige decisão sem sobrescrever', () => {
-  const result = resolve('Paguei 85 de viagem no Posto Avenida.', [rawMemory()]);
+  // #80: o parser não deduz categoria de palavra ("viagem"). O conflito
+  // aparece quando a categoria já veio escolhida pelo nome.
+  const lido = parsed('Paguei 85 de viagem no Posto Avenida.');
+  const comLazer = { ...lido, entities: { ...lido.entities, category: 'Lazer' } };
+  const result = applyExplicitMemories(comLazer, context([rawMemory()]), { accounts, categories });
   assert.equal(result.conflicts[0].field, 'category');
   assert.equal(result.resolvedResult.entities.category, 'Lazer');
   assert.match(result.conflicts[0].explanation, /Transportes/);

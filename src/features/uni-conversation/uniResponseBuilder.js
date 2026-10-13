@@ -34,8 +34,7 @@ const ISSUE_MESSAGES = Object.freeze({
   account_archived: 'Encontrei essa conta arquivada. Você quer reativá-la ou criar uma nova conta?',
   destination_account_required: (action) => buildAccountClarificationQuestion(action, 'destinationAccount'),
   category_required: 'Em qual categoria essa movimentação se encaixa?',
-  // BLOCO B1/B2: mensagens dinâmicas, dependem da categoria/nome proposto pela ação.
-  category_approximate: (action) => `Esse gasto parece ser de ${action?.proposedCategory?.name ?? 'uma categoria existente'}. Posso usar essa categoria?`,
+  // BLOCO B1/B2: mensagem dinâmica, depende do nome proposto pela ação.
   category_not_found: (action) => (action?.proposedCategoryName
     ? `A categoria ${action.proposedCategoryName} ainda não existe. Deseja criá-la?`
     : 'Não encontrei uma categoria compatível. Qual categoria existente você quer usar?'),

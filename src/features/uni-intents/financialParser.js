@@ -1,4 +1,3 @@
-import { resolveCategory } from './categoryResolver.js';
 import {
   advanceConversationContext,
   applyConversationContext,
@@ -48,7 +47,9 @@ export function parseFinancialText(input, options = {}) {
     referenceDate,
     lookAhead: safeOptions.lookAhead === true,
   });
-  const categoryResult = resolveCategory(analysisText, classification.intent);
+  // A categoria não sai de palavra da frase: "das crianças" virava Impostos
+  // pela guia DAS. Sem o uni-interpret, quem escolhe é a pessoa. A exceção é
+  // a transferência, que tem categoria própria.
   const draft = {
     version: '1.0',
     input: text,
@@ -57,7 +58,7 @@ export function parseFinancialText(input, options = {}) {
     confidence: classification.confidence,
     entities: {
       ...extractedEntities,
-      category: categoryResult.category,
+      category: classification.intent === 'register_transfer' ? 'Transferência' : null,
     },
   };
   const contextualResult = applyConversationContext(draft, context);
