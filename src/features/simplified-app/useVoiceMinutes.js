@@ -23,14 +23,14 @@ function readCachedBalance(userId) {
 // - Durante a conversa, o tempo dela sai do saldo lido antes de começar.
 // - Uma falha de leitura mantém o último saldo conhecido: o servidor recusa
 //   a conversa de qualquer jeito quando os minutos acabam.
-export function useVoiceMinutes({ enabled, userId, sessionStartedAt = null, sessionEndedAt = null }) {
+export function useVoiceMinutes({ userId, sessionStartedAt = null, sessionEndedAt = null }) {
   const [snapshot, setSnapshot] = useState(() => readCachedBalance(userId));
   const [now, setNow] = useState(() => Date.now());
   const lastRequestRef = useRef(0);
   const isMountedRef = useRef(true);
 
   const refresh = useCallback(() => {
-    if (!enabled || !userId) return;
+    if (!userId) return;
     const requestId = lastRequestRef.current + 1;
     lastRequestRef.current = requestId;
     const readAt = Date.now();
@@ -40,7 +40,7 @@ export function useVoiceMinutes({ enabled, userId, sessionStartedAt = null, sess
       lastKnownBalance = next;
       setSnapshot(next);
     });
-  }, [enabled, userId]);
+  }, [userId]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -69,8 +69,8 @@ export function useVoiceMinutes({ enabled, userId, sessionStartedAt = null, sess
     ? Math.floor(Math.max(0, (sessionEndedAt ?? now) - sessionStartedAt) / 1000)
     : 0;
   const voiceMinutes = useMemo(
-    () => (enabled ? resolveVoiceMinutes(current?.balance, { spentSeconds }) : null),
-    [current, enabled, spentSeconds],
+    () => resolveVoiceMinutes(current?.balance, { spentSeconds }),
+    [current, spentSeconds],
   );
   return { voiceMinutes, refresh };
 }

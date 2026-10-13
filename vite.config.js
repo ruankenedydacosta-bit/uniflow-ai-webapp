@@ -128,6 +128,10 @@ export default defineConfig({
         // tocar em nenhuma das flags acima (update detection preservado).
         importScripts: ['/legacy-update-bridge.js', '/push-notifications-bridge.js', '/build-id-bridge.js'],
         globIgnores: ['**/version.json', '**/legacy-update-bridge.js', '**/push-notifications-bridge.js', '**/build-id-bridge.js'],
+        // Sem a voz do chat, o Rolldown junta o código do app num chunk só,
+        // de ~2,1 MB. O padrão de 2 MiB do Workbox deixaria esse arquivo fora
+        // do precache e faria o build falhar.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
     }),
   ],

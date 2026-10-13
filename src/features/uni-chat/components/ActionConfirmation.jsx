@@ -230,7 +230,7 @@ export default function ActionConfirmation({
             disabled={isExecuting}
           >
             {isExecuting ? null : <PhCheckIcon />}
-            {isExecuting ? processingLabel : 'Confirmar'}
+            {isExecuting ? 'Registrando…' : 'Confirmar'}
           </OutlineButton>
           {editable && (
             <OutlineButton variant="secondary" onClick={startEditing} disabled={isExecuting}>

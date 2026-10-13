@@ -153,6 +153,12 @@
   cursor: pointer;
 }
 
+.moreButton svg {
+  width: var(--uf-icon-size-md);
+  height: var(--uf-icon-size-md);
+  flex-shrink: 0;
+}
+
 .fab {
   position: fixed;
   right: 22px;

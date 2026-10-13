@@ -105,13 +105,10 @@ test('mensagens: pedido em balão azul à direita e a Uni com o orb de 22px', as
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b/i);
 });
 
-test('campo da conversa: "Escreva ou fale com a Uni", microfone sempre e enviar quando há texto', async () => {
+test('campo da conversa: "Escreva para a Uni", só texto, com enviar sempre visível', async () => {
   const input = await source('components/ChatInput.jsx');
-  assert.match(input, /placeholder="Escreva ou fale com a Uni"/);
-  assert.match(input, /const showSendButton = Boolean\(value\.trim\(\)\) && !isCapturing;/);
-  // O microfone fica fora da condição: ditar mais e interromper a Uni
-  // continuam possíveis com texto no campo.
-  const micIdx = input.indexOf('onClick={handleVoiceClick}');
-  const sendIdx = input.indexOf('{showSendButton ? (');
-  assert.ok(micIdx > -1 && sendIdx > micIdx);
+  assert.match(input, /placeholder="Escreva para a Uni"/);
+  assert.match(input, /disabled=\{disabled \|\| !value\.trim\(\)\}/);
+  // O chat é só texto: falar com a Uni é pela conversa em tempo real.
+  assert.doesNotMatch(input, /PhMicrophoneIcon|uni-voice|handleVoiceClick/);
 });

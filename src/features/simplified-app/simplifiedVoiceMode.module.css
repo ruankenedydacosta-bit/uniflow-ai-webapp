@@ -198,10 +198,6 @@
   height: 130px;
 }
 
-.orbButton:disabled {
-  cursor: default;
-}
-
 .transcript {
   min-height: 64px;
   max-width: 320px;
@@ -323,11 +319,6 @@
   border-color: var(--uf-app-brand-blue);
   color: var(--uf-app-brand-blue-text);
   box-shadow: 0 0 18px color-mix(in oklch, var(--uf-app-brand-blue) 40%, transparent);
-}
-
-.primaryButton:disabled {
-  opacity: .5;
-  cursor: default;
 }
 
 .closeButton:focus-visible,

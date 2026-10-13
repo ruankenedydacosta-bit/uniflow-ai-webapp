@@ -15,7 +15,6 @@ import Modal from '../../components/ui/Modal/Modal.jsx';
 import WorkspaceContextNotice from '../../components/workspace/WorkspaceContextNotice.jsx';
 import NotificationsPanel from '../../features/notifications/NotificationsPanel.jsx';
 import { useNotifications } from '../../features/notifications/useNotifications.js';
-import { UniVoiceInputProvider } from '../../features/uni-voice/index.js';
 import MobileAppShell from './MobileAppShell.jsx';
 import styles from './MobileAppShell.module.css';
 import { useMobileViewport } from './useMobileViewport.js';
@@ -263,22 +262,20 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
 
   if (!isMobile) {
     return (
-      <UniVoiceInputProvider>
-        <AppShell
-          title={title}
-          profileName={profileName}
-          profileEmail={profileEmail}
-          activeContext={activeContext}
-          onToggleWorkspace={handleToggleWorkspace}
-          isSwitchingWorkspace={isSwitchingWorkspace}
-          onSignOut={handleSignOut}
-          isSigningOut={isSigningOut}
-          signOutError={signOutError}
-          contextNotice={contextNotice}
-        >
-          {children}
-        </AppShell>
-      </UniVoiceInputProvider>
+      <AppShell
+        title={title}
+        profileName={profileName}
+        profileEmail={profileEmail}
+        activeContext={activeContext}
+        onToggleWorkspace={handleToggleWorkspace}
+        isSwitchingWorkspace={isSwitchingWorkspace}
+        onSignOut={handleSignOut}
+        isSigningOut={isSigningOut}
+        signOutError={signOutError}
+        contextNotice={contextNotice}
+      >
+        {children}
+      </AppShell>
     );
   }
 
@@ -302,64 +299,62 @@ function AuthenticatedLayout({ title = 'Dashboard', mobileTitle, immersive = fal
   };
 
   return (
-    <UniVoiceInputProvider>
-      <MobileAppShell
-        title={mobileTitle ?? title}
-        immersive={immersive}
-        onAction={handleShellAction}
-        headerProps={{
-          subtitle: workspaceLabel,
-          actions: <Avatar name={profileName} size="sm" />,
-          activeContext,
-          contextError: Boolean(workspaceSwitchError),
-          contextLocked: false,
-          contextMessage: workspaceSwitchError?.message
-            ?? (missingWorkspaceType ? missingProfileMessage : null),
-          isContextLoading: isSwitchingWorkspace,
-          // Corrige o clique morto do avatar mobile (achado P0 da UX1): nesta
-          // fase apenas navega para Configuracoes, sem bottom sheet/pagina nova.
-          onAvatarPress: () => navigate('/configuracoes'),
-          onBellPress: () => setIsNotificationsOpen(true),
-          onContextChange: handleContextChange,
-        }}
+    <MobileAppShell
+      title={mobileTitle ?? title}
+      immersive={immersive}
+      onAction={handleShellAction}
+      headerProps={{
+        subtitle: workspaceLabel,
+        actions: <Avatar name={profileName} size="sm" />,
+        activeContext,
+        contextError: Boolean(workspaceSwitchError),
+        contextLocked: false,
+        contextMessage: workspaceSwitchError?.message
+          ?? (missingWorkspaceType ? missingProfileMessage : null),
+        isContextLoading: isSwitchingWorkspace,
+        // Corrige o clique morto do avatar mobile (achado P0 da UX1): nesta
+        // fase apenas navega para Configuracoes, sem bottom sheet/pagina nova.
+        onAvatarPress: () => navigate('/configuracoes'),
+        onBellPress: () => setIsNotificationsOpen(true),
+        onContextChange: handleContextChange,
+      }}
+    >
+      <Modal
+        open={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        title="Notificações"
+        size="sm"
       >
-        <Modal
-          open={isNotificationsOpen}
-          onClose={() => setIsNotificationsOpen(false)}
-          title="Notificações"
-          size="sm"
-        >
-          <NotificationsPanel
-            notifications={notifications}
-            isLoading={isNotificationsLoading}
-            error={notificationsError}
-            unreadCount={unreadCount}
-            onMarkAsRead={markNotificationAsRead}
-            onMarkAllAsRead={markAllNotificationsAsRead}
-            onRetry={refreshNotifications}
-            onNavigate={(url) => {
-              setIsNotificationsOpen(false);
-              navigate(url);
-            }}
-          />
-        </Modal>
-        {contextNotice}
-        {shouldHidePreviousWorkspace ? (
-          <section className={styles.workspaceContextState} role="status" aria-live="polite">
-            <h2>{missingProfileMessage}</h2>
-            <p>O contexto selecionado foi mantido. Seus dados do outro perfil não serão exibidos aqui.</p>
-            <button
-              type="button"
-              className={styles.workspaceContextAction}
-              disabled={isSwitchingWorkspace}
-              onClick={() => void handleCreateProfile()}
-            >
-              {isSwitchingWorkspace ? 'Criando perfil...' : `Criar perfil ${missingWorkspaceType === WORKSPACE_TYPES.BUSINESS ? 'PJ' : 'PF'}`}
-            </button>
-          </section>
-        ) : children}
-      </MobileAppShell>
-    </UniVoiceInputProvider>
+        <NotificationsPanel
+          notifications={notifications}
+          isLoading={isNotificationsLoading}
+          error={notificationsError}
+          unreadCount={unreadCount}
+          onMarkAsRead={markNotificationAsRead}
+          onMarkAllAsRead={markAllNotificationsAsRead}
+          onRetry={refreshNotifications}
+          onNavigate={(url) => {
+            setIsNotificationsOpen(false);
+            navigate(url);
+          }}
+        />
+      </Modal>
+      {contextNotice}
+      {shouldHidePreviousWorkspace ? (
+        <section className={styles.workspaceContextState} role="status" aria-live="polite">
+          <h2>{missingProfileMessage}</h2>
+          <p>O contexto selecionado foi mantido. Seus dados do outro perfil não serão exibidos aqui.</p>
+          <button
+            type="button"
+            className={styles.workspaceContextAction}
+            disabled={isSwitchingWorkspace}
+            onClick={() => void handleCreateProfile()}
+          >
+            {isSwitchingWorkspace ? 'Criando perfil...' : `Criar perfil ${missingWorkspaceType === WORKSPACE_TYPES.BUSINESS ? 'PJ' : 'PF'}`}
+          </button>
+        </section>
+      ) : children}
+    </MobileAppShell>
   );
 }
 

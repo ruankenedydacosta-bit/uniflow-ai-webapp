@@ -1,4 +1,4 @@
-import UniAvatar from './UniAvatar';
+import { UniRingOrb } from '../../../components/ui/UniRingOrb/index.js';
 import QuickSuggestions from './QuickSuggestions';
 import { getEmptyStateQuestion } from '../uniContextCopy';
 import styles from './EmptyState.module.css';
@@ -14,7 +14,7 @@ export default function EmptyState({ userName, suggestions, onSelect, workspaceT
 
   return (
     <div className={styles.wrap}>
-      <UniAvatar size="lg" />
+      <UniRingOrb size={64} />
       <h1 className={styles.greeting}>{greeting}</h1>
       <p className={styles.question}>{question}</p>
       <QuickSuggestions items={suggestions} onSelect={onSelect} variant="grid" />

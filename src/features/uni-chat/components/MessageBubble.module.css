@@ -128,61 +128,6 @@
   margin-top: -4px;
 }
 
-.speakBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--uf-space-4);
-  border: none;
-  background: transparent;
-  color: var(--uf-app-text-3);
-  font: inherit;
-  font-size: var(--uf-text-micro-size);
-  padding: 2px 6px;
-  border-radius: var(--uf-radius-full);
-  cursor: pointer;
-  transition: color var(--uf-duration-fast) ease, background var(--uf-duration-fast) ease;
-}
-
-.speakBtn:hover,
-.speakBtnActive {
-  color: var(--uf-app-brand-violet-text);
-  background: var(--uf-app-ai-subtle);
-}
-
-.speakBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.voiceControls {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--uf-space-4);
-  flex-wrap: wrap;
-}
-
-.stopVoiceBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: transparent;
-  color: var(--uf-app-text-3);
-  padding: var(--uf-space-4);
-  border-radius: var(--uf-radius-full);
-  cursor: pointer;
-}
-
-.stopVoiceBtn:hover {
-  color: var(--uf-app-brand-violet-text);
-  background: var(--uf-app-ai-subtle);
-}
-
-.voiceStatus {
-  font-size: 11px;
-  color: var(--uf-app-text-3);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .row {
     animation: none;

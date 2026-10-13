@@ -58,16 +58,6 @@ test('nenhuma heurística visual pode produzir sign_up Google', async () => {
   assert.doesNotMatch(combined, /trackGa4SignUp|trackSignUp/);
 });
 
-test('voz usa o onStart canônico e lifecycle terminal deduplicado', async () => {
-  const voice = await source('features/uni-voice/useUniVoiceInput.js');
-  const onStart = voice.slice(voice.indexOf('onStart: () =>'), voice.indexOf('onStreamReady:'));
-  assert.match(onStart, /markStarted\(sessionId\)/);
-  assert.match(voice, /GA4_VOICE_RESULTS\.SUCCESS/);
-  assert.match(voice, /GA4_VOICE_RESULTS\.CANCELLED/);
-  assert.match(voice, /GA4_VOICE_RESULTS\.ERROR/);
-  assert.doesNotMatch(voice.slice(0, voice.indexOf('const start = useCallback')), /markStarted/);
-});
-
 test('lançamento e Agenda só emitem depois da persistência confirmada e ignoram replay', async () => {
   const transactions = await source('hooks/useTransactions.js');
   const conversation = await source('features/uni-conversation/useUniConversation.js');

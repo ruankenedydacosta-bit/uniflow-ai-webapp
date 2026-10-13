@@ -36,24 +36,11 @@ test('actionKind honesto vem da mensagem de confirmação PENDENTE real, nunca i
   assert.match(page, /actionKind: pendingConfirmationMessage\?\.confirmation\?\.actionKind \?\? null/);
 });
 
-test('mensagem ativa de voz é resolvida a partir de voiceMessageId real (mesma fonte já usada por isActiveVoiceMessage) -- nunca um novo mecanismo paralelo', async () => {
-  const page = await source('./UniChatPage.jsx');
-  const idx = page.indexOf('const activeVoiceMessage = useMemo(');
-  const slice = page.slice(idx, idx + 300);
-  assert.match(slice, /if \(!voiceMessageId\) return null;/);
-  assert.match(slice, /messages\.find\(\(m\) => m\.id === voiceMessageId\)/);
-});
-
 test('TypingIndicator recebe a mensagem rotativa; ActionConfirmation recebe o rótulo dinâmico por mensagem -- só quando pendente', async () => {
   const page = await source('./UniChatPage.jsx');
   assert.match(page, /<TypingIndicator message=\{chatProcessingMessage\} \/>/);
   const propIdx = page.indexOf("message.confirmation?.status === 'pending' ? chatProcessingMessage");
   assert.ok(propIdx > -1);
-});
-
-test('displayText de cada bolha só é sobrescrito para a mensagem REALMENTE ativa (textAudioSync.activeMessageId) -- todas as outras usam message.text (undefined -> default do componente)', async () => {
-  const page = await source('./UniChatPage.jsx');
-  assert.match(page, /displayText=\{\s*textAudioSync\.activeMessageId === message\.id \? textAudioSync\.displayText : undefined\s*\}/);
 });
 
 test('nenhuma mensagem de processamento é publicada via createAssistantResponse/pushMessage -- é puramente estado de UI efêmero', async () => {
@@ -77,23 +64,22 @@ test('nenhuma nova chamada a LLM ou TTS foi introduzida pela fase -- os únicos 
 
 test('CompactResponse chama os hooks ANTES do early-return "sem lastUser/lastUni"', async () => {
   const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  const hooksIdx = home.indexOf('const textAudioSync = useTextAudioSync({');
+  const hooksIdx = home.indexOf('const processingMessage = useUniProcessingMessage(');
   const returnIdx = home.indexOf('if (!lastUser && !lastUni) return null;');
   assert.ok(hooksIdx > -1 && returnIdx > -1);
   assert.ok(hooksIdx < returnIdx);
 });
 
-test('indicador de processamento na Home só aparece para os estados sem UI própria (listening/transcribing/interpreting/executing) -- nunca sobrepõe a confirmação pendente ou a resposta final', async () => {
+test('indicador de processamento na Home só aparece para os estados sem UI própria (interpreting/executing) -- nunca sobrepõe a confirmação pendente ou a resposta final', async () => {
   const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /const PROCESSING_DISPLAY_STATES = new Set\(\[\s*SIMPLIFIED_UNI_STATES\.LISTENING,\s*SIMPLIFIED_UNI_STATES\.TRANSCRIBING,\s*SIMPLIFIED_UNI_STATES\.INTERPRETING,\s*SIMPLIFIED_UNI_STATES\.EXECUTING,\s*\]\);/);
+  assert.match(home, /const PROCESSING_DISPLAY_STATES = new Set\(\[\s*SIMPLIFIED_UNI_STATES\.INTERPRETING,\s*SIMPLIFIED_UNI_STATES\.EXECUTING,\s*\]\);/);
   assert.doesNotMatch(home, /SIMPLIFIED_UNI_STATES\.WAITING_CONFIRMATION,\s*\n\s*\]\);/);
 });
 
 test('a Home reaproveita o MESMO hook compartilhado (nenhuma reimplementação local de timers/rotação)', async () => {
   const home = await source('../simplified-app/SimplifiedHomeView.jsx');
   assert.match(home, /import \{ useUniProcessingMessage \} from '\.\.\/uni-chat\/useUniProcessingMessage\.js';/);
-  assert.match(home, /import \{ useTextAudioSync \} from '\.\.\/uni-chat\/useTextAudioSync\.js';/);
-  assert.doesNotMatch(home, /window\.setTimeout\(.*processingMessage|window\.setInterval\(.*textAudioSync/);
+  assert.doesNotMatch(home, /useTextAudioSync|window\.setTimeout\(.*processingMessage/);
 });
 
 test('CSS do indicador de processamento respeita prefers-reduced-motion (sem animação nova sem esse cuidado)', async () => {
@@ -124,26 +110,15 @@ test('isAwaitingNewResponse foi REMOVIDO (era redundante e perigoso no reload --
   assert.doesNotMatch(home, /const isAwaitingNewResponse/);
 });
 
-// HOTFIX P0 (4ª investigação) -- CAUSA RAIZ REAL do "resposta antiga
-// reaparece no meio do turno": showProcessingIndicator exigia
-// processingMessage truthy, mas processingMessage deriva de
-// interactionState, que passa por sub-estados SEM mensagem própria no meio
-// de um turno real (ex.: resolveSimplifiedUniState devolve 'success' assim
-// que voiceInput.status vira COMPLETED, um instante ANTES de isTyping virar
-// true). Nesse render intermediário, isTurnAwaitingFreshResponse já estava
-// corretamente true, mas processingMessage era null (getProcessingMessageSequence
-// não tem mensagem para 'success') -- showProcessingIndicator caía para
-// false e o código renderizava lastUni.text (a resposta do turno ANTERIOR).
-test('HOTFIX P0 (4ª investigação): showProcessingIndicator NUNCA depende de processingMessage ser truthy quando o turno está aguardando resposta fresca ou a voz está pending -- só um label bonito para o sub-estado exato não pode reabrir a porta para lastUni', async () => {
+test('showProcessingIndicator: só um estado de processamento com mensagem', async () => {
   const home = await source('../simplified-app/SimplifiedHomeView.jsx');
   const idx = home.indexOf('const showProcessingIndicator = Boolean(');
   const endIdx = home.indexOf(');', idx);
   const slice = home.slice(idx, endIdx);
-  // isTurnAwaitingFreshResponse e isVoicePendingPlayback decidem sozinhos
-  // (nunca dependem de processingMessage) -- só o terceiro ramo (sub-estado
-  // já reconhecido) ainda exige processingMessage, e isso é seguro porque
-  // esse ramo NUNCA é a única defesa contra lastUni.
-  assert.match(slice, /isTurnAwaitingFreshResponse\s*\n\s*\|\| isVoicePendingPlayback\s*\n\s*\|\| \(processingMessage && PROCESSING_DISPLAY_STATES\.has\(interactionState\)\)/);
+  assert.match(slice, /processingMessage && PROCESSING_DISPLAY_STATES\.has\(interactionState\)/);
+  // A identidade de turno vinha da captura gravada e a fase pending vinha
+  // da voz do chat. As duas saíram.
+  assert.doesNotMatch(home, /isTurnAwaitingFreshResponse|turnStartToken|isVoicePendingPlayback/);
 });
 
 test('HOTFIX P0 (4ª investigação): existe um fallback honesto de processamento para quando processingMessage é null durante um turno ativo -- nunca deixa a decisão de esconder lastUni sem NENHUM texto para mostrar no lugar', async () => {
@@ -158,75 +133,11 @@ test('HOTFIX P0 (4ª investigação): existe um fallback honesto de processament
   assert.match(slice, /\{displayedProcessingMessage\}/);
 });
 
-test('bug 2: enquanto a voz está em fase "pending" (publicada, áudio ainda não tocando), nunca mostra prévia da resposta nova', async () => {
+test('P1.1: NUNCA expõe "Preparando a resposta em voz..."', async () => {
   const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  const idx = home.indexOf('const isVoicePendingPlayback = Boolean(');
-  const slice = home.slice(idx, home.indexOf(');', idx));
-  assert.match(slice, /textAudioSync\.activeMessageId === lastUni\.id/);
-  assert.match(slice, /textAudioSync\.phase === 'pending'/);
-});
-
-test('P1.1: NUNCA expõe "Preparando a resposta em voz..." -- durante a espera do áudio real, reaproveita a família de mensagens "interpreting" já existente', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /const processingState = isVoicePendingPlayback \? 'interpreting' : interactionState;/);
   assert.doesNotMatch(home, /Preparando a resposta em voz/);
   const messages = await source('./uniProcessingMessages.js');
   assert.doesNotMatch(messages, /speaking_pending|Preparando a resposta em voz/);
-});
-
-test('P0.1: turnStartToken é um token de identidade de turno, incrementado SOMENTE quando uma captura real começa (nunca num gesto rejeitado)', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /const \[turnStartToken, setTurnStartToken\] = useState\(0\);/);
-  const fnStart = home.indexOf('function beginVoiceCapture() {');
-  const fnSlice = home.slice(fnStart, home.indexOf('\n  }', fnStart));
-  assert.match(fnSlice, /if \(!plan\.proceed\) return false;/);
-  assert.match(
-    fnSlice,
-    /if \(plan\.startCapture\) \{\s*(?:\/\/[^\n]*\n\s*)*onBeforeVoiceStart\?\.\(\);\s*setTurnStartToken\(\(token\) => token \+ 1\);\s*void voiceInput\.start\(\);[\s\S]*?\}/,
-  );
-});
-
-test('P0.1: isTurnAwaitingFreshResponse compara IDENTIDADE (id da última mensagem da Uni no início do turno vs. agora) -- nunca infere por enumeração de estados', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /const currentLastUniId = lastUni\?\.id \?\? null;/);
-  assert.match(home, /if \(turnStartToken !== turnState\.token\) \{/);
-  assert.match(home, /baselineUniId: currentLastUniId, awaitingFreshResponse: true/);
-});
-
-test('P0.4: turno abandonado (cancelado\\/erro, sem nunca produzir mensagem nova) sai de "aguardando resposta" ao chegar em error\\/cancelamento explícito -- nunca trava escondendo a última resposta para sempre', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /const isTurnAbandoned = \(\s*\n\s*interactionState === SIMPLIFIED_UNI_STATES\.ERROR\s*\n\s*\|\| voiceCaptureStatus === VOICE_CAPTURE_STATES\.CANCELED\s*\n\s*\);/);
-  assert.match(home, /currentLastUniId !== turnState\.baselineUniId \|\| isTurnAbandoned/);
-});
-
-// HOTFIX FINAL -- causa raiz real da "resposta fantasma" intermitente na
-// Home: `interactionState === IDLE` sozinho era uma FALSA saída de
-// abandono. `sendText` (UniChatPage.jsx) zera `isTyping` via setTimeout
-// ANTES do pipeline de resposta (determinístico -> LLM ->
-// handleUnresolvedMessage) sequer começar a trabalhar -- handleUnresolvedMessage
-// só marca isTyping=true de novo bem mais tarde, dentro do await da chamada
-// ao LLM. Se o reset automático de voiceInput (1600ms após COMPLETED) já
-// tiver zerado voiceInput.status para IDLE nesse meio-tempo,
-// resolveSimplifiedUniState cai no IDLE final por engano -- abandonando um
-// turno que na verdade ainda está processando, e reexibindo lastUni antigo
-// até isTyping voltar a true.
-test('HOTFIX FINAL: isTurnAbandoned NUNCA usa interactionState === IDLE (falso positivo comprovado durante o gap isTyping=false pré-handleUnresolvedMessage) -- só ERROR real ou cancelamento explícito da captura (identidade de voiceCaptureStatus, não inferência por estado agregado de repouso)', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  const idx = home.indexOf('const isTurnAbandoned = (');
-  const block = home.slice(idx, home.indexOf(');', idx));
-  assert.doesNotMatch(block, /SIMPLIFIED_UNI_STATES\.IDLE/);
-  assert.match(block, /voiceCaptureStatus === VOICE_CAPTURE_STATES\.CANCELED/);
-});
-
-test('HOTFIX FINAL: voiceCaptureStatus (identidade real do estado de captura) é repassado de SimplifiedHomeView -> CompactResponse a partir de voiceInput.status -- nunca confundido com voiceStatus (TTS)', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /voiceCaptureStatus,/);
-  assert.match(home, /voiceCaptureStatus=\{voiceInput\.status\}/);
-});
-
-test('P0.5: 422 de "fala não identificada" mapeia para EMPTY_TRANSCRIPT (estado amigável NO_SPEECH), nunca para o erro genérico "TENTE NOVAMENTE"', async () => {
-  const provider = await source('../uni-voice/uniVoiceTranscriptionProvider.js');
-  assert.match(provider, /response\.status === 422 \? 'EMPTY_TRANSCRIPT'/);
 });
 
 test('histórico real da conversa nunca é apagado pelo hotfix -- só a apresentação visual (nenhum setMessages/splice em CompactResponse)', async () => {
@@ -252,7 +163,7 @@ test('chat completo: MessageBubble não tem mais nenhum resquício de revelaçã
   assert.doesNotMatch(bubble, /showPlainRevealText/);
   // sempre usa SafeMarkdown para a resposta da Uni -- nunca um caminho
   // alternativo de texto puro para "durante a revelação".
-  assert.match(bubble, /<SafeMarkdown className=\{styles\.text\}>\{resolvedText\}<\/SafeMarkdown>/);
+  assert.match(bubble, /<SafeMarkdown className=\{styles\.text\}>\{message\.text\}<\/SafeMarkdown>/);
 });
 
 test('chat completo: UniChatPage não repassa mais isRevealingVoiceText a MessageBubble (não existe mais)', async () => {
@@ -265,45 +176,4 @@ test('Home: CompactResponse não tem mais fade de borda nem estado de revelaçã
   assert.doesNotMatch(home, /splitRevealedTextForFade/);
   assert.doesNotMatch(home, /revealEdge/);
   assert.doesNotMatch(home, /isRevealingUniText/);
-});
-
-// ============================================================================
-// HOTFIX P0 (2ª investigação) -- CAUSA RAIZ REAL: activeMessage apontava
-// para lastUni INCONDICIONALMENTE, então toda montagem (reload da Home)
-// fazia useTextAudioSync nascer em fase 'pending' para a última resposta
-// JÁ CONCLUÍDA/persistida, tratando-a como prestes a tocar ("Entendendo
-// seu pedido..." + reveal do zero). voiceMessageId (a MESMA fonte de
-// verdade que o chat completo já usa) nasce null a cada mount e só é
-// setado no instante exato de um speak() real -- nunca por hidratação.
-// ============================================================================
-
-test('activeMessage do textAudioSync na Home é gateado por voiceMessageId (identidade real de quem a voz está visando) -- nunca "a última mensagem" incondicionalmente', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /const isVoiceTargetingLastUni = Boolean\(voiceMessageId\) && lastUni\?\.id === voiceMessageId;/);
-  assert.match(home, /activeMessage: isVoiceTargetingLastUni \? \{ id: lastUni\.id, text: lastUni\.text \} : null,/);
-});
-
-test('voiceMessageId é repassado de UniChatPage.jsx -> SimplifiedHomeView -> CompactResponse (mesma fonte única, nunca um novo mecanismo paralelo)', async () => {
-  const page = await source('./UniChatPage.jsx');
-  assert.match(page, /<SimplifiedHomeView[\s\S]{0,400}voiceMessageId=\{voiceMessageId\}/);
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /function SimplifiedHomeView\(\{[\s\S]{0,300}voiceMessageId,/);
-  assert.match(home, /<CompactResponse[\s\S]{0,450}voiceMessageId=\{voiceMessageId\}/);
-});
-
-test('RELOAD: uma resposta concluída e persistida nasce com activeMessage null (voiceMessageId ainda não setado) -- mostra texto completo imediatamente, nunca fase pending', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  // voiceMessageId só é setado por handleSpeakMessage em UniChatPage.jsx
-  // (autoplay real ou clique manual) -- nunca por hidratação/mount. Uma
-  // montagem nova sempre parte de voiceMessageId null (useState(null) em
-  // UniChatPage.jsx), então isVoiceTargetingLastUni é false até um speak()
-  // real acontecer.
-  const page = await source('./UniChatPage.jsx');
-  assert.match(page, /const \[voiceMessageId, setVoiceMessageId\] = useState\(null\);/);
-  assert.match(home, /const isVoiceTargetingLastUni = Boolean\(voiceMessageId\)/);
-});
-
-test('isTurnAwaitingFreshResponse nasce SEMPRE false no mount (nunca prende o indicador de processamento num reload)', async () => {
-  const home = await source('../simplified-app/SimplifiedHomeView.jsx');
-  assert.match(home, /awaitingFreshResponse: false,\s*\n\s*\}\)\);/);
 });

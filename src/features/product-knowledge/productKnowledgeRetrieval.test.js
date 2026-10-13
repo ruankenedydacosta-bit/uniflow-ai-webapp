@@ -58,16 +58,11 @@ test('explica a configuração de voz na rota real de Conta', () => {
   assert.match(entry.content, /Conta → Voz da Uni/);
 });
 
-test('encontra o documento de voz para "como ouço uma resposta da Uni"', () => {
+test('"como ouço uma resposta da Uni" leva ao documento de voz, que diz que o chat não lê em voz alta', () => {
   const { results } = retrieveProductKnowledge('como ouço uma resposta da Uni');
-  assert.ok(results.some((r) => r.id === 'uni-voice'));
-});
-
-test('encontra o documento de voz para pergunta sobre créditos ao repetir áudio', () => {
-  const { results } = retrieveProductKnowledge('a voz reproduz de novo sem gastar novos créditos?');
-  assert.ok(results.some((r) => r.id === 'uni-voice'));
   const entry = results.find((r) => r.id === 'uni-voice');
-  assert.match(entry.content, /reaproveita/);
+  assert.ok(entry);
+  assert.match(entry.content, /não lê as respostas em voz alta/);
 });
 
 test('nunca retorna mais que o limite (padrão)', () => {

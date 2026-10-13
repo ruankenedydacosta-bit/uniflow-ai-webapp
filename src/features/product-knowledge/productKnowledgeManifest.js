@@ -41,7 +41,7 @@ export const KNOWLEDGE_CATEGORIES = Object.freeze({
 });
 
 const MANIFEST_VERSION = 1;
-const UPDATED_AT = '2026-10-12';
+const UPDATED_AT = '2026-10-13';
 
 // id estável (nunca renomear um id existente -- criar um novo e marcar o
 // antigo como deprecated se o conteúdo for substituído).
@@ -226,7 +226,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Na conversa (/app/uni), a Uni responde perguntas financeiras com dados reais do espaço ativo e registra movimentações por linguagem natural: mostra um card de rascunho (ex.: "Saída · rascunho") com categoria, valor, conta, descrição e data, e nada é salvo antes de Confirmar. Exceção: lançamento direto com Desfazer. Pela conversa e pela voz a Uni também altera e exclui movimentações salvas (Desfazer por 20 segundos depois de excluir, uma por vez), lista movimentações e categorias, cria, renomeia e exclui categorias, cria, altera, exclui e consulta metas e registra aporte e retirada, sempre com card de confirmação. Compromissos da agenda são marcados, remarcados, cancelados, concluídos e excluídos com uma pergunta de confirmação. A Uni não finge ter feito algo que não fez. Abra a conversa em Mais > "Conversa com a Uni" ou por "Conversa" na tela de voz. No topo ficam "Ver histórico" e "Nova conversa"; embaixo, o campo "Escreva ou fale com a Uni". Perguntas de previsão futura não são respondidas por texto livre da IA. O histórico fica salvo e sincronizado com a conta; em "Ver histórico" dá para abrir ou apagar uma conversa. A Uni não acessa dados de outro espaço ou de outro usuário.',
+      'Na conversa (/app/uni), a Uni responde perguntas financeiras com dados reais do espaço ativo e registra movimentações por linguagem natural: mostra um card de rascunho (ex.: "Saída · rascunho") com categoria, valor, conta, descrição e data, e nada é salvo antes de Confirmar. Exceção: lançamento direto com Desfazer. Pela conversa e pela voz a Uni também altera e exclui movimentações salvas (Desfazer por 20 segundos depois de excluir, uma por vez), lista movimentações e categorias, cria, renomeia e exclui categorias, cria, altera, exclui e consulta metas e registra aporte e retirada, sempre com card de confirmação. Compromissos da agenda são marcados, remarcados, cancelados, concluídos e excluídos com uma pergunta de confirmação. A Uni não finge ter feito algo que não fez. Abra a conversa em Mais > "Conversa com a Uni" ou por "Conversa" na tela de voz. No topo ficam "Ver histórico" e "Nova conversa"; embaixo, o campo de texto "Escreva para a Uni". Perguntas de previsão futura não são respondidas por texto livre da IA. O histórico fica salvo e sincronizado com a conta; em "Ver histórico" dá para abrir ou apagar uma conversa. A Uni não acessa dados de outro espaço ou de outro usuário.',
   },
   {
     id: 'uni-voice',
@@ -236,11 +236,11 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/uni-voice.md',
     routes: ['/app/home', '/app/uni'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['ouvir a uni', 'voz', 'áudio', 'reproduzir resposta', 'desativar voz', 'cache de voz', 'créditos de voz', 'conversa por voz', 'minutos de voz', 'interromper a uni', 'excluir pela voz', 'categoria pela voz', 'meta pela voz', 'aporte pela voz', 'agenda pela voz', 'desfazer'],
+    keywords: ['ouvir a uni', 'ouvir resposta', 'voz', 'áudio', 'reproduzir resposta', 'desativar voz', 'usar sem voz', 'conversa por voz', 'minutos de voz', 'interromper a uni', 'excluir pela voz', 'categoria pela voz', 'meta pela voz', 'aporte pela voz', 'agenda pela voz', 'desfazer'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A voz da Uni funciona na Home e na conversa completa. O app pede o microfone antes de gravar e reaproveita áudio já gerado. As preferências ficam em Conta → Voz da Uni. Áudio e transcrição não cruzam usuários nem espaços. Conversa por voz em tempo real: tocar no orb da Uni na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni e toca em Parar para terminar. Pela voz dá para registrar, alterar e excluir movimentações (depois de excluir, dizer "desfazer" em até 20 segundos traz de volta), listar movimentações e categorias, criar, renomear e excluir categorias, criar, alterar, excluir e consultar metas, registrar aporte e retirada e marcar, remarcar, cancelar, concluir e excluir compromissos. Movimentação, categoria e meta passam por um card: a Uni lê o que vai mudar e pergunta se pode confirmar; fora o lançamento direto com Desfazer, nada é salvo antes disso. Compromisso não tem card: a Uni pergunta se pode cancelar ou excluir. Fechada a tela de voz, o rascunho esperando fica na Home. Cada plano tem minutos de voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Conta → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
+      'A voz da Uni existe só na conversa por voz em tempo real. A conversa por texto não lê as respostas em voz alta e não tem botão "Ouvir". O estilo das respostas fica em Conta → Voz da Uni. Áudio e transcrição não cruzam usuários nem espaços. Tocar no orb da Uni na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni e toca em Parar para terminar. Pela voz dá para registrar, alterar e excluir movimentações (depois de excluir, dizer "desfazer" em até 20 segundos traz de volta), listar movimentações e categorias, criar, renomear e excluir categorias, criar, alterar, excluir e consultar metas, registrar aporte e retirada e marcar, remarcar, cancelar, concluir e excluir compromissos. Movimentação, categoria e meta passam por um card: a Uni lê o que vai mudar e pergunta se pode confirmar; fora o lançamento direto com Desfazer, nada é salvo antes disso. Compromisso não tem card: a Uni pergunta se pode cancelar ou excluir. Fechada a tela de voz, o rascunho esperando fica na Home. Cada plano tem minutos de voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Conta → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
   },
   {
     id: 'uni-categoria-e-memoria',

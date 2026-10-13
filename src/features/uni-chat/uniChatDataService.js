@@ -251,11 +251,12 @@ export async function updateConversationTitle(convId, title) {
   const userId = await getUserId();
   if (!userId) return false;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from(CONVERSATIONS_TABLE)
     .update({ title })
     .eq('id', convId)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) {
     markOffline();
@@ -263,7 +264,8 @@ export async function updateConversationTitle(convId, title) {
   }
 
   markOnline();
-  return true;
+  // Update que não casa linha não devolve erro: sem isso o título parecia gravado.
+  return Array.isArray(data) && data.length > 0;
 }
 
 export async function archiveConversation(convId) {

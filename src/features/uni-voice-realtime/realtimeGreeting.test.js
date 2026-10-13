@@ -35,8 +35,9 @@ test('o hook pede a primeira fala assim que o canal abre, e a Home manda a sauda
   assert.match(HOME, /suggestedGreeting: greeting\.spokenGreeting,/);
 });
 
-test('com a conversa em tempo real, a Home não fala sozinha ao abrir o app', () => {
-  assert.match(HOME, /const voiceEnabled = voicePreferenceEnabled && !realtimeVoiceEnabled;/);
+test('a Home não fala sozinha ao abrir o app: quem cumprimenta é a conversa em tempo real', () => {
+  assert.doesNotMatch(HOME, /voiceController\.speak\(/);
+  assert.match(HOME, /suggestedGreeting: greeting\.spokenGreeting,/);
 });
 
 test('com a conversa em tempo real, o texto da Home diz como começar a conversar', () => {

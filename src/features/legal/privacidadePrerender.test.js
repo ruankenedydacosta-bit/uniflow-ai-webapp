@@ -43,7 +43,6 @@ test('todo provedor da lista aparece na página', () => {
 const PROVEDOR_POR_DOMINIO = [
   [/\.supabase\.co$/, 'Supabase'],
   [/^api\.openai\.com$/, 'OpenAI'],
-  [/^api\.elevenlabs\.io$/, 'ElevenLabs'],
   [/^(api|api-sandbox|sandbox|checkout)\.asaas\.com$/, 'Asaas'],
   [/^fonts\.(googleapis|gstatic)\.com$/, 'Google'],
   [/^www\.googletagmanager\.com$/, 'Google'],

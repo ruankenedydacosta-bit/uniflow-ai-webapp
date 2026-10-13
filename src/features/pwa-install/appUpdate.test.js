@@ -481,7 +481,7 @@ test('Home não mostra aviso de atualização e bloqueia o update automático du
   ]);
   assert.doesNotMatch(home, /PwaUpdateCard|Atualizar agora|Nova atualização disponível/);
   assert.doesNotMatch(index, /PwaUpdateCard/);
-  assert.match(home, /usePwaAutoUpdateBlock\(\s*voiceInput\.isActive \|\| isInteractionBusy \|\| pendingConfirmation/);
+  assert.match(home, /usePwaAutoUpdateBlock\(isRealtimeLive \|\| isInteractionBusy \|\| pendingConfirmation\)/);
   assert.match(vite, /registerType: 'prompt'/);
   assert.match(
     vite,

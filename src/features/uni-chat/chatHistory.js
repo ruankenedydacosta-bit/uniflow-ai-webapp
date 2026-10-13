@@ -134,10 +134,26 @@ export function resolveInitialConversationState({
 }
 
 export function deriveTitle(messages) {
-  const first = messages.find((m) => m.from === 'user');
+  const first = messages.find((m) => m.from === 'user' && typeof m.text === 'string' && m.text.trim());
   if (!first) return '';
   const t = first.text;
   return t.length > 55 ? t.slice(0, 55) + '\u2026' : t;
+}
+
+// Reconcile com o banco: o título do banco manda quando existe, mas nunca
+// troca um título não vazio por vazio (conversas antigas foram gravadas com
+// title ''). Sem nenhum dos dois, deriva da 1ª mensagem do usuário.
+export function resolveConversationTitle({ dbTitle = '', localTitle = '', messages = [] } = {}) {
+  return dbTitle || localTitle || deriveTitle(messages);
+}
+
+// Título que ainda precisa ser gravado no banco, ou null. `synced` é o mapa
+// id -> último título confirmado no banco (ou já enviado).
+export function titleToSync(conversation, synced = {}) {
+  if (!conversation || conversation.source !== 'supabase') return null;
+  const title = conversation.title;
+  if (!title || synced[conversation.id] === title) return null;
+  return title;
 }
 
 export function persistConversation(conversations, id, messages, mode) {

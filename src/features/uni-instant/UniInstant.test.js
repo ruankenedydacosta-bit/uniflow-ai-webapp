@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { CANCEL_DRAG_PX, HOLD_THRESHOLD_MS } from './usePressAndHold.js';
+import { CANCEL_DRAG_PX } from './usePressAndHold.js';
 import { resolveUniInstantContext } from './uniInstantContext.js';
 import {
   UNI_VOICE_HINT_STORAGE_KEY,
@@ -15,14 +15,6 @@ test('toque simples abre /uni-ai', async () => {
   const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
   assert.match(integration, /path = '\/uni-ai'/);
   assert.match(integration, /navigate\(path\)/);
-});
-
-test('hold de 400ms abre a conversa e inicia a captura compartilhada', async () => {
-  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.equal(HOLD_THRESHOLD_MS, 400);
-  assert.match(integration, /onHoldStart=\{handleHoldStart\}/);
-  assert.match(integration, /void voiceInput\.start\(\);/);
-  assert.match(integration.match(/const handleHoldStart[\s\S]*?\n {2}},/)?.[0] ?? '', /navigate\(path/);
 });
 
 test('durante hold nao existe bottom sheet', async () => {
@@ -67,27 +59,6 @@ test('acao financeira gera confirmacao', () => {
   const context = resolveUniInstantContext('/dashboard');
   assert.equal(context.type, 'financial_action');
   assert.match(context.response, /Registrar saída de R\$ 25,00/);
-});
-
-test('esfera central e microfone usam o mesmo controlador persistente', async () => {
-  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  const chat = await source('../uni-chat/components/ChatInput.jsx');
-  const provider = await source('../uni-voice/UniVoiceInputProvider.jsx');
-  const providerRuntime = await source('../uni-voice/UniVoiceInputProviderRuntime.js');
-  assert.match(integration, /useSharedUniVoiceInput/);
-  assert.match(chat, /useSharedUniVoiceInput/);
-  assert.match(provider, /UniVoiceInputProviderRuntime/);
-  assert.match(providerRuntime, /useVoiceInput\(\{/);
-  assert.doesNotMatch(chat, /useUniVoiceInput\(/);
-  assert.doesNotMatch(integration, /useUniVoiceInput\(/);
-});
-
-test('soltar a esfera encerra e envia a mesma captura; cancelar por arraste descarta', async () => {
-  const integration = await source('../../layouts/mobile-app-shell/UniCenterButton.jsx');
-  assert.match(integration, /onHoldEnd=\{handleHoldEnd\}/);
-  assert.match(integration, /voiceInput\.stop\(\);/);
-  assert.match(integration, /onHoldCancel=\{handleHoldCancel\}/);
-  assert.match(integration, /voiceInput\.cancel\(\);/);
 });
 
 test('botao central nao executa acao financeira', async () => {

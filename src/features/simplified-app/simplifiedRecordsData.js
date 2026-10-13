@@ -217,6 +217,28 @@ export function formatRelativeTransactionDate(value, referenceDate = new Date())
 }
 
 
+// Previstos vencidos de meses anteriores esperam confirmação, então só o mês
+// que contém hoje os carrega. Nos outros (passados e futuros) vale a data do
+// mês, senão a parcela de julho reaparece em agosto, setembro...
+export function monthContainsToday(monthRange, todayKey) {
+  return monthRange.dateFrom <= todayKey && todayKey <= monthRange.dateTo;
+}
+
+export function plannedQueryDateFrom(monthRange, todayKey) {
+  return monthContainsToday(monthRange, todayKey) ? undefined : monthRange.dateFrom;
+}
+
+// Previstos que pertencem à tela do mês. Também descarta o que sobrou de um
+// mês anterior enquanto a nova consulta carrega.
+export function selectPlannedForMonth(transactions, monthRange, todayKey) {
+  const includesOverdue = monthContainsToday(monthRange, todayKey);
+  return transactions.filter((transaction) => {
+    const date = String(transaction.transaction_date);
+    if (date > monthRange.dateTo) return false;
+    return date >= monthRange.dateFrom || (includesOverdue && date < todayKey);
+  });
+}
+
 // Previsto cuja data é hoje ou já passou espera confirmação.
 export function isPlannedDue(transaction, referenceDate = new Date()) {
   return String(transaction.transaction_date) <= toDateKey(referenceDate);

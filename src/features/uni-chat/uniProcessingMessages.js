@@ -70,15 +70,11 @@ export function resolveOperationHintFromIntent(intent) {
  * Resolve a sequência ORDENADA de mensagens humanas para um estado real do
  * pipeline. Retorna sempre um array congelado com NO MÁXIMO uma mensagem
  * (nunca há rotação) -- estados sem mensagem de processamento (idle,
- * speaking, success, error -- já têm sua própria UI) retornam um array
+ * error -- já têm sua própria UI) retornam um array
  * vazio.
  */
 export function getProcessingMessageSequence(state, context = {}) {
   switch (state) {
-    case 'listening':
-      return Object.freeze(['Ouvindo…']);
-    case 'transcribing':
-      return Object.freeze(['Reconhecendo sua voz…']);
     case 'interpreting':
       return Object.freeze([
         INTERPRETING_MESSAGE_BY_OPERATION_HINT[context?.operationHint] ?? DEFAULT_INTERPRETING_MESSAGE,

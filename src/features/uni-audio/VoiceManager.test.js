@@ -163,38 +163,15 @@ test('falha não marca o clip e permite nova tentativa', async () => {
   assert.equal(manager.hasPlayed('greeting.welcome'), false);
 });
 
-test('provider persiste acima das rotas e o botão não possui player paralelo', async () => {
-  const [mainSource, buttonSource, gestureSource] = await Promise.all([
+test('provider persiste acima das rotas e o botão central não toca áudio gravado', async () => {
+  const [mainSource, buttonSource] = await Promise.all([
     readFile(new URL('../../main.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../../layouts/mobile-app-shell/UniCenterButton.jsx', import.meta.url), 'utf8'),
-    readFile(new URL('../uni-instant/usePressAndHold.js', import.meta.url), 'utf8'),
   ]);
   assert.match(mainSource, /<VoiceProvider>[\s\S]*?<App \/>/);
-  assert.match(buttonSource, /useVoiceManager\(\)/);
-  assert.match(buttonSource, /playContext\('returning_user'/);
-  assert.match(buttonSource, /Promise\.race\([\s\S]*?700/);
-  assert.doesNotMatch(buttonSource, /createVoiceManager|new Audio/);
-  // BLOCO UNI 2 (investigação da falha pré-existente, confirmada): o
-  // regex antigo (/\.stop\(\)|\.dispose\(\)/) barrava QUALQUER ".stop()"
-  // no arquivo -- incluindo `voiceInput.stop()`, uma chamada legítima e
-  // necessária para encerrar a CAPTURA de microfone ao soltar o botão
-  // (handleHoldEnd), sem nenhuma relação com um player de áudio paralelo.
-  // `.dispose()` nunca se aplica à captura -- só a um player -- então essa
-  // parte da proteção original continua válida e é preservada abaixo. Para
-  // ".stop()", a proteção real ("nenhum player paralelo chama stop()") é
-  // reescrita de forma precisa: todo ".stop()" encontrado no arquivo tem
-  // que ser exatamente "voiceInput.stop()" -- nunca de um objeto diferente
-  // (ex.: um player local criado à parte).
-  assert.doesNotMatch(buttonSource, /\.dispose\(\)/);
-  const stopCalls = buttonSource.match(/\b\w+\.stop\(\)/g) ?? [];
-  assert.ok(stopCalls.length > 0, 'esperava encontrar voiceInput.stop() (encerra a captura ao soltar o botão)');
-  assert.ok(
-    stopCalls.every((call) => call === 'voiceInput.stop()'),
-    'único .stop() permitido é voiceInput.stop() (captura) -- qualquer outro indicaria um player de áudio paralelo',
-  );
-  assert.ok(buttonSource.indexOf("playContext('returning_user'") < buttonSource.indexOf('navigate(path)'));
-  assert.match(buttonSource, /playContext\('returning_user'[\s\S]*?\.catch\(\(\) => false\)[\s\S]*?navigate\(path\)/);
-  assert.match(gestureSource, /if \(wasHolding\)[\s\S]*?onHoldEnd[\s\S]*?else if \(wasPressing/);
+  // A voz fora da conversa em tempo real saiu: o toque só navega.
+  assert.doesNotMatch(buttonSource, /useVoiceManager|playContext|createVoiceManager|new Audio|\.stop\(\)|\.dispose\(\)/);
+  assert.match(buttonSource, /navigate\(path\)/);
 });
 
 test('playContext registra histórico somente após playing confirmado', async () => {

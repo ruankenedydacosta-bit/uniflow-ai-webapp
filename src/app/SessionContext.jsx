@@ -43,12 +43,6 @@ import {
   readWorkspaceSelectionForUser,
   writeWorkspaceSelectionForUser,
 } from './workspaceSelection.js';
-import { resetAutoSpokenMessages } from '../features/uni-voice-tts/spokenMessageSession.js';
-import { resetNarratedTexts } from '../features/uni-voice-tts/narratedTextSession.js';
-import {
-  isValidVoiceProvider,
-  resolveVoiceProvider,
-} from '../features/uni-voice-tts/voiceProviderRegistry.js';
 import { normalizeTelemetryErrorCode, telemetry } from '../features/observability/index.js';
 import { trackConfirmedGa4GoogleAuth } from '../features/analytics/ga4AuthOperation.js';
 import {
@@ -151,12 +145,6 @@ function SessionProvider({ children }) {
 
       if (!nextSession?.user) {
         latestUserIdRef.current = null;
-        // Logout/sessão encerrada: limpa o registro de mensagens da Uni já
-        // narradas por voz (spokenMessageSession.js) e o registro de TEXTOS
-        // já narrados (narratedTextSession.js) -- a deduplicação do
-        // autoplay nunca vaza entre sessões/usuários.
-        resetAutoSpokenMessages();
-        resetNarratedTexts();
         setAvailableWorkspaces([]);
         setWorkspaceSwitchState({ error: null, isLoading: false });
         if (isMountedRef.current) {
@@ -602,61 +590,6 @@ function SessionProvider({ children }) {
     };
   }, [state.profile, state.user]);
 
-  const updateVoicePreferences = useCallback(async ({ conversationStyle, voiceProvider }) => {
-    if (!isValidConversationStyle(conversationStyle)) {
-      return {
-        data: null,
-        error: {
-          code: 'CONVERSATION_STYLE_INVALID',
-          message: 'Estilo de conversa inválido.',
-        },
-      };
-    }
-
-    if (!isValidVoiceProvider(voiceProvider)) {
-      return {
-        data: null,
-        error: {
-          code: 'VOICE_PROVIDER_INVALID',
-          message: 'Estilo de voz inválido.',
-        },
-      };
-    }
-
-    if (!state.user?.id || !state.profile) {
-      return {
-        data: null,
-        error: {
-          code: 'PROFILE_REQUIRED',
-          message: 'Perfil autenticado indisponível.',
-        },
-      };
-    }
-
-    const result = await updateProfile(state.user.id, {
-      conversation_style: conversationStyle,
-      voice_provider: voiceProvider,
-    });
-
-    if (result.error || !result.data) return result;
-
-    const normalizedData = {
-      ...result.data,
-      conversation_style: resolveConversationStyle(result.data.conversation_style),
-      voice_provider: resolveVoiceProvider(result.data.voice_provider),
-    };
-
-    setState((currentState) => ({
-      ...currentState,
-      profile: {
-        ...currentState.profile,
-        ...normalizedData,
-      },
-    }));
-
-    return { ...result, data: normalizedData };
-  }, [state.profile, state.user]);
-
   const updateOwnProfile = useCallback(async (changes) => {
     if (!state.user?.id || !state.profile) {
       return {
@@ -964,12 +897,11 @@ function SessionProvider({ children }) {
       createWorkspaceProfile,
       updateOwnProfile,
       updateConversationStyle,
-      updateVoicePreferences,
       isSwitchingWorkspace: workspaceSwitchState.isLoading,
       switchWorkspace,
       workspaceSwitchError: workspaceSwitchState.error,
     }),
-    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithGoogle, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updateConversationStyle, updateOwnProfile, updatePassword, updateVoicePreferences, workspaceSwitchState],
+    [availableWorkspaces, createWorkspaceProfile, requestPasswordReset, selectedWorkspaceType, signInWithGoogle, signInWithPassword, signOut, signUpWithEmail, state, switchWorkspace, synchronizeSession, updateConversationStyle, updateOwnProfile, updatePassword, workspaceSwitchState],
   );
 
   return (
