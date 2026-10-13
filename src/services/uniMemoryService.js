@@ -128,6 +128,27 @@ export async function getFinancialMemory(sessionContext, memoryId) {
   return withSafeError(data, error, 'Não consegui carregar essa memória agora.');
 }
 
+// A memória ativa (candidate ou confirmed) de uma chave. O índice único
+// garante no máximo uma por pessoa, espaço, tipo e chave; a RLS só mostra as
+// da própria pessoa.
+export async function findActiveFinancialMemoryByKey(sessionContext, memoryType, memoryKey) {
+  if (!supabase) return unavailable(null);
+  const workspaceId = readWorkspaceId(sessionContext);
+  if (!validateIds(workspaceId)) return invalid('Workspace inválido para consultar memórias.');
+  if (!isValidMemoryType(memoryType) || !isSafeMemoryKey(memoryKey)) {
+    return invalid('Tipo ou chave de memória inválida.');
+  }
+  const { data, error } = await supabase
+    .from('uni_financial_memories')
+    .select(MEMORY_FIELDS)
+    .eq('workspace_id', workspaceId)
+    .eq('memory_type', memoryType)
+    .eq('memory_key', memoryKey.trim())
+    .in('status', ['candidate', 'confirmed'])
+    .maybeSingle();
+  return withSafeError(data, error, 'Não consegui carregar essa memória agora.');
+}
+
 export async function createExplicitMemoryCandidate(
   sessionContext,
   candidate,

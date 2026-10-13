@@ -122,7 +122,7 @@ function serializar(validada) {
   };
 }
 
-// carregarContexto(workspaceId) → { workspaceType, categorias, contas, metas } ou null
+// carregarContexto(workspaceId) → { workspaceType, categorias, contas, metas, memorias } ou null
 //   quando o usuário não enxerga o workspace (RLS).
 // chamarModelo({ instrucoes, mensagem }) → resultado de provedores.js.
 // Devolve { status, corpo, metrica }; metrica não carrega texto do usuário.
@@ -145,6 +145,7 @@ export async function interpretarFrase({ corpo, carregarContexto, chamarModelo, 
     categorias: contexto.categorias,
     contas: contexto.contas,
     metas: contexto.metas ?? [],
+    memorias: contexto.memorias ?? [],
     rascunho: entrada.rascunho,
     historico: entrada.historico,
   });

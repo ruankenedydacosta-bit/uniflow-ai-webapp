@@ -1,4 +1,4 @@
-import { indexarCatalogo } from './contrato.js';
+import { indexarCatalogo, semAcentoNemCaixa } from './contrato.js';
 
 // Prompt do uni-interpret (épico #104, F1). O texto fixo vai no system e é
 // igual para todo mundo; o que muda por usuário (data, catálogo, conta,
@@ -32,7 +32,7 @@ Uma frase pode ter várias operações ("paguei 40 de táxi e 25 de lanche" são
 - confianca: de 0 a 1, o quanto você tem certeza da categoria escolhida.
 - parcelas: só quando a pessoa conta que dividiu uma compra em parcelas ("em 6x", "parcelei em doze vezes"). O valor é o total da compra: em "10x de 300", valor é 3000. Pagar uma parcela avulsa de algo não é parcelamento: parcelas é null. Só em saída.
 - recorrente: true só quando a pessoa diz que o valor se repete ("todo mês", "toda semana", "todo dia 10"). Pagar uma conta mensal uma vez não é recorrência. Nunca em transferência.
-- As memórias do usuário mostram como ele já classificou descrições parecidas. Siga-as quando a descrição corresponder.
+- <memorias> lista descrições que o usuário já confirmou, cada uma com a categoria que ele escolheu. Quando a descrição da operação é a mesma de uma memória, ou quase a mesma ("Natação do Léo" e "natação"), use a categoria da memória, mesmo que outra pareça mais natural. Uma memória de outra coisa que só divide uma palavra com a frase não vale. A categoria que a pessoa pede na frase vale mais que a memória.
 
 ## consulta
 Só quando o intent é consulta; nos outros, todos os campos são null.
@@ -134,6 +134,37 @@ function blocoMetas(metas) {
   return metas.map(({ apelido, registro }) => `- ${apelido}: ${linha(registro.name)}`).join('\n');
 }
 
+// Teto das memórias de categoria (#79) no prompt: ~30 linhas curtas custam
+// poucas centenas de tokens, e a pessoa com centenas de descrições não deixa
+// a chamada mais lenta.
+export const MAX_MEMORIAS = 30;
+export const MAX_DESCRICAO_MEMORIA = 80;
+
+function palavrasDe(texto) {
+  return semAcentoNemCaixa(texto).split(/[^a-z0-9]+/).filter((palavra) => palavra.length >= 3);
+}
+
+// "escola" e "escolar" casam; palavra curta só casa inteira.
+function palavrasCasam(a, b) {
+  if (a === b) return true;
+  return Math.min(a.length, b.length) >= 4 && (a.startsWith(b) || b.startsWith(a));
+}
+
+// Primeiro as memórias que dividem palavra com a frase, depois as mais
+// recentes (a lista chega da mais recente para a mais antiga), até o teto.
+export function escolherMemorias(memorias, frase, max = MAX_MEMORIAS) {
+  const daFrase = palavrasDe(frase);
+  return memorias
+    .map((memoria, indice) => ({
+      memoria,
+      indice,
+      pontos: palavrasDe(memoria.descricao).filter((palavra) => daFrase.some((outra) => palavrasCasam(palavra, outra))).length,
+    }))
+    .sort((a, b) => b.pontos - a.pontos || a.indice - b.indice)
+    .slice(0, max)
+    .map(({ memoria }) => memoria);
+}
+
 // dataReferencia: AAAA-MM-DD no fuso do usuário (America/Sao_Paulo).
 export function montarMensagemUsuario({
   frase,
@@ -157,11 +188,18 @@ export function montarMensagemUsuario({
     `## Metas (apelido: nome)\n<metas>\n${blocoMetas(indice.metas)}\n</metas>`,
   ];
 
-  if (memorias.length > 0) {
-    const linhas = memorias
-      .filter((memoria) => apelidoPorCategoriaId.has(memoria.categoria_id))
-      .map((memoria) => `- "${linha(memoria.descricao)}" → ${apelidoPorCategoriaId.get(memoria.categoria_id)}`);
-    if (linhas.length > 0) partes.push(`<memorias>\n${linhas.join('\n')}\n</memorias>`);
+  // A descrição foi escrita pela pessoa: vai como string JSON (aspas e barras
+  // escapadas) numa linha só, sem < nem >, e só com categoria do catálogo.
+  const memoriasDoCatalogo = escolherMemorias(
+    (Array.isArray(memorias) ? memorias : [])
+      .filter((memoria) => apelidoPorCategoriaId.has(memoria?.categoria_id) && linha(memoria?.descricao)),
+    frase,
+  );
+  if (memoriasDoCatalogo.length > 0) {
+    const linhas = memoriasDoCatalogo.map((memoria) => (
+      `- ${JSON.stringify(linha(memoria.descricao).slice(0, MAX_DESCRICAO_MEMORIA))} → ${apelidoPorCategoriaId.get(memoria.categoria_id)}`
+    ));
+    partes.push(`<memorias>\n${linhas.join('\n')}\n</memorias>`);
   }
   if (rascunho) {
     const json = JSON.stringify(rascunhoComApelidos(rascunho, indice)).replace(/</g, '\\u003c').replace(/>/g, '\\u003e');

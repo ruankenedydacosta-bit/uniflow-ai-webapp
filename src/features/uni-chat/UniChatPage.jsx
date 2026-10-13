@@ -75,6 +75,7 @@ import {
   montarHistoricoParaInterpretacao,
   montarRascunhoParaInterpretacao,
 } from '../uni-interpret/uniInterpretClient.js';
+import { registrarConfirmacaoNaMemoria } from '../uni-interpret/memoriaDeCategoria.js';
 import {
   montarPedidoDeCategoria,
   respostaAoPedidoDeCategoria,
@@ -1143,6 +1144,9 @@ export default function UniChatPage({ variant = 'full' }) {
   const [edicaoPendente, setEdicaoPendenteState] = useState(null);
   const edicaoPendenteRef = useRef(null);
   const ultimoConfirmadoRef = useRef(null);
+  // Categoria do primeiro rascunho de cada lançamento (#79), por
+  // clientOperationId: na confirmação, categoria diferente desta é troca.
+  const categoriaInicialPorOperacaoRef = useRef(new Map());
 
   function setEdicaoPendente(next) {
     edicaoPendenteRef.current = next;
@@ -3078,6 +3082,10 @@ export default function UniChatPage({ variant = 'full' }) {
 
   function publishConversationResult(result) {
     syncFinancialParentSnapshot(result);
+    const operacaoId = result?.action?.clientOperationId;
+    if (operacaoId && !categoriaInicialPorOperacaoRef.current.has(operacaoId)) {
+      categoriaInicialPorOperacaoRef.current.set(operacaoId, result.action.category?.id ?? null);
+    }
     if (
       result?.action?.issues?.[0]?.code === 'category_not_found'
       && result.action.proposedCategoryName
@@ -4281,6 +4289,25 @@ export default function UniChatPage({ variant = 'full' }) {
     }
   }
 
+  // Memória de categoria (#79): a descrição confirmada fica ligada à
+  // categoria, para a próxima interpretação. Em segundo plano: a falha só
+  // deixa de lembrar.
+  function lembrarCategoriaConfirmada(acao, transacao, workspaceId) {
+    const operacaoId = acao?.clientOperationId;
+    const categoriaInicial = categoriaInicialPorOperacaoRef.current.get(operacaoId) ?? null;
+    categoriaInicialPorOperacaoRef.current.delete(operacaoId);
+    const categoriaId = acao?.category?.id ?? acao?.payload?.category_id ?? null;
+    void registrarConfirmacaoNaMemoria({
+      workspaceId,
+      descricao: acao?.payload?.description,
+      categoriaId,
+      tipo: acao?.payload?.transaction_type,
+      trocou: Boolean(categoriaInicial && categoriaId && categoriaInicial !== categoriaId),
+      transacaoId: transacao?.id,
+      data: getLocalIsoDate(),
+    });
+  }
+
   async function handleConfirmAction(id) {
     if (confirmingRef.current) return;
     if (categoriaPendenteRef.current?.messageId === id) {
@@ -4542,6 +4569,7 @@ export default function UniChatPage({ variant = 'full' }) {
         return;
       }
 
+      const acaoConfirmada = financialConversation.state.action;
       const outcome = await financialConversation.confirm();
 
       // Guard: se a conversa mudou durante a execução, abortar.
@@ -4610,6 +4638,7 @@ export default function UniChatPage({ variant = 'full' }) {
           em: Date.now(),
         };
       }
+      lembrarCategoriaConfirmada(acaoConfirmada, persistedTransaction, currentWorkspaceId);
       const rememberedAccountName = accountState.accounts
         .find((account) => account.id === persistedTransaction?.account_id)?.name ?? null;
       const rememberedCategoryName = persistedTransaction?.category_id

@@ -2285,3 +2285,20 @@ test('pedido de categoria: grava pelo hook da tela, com o texto de erro de lá',
   assert.ok(corpo.indexOf('categoriaPendenteRef.current = null;') < corpo.indexOf('if (activeIdRef.current !== pendente.conversationId) return;'));
   assert.match(corpo, /notifyFinancialDataChanged\('uni-chat'\);/);
 });
+
+test('memória de categoria (#79): confirmar o card grava a descrição com a categoria e se houve troca', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
+  // A ação lida antes de confirmar: depois, o reset apaga o rascunho.
+  assert.ok(confirmar.indexOf('const acaoConfirmada = financialConversation.state.action;')
+    < confirmar.indexOf('const outcome = await financialConversation.confirm();'));
+  assert.match(confirmar, /lembrarCategoriaConfirmada\(acaoConfirmada, persistedTransaction, currentWorkspaceId\);/);
+  assert.ok(confirmar.indexOf('lembrarCategoriaConfirmada(') < confirmar.indexOf('financialConversation.reset();'));
+
+  // A categoria do primeiro card de cada lançamento é a base da troca.
+  const publicar = page.slice(page.indexOf('function publishConversationResult(result) {'), page.indexOf('function publishAccountCreationConfirmation('));
+  assert.match(publicar, /!categoriaInicialPorOperacaoRef\.current\.has\(operacaoId\)/);
+  const lembrar = page.slice(page.indexOf('function lembrarCategoriaConfirmada('), page.indexOf('async function handleConfirmAction(id) {'));
+  assert.match(lembrar, /trocou: Boolean\(categoriaInicial && categoriaId && categoriaInicial !== categoriaId\)/);
+  assert.match(lembrar, /void registrarConfirmacaoNaMemoria\(/);
+});

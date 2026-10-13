@@ -1,0 +1,129 @@
+// Memória de categoria por descrição (#79): quando a pessoa confirma o card
+// de um lançamento, a Uni lembra em que categoria ela pôs aquela descrição.
+// A próxima interpretação recebe essas memórias no prompt (uni-interpret) e
+// escolhe a categoria entre os ids do catálogo, como sempre.
+//
+// Fica em uni_financial_memories (migration 005), tipo
+// merchant_category_mapping. A RLS deixa cada pessoa ler e gravar só as
+// próprias memórias, dentro de um espaço de que ela é membro: num espaço com
+// várias pessoas, a correção de uma não muda a Uni da outra.
+//
+// A chave é um hash da descrição sem acento e sem caixa: a tabela recusa
+// chave com certas palavras ("audio", "token"...) e limita o tamanho, e uma
+// descrição como "Fone de áudio" não pode ficar sem memória por isso. O texto
+// vai no valor, que é o que o prompt mostra.
+
+import { normalizeSearchText } from '../../utils/searchText.js';
+import {
+  correctExplicitFinancialMemory,
+  createExplicitMemoryCandidate,
+  findActiveFinancialMemoryByKey,
+} from '../../services/uniMemoryService.js';
+
+export const TIPO_MEMORIA_DE_CATEGORIA = 'merchant_category_mapping';
+// Eventos guardados por descrição: dão a medida de "correções repetidas da
+// mesma descrição caem" (o n-ésimo uso troca menos que o primeiro).
+export const MAX_EVENTOS_DA_MEMORIA = 20;
+export const MAX_DESCRICAO_DA_MEMORIA = 80;
+
+const TIPOS_COM_MEMORIA = new Set(['expense', 'income']);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function paraHex(buffer) {
+  return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// "Mensalidade Escolar" e "mensalidade escolar" são a mesma chave.
+export async function chaveDaDescricao(descricao) {
+  const normalizada = normalizeSearchText(descricao);
+  if (!normalizada) return null;
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalizada));
+  return `descricao:${paraHex(digest).slice(0, 32)}`;
+}
+
+function inteiroNaoNegativo(valor) {
+  return Number.isInteger(valor) && valor >= 0 ? valor : 0;
+}
+
+// Valor da memória depois de uma confirmação, ou null quando a mesma
+// transação já foi contada (a confirmação repetida devolve o mesmo id).
+//
+// confirmacoes: quantas vezes seguidas a pessoa confirmou esta categoria sem
+// trocar. Trocar a categoria no card zera a contagem; confirmar uma categoria
+// diferente da memória sem trocar (o rascunho já veio com ela) recomeça em 1.
+export function memoriaDepoisDaConfirmacao(atual, {
+  descricao, categoriaId, tipo, trocou, transacaoId, data,
+}) {
+  const anterior = atual && typeof atual === 'object' && !Array.isArray(atual) ? atual : {};
+  if (anterior.ultima_transacao_id && anterior.ultima_transacao_id === transacaoId) return null;
+
+  const mesmaCategoria = anterior.categoria_id === categoriaId;
+  let confirmacoes = 1;
+  if (trocou) confirmacoes = 0;
+  else if (mesmaCategoria) confirmacoes = inteiroNaoNegativo(anterior.confirmacoes) + 1;
+
+  const total = inteiroNaoNegativo(anterior.total) + 1;
+  const eventos = Array.isArray(anterior.eventos) ? anterior.eventos : [];
+  return {
+    descricao: String(descricao ?? '').trim().slice(0, MAX_DESCRICAO_DA_MEMORIA).trim(),
+    categoria_id: categoriaId,
+    tipo,
+    confirmacoes,
+    total,
+    trocas: inteiroNaoNegativo(anterior.trocas) + (trocou ? 1 : 0),
+    ultima_transacao_id: transacaoId,
+    eventos: [...eventos, { n: total, data, trocou: Boolean(trocou) }].slice(-MAX_EVENTOS_DA_MEMORIA),
+  };
+}
+
+const SERVICO_PADRAO = Object.freeze({
+  buscar: findActiveFinancialMemoryByKey,
+  criar: createExplicitMemoryCandidate,
+  corrigir: correctExplicitFinancialMemory,
+});
+
+// Grava a confirmação de um lançamento de entrada ou saída. Nunca lança e
+// nunca bloqueia o lançamento: falha de rede, papel sem escrita (leitor) ou
+// descrição vazia só deixam de lembrar.
+// trocou: a categoria confirmada é outra que a do primeiro rascunho.
+export async function registrarConfirmacaoNaMemoria({
+  workspaceId,
+  descricao,
+  categoriaId,
+  tipo,
+  trocou = false,
+  transacaoId,
+  data,
+  servico = SERVICO_PADRAO,
+} = {}) {
+  try {
+    if (!UUID.test(workspaceId ?? '') || !UUID.test(categoriaId ?? '') || !UUID.test(transacaoId ?? '')) {
+      return { registrada: false, motivo: 'dados_incompletos' };
+    }
+    if (!TIPOS_COM_MEMORIA.has(tipo)) return { registrada: false, motivo: 'tipo_sem_memoria' };
+    const chave = await chaveDaDescricao(descricao);
+    if (!chave) return { registrada: false, motivo: 'sem_descricao' };
+
+    const sessao = { workspace: { id: workspaceId } };
+    const existente = await servico.buscar(sessao, TIPO_MEMORIA_DE_CATEGORIA, chave);
+    if (existente.error) return { registrada: false, motivo: 'leitura' };
+
+    const valor = memoriaDepoisDaConfirmacao(existente.data?.memory_value, {
+      descricao, categoriaId, tipo, trocou, transacaoId, data,
+    });
+    if (!valor) return { registrada: false, motivo: 'ja_contada' };
+
+    const gravada = existente.data
+      ? await servico.corrigir(sessao, existente.data.id, valor)
+      : await servico.criar(sessao, {
+        type: TIPO_MEMORIA_DE_CATEGORIA,
+        key: chave,
+        value: valor,
+        source: trocou ? 'user_correction' : 'explicit_user',
+      }, { userInitiated: true });
+    if (gravada.error) return { registrada: false, motivo: 'gravacao' };
+    return { registrada: true, valor };
+  } catch {
+    return { registrada: false, motivo: 'erro' };
+  }
+}
