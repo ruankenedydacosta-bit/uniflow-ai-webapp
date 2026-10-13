@@ -654,7 +654,7 @@ function SimplifiedHomeView({
 
   // Conversa em tempo real (épico #116): a Uni ouve e fala continuamente, e
   // o que envolve dinheiro passa pelo mesmo envio do texto.
-  const { updateOwnProfile } = useSession();
+  const { updateOwnProfile, workspace } = useSession();
   const saveNamePronunciation = useCallback(
     (pronunciation) => updateOwnProfile({ name_pronunciation: pronunciation }),
     [updateOwnProfile],
@@ -798,6 +798,7 @@ function SimplifiedHomeView({
     onBeforeVoiceStart?.();
     setVoiceConversationPreviousIds(snapshotVoiceConversationStart(messages));
     void realtime.start({
+      workspaceId: workspace?.id,
       greetingInstructions: buildRealtimeGreetingInstructions({
         suggestedGreeting: greeting.spokenGreeting,
         hasPendingDraft: pendingConfirmation,

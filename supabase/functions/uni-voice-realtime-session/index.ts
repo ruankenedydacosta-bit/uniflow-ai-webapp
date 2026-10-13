@@ -16,17 +16,26 @@
 //
 // Não há allowlist de usuários: quem pode abrir sessão é decidido pelo plano.
 // Sem assinatura ativa ou sem minutos no ciclo, voice_reserve_block recusa.
+//
+// A transcrição da fala leva no prompt os nomes de contas e categorias do
+// espaço (_shared/vocabularioTranscricao.js), para o texto na tela acertar
+// a grafia (#79).
 
 import {
   mapVoiceReserveError,
   parseVoiceReservation,
   type VoiceReservation,
 } from '../_shared/voiceQuotaRules.ts';
+import { carregarVocabularioDoUsuario, modeloAceitaPrompt } from '../_shared/vocabularioTranscricao.js';
 
 const OPENAI_CLIENT_SECRETS_URL = 'https://api.openai.com/v1/realtime/client_secrets';
 const DEFAULT_MODEL = 'gpt-realtime-2.1-mini';
 const DEFAULT_VOICE = 'marin';
-const TRANSCRIPTION_MODEL = 'gpt-4o-mini-transcribe';
+// A transcrição da conversa só vira o texto "o que você disse" na tela: a
+// frase que vai para a Uni é escrita pelo modelo da conversa. #79 troca o
+// gpt-4o-mini-transcribe pelo gpt-4o-transcribe, com o vocabulário do
+// usuário no prompt. UNI_REALTIME_TRANSCRIPTION_MODEL volta atrás.
+const DEFAULT_TRANSCRIPTION_MODEL = 'gpt-4o-transcribe';
 const EAGERNESS_VALUES = new Set(['low', 'medium', 'high', 'auto']);
 const DEFAULT_EAGERNESS = 'low';
 const DEFAULT_TIMEOUT_MS = 10000;
@@ -228,11 +237,21 @@ async function fetchProfileForVoice(supabaseUrl: string, serviceRoleKey: string,
   }
 }
 
-function buildSessionConfig({ model, voice, eagerness, nameInstructions }: {
+function buildTranscriptionConfig(model: string, prompt: string) {
+  return {
+    model,
+    language: 'pt',
+    ...(prompt && modeloAceitaPrompt(model) ? { prompt } : {}),
+  };
+}
+
+function buildSessionConfig({ model, voice, eagerness, nameInstructions, transcriptionModel, transcriptionPrompt }: {
   model: string;
   voice: string;
   eagerness: string;
   nameInstructions: string;
+  transcriptionModel: string;
+  transcriptionPrompt: string;
 }) {
   return {
     expires_after: { anchor: 'created_at', seconds: CLIENT_SECRET_TTL_SECONDS },
@@ -245,7 +264,7 @@ function buildSessionConfig({ model, voice, eagerness, nameInstructions }: {
       audio: {
         input: {
           noise_reduction: { type: 'near_field' },
-          transcription: { model: TRANSCRIPTION_MODEL, language: 'pt' },
+          transcription: buildTranscriptionConfig(transcriptionModel, transcriptionPrompt),
           // semantic_vad decide o fim da fala pelo sentido do que foi dito,
           // não só pelo silêncio. interrupt_response deixa a pessoa cortar a
           // Uni; o eco da própria Uni é tirado antes, no navegador.
@@ -305,6 +324,7 @@ Deno.serve(async (request) => {
   const providerKey = Deno.env.get('OPENAI_API_KEY') ?? '';
   const model = Deno.env.get('OPENAI_REALTIME_MODEL') || DEFAULT_MODEL;
   const voice = Deno.env.get('OPENAI_REALTIME_VOICE') || DEFAULT_VOICE;
+  const transcriptionModel = Deno.env.get('UNI_REALTIME_TRANSCRIPTION_MODEL') || DEFAULT_TRANSCRIPTION_MODEL;
   const timeoutMs = Number(Deno.env.get('UNI_REALTIME_TIMEOUT_MS')) || DEFAULT_TIMEOUT_MS;
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey || !providerKey) {
@@ -331,6 +351,18 @@ Deno.serve(async (request) => {
     ? payload.eagerness
     : DEFAULT_EAGERNESS;
 
+  // O vocabulário é lido com o JWT da pessoa (RLS), nunca com a service
+  // role: workspace_id vem do app, e de um espaço alheio a leitura volta
+  // vazia. Sem workspace_id, a conversa abre sem vocabulário. A leitura
+  // corre junto com o perfil e a reserva, e só é esperada depois que a
+  // reserva passa: uma recusa não espera por ela. Ela nunca rejeita.
+  const vocabularyPromise = carregarVocabularioDoUsuario({
+    supabaseUrl,
+    anonKey,
+    authorization,
+    workspaceId: payload?.workspace_id,
+  });
+
   const nameInstructions = buildNameInstructions(await fetchProfileForVoice(supabaseUrl, serviceRoleKey, userId));
 
   // Reserva antes de qualquer chamada paga. O saldo e a assinatura são
@@ -346,21 +378,46 @@ Deno.serve(async (request) => {
     }, origin);
   }
 
+  const vocabulary = await vocabularyPromise;
+  // Se a OpenAI recusar a sessão com o vocabulário (400), tenta de novo sem
+  // ele: o prompt da transcrição nunca pode impedir a conversa.
+  const transcriptionPrompts = vocabulary.prompt ? [vocabulary.prompt, ''] : [''];
+  const safetyIdentifier = await sha256Hex(userId);
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort('timeout'), timeoutMs);
-  let providerResponse: Response;
+  let providerResponse: Response | null = null;
+  let data: {
+    value?: unknown;
+    expires_at?: unknown;
+    error?: { code?: unknown; message?: unknown };
+  } | null = null;
   try {
-    providerResponse = await fetch(OPENAI_CLIENT_SECRETS_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${providerKey}`,
-        'Content-Type': 'application/json',
-        // Identifica o usuário para a OpenAI sem expor o id: só o hash.
-        'OpenAI-Safety-Identifier': await sha256Hex(userId),
-      },
-      body: JSON.stringify(buildSessionConfig({ model, voice, eagerness, nameInstructions })),
-      signal: controller.signal,
-    });
+    for (const transcriptionPrompt of transcriptionPrompts) {
+      providerResponse = await fetch(OPENAI_CLIENT_SECRETS_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${providerKey}`,
+          'Content-Type': 'application/json',
+          // Identifica o usuário para a OpenAI sem expor o id: só o hash.
+          'OpenAI-Safety-Identifier': safetyIdentifier,
+        },
+        body: JSON.stringify(buildSessionConfig({
+          model,
+          voice,
+          eagerness,
+          nameInstructions,
+          transcriptionModel,
+          transcriptionPrompt,
+        })),
+        signal: controller.signal,
+      });
+      data = await providerResponse.json().catch(() => null);
+      if (providerResponse.status !== 400 || !transcriptionPrompt) break;
+      console.warn('uni_voice_realtime_transcription_prompt_rejected', {
+        code: data?.error?.code ?? null,
+      });
+    }
   } catch {
     console.warn('uni_voice_realtime_provider_unreachable', { timeout: controller.signal.aborted });
     await releaseReservation(supabaseUrl, serviceRoleKey, reservation);
@@ -369,12 +426,11 @@ Deno.serve(async (request) => {
     clearTimeout(timeout);
   }
 
-  const data = await providerResponse.json().catch(() => null);
-  if (!providerResponse.ok || typeof data?.value !== 'string') {
+  if (!providerResponse?.ok || typeof data?.value !== 'string') {
     // Protótipo: a mensagem do provedor vai para o log para acertar o
     // formato da sessão. Nunca a chave.
     console.warn('uni_voice_realtime_provider_error', {
-      status: providerResponse.status,
+      status: providerResponse?.status ?? null,
       code: data?.error?.code ?? null,
       message: data?.error?.message ?? null,
     });
