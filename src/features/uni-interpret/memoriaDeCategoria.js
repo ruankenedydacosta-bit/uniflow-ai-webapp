@@ -189,10 +189,10 @@ export function memoriaDepoisDoDesfazer(atual, { transacaoId }) {
 }
 
 // A memória ativa da descrição, ou null. Nunca lança.
-export async function lerMemoriaDaDescricao({ workspaceId, descricao, servico = SERVICO_PADRAO } = {}) {
+export async function lerMemoriaDaDescricao({ workspaceId, descricao, tipo, servico = SERVICO_PADRAO } = {}) {
   try {
     if (!UUID.test(workspaceId ?? '')) return null;
-    const chave = await chaveDaDescricao(descricao);
+    const chave = await chaveDaDescricao(descricao, tipo);
     if (!chave) return null;
     const { data, error } = await servico.buscar({ workspace: { id: workspaceId } }, TIPO_MEMORIA_DE_CATEGORIA, chave);
     if (error || !data?.id) return null;
@@ -202,9 +202,9 @@ export async function lerMemoriaDaDescricao({ workspaceId, descricao, servico = 
   }
 }
 
-async function atualizarMemoriaExistente({ workspaceId, descricao, servico, transformar }) {
+async function atualizarMemoriaExistente({ workspaceId, descricao, tipo, servico, transformar }) {
   try {
-    const memoria = await lerMemoriaDaDescricao({ workspaceId, descricao, servico });
+    const memoria = await lerMemoriaDaDescricao({ workspaceId, descricao, tipo, servico });
     if (!memoria) return { registrada: false, motivo: 'sem_memoria' };
     const valor = transformar(memoria.valor);
     if (!valor) return { registrada: false, motivo: 'ja_contada' };
@@ -216,19 +216,21 @@ async function atualizarMemoriaExistente({ workspaceId, descricao, servico, tran
   }
 }
 
-export function registrarLancamentoDiretoNaMemoria({ workspaceId, descricao, transacaoId, data, servico = SERVICO_PADRAO } = {}) {
+export function registrarLancamentoDiretoNaMemoria({ workspaceId, descricao, tipo, transacaoId, data, servico = SERVICO_PADRAO } = {}) {
   return atualizarMemoriaExistente({
     workspaceId,
     descricao,
+    tipo,
     servico,
     transformar: (valor) => memoriaDepoisDoLancamentoDireto(valor, { transacaoId, data }),
   });
 }
 
-export function registrarDesfazerNaMemoria({ workspaceId, descricao, transacaoId, servico = SERVICO_PADRAO } = {}) {
+export function registrarDesfazerNaMemoria({ workspaceId, descricao, tipo, transacaoId, servico = SERVICO_PADRAO } = {}) {
   return atualizarMemoriaExistente({
     workspaceId,
     descricao,
+    tipo,
     servico,
     transformar: (valor) => memoriaDepoisDoDesfazer(valor, { transacaoId }),
   });

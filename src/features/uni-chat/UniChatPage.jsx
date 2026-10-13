@@ -2210,6 +2210,7 @@ export default function UniChatPage({ variant = 'full' }) {
       void registrarDesfazerNaMemoria({
         workspaceId: desfazivel.workspaceId,
         descricao: transacao.description,
+        tipo: transacao.tipo,
         transacaoId: transacao.id,
       });
       await Promise.all([balanceState.refresh(), accountState.refresh()]);
@@ -2236,7 +2237,11 @@ export default function UniChatPage({ variant = 'full' }) {
     if (exclusaoDesfazivelRef.current) return false;
     const workspaceId = effectiveWorkspace?.id;
     const conversationId = activeIdRef.current;
-    const memoria = await lerMemoriaDaDescricao({ workspaceId, descricao: action.payload.description });
+    const memoria = await lerMemoriaDaDescricao({
+      workspaceId,
+      descricao: action.payload.description,
+      tipo: action.transactionType,
+    });
     if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return false;
     if (!memoriaPermiteLancarDireto(memoria?.valor, { categoriaId: action.category.id, tipo: action.transactionType })) {
       return false;
@@ -2264,6 +2269,7 @@ export default function UniChatPage({ variant = 'full' }) {
       void registrarLancamentoDiretoNaMemoria({
         workspaceId,
         descricao: action.payload.description,
+        tipo: action.transactionType,
         transacaoId,
         data: getLocalIsoDate(),
       });
@@ -2279,6 +2285,7 @@ export default function UniChatPage({ variant = 'full' }) {
         description: action.payload.description,
         amount: action.amount,
         categoryName: action.category.name,
+        tipo: action.transactionType,
       };
       limparDesfazivel('expired');
       const aviso = createAssistantResponse(textoDoLancamentoDireto({

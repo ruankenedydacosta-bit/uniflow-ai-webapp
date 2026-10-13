@@ -159,14 +159,14 @@ test('gravar lançamento direto e Desfazer só mexe em memória que existe', asy
     buscar: async () => ({ data: existente, error: null }),
     corrigir: async (...args) => { chamadas.push(args); return { data: {}, error: null }; },
   };
-  const gravado = await registrarLancamentoDiretoNaMemoria({ workspaceId: WORKSPACE, descricao: 'Mensalidade escolar', transacaoId: 't4', data: '2026-10-12', servico });
+  const gravado = await registrarLancamentoDiretoNaMemoria({ workspaceId: WORKSPACE, descricao: 'Mensalidade escolar', tipo: 'expense', transacaoId: 't4', data: '2026-10-12', servico });
   assert.equal(gravado.registrada, true);
   assert.equal(chamadas[0][1], existente.id);
 
   const semMemoria = { buscar: async () => ({ data: null, error: null }), corrigir: async () => { throw new Error('não chama'); } };
-  assert.equal((await registrarDesfazerNaMemoria({ workspaceId: WORKSPACE, descricao: 'x', transacaoId: 't4', servico: semMemoria })).motivo, 'sem_memoria');
+  assert.equal((await registrarDesfazerNaMemoria({ workspaceId: WORKSPACE, descricao: 'Mensalidade escolar', tipo: 'expense', transacaoId: 't4', servico: semMemoria })).motivo, 'sem_memoria');
   const quebrado = { buscar: async () => { throw new Error('rede'); } };
-  assert.equal((await registrarDesfazerNaMemoria({ workspaceId: WORKSPACE, descricao: 'x', transacaoId: 't4', servico: quebrado })).registrada, false);
+  assert.equal((await registrarDesfazerNaMemoria({ workspaceId: WORKSPACE, descricao: 'Mensalidade escolar', tipo: 'expense', transacaoId: 't4', servico: quebrado })).registrada, false);
 });
 
 test('textos: o que lançou, onde e como desfazer', () => {
