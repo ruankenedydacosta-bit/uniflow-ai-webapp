@@ -74,14 +74,9 @@ test('RESPONSIVIDADE: os valores truncam em vez de quebrar o layout', async () =
   assert.match(css, /font-variant-numeric: tabular-nums;/);
 });
 
-test('RELATORIO1: o card do Relatório da Uni continua na seção, com a contagem vinda do mesmo graphData', async () => {
+test('RELATORIO1: a Home não mostra o card do Relatório da Uni', async () => {
   const graph = await source('./SimplifiedHomeFinancialGraph.jsx');
-  assert.doesNotMatch(graph, /Pergunte à Uni sobre seus dados/);
-  assert.match(graph, /import SimplifiedReportCard from '\.\/SimplifiedReportCard\.jsx';/);
-  // HOME-INSTANT1: a contagem passou a vir do mesmo `graphData` (cache ou
-  // fresco) em vez de transactionState -- continua sendo a MESMA busca já
-  // feita pela seção, nunca um segundo fetch financeiro só para o card.
-  assert.match(graph, /<SimplifiedReportCard transactionCount=\{graphData\.transactionCount\} \/>/);
+  assert.doesNotMatch(graph, /SimplifiedReportCard|skeletonReportCard/);
 });
 
 // ------------------------------------------------------------------- DADOS
@@ -177,7 +172,7 @@ test('skeleton reaproveita as classes de layout da seção real -- o espaço ocu
     graph.indexOf('function SimplifiedHomeFinancialGraphSkeleton'),
     graph.indexOf('HOME-GRAPH2: conteúdo real'),
   );
-  for (const layoutClass of ['styles.card', 'styles.header', 'styles.totalsRow', 'styles.totalCard', 'styles.skeletonBar', 'styles.skeletonReportCard']) {
+  for (const layoutClass of ['styles.card', 'styles.header', 'styles.totalsRow', 'styles.totalCard', 'styles.skeletonBar']) {
     assert.ok(skeleton.includes(layoutClass), `skeleton deveria reusar ${layoutClass}`);
   }
   assert.match(skeleton, /role="status"/);

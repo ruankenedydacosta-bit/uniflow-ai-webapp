@@ -168,12 +168,6 @@
   border-radius: var(--uf-radius-full);
 }
 
-.skeletonReportCard {
-  width: 100%;
-  min-height: 64px;
-  border-radius: var(--uf-radius-16);
-}
-
 /* Movimento reduzido: o skeleton continua marcando o espaço, só para de
    pulsar -- nunca some (o vazio seria pior que a onda). */
 @media (prefers-reduced-motion: reduce) {

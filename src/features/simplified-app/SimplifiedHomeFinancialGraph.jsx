@@ -11,7 +11,6 @@ import {
   writeHomeFinancialCache,
 } from './homeFinancialCache.js';
 import { buildHomeFinancialGraphData } from './homeFinancialGraphData.js';
-import SimplifiedReportCard from './SimplifiedReportCard.jsx';
 import { getMonthRange } from './simplifiedRecordsData.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useNumeroContado } from './useNumeroContado.js';
@@ -47,7 +46,6 @@ function SimplifiedHomeFinancialGraphSkeleton() {
       </div>
 
       <span className={`${styles.skeletonLine} ${styles.skeletonBar}`} aria-hidden="true" />
-      <span className={`${styles.skeletonLine} ${styles.skeletonReportCard}`} aria-hidden="true" />
     </section>
   );
 }
@@ -202,11 +200,6 @@ function SimplifiedHomeFinancialGraphContent() {
           <p className={styles.usage}>{`Você usou ${usedShare}% do que entrou no mês.`}</p>
         </>
       ) : null}
-
-      {/* Vem do mesmo `graphData` (cache ou fresco) -- assim o relatório
-          também nasce com o número já conhecido, em vez de contar 0 até a
-          consulta financeira responder. */}
-      <SimplifiedReportCard transactionCount={graphData.transactionCount} />
     </section>
   );
 }

@@ -1216,3 +1216,16 @@ test('Home mostra chips de categoria fora da tela de voz e ignora o toque com a 
   assert.match(home, /function handleChooseCategory\(item\) \{\s*if \(isTyping \|\| isExecuting \|\| typeof onChooseCategory !== 'function'\) return;\s*markHomeReply\(\);\s*onChooseCategory\(item\);/);
   assert.match(home, /categoryChoices=\{categoryChoices\}\s*onChooseCategory=\{handleChooseCategory\}/);
 });
+
+test('Home: campo de lançamento rápido usa o ChatInput e o mesmo envio da conversa, e a resposta fica no card da Home', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /import ChatInput from '\.\.\/uni-chat\/components\/ChatInput\.jsx';/);
+  assert.match(home, /<ChatInput[\s\S]*?onSend=\{handleQuickSend\}[\s\S]*?disabled=\{isInteractionBusy\}/);
+  const handler = home.slice(home.indexOf('function handleQuickSend'), home.indexOf('function handleChooseCategory'));
+  assert.match(handler, /markHomeReply\(\);\s*onSendTranscript\(text\);/);
+});
+
+test('Home: não traz o card do Relatório', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.doesNotMatch(home, /SimplifiedReportCard/);
+});
