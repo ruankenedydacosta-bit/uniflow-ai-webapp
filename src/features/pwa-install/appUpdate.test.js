@@ -4,7 +4,10 @@ import test from 'node:test';
 import { isDifferentBuild, parseVersionManifest } from './appVersion.js';
 import {
   createPwaUpdateManager,
+  AUTO_RECOVERY_GUARD_KEY,
+  AUTO_RECOVERY_GUARD_TTL_MS,
   MAX_AUTO_UPDATE_ATTEMPTS,
+  NAVIGATION_RELOAD_WINDOW_MS,
   RELOAD_GUARD_TTL_MS,
   UPDATE_RELOAD_GUARD_KEY,
   UPDATE_STATUS,
@@ -1109,15 +1112,104 @@ test('guarda de reload vencida volta a armar o update na mesma aba', async () =>
   assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
 });
 
-function createNavigationScenario({ waitingReady }) {
+test('teto de tentativas vale por janela: depois dela o build volta a ser tentado', async () => {
+  const localStorage = createStorage();
+  localStorage.setItem(AUTO_RECOVERY_GUARD_KEY, JSON.stringify({
+    targetBuild: 'build-b',
+    attempts: MAX_AUTO_UPDATE_ATTEMPTS,
+    attemptedAt: Date.now() - AUTO_RECOVERY_GUARD_TTL_MS - 1_000,
+  }));
+  const runtime = createRuntime({ localStorage });
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+  });
+
+  await manager.checkForUpdate();
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
+});
+
+test('worker esperando de um build intermediário não dispensa o download do build novo', async () => {
+  const serviceWorker = new EventTarget();
+  let updateCalls = 0;
+  const registration = {
+    active: createWorkerWithBuild('build-a'),
+    waiting: createWorkerWithBuild('build-b'),
+    installing: null,
+    update: async () => { updateCalls += 1; },
+  };
+  serviceWorker.ready = Promise.resolve(registration);
+  const runtime = createRuntime({ serviceWorker });
+  runtime.MessageChannel = FakeMessageChannel;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-c'),
+  });
+
+  await manager.checkForUpdate();
+  await flushStartup();
+  assert.equal(updateCalls, 1);
+});
+
+test('worker ativo mais novo que o build detectado (outra aba ativou) recarrega', async () => {
+  const serviceWorker = new EventTarget();
+  const newerWorker = createWorkerWithBuild('build-c');
+  serviceWorker.controller = newerWorker;
+  serviceWorker.ready = Promise.resolve({ active: newerWorker, waiting: null, installing: null, update: async () => {} });
+  const runtime = createRuntime({ serviceWorker });
+  runtime.MessageChannel = FakeMessageChannel;
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+    activationTimeoutMs: 100,
+  });
+
+  await manager.checkForUpdate();
+  const result = await manager.applyUpdate();
+  assert.equal(result.outcome, 'reloading');
+});
+
+test('sem registro de Service Worker, nem o download nem a troca de tela esperam o ready', async () => {
+  const serviceWorker = new EventTarget();
+  serviceWorker.ready = new Promise(() => {});
+  serviceWorker.getRegistration = async () => undefined;
+  const runtime = createRuntime({ serviceWorker });
+  const manager = createPwaUpdateManager({
+    runtime,
+    loadedBuildId: 'build-a',
+    periodicCheckIntervalMs: 0,
+    fetchImpl: async () => manifestResponse('build-b'),
+    activationTimeoutMs: 5_000,
+  });
+
+  await manager.checkForUpdate();
+  const startedAt = Date.now();
+  await manager.updateOnNavigation();
+  assert.ok(Date.now() - startedAt < 1_000, 'resposta imediata, sem esperar o timeout do ready');
+  assert.equal(runtime.reloadCalls, 0);
+});
+
+function createNavigationScenario({ waitingBuild = null, onWaitingBuildQuery } = {}) {
   const serviceWorker = new EventTarget();
   const oldWorker = createWorkerWithBuild('build-a');
   serviceWorker.controller = oldWorker;
-  const registration = { active: oldWorker, installing: null, waiting: null, update: async () => {} };
-  if (waitingReady) {
+  let updateCalls = 0;
+  const registration = { active: oldWorker, installing: null, waiting: null, update: async () => { updateCalls += 1; } };
+  if (waitingBuild) {
     const waiting = Object.assign(new EventTarget(), {
       state: 'installed',
-      postMessage: (message) => {
+      postMessage: (message, transfer) => {
+        if (message?.type === 'UNIFLOW_GET_BUILD_ID') {
+          onWaitingBuildQuery?.();
+          transfer?.[0]?.postMessage({ type: 'UNIFLOW_SW_BUILD_ID', buildId: waitingBuild });
+          return;
+        }
         if (message?.type !== 'SKIP_WAITING') return;
         queueMicrotask(() => {
           waiting.state = 'activated';
@@ -1140,21 +1232,23 @@ function createNavigationScenario({ waitingReady }) {
     fetchImpl: async () => manifestResponse('build-b'),
     activationTimeoutMs: 100,
   });
-  return { runtime, manager };
+  return { runtime, manager, getUpdateCalls: () => updateCalls };
 }
 
-test('troca de tela com o worker novo já instalado atualiza', async () => {
-  const { runtime, manager } = createNavigationScenario({ waitingReady: true });
+test('troca de tela com o worker novo já esperando atualiza sem novo registration.update()', async () => {
+  const { runtime, manager, getUpdateCalls } = createNavigationScenario({ waitingBuild: 'build-b' });
   await manager.checkForUpdate();
+  await flushStartup();
   assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
 
   await manager.updateOnNavigation();
   assert.equal(runtime.reloadCalls, 1);
-  assert.equal(JSON.parse(runtime.localStorage.getItem('uniflow.app-update.auto-recovery-guard')).attempts, 1);
+  assert.equal(getUpdateCalls(), 0);
+  assert.equal(JSON.parse(runtime.localStorage.getItem(AUTO_RECOVERY_GUARD_KEY)).attempts, 1);
 });
 
 test('troca de tela com o worker novo ainda baixando não recarrega e segue armado', async () => {
-  const { runtime, manager } = createNavigationScenario({ waitingReady: false });
+  const { runtime, manager } = createNavigationScenario();
   await manager.checkForUpdate();
 
   await manager.updateOnNavigation();
@@ -1162,8 +1256,16 @@ test('troca de tela com o worker novo ainda baixando não recarrega e segue arma
   assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
 });
 
+test('troca de tela com worker esperando de outro build não recarrega', async () => {
+  const { runtime, manager } = createNavigationScenario({ waitingBuild: 'build-intermediario' });
+  await manager.checkForUpdate();
+
+  await manager.updateOnNavigation();
+  assert.equal(runtime.reloadCalls, 0);
+});
+
 test('troca de tela com ação em andamento não recarrega', async () => {
-  const { runtime, manager } = createNavigationScenario({ waitingReady: true });
+  const { runtime, manager } = createNavigationScenario({ waitingBuild: 'build-b' });
   await manager.checkForUpdate();
   manager.setAutoUpdateBlocked(true);
 
@@ -1172,8 +1274,57 @@ test('troca de tela com ação em andamento não recarrega', async () => {
   assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
 });
 
+test('voz iniciada durante o fluxo da troca de tela cancela o reload antes de ativar o worker', async () => {
+  const { runtime, manager } = createNavigationScenario({ waitingBuild: 'build-b' });
+  await manager.checkForUpdate();
+  await flushStartup();
+  // A voz começa depois da última checagem de maybeFireArmedAutoRecovery,
+  // já com o applyUpdate a caminho.
+  const setItem = runtime.localStorage.setItem;
+  runtime.localStorage.setItem = (key, value) => {
+    setItem(key, value);
+    if (key === AUTO_RECOVERY_GUARD_KEY) manager.setAutoUpdateBlocked(true);
+  };
+
+  await manager.updateOnNavigation();
+  assert.equal(runtime.reloadCalls, 0);
+  assert.equal(manager.getSnapshot().error, 'AUTO_UPDATE_DEFERRED');
+  assert.equal(runtime.localStorage.getItem(AUTO_RECOVERY_GUARD_KEY), null, 'sem reload não gasta tentativa');
+});
+
+test('voz já ativa quando a checagem de instalação termina deixa o update armado', async () => {
+  let manager;
+  const scenario = createNavigationScenario({
+    waitingBuild: 'build-b',
+    onWaitingBuildQuery: () => manager.setAutoUpdateBlocked(true),
+  });
+  manager = scenario.manager;
+  await manager.checkForUpdate();
+  await flushStartup();
+  manager.setAutoUpdateBlocked(false);
+
+  await manager.updateOnNavigation();
+  assert.equal(scenario.runtime.reloadCalls, 0);
+  assert.equal(manager.getArmedAutoRecoveryBuild(), 'build-b');
+});
+
+test('troca de tela que passou da janela não recarrega: a pessoa já está na tela nova', async (t) => {
+  let now = 1_000_000;
+  t.mock.method(Date, 'now', () => now);
+  const scenario = createNavigationScenario({
+    waitingBuild: 'build-b',
+    onWaitingBuildQuery: () => { now += NAVIGATION_RELOAD_WINDOW_MS + 1; },
+  });
+  await scenario.manager.checkForUpdate();
+  await flushStartup();
+
+  await scenario.manager.updateOnNavigation();
+  assert.equal(scenario.runtime.reloadCalls, 0);
+  assert.equal(scenario.manager.getSnapshot().error, 'AUTO_UPDATE_DEFERRED');
+});
+
 test('troca de tela sem build novo não faz nada', async () => {
-  const { runtime, manager } = createNavigationScenario({ waitingReady: true });
+  const { runtime, manager } = createNavigationScenario({ waitingBuild: 'build-b' });
   await manager.updateOnNavigation();
   assert.equal(runtime.reloadCalls, 0);
 });
@@ -1196,8 +1347,12 @@ test('a troca de tela só atualiza dentro das telas do app, e a primeira montage
     source('../../app/App.jsx'),
     source('./PwaNavigationUpdate.jsx'),
   ]);
-  assert.match(app, /<SimplifiedAuthenticatedLayout>\s*<Ga4RouteTracker \/>[\s\S]*?<PwaNavigationUpdate \/>/);
-  assert.equal(app.match(/<PwaNavigationUpdate \/>/g).length, 1);
+  const simplifiedLayout = app.slice(
+    app.indexOf('<SimplifiedAuthenticatedLayout>'),
+    app.indexOf('</SimplifiedAuthenticatedLayout>'),
+  );
+  assert.match(simplifiedLayout, /<PwaNavigationUpdate \/>/);
+  assert.equal(app.match(/<PwaNavigationUpdate \/>/g).length, 1, 'login, apresentação e checkout ficam de fora');
   assert.match(component, /if \(previousPathname\.current === pathname\) return;/);
   assert.match(component, /updateOnNavigation\(\)/);
 });

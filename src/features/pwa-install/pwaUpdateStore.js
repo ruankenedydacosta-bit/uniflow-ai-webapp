@@ -24,21 +24,15 @@ import { getPwaDiagnosticSnapshot, BUILD_COHERENCE, queryServiceWorkerBuildId } 
 //    controllerchange -> reload controlado -> reverifica os 3 build IDs
 //    no próximo checkForUpdate() (agora síncrono, ver garantia 1).
 // 5. ATUALIZA SOZINHO, NUNCA EM LOOP: disparado na abertura (antes do
-//    primeiro toque), ao sair de foreground ou na troca de tela com o
-//    Service Worker novo já instalado (updateOnNavigation) -- nunca no meio
+//    primeiro toque), ao sair de foreground ou logo após a troca de tela
+//    com o Service Worker novo já instalado (garantia 10) -- nunca no meio
 //    de uma tela, nunca com uma ação/voz em andamento
-//    (setAutoUpdateBlocked). Falha sem reload tenta de novo na próxima
-//    oportunidade. Reload que não trouxe o build novo só tenta de novo
-//    depois de RELOAD_GUARD_TTL_MS (guarda de reload em sessionStorage), e
-//    no máximo MAX_AUTO_UPDATE_ATTEMPTS vezes por build
-//    (AUTO_RECOVERY_GUARD_KEY).
-// 8. INSTALA ANTES DE PRECISAR: a checagem que acha o build novo já manda o
-//    navegador baixar o Service Worker novo (preinstallUpdate). Na hora de
-//    recarregar só falta ativá-lo, o que cabe nos poucos segundos que o
-//    iOS dá a uma página que saiu de foreground.
-// 9. NUNCA RECARREGA NO SERVICE WORKER VELHO: sem worker novo esperando, o
-//    reload só acontece se o worker ativo provar (build-id-bridge) que já é
-//    o build novo. Recarregar no velho gastava a tentativa e prendia a aba.
+//    (setAutoUpdateBlocked, conferido de novo imediatamente antes do
+//    reload). Falha sem reload tenta de novo na próxima oportunidade.
+//    Reload que não trouxe o build novo só tenta de novo depois de
+//    RELOAD_GUARD_TTL_MS (guarda de reload em sessionStorage), e no máximo
+//    MAX_AUTO_UPDATE_ATTEMPTS vezes por build a cada
+//    AUTO_RECOVERY_GUARD_TTL_MS (AUTO_RECOVERY_GUARD_KEY).
 // 6. NUNCA DESTRÓI DADOS DO USUÁRIO: recovery só toca em cache de Service
 //    Worker comprovadamente obsoleto -- nunca sessão Supabase, IndexedDB,
 //    localStorage funcional, credenciais ou preferências.
@@ -48,6 +42,18 @@ import { getPwaDiagnosticSnapshot, BUILD_COHERENCE, queryServiceWorkerBuildId } 
 //    swBuildId (build-id-bridge.js, embutido no Service Worker). Ver
 //    pwaBuildDiagnostics.js e os testes de vite.config.js em
 //    appUpdate.test.js que executam os plugins de verdade (não só regex).
+// 8. INSTALA ANTES DE PRECISAR: a checagem que acha o build novo já manda o
+//    navegador baixar o Service Worker novo (preinstallUpdate). Na hora de
+//    recarregar só falta ativá-lo, o que cabe nos poucos segundos que o
+//    iOS dá a uma página que saiu de foreground.
+// 9. NUNCA RECARREGA NO SERVICE WORKER VELHO: sem worker novo esperando, o
+//    reload só acontece se o worker ativo não provar (build-id-bridge) que
+//    ainda é o build carregado. Recarregar no velho gastava a tentativa e
+//    prendia a aba.
+// 10. TROCA DE TELA SÓ SE FOR IMEDIATO: updateOnNavigation só recarrega com
+//    o worker novo já esperando, sem novo registration.update(), e desiste
+//    se passar de NAVIGATION_RELOAD_WINDOW_MS desde a troca -- nessa altura
+//    a pessoa já está usando a tela nova.
 //
 // Agentes futuros: se você está pensando em remover/simplificar algo
 // disto porque "parece redundante" ou "código legado", NÃO É -- é a
@@ -90,6 +96,13 @@ const AUTO_RECOVERY_THRESHOLD = 1;
 // precisa tentar de novo; o teto evita reload em toda abertura quando o
 // build novo nao ativa de jeito nenhum.
 export const MAX_AUTO_UPDATE_ATTEMPTS = 3;
+// O teto vale por janela. Com a guarda de reload vencendo em minutos e a
+// troca de tela como gatilho, as 3 tentativas podem acabar numa sessão só;
+// sem janela, o build ficava travado até o próximo deploy mesmo depois de a
+// causa (rede, cache) sumir.
+export const AUTO_RECOVERY_GUARD_TTL_MS = 60 * 60_000;
+// Troca de tela só recarrega se der para fazer agora (garantia 10).
+export const NAVIGATION_RELOAD_WINDOW_MS = 1_500;
 export const UPDATE_STATUS = Object.freeze({
   IDLE: 'idle',
   CHECKING: 'checking',
@@ -163,6 +176,7 @@ function readAutoRecoveryGuard(storage) {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed?.targetBuild !== 'string') return null;
+    if (Number.isFinite(parsed.attemptedAt) && Date.now() - parsed.attemptedAt > AUTO_RECOVERY_GUARD_TTL_MS) return null;
     // Guarda antiga, sem contagem: vale como uma tentativa já feita.
     const attempts = Number.isInteger(parsed.attempts) && parsed.attempts > 0 ? parsed.attempts : 1;
     return { ...parsed, attempts };
@@ -308,9 +322,10 @@ export function createPwaUpdateManager({
   // PWA-UPDATE3: "armado" != "disparado". Depois de AUTO_RECOVERY_THRESHOLD
   // checagens confirmando o mesmo build pendente, so guardamos a
   // INTENCAO aqui -- o reload de verdade (dentro de applyUpdate) so
-  // acontece na abertura (antes do primeiro toque) ou na PROXIMA vez que
-  // a pagina for para background (visibilitychange -> hidden), nunca
-  // enquanto o usuario esta usando a tela. Uma recuperacao automatica nunca deve interromper uma
+  // acontece na abertura (antes do primeiro toque), na PROXIMA vez que a
+  // pagina for para background (visibilitychange -> hidden) ou logo apos
+  // uma troca de tela (garantia 10), nunca enquanto o usuario esta usando
+  // a tela. Uma recuperacao automatica nunca deve interromper uma
   // interacao em andamento.
   let autoRecoveryArmedForBuild = null;
   // Acao em andamento na tela (voz, confirmacao pendente): nenhum update
@@ -412,18 +427,37 @@ export function createPwaUpdateManager({
     return checkPromise;
   }
 
+  // getRegistration() responde na hora, com undefined quando não há
+  // registro. O `ready` nunca resolve sem registro (SW removido por "limpar
+  // dados do site") e prenderia cada chamada no timeout.
+  async function findRegistration(serviceWorker) {
+    if (typeof serviceWorker.getRegistration === 'function') {
+      return (await withTimeout(serviceWorker.getRegistration(), activationTimeoutMs, runtime, 'SERVICE_WORKER_REGISTRATION_TIMEOUT')) ?? null;
+    }
+    return withTimeout(serviceWorker.ready, activationTimeoutMs, runtime, 'SERVICE_WORKER_READY_TIMEOUT');
+  }
+
+  // Worker esperando serve se for o build alvo. Sem resposta do bridge, vale
+  // como alvo (mesmo comportamento de antes do bridge existir).
+  async function isWaitingTarget(worker, targetBuild, timeoutMs) {
+    const waitingBuildId = await queryServiceWorkerBuildId({ worker, runtime, timeoutMs });
+    return waitingBuildId === null || waitingBuildId === targetBuild;
+  }
+
   // Garantia 8: baixa o Service Worker novo assim que o build é detectado,
-  // sem ativar nada. Uma vez por build; se já existe worker instalando ou
-  // esperando, o navegador já fez o trabalho. Falha é silenciosa: o
+  // sem ativar nada. Uma vez por build. Pula quando o navegador já está
+  // instalando ou quando o worker esperando já é este build; um worker
+  // esperando de um build intermediário não conta. Falha é silenciosa: o
   // applyUpdate chama registration.update() de novo na hora de recarregar.
   async function preinstallUpdate(buildId) {
     const serviceWorker = runtime.navigator?.serviceWorker;
     if (!serviceWorker || preinstalledBuildId === buildId) return;
     preinstalledBuildId = buildId;
     try {
-      const registration = await withTimeout(serviceWorker.ready, activationTimeoutMs, runtime, 'SERVICE_WORKER_READY_TIMEOUT');
-      if (registration?.waiting || registration?.installing) return;
-      await registration?.update?.();
+      const registration = await findRegistration(serviceWorker);
+      if (!registration || registration.installing) return;
+      if (registration.waiting && await isWaitingTarget(registration.waiting, buildId)) return;
+      await withTimeout(registration.update?.(), activationTimeoutMs, runtime, 'SERVICE_WORKER_UPDATE_TIMEOUT');
       devDiagnostic(isDev, 'service_worker_preinstall', state, { buildId });
     } catch (error) {
       preinstalledBuildId = null;
@@ -431,18 +465,26 @@ export function createPwaUpdateManager({
     }
   }
 
-  // Se o worker novo já está instalado, recarregar é rápido (só ativa) e
-  // pode acontecer na troca de tela. Sem Service Worker, o reload comum já
-  // traz o build novo.
+  // Garantia 10: o reload na troca de tela só serve se for quase imediato,
+  // ou seja, com o worker do build alvo já esperando (falta só ativar) ou
+  // com outra aba já tendo ativado um build diferente do carregado. Sem
+  // Service Worker, o reload comum já traz o build novo. Sem registro, a
+  // página não é controlada e o próximo F5 já busca na rede.
   async function isUpdateInstalled(targetBuild) {
     const serviceWorker = runtime.navigator?.serviceWorker;
     if (!serviceWorker) return true;
     try {
-      const registration = await withTimeout(serviceWorker.ready, activationTimeoutMs, runtime, 'SERVICE_WORKER_READY_TIMEOUT');
-      if (registration?.waiting) return true;
-      // Outra aba já ativou o build novo: esta só precisa recarregar.
-      const activeBuildId = await queryServiceWorkerBuildId({ worker: registration?.active, runtime });
-      return activeBuildId === targetBuild;
+      const registration = await findRegistration(serviceWorker);
+      if (!registration) return false;
+      if (registration.waiting) {
+        return isWaitingTarget(registration.waiting, targetBuild, NAVIGATION_RELOAD_WINDOW_MS / 3);
+      }
+      const activeBuildId = await queryServiceWorkerBuildId({
+        worker: registration.active,
+        runtime,
+        timeoutMs: NAVIGATION_RELOAD_WINDOW_MS / 3,
+      });
+      return Boolean(activeBuildId) && activeBuildId !== loadedBuildId;
     } catch {
       return false;
     }
@@ -461,7 +503,8 @@ export function createPwaUpdateManager({
     if (pendingBuildStreak.count < AUTO_RECOVERY_THRESHOLD) return;
 
     // Reload desta sessão já aconteceu e não trouxe o build: recarregar de
-    // novo agora seria loop. A próxima abertura do app tenta outra vez.
+    // novo agora seria loop. Tenta outra vez quando a guarda vencer
+    // (RELOAD_GUARD_TTL_MS) ou na próxima abertura do app.
     if (readReloadGuard(runtime.sessionStorage)?.targetBuild === buildId) return;
     const guard = readAutoRecoveryGuard(runtime.localStorage);
     if (guard?.targetBuild === buildId && guard.attempts >= MAX_AUTO_UPDATE_ATTEMPTS) return;
@@ -469,11 +512,12 @@ export function createPwaUpdateManager({
     autoRecoveryArmedForBuild = buildId;
   }
 
-  // PWA-UPDATE3: só executa quando a página REALMENTE saiu de foreground
-  // -- nunca interrompe o usuário. Reaproveita applyUpdate() (mesma
+  // PWA-UPDATE3: só executa num momento que não interrompe o usuário: a
+  // abertura antes do primeiro toque, a saída de foreground ou logo após a
+  // troca de tela (garantia 10). Reaproveita applyUpdate() (mesma
   // sequência update()->SKIP_WAITING->activation->reload, mesma guarda de
   // reload único) -- nenhuma segunda implementação de ativação.
-  async function maybeFireArmedAutoRecovery() {
+  async function maybeFireArmedAutoRecovery({ navigationStartedAt = null } = {}) {
     if (!autoRecoveryArmedForBuild) return;
     if (autoUpdateBlocked) return; // continua armado para a próxima oportunidade
     if (updatePromise) return; // um applyUpdate já em andamento
@@ -487,8 +531,18 @@ export function createPwaUpdateManager({
     const guard = readAutoRecoveryGuard(runtime.localStorage);
     const attempts = guard?.targetBuild === targetBuild ? guard.attempts + 1 : 1;
     writeAutoRecoveryGuard(runtime.localStorage, targetBuild, attempts);
-    devDiagnostic(isDev, 'auto_recovery_triggered', state, { targetBuild, attempts });
-    const result = await applyUpdate({ auto: true });
+    devDiagnostic(isDev, 'auto_recovery_triggered', state, { targetBuild, attempts, navigation: navigationStartedAt !== null });
+    const fromNavigation = navigationStartedAt !== null;
+    const result = await applyUpdate({
+      auto: true,
+      // Na troca de tela o worker já está esperando (isUpdateInstalled):
+      // um update() novo só atrasaria o reload.
+      skipRegistrationUpdate: fromNavigation,
+      // Conferido no último passo reversível (antes do SKIP_WAITING ou do
+      // reload): voz ou ação que começou durante o fluxo cancela o reload.
+      shouldContinue: () => !autoUpdateBlocked
+        && (!fromNavigation || Date.now() - navigationStartedAt <= NAVIGATION_RELOAD_WINDOW_MS),
+    });
     // Só conta tentativa que chegou ao reload: falha de rede ou de Service
     // Worker não recarrega nada e tenta de novo na próxima oportunidade.
     if (result.outcome !== 'reloading') {
@@ -497,7 +551,10 @@ export function createPwaUpdateManager({
     }
   }
 
-  async function applyUpdate({ auto = false } = {}) {
+  async function applyUpdate({ auto = false, skipRegistrationUpdate = false, shouldContinue = () => true } = {}) {
+    const ensureCanContinue = () => {
+      if (!shouldContinue()) throw new Error('AUTO_UPDATE_DEFERRED');
+    };
     if (updatePromise) return updatePromise;
     const targetBuild = state.latestBuildId;
     if (!state.updateAvailable || !targetBuild) return Object.freeze({ outcome: 'unavailable' });
@@ -526,12 +583,14 @@ export function createPwaUpdateManager({
           const previousController = serviceWorker.controller ?? null;
           const previousActive = registration?.active ?? null;
           publish({ serviceWorkerState: registration?.waiting ? 'waiting' : 'checking' }, 'service_worker_update');
-          await withTimeout(
-            registration?.update?.(),
-            activationTimeoutMs,
-            runtime,
-            'SERVICE_WORKER_UPDATE_TIMEOUT',
-          );
+          if (!skipRegistrationUpdate) {
+            await withTimeout(
+              registration?.update?.(),
+              activationTimeoutMs,
+              runtime,
+              'SERVICE_WORKER_UPDATE_TIMEOUT',
+            );
+          }
           const workerResult = registration?.waiting
             ? { kind: 'waiting', worker: registration.waiting }
             : await waitForInstallingWorker(registration, activationTimeoutMs, runtime);
@@ -546,6 +605,9 @@ export function createPwaUpdateManager({
               timeoutMs: activationTimeoutMs,
               runtime,
             });
+            // Depois do SKIP_WAITING o worker novo controla esta página, que
+            // ainda roda o bundle velho: daqui em diante o reload é certo.
+            ensureCanContinue();
             workerResult.worker.postMessage?.({ type: 'SKIP_WAITING' });
             if (!await activated) throw new Error('SERVICE_WORKER_ACTIVATION_TIMEOUT');
           } else if (workerResult.kind !== 'active') {
@@ -554,17 +616,20 @@ export function createPwaUpdateManager({
               : 'SERVICE_WORKER_UPDATE_NOT_READY');
           } else {
             // Garantia 9: 'active' também é o worker velho quando a instalação
-            // falhou (redundant) ou o update não achou nada. Só um build
-            // provadamente diferente barra o reload; sem resposta do worker
-            // (bridge ausente), segue como antes.
+            // falhou (redundant) ou o update não achou nada. Só a prova de que
+            // ele ainda é o build carregado barra o reload. Um build mais
+            // novo que o alvo (outra aba ativou) recarrega; sem resposta do
+            // worker (bridge ausente), segue como antes.
             const activeBuildId = await queryServiceWorkerBuildId({ worker: workerResult.worker, runtime });
-            if (activeBuildId && activeBuildId !== targetBuild) {
+            if (activeBuildId === loadedBuildId) {
               throw new Error('SERVICE_WORKER_STILL_OLD');
             }
+            ensureCanContinue();
           }
 
           publish({ serviceWorkerState: 'controlling' }, 'service_worker_controlling');
         } else {
+          ensureCanContinue();
           publish({ serviceWorkerState: 'unsupported' }, 'service_worker_unavailable');
         }
 
@@ -582,23 +647,23 @@ export function createPwaUpdateManager({
     return updatePromise;
   }
 
-  // Troca de tela: a pessoa acabou de sair de uma tela, então recarregar não
-  // interrompe nada nela. Só com o worker novo já instalado, para o reload
-  // ser rápido; se ainda está baixando, espera a próxima troca.
+  // Garantia 10: a pessoa acabou de sair de uma tela, então recarregar não
+  // interrompe nada nela, desde que seja agora. Com o worker novo ainda
+  // baixando, ou passada a janela, fica para a próxima troca.
   async function updateOnNavigation() {
+    const navigationStartedAt = Date.now();
     const targetBuild = autoRecoveryArmedForBuild;
     if (!targetBuild || autoUpdateBlocked || updatePromise) return;
     if (!await isUpdateInstalled(targetBuild)) return;
-    await maybeFireArmedAutoRecovery();
+    await maybeFireArmedAutoRecovery({ navigationStartedAt });
   }
 
   const handleVisibilityChange = () => {
     if (runtime.document?.visibilityState === 'visible') {
       void checkForUpdate();
     } else {
-      // PWA-UPDATE3: o único momento em que uma recuperação automática
-      // (armada por registerPendingBuildCheck) pode de fato executar o
-      // reload -- a página acabou de sair de foreground, então o reload
+      // PWA-UPDATE3: a página acabou de sair de foreground, então o reload
+      // da recuperação automática (armada por registerPendingBuildCheck)
       // acontece fora da vista do usuário.
       void maybeFireArmedAutoRecovery();
     }
