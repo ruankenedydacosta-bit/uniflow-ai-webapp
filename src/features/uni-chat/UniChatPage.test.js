@@ -2292,13 +2292,15 @@ test('memória de categoria (#79): confirmar o card grava a descrição com a ca
   // A ação lida antes de confirmar: depois, o reset apaga o rascunho.
   assert.ok(confirmar.indexOf('const acaoConfirmada = financialConversation.state.action;')
     < confirmar.indexOf('const outcome = await financialConversation.confirm();'));
-  assert.match(confirmar, /lembrarCategoriaConfirmada\(acaoConfirmada, persistedTransaction, currentWorkspaceId\);/);
-  assert.ok(confirmar.indexOf('lembrarCategoriaConfirmada(') < confirmar.indexOf('financialConversation.reset();'));
+  assert.match(confirmar, /lembrarCategoriaConfirmada\(acaoConfirmada, outcome\.result\.data, currentWorkspaceId\);/);
+  // Logo depois de gravar, antes dos refresh e da troca de conversa.
+  assert.ok(confirmar.indexOf('lembrarCategoriaConfirmada(') < confirmar.indexOf('transactionsState.refresh()'));
 
   // A categoria do primeiro card de cada lançamento é a base da troca.
   const publicar = page.slice(page.indexOf('function publishConversationResult(result) {'), page.indexOf('function publishAccountCreationConfirmation('));
-  assert.match(publicar, /!categoriaInicialPorOperacaoRef\.current\.has\(operacaoId\)/);
+  assert.match(publicar, /if \(operacaoId && !categoriasIniciais\.has\(operacaoId\)\) \{/);
   const lembrar = page.slice(page.indexOf('function lembrarCategoriaConfirmada('), page.indexOf('async function handleConfirmAction(id) {'));
   assert.match(lembrar, /trocou: Boolean\(categoriaInicial && categoriaId && categoriaInicial !== categoriaId\)/);
+  assert.match(lembrar, /if \(!categoriaInicialPorOperacaoRef\.current\.has\(operacaoId\)\) return;/);
   assert.match(lembrar, /void registrarConfirmacaoNaMemoria\(/);
 });

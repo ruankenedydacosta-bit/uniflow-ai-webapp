@@ -5,6 +5,7 @@ import {
   MAX_EVENTOS_DA_MEMORIA,
   TIPO_MEMORIA_DE_CATEGORIA,
   chaveDaDescricao,
+  descricaoMemorizavel,
   memoriaDepoisDaConfirmacao,
   registrarConfirmacaoNaMemoria,
 } from './memoriaDeCategoria.js';
@@ -26,15 +27,26 @@ const confirmacao = (extra = {}) => ({
   ...extra,
 });
 
-test('chave ignora acento, caixa e espaço repetido, e não carrega a descrição', async () => {
-  const chave = await chaveDaDescricao('Mensalidade  Escolar');
-  assert.equal(chave, await chaveDaDescricao('mensalidade escolar'));
-  assert.equal(chave, await chaveDaDescricao(' MENSALIDADE ESCOLAR '));
-  assert.notEqual(chave, await chaveDaDescricao('Mensalidade da academia'));
+test('chave ignora acento, caixa e espaço repetido, separa entrada de saída e não carrega a descrição', async () => {
+  const chave = await chaveDaDescricao('Mensalidade  Escolar', 'expense');
+  assert.equal(chave, await chaveDaDescricao('mensalidade escolar', 'expense'));
+  assert.equal(chave, await chaveDaDescricao(' MENSALIDADE ESCOLAR ', 'expense'));
+  assert.notEqual(chave, await chaveDaDescricao('Mensalidade da academia', 'expense'));
+  assert.notEqual(await chaveDaDescricao('Aluguel', 'expense'), await chaveDaDescricao('Aluguel', 'income'));
   assert.match(chave, /^descricao:[0-9a-f]{32}$/);
   // A tabela recusa chave com "audio": o hash não tem a palavra.
-  assert.doesNotMatch(await chaveDaDescricao('Fone de áudio'), /audio/);
-  assert.equal(await chaveDaDescricao('   '), null);
+  assert.doesNotMatch(await chaveDaDescricao('Fone de áudio', 'expense'), /audio/);
+  assert.equal(await chaveDaDescricao('   ', 'expense'), null);
+  assert.equal(await chaveDaDescricao('Aluguel', 'transfer'), null);
+});
+
+test('descrição genérica ou curta demais não vira memória', () => {
+  for (const generica of ['Compra', 'pagamento', 'Despesa', 'PIX', 'ab', '']) {
+    assert.equal(descricaoMemorizavel(generica), false, generica);
+  }
+  for (const especifica of ['Mercado', 'Pão', 'Compra do mês no Atacadão', 'Uber']) {
+    assert.equal(descricaoMemorizavel(especifica), true, especifica);
+  }
 });
 
 test('primeira confirmação sem troca conta 1; com troca conta 0', () => {
@@ -105,7 +117,7 @@ test('sem memória, cria com origem explícita; com troca, origem de correção'
   assert.deepEqual(sessao, { workspace: { id: WORKSPACE } });
   assert.equal(candidato.type, TIPO_MEMORIA_DE_CATEGORIA);
   assert.equal(candidato.source, 'explicit_user');
-  assert.equal(candidato.key, await chaveDaDescricao('Mensalidade escolar'));
+  assert.equal(candidato.key, await chaveDaDescricao('Mensalidade escolar', 'expense'));
   assert.deepEqual(opcoes, { userInitiated: true });
 
   const comTroca = servicoFalso();
@@ -128,6 +140,7 @@ test('não grava transferência, sem categoria, sem descrição ou com falha, e 
   assert.equal((await registrarConfirmacaoNaMemoria({ workspaceId: WORKSPACE, ...confirmacao({ tipo: 'transfer' }), servico })).registrada, false);
   assert.equal((await registrarConfirmacaoNaMemoria({ workspaceId: WORKSPACE, ...confirmacao({ categoriaId: null }), servico })).registrada, false);
   assert.equal((await registrarConfirmacaoNaMemoria({ workspaceId: WORKSPACE, ...confirmacao({ descricao: ' ' }), servico })).registrada, false);
+  assert.equal((await registrarConfirmacaoNaMemoria({ workspaceId: WORKSPACE, ...confirmacao({ descricao: 'Compra' }), servico })).motivo, 'descricao_generica');
   assert.equal((await registrarConfirmacaoNaMemoria({ workspaceId: 'x', ...confirmacao(), servico })).registrada, false);
   assert.equal(servico.chamadas.length, 0);
 
@@ -137,4 +150,22 @@ test('não grava transferência, sem categoria, sem descrição ou com falha, e 
   assert.equal((await registrarConfirmacaoNaMemoria({ workspaceId: WORKSPACE, ...confirmacao(), servico: semGravacao })).motivo, 'gravacao');
   const quebrado = { buscar: async () => { throw new Error('rede'); } };
   assert.equal((await registrarConfirmacaoNaMemoria({ workspaceId: WORKSPACE, ...confirmacao(), servico: quebrado })).motivo, 'erro');
+});
+
+test('duas confirmações ao mesmo tempo: a segunda criação falha e soma na memória criada', async () => {
+  const chamadas = [];
+  let leituras = 0;
+  const servico = {
+    buscar: async () => {
+      leituras += 1;
+      return leituras === 1
+        ? { data: null, error: null }
+        : { data: { id: MEMORIA, memory_value: { categoria_id: EDUCACAO, confirmacoes: 1, total: 1, ultima_transacao_id: 'outra' } }, error: null };
+    },
+    criar: async () => { chamadas.push('criar'); return { data: null, error: { code: '23505' } }; },
+    corrigir: async (_sessao, id, valor) => { chamadas.push(['corrigir', id, valor.confirmacoes]); return { data: {}, error: null }; },
+  };
+  const resultado = await registrarConfirmacaoNaMemoria({ workspaceId: WORKSPACE, ...confirmacao(), servico });
+  assert.equal(resultado.registrada, true);
+  assert.deepEqual(chamadas, ['criar', ['corrigir', MEMORIA, 2]]);
 });

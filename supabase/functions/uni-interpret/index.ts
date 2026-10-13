@@ -20,8 +20,8 @@ const TEMPO_LIMITE_MS = 15000;
 const MAX_CATEGORIAS = 200;
 const MAX_CONTAS = 60;
 const MAX_METAS = 40;
-// Memórias de categoria lidas por chamada (#79). O prompt usa até 30: as que
-// dividem palavra com a frase primeiro, depois as mais recentes.
+// Memórias de categoria lidas por chamada (#79). O prompt usa até 30, só as
+// que dividem palavra com a frase.
 const MAX_MEMORIAS_LIDAS = 200;
 
 function getAllowedOrigins() {

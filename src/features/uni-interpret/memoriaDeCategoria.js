@@ -8,7 +8,9 @@
 // próprias memórias, dentro de um espaço de que ela é membro: num espaço com
 // várias pessoas, a correção de uma não muda a Uni da outra.
 //
-// A chave é um hash da descrição sem acento e sem caixa: a tabela recusa
+// A chave é um hash do tipo (saída ou entrada) com a descrição sem acento e
+// sem caixa: "Aluguel" pago e "Aluguel" recebido são memórias diferentes. Hash
+// porque a tabela recusa
 // chave com certas palavras ("audio", "token"...) e limita o tamanho, e uma
 // descrição como "Fone de áudio" não pode ficar sem memória por isso. O texto
 // vai no valor, que é o que o prompt mostra.
@@ -27,17 +29,30 @@ export const MAX_EVENTOS_DA_MEMORIA = 20;
 export const MAX_DESCRICAO_DA_MEMORIA = 80;
 
 const TIPOS_COM_MEMORIA = new Set(['expense', 'income']);
+// Descrição que não diz do que se trata não vira memória: "Compra" em Lazer
+// uma vez puxaria toda compra descrita assim para Lazer.
+const DESCRICOES_GENERICAS = new Set([
+  'despesa', 'despesas', 'receita', 'receitas', 'entrada', 'saida', 'gasto', 'gastos',
+  'pagamento', 'compra', 'compras', 'transferencia', 'lancamento', 'pix', 'boleto',
+  'conta', 'outros', 'outras', 'diversos',
+]);
+
+export function descricaoMemorizavel(descricao) {
+  const normalizada = normalizeSearchText(descricao);
+  return normalizada.length >= 3 && !DESCRICOES_GENERICAS.has(normalizada);
+}
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function paraHex(buffer) {
   return [...new Uint8Array(buffer)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-// "Mensalidade Escolar" e "mensalidade escolar" são a mesma chave.
-export async function chaveDaDescricao(descricao) {
+// "Mensalidade Escolar" e "mensalidade escolar" são a mesma chave; a mesma
+// descrição em entrada e em saída não.
+export async function chaveDaDescricao(descricao, tipo) {
   const normalizada = normalizeSearchText(descricao);
-  if (!normalizada) return null;
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalizada));
+  if (!normalizada || !TIPOS_COM_MEMORIA.has(tipo)) return null;
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${tipo}:${normalizada}`));
   return `descricao:${paraHex(digest).slice(0, 32)}`;
 }
 
@@ -101,8 +116,8 @@ export async function registrarConfirmacaoNaMemoria({
       return { registrada: false, motivo: 'dados_incompletos' };
     }
     if (!TIPOS_COM_MEMORIA.has(tipo)) return { registrada: false, motivo: 'tipo_sem_memoria' };
-    const chave = await chaveDaDescricao(descricao);
-    if (!chave) return { registrada: false, motivo: 'sem_descricao' };
+    if (!descricaoMemorizavel(descricao)) return { registrada: false, motivo: 'descricao_generica' };
+    const chave = await chaveDaDescricao(descricao, tipo);
 
     const sessao = { workspace: { id: workspaceId } };
     const existente = await servico.buscar(sessao, TIPO_MEMORIA_DE_CATEGORIA, chave);
@@ -113,16 +128,28 @@ export async function registrarConfirmacaoNaMemoria({
     });
     if (!valor) return { registrada: false, motivo: 'ja_contada' };
 
-    const gravada = existente.data
-      ? await servico.corrigir(sessao, existente.data.id, valor)
-      : await servico.criar(sessao, {
-        type: TIPO_MEMORIA_DE_CATEGORIA,
-        key: chave,
-        value: valor,
-        source: trocou ? 'user_correction' : 'explicit_user',
-      }, { userInitiated: true });
-    if (gravada.error) return { registrada: false, motivo: 'gravacao' };
-    return { registrada: true, valor };
+    if (existente.data) {
+      const corrigida = await servico.corrigir(sessao, existente.data.id, valor);
+      return corrigida.error ? { registrada: false, motivo: 'gravacao' } : { registrada: true, valor };
+    }
+    const criada = await servico.criar(sessao, {
+      type: TIPO_MEMORIA_DE_CATEGORIA,
+      key: chave,
+      value: valor,
+      source: trocou ? 'user_correction' : 'explicit_user',
+    }, { userInitiated: true });
+    if (!criada.error) return { registrada: true, valor };
+
+    // Outra confirmação da mesma descrição criou a memória no meio do caminho
+    // (o índice único recusa a segunda): soma nela, uma vez.
+    const nova = await servico.buscar(sessao, TIPO_MEMORIA_DE_CATEGORIA, chave);
+    if (nova.error || !nova.data) return { registrada: false, motivo: 'gravacao' };
+    const valorNovo = memoriaDepoisDaConfirmacao(nova.data.memory_value, {
+      descricao, categoriaId, tipo, trocou, transacaoId, data,
+    });
+    if (!valorNovo) return { registrada: false, motivo: 'ja_contada' };
+    const corrigida = await servico.corrigir(sessao, nova.data.id, valorNovo);
+    return corrigida.error ? { registrada: false, motivo: 'gravacao' } : { registrada: true, valor: valorNovo };
   } catch {
     return { registrada: false, motivo: 'erro' };
   }

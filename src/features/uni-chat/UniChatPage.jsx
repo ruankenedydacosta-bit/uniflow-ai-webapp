@@ -3083,8 +3083,11 @@ export default function UniChatPage({ variant = 'full' }) {
   function publishConversationResult(result) {
     syncFinancialParentSnapshot(result);
     const operacaoId = result?.action?.clientOperationId;
-    if (operacaoId && !categoriaInicialPorOperacaoRef.current.has(operacaoId)) {
-      categoriaInicialPorOperacaoRef.current.set(operacaoId, result.action.category?.id ?? null);
+    const categoriasIniciais = categoriaInicialPorOperacaoRef.current;
+    if (operacaoId && !categoriasIniciais.has(operacaoId)) {
+      categoriasIniciais.set(operacaoId, result.action.category?.id ?? null);
+      // Rascunho cancelado ou trocado não volta: guarda só os mais recentes.
+      if (categoriasIniciais.size > 20) categoriasIniciais.delete(categoriasIniciais.keys().next().value);
     }
     if (
       result?.action?.issues?.[0]?.code === 'category_not_found'
@@ -4292,8 +4295,11 @@ export default function UniChatPage({ variant = 'full' }) {
   // Memória de categoria (#79): a descrição confirmada fica ligada à
   // categoria, para a próxima interpretação. Em segundo plano: a falha só
   // deixa de lembrar.
+  // Sem o primeiro card (rascunho restaurado de um reload), não há como saber
+  // se houve troca, e a confirmação não entra na memória.
   function lembrarCategoriaConfirmada(acao, transacao, workspaceId) {
     const operacaoId = acao?.clientOperationId;
+    if (!categoriaInicialPorOperacaoRef.current.has(operacaoId)) return;
     const categoriaInicial = categoriaInicialPorOperacaoRef.current.get(operacaoId) ?? null;
     categoriaInicialPorOperacaoRef.current.delete(operacaoId);
     const categoriaId = acao?.category?.id ?? acao?.payload?.category_id ?? null;
@@ -4588,6 +4594,9 @@ export default function UniChatPage({ variant = 'full' }) {
         confirmingRef.current = false;
         return;
       }
+      // Antes dos refresh: o lançamento já está gravado, mesmo que a pessoa
+      // troque de conversa enquanto a tela recarrega.
+      lembrarCategoriaConfirmada(acaoConfirmada, outcome.result.data, currentWorkspaceId);
 
       // BUG REAL (Sprint 2.1, BUG 1): a confirmação de um lançamento SIMPLES
       // (sem dependência de criação de conta/categoria) é persistida via
@@ -4638,7 +4647,6 @@ export default function UniChatPage({ variant = 'full' }) {
           em: Date.now(),
         };
       }
-      lembrarCategoriaConfirmada(acaoConfirmada, persistedTransaction, currentWorkspaceId);
       const rememberedAccountName = accountState.accounts
         .find((account) => account.id === persistedTransaction?.account_id)?.name ?? null;
       const rememberedCategoryName = persistedTransaction?.category_id

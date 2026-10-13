@@ -94,8 +94,10 @@ const ROTULO_TIPO = { expense: 'saída', income: 'entrada', transfer: 'transfer�
 
 // Texto do usuário vira uma linha só e perde < e >, para não fechar nem abrir
 // uma marcação (</frase>, <catalogo>...) e escrever fora do bloco de dados.
+// Também os separadores de linha do Unicode (U+0085, U+2028, U+2029), que o
+// JSON.stringify não escapa.
 function linha(texto) {
-  return String(texto ?? '').replace(/[\r\n]+/g, ' ').replace(/[<>]/g, ' ').trim();
+  return String(texto ?? '').replace(/[\r\n\u0085\u2028\u2029]+/g, ' ').replace(/[<>]/g, ' ').trim();
 }
 
 // O rascunho chega como o servidor o devolveu ({id, name}); o modelo só
@@ -140,8 +142,15 @@ function blocoMetas(metas) {
 export const MAX_MEMORIAS = 30;
 export const MAX_DESCRICAO_MEMORIA = 80;
 
+// Palavras que não dizem do que se trata não aproximam memória e frase.
+const PALAVRAS_VAZIAS = new Set([
+  'das', 'dos', 'para', 'pra', 'pro', 'com', 'que', 'uma', 'umas', 'uns', 'pelo', 'pela', 'nos', 'nas',
+  'por', 'sem', 'meu', 'minha', 'seu', 'sua', 'reais', 'real', 'paguei', 'gastei', 'recebi', 'comprei',
+]);
+
 function palavrasDe(texto) {
-  return semAcentoNemCaixa(texto).split(/[^a-z0-9]+/).filter((palavra) => palavra.length >= 3);
+  return semAcentoNemCaixa(texto).split(/[^a-z0-9]+/)
+    .filter((palavra) => palavra.length >= 3 && !PALAVRAS_VAZIAS.has(palavra));
 }
 
 // "escola" e "escolar" casam; palavra curta só casa inteira.
@@ -150,8 +159,10 @@ function palavrasCasam(a, b) {
   return Math.min(a.length, b.length) >= 4 && (a.startsWith(b) || b.startsWith(a));
 }
 
-// Primeiro as memórias que dividem palavra com a frase, depois as mais
-// recentes (a lista chega da mais recente para a mais antiga), até o teto.
+// Só as memórias que dividem ao menos uma palavra com a frase, as que
+// dividem mais primeiro e, no empate, as mais recentes (a lista chega da mais
+// recente para a mais antiga), até o teto. Memória sem relação com a frase
+// não entra: menos ruído, e uma descrição maliciosa não chega a toda chamada.
 export function escolherMemorias(memorias, frase, max = MAX_MEMORIAS) {
   const daFrase = palavrasDe(frase);
   return memorias
@@ -160,6 +171,7 @@ export function escolherMemorias(memorias, frase, max = MAX_MEMORIAS) {
       indice,
       pontos: palavrasDe(memoria.descricao).filter((palavra) => daFrase.some((outra) => palavrasCasam(palavra, outra))).length,
     }))
+    .filter(({ pontos }) => pontos > 0)
     .sort((a, b) => b.pontos - a.pontos || a.indice - b.indice)
     .slice(0, max)
     .map(({ memoria }) => memoria);
