@@ -1,4 +1,4 @@
-import uniflowMarkAsset from '../../assets/branding/uniflow-mark.png';
+import uniflowMarkAsset from '../../assets/branding/uniflow-mark.svg';
 
 export function HomeIcon() {
   return (
@@ -461,15 +461,12 @@ export function SparkleIcon() {
   );
 }
 
-// COMPACT-HEADER1: única fonte de verdade do símbolo oficial da UniFlow
-// (identidade aprovada -- U estilizado, azul/roxo à esquerda, verde/ciano
-// à direita). Antes disto, este componente desenhava uma APROXIMAÇÃO em
-// SVG (gradiente diagonal único, proporções diferentes) que nunca
-// correspondia à marca oficial. Reaproveitado em todo lugar que precisa
-// do símbolo (header, botão de voz, About, Conta, Tema, Registros) --
-// nunca uma segunda interpretação da marca.
+// Única fonte do símbolo da UniFlow: o U de dois traços, o mesmo dos ícones
+// do PWA (uniflow-app-icon.svg), sem fundo. Reaproveitado em todo lugar que
+// precisa do símbolo (header, botão de voz, About, Conta, Registros, welcome)
+// -- nunca uma segunda interpretação da marca.
 export function UniMark() {
-  return <img src={uniflowMarkAsset} alt="" width="463" height="512" />;
+  return <img src={uniflowMarkAsset} alt="" width="28" height="34" />;
 }
 
 // Épico #91 (redesign): ícones Phosphor 2.1, copiados como SVG inline em vez
