@@ -423,6 +423,9 @@ function SimplifiedAgendaPage() {
               const reminder = resolveReminderIndicator(statesByItemId.get(item.id));
               const detail = buildAgendaItemDetail(item);
               const timeLabel = formatAgendaItemTime(item);
+              // "19:00–20:00" não cabe na coluna de 56px: o fim desce para a
+              // linha de baixo em vez de invadir o título.
+              const [timeStart, timeEnd] = timeLabel.split('–');
               // Conta vinda do Financeiro não tem agenda_item por trás: não
               // abre a edição de compromisso nem recebe lembrete.
               const isProjected = isProjectedTransactionItem(item);
@@ -439,7 +442,8 @@ function SimplifiedAgendaPage() {
                     data-long={LONG_TIME_LABELS.has(timeLabel) ? 'true' : undefined}
                     aria-hidden="true"
                   >
-                    {timeLabel}
+                    {timeStart}
+                    {timeEnd ? <span className={styles.itemTimeEnd}>{timeEnd}</span> : null}
                   </span>
                   <button
                     type="button"

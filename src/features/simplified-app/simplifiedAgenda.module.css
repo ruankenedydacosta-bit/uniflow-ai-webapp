@@ -337,6 +337,13 @@
   white-space: nowrap;
 }
 
+/* Fim do intervalo, embaixo do início. */
+.itemTimeEnd {
+  display: block;
+  color: var(--uf-app-text-3);
+  font-size: 11px;
+}
+
 /* "Dia inteiro"/"Sem horário" ficam numa linha só, menores. */
 .itemTime[data-long="true"] {
   padding-top: 4px;

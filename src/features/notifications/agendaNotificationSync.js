@@ -3,6 +3,7 @@ import {
   createNotification,
   listAgendaNotificationItemIds,
 } from './notificationsService.js';
+import { formatAgendaNotificationTime } from './notificationFormatting.js';
 
 const syncsByScope = new Map();
 const MINUTE_MS = 60_000;
@@ -39,6 +40,7 @@ export async function syncDueAgendaNotificationsOnce(userId, workspaceId, {
   listDueItems = listDueAgendaItemsForUser,
   listNotifiedItemIds = listAgendaNotificationItemIds,
   create = createNotification,
+  timeZone,
 } = {}) {
   if (!userId || !workspaceId) return createSyncResult();
 
@@ -58,12 +60,11 @@ export async function syncDueAgendaNotificationsOnce(userId, workspaceId, {
         continue;
       }
 
-      const description = typeof item.description === 'string' ? item.description.trim() : '';
       const result = await create(userId, {
         workspaceId,
         type: 'agenda',
         title: item.title,
-        message: description || 'Este compromisso chegou ao horário marcado.',
+        message: formatAgendaNotificationTime(item.starts_at, { timeZone }),
         actionUrl: '/app/agenda',
         metadata: {
           agenda_item_id: item.id,

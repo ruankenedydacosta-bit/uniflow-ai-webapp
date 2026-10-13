@@ -3,7 +3,9 @@ import test from 'node:test';
 import {
   NOTIFICATION_TYPES,
   countUnread,
+  formatAgendaNotificationTime,
   formatNotificationDate,
+  getNotificationMessage,
   getNotificationTypeLabel,
   isNotificationUnread,
   isSafeInternalUrl,
@@ -125,4 +127,24 @@ test('formatNotificationDate retorna string vazia para entrada ausente ou invali
   assert.equal(formatNotificationDate(null), '');
   assert.equal(formatNotificationDate(undefined), '');
   assert.equal(formatNotificationDate('nao-e-uma-data'), '');
+});
+
+test('formatAgendaNotificationTime: so a hora do compromisso, vazio quando ilegivel', () => {
+  const opts = { timeZone: 'America/Sao_Paulo' };
+  assert.equal(formatAgendaNotificationTime('2026-10-13T16:15:00.000Z', opts), 'Às 13:15');
+  assert.equal(formatAgendaNotificationTime('invalido', opts), '');
+  assert.equal(formatAgendaNotificationTime(null, opts), '');
+});
+
+test('getNotificationMessage: agenda mostra a hora mesmo com descricao gravada em message', () => {
+  const opts = { timeZone: 'America/Sao_Paulo' };
+  const antiga = {
+    type: 'agenda',
+    message: 'Microsoft Teams meeting Join: https://teams.microsoft.com/...',
+    metadata: { agenda_starts_at: '2026-10-13T16:15:00.000Z' },
+  };
+  assert.equal(getNotificationMessage(antiga, opts), 'Às 13:15');
+  assert.equal(getNotificationMessage({ type: 'agenda', message: 'Texto', metadata: {} }, opts), 'Texto');
+  assert.equal(getNotificationMessage({ type: 'financeiro', message: 'Conta vence hoje' }, opts), 'Conta vence hoje');
+  assert.equal(getNotificationMessage({ type: 'uni', message: null }, opts), '');
 });
