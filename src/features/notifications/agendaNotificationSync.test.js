@@ -49,27 +49,30 @@ test('relogio agenda a proxima virada de minuto com pequena margem', () => {
   assert.equal(getNextAgendaNotificationDelay(Date.parse('2026-08-11T15:20:59.900Z')), 350);
 });
 
-test('compromisso vencido cria notificacao com titulo e observacao reais', async () => {
+test('compromisso vencido cria notificacao so com titulo e hora, sem a descricao', async () => {
   const harness = createHarness([agendaItem()]);
   const result = await syncDueAgendaNotificationsOnce(USER_ID, WORKSPACE_ID, {
     now: NOW,
+    timeZone: 'America/Sao_Paulo',
     ...harness.dependencies,
   });
 
   assert.equal(result.error, null);
   assert.equal(harness.notifications.length, 1);
   assert.equal(harness.notifications[0].title, 'Reunião');
-  assert.equal(harness.notifications[0].message, 'Alinhar próximos passos');
+  assert.equal(harness.notifications[0].message, 'Às 12:21');
   assert.equal(harness.notifications[0].actionUrl, '/app/agenda');
 });
 
-test('sem observacao usa mensagem curta e segura', async () => {
-  const harness = createHarness([agendaItem({ description: '   ' })]);
+test('descricao longa do Google Agenda nao entra na notificacao', async () => {
+  const convite = 'Microsoft Teams meeting Join: https://teams.microsoft.com/l/meetup-join/19%3ameeting Passcode: fZ77';
+  const harness = createHarness([agendaItem({ description: convite })]);
   await syncDueAgendaNotificationsOnce(USER_ID, WORKSPACE_ID, {
     now: NOW,
     ...harness.dependencies,
   });
-  assert.equal(harness.notifications[0].message, 'Este compromisso chegou ao horário marcado.');
+  assert.doesNotMatch(harness.notifications[0].message, /Teams|https:/);
+  assert.match(harness.notifications[0].message, /^Às \d{2}:\d{2}$/);
 });
 
 test('futuro, concluido, outro usuario e outro workspace nao notificam', async () => {

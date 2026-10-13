@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import Button from '../../components/ui/Button';
 import {
   formatNotificationDate,
+  getNotificationMessage,
   getNotificationTypeLabel,
   isNotificationUnread,
   isSafeInternalUrl,
@@ -19,6 +20,7 @@ const DIRECTION_LOCK_PX = 8;
 
 function NotificationItem({ notification, onActivate, onDismiss }) {
   const unread = isNotificationUnread(notification);
+  const message = getNotificationMessage(notification);
   const [dragX, setDragX] = useState(0);
   const [isDismissing, setIsDismissing] = useState(false);
   const dragStateRef = useRef(null);
@@ -103,8 +105,8 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
           <span className={styles.itemDate}>{formatNotificationDate(notification.created_at)}</span>
         </span>
         <strong className={styles.itemTitle}>{notification.title}</strong>
-        {notification.message ? (
-          <span className={styles.itemMessage}>{notification.message}</span>
+        {message ? (
+          <span className={styles.itemMessage}>{message}</span>
         ) : null}
       </button>
       {/* Dispensa só a notificação -- nunca o compromisso/registro de

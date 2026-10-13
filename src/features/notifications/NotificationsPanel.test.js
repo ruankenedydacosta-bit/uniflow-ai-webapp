@@ -89,7 +89,8 @@ test('cada item mostra tipo, data, titulo, mensagem e indicador de nao-lida (tod
   assert.match(content, /getNotificationTypeLabel\(notification\.type\)/);
   assert.match(content, /formatNotificationDate\(notification\.created_at\)/);
   assert.match(content, /<strong className=\{styles\.itemTitle\}>\{notification\.title\}<\/strong>/);
-  assert.match(content, /notification\.message/);
+  assert.match(content, /const message = getNotificationMessage\(notification\);/);
+  assert.match(content, /<span className=\{styles\.itemMessage\}>\{message\}<\/span>/);
   assert.match(content, /className=\{styles\.itemStatus\}/);
   assert.match(content, /unread \? <span className=\{styles\.unreadDot\} aria-hidden="true" \/>/);
   const css = await source('NotificationsPanel.module.css');
