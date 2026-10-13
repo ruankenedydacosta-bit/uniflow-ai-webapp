@@ -10,7 +10,9 @@
 // O aviso não traz o evento: dispara o sync incremental daquele calendário
 // depois da resposta (EdgeRuntime.waitUntil), para o Google não esperar.
 // Pula conexão inativa, calendário que deixou de ser lido e dono fora do
-// espaço. Calendário já em sync tenta de novo duas vezes, com 5 s de espera.
+// espaço. Calendário já em sync (sync_lock_until no futuro) espera 5 s e
+// confere de novo, até três vezes, antes de pedir o access token: uma rajada
+// de avisos não vira uma troca de token por aviso.
 
 import { mesmoToken } from '../_shared/googleCalendar/canal.ts';
 import { chamarBanco, ok, type ConfigDoBanco } from '../_shared/googleCalendar/banco.ts';
@@ -27,12 +29,13 @@ const ESPERA_ENTRE_TENTATIVAS_MS = 5000;
 
 const CAMPOS = [
   'id', 'external_calendar_id', 'is_read', 'sync_token', 'sync_window_start', 'sync_window_end',
-  'last_full_sync_at', 'channel_id', 'channel_resource_id', 'channel_token', 'channel_expires_at',
+  'last_full_sync_at', 'channel_id', 'channel_resource_id', 'channel_token', 'channel_expires_at', 'sync_lock_until',
   'conexao:calendar_connections(id,user_id,workspace_id,status)',
 ].join(',');
 
 type Linha = CalendarioParaSync & {
   channel_token: string | null;
+  sync_lock_until: string | null;
   conexao: (ConexaoParaSync & { status: string }) | null;
 };
 
@@ -44,18 +47,30 @@ function esperar(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function travado(calendario: Linha) {
+  const ate = Date.parse(calendario.sync_lock_until ?? '');
+  return !Number.isNaN(ate) && ate > Date.now();
+}
+
 async function sincronizarDoAviso(config: ConfigDoBanco, linha: Linha) {
   const conexao = linha.conexao!;
-  const acesso = await prepararConexao(config, conexao);
-  if ('erro' in acesso) {
-    if (acesso.erro !== 'fora_do_espaco') console.error('google-calendar-webhook: conexão indisponível', acesso.erro);
-    return;
-  }
-  let calendario: CalendarioParaSync | null = linha;
+  let accessToken: string | null = null;
+  let calendario: Linha | null = linha;
   for (let tentativa = 1; tentativa <= TENTATIVAS_COM_TRAVA && calendario; tentativa += 1) {
-    const resultado = await sincronizarCalendario({ config, accessToken: acesso.accessToken, conexao, calendario });
-    if (resultado.status === 'erro') console.error('google-calendar-webhook: sync falhou', resultado.erro);
-    if (resultado.status !== 'skipped' || tentativa === TENTATIVAS_COM_TRAVA) return;
+    if (!travado(calendario)) {
+      if (!accessToken) {
+        const acesso = await prepararConexao(config, conexao);
+        if ('erro' in acesso) {
+          if (acesso.erro !== 'fora_do_espaco') console.error('google-calendar-webhook: conexão indisponível', acesso.erro);
+          return;
+        }
+        accessToken = acesso.accessToken;
+      }
+      const resultado = await sincronizarCalendario({ config, accessToken, conexao, calendario });
+      if (resultado.status === 'erro') console.error('google-calendar-webhook: sync falhou', resultado.erro);
+      if (resultado.status !== 'skipped') return;
+    }
+    if (tentativa === TENTATIVAS_COM_TRAVA) return;
     await esperar(ESPERA_ENTRE_TENTATIVAS_MS);
     // O sync que segurava a trava pode ter trocado o syncToken.
     calendario = await lerCalendario(config, linha.id);

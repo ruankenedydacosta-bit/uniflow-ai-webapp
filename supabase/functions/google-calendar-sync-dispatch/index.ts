@@ -9,7 +9,7 @@
 // ainda no espaço (google_calendar_sync_candidatas). Para cada uma:
 // atualiza a lista de calendários uma vez, encerra o canal do calendário que
 // deixou de ser lido, cria ou renova o canal dos lidos e roda o sync.
-// Para de pegar conexão nova depois de 100 s de execução.
+// Para de pegar conexão nova depois de 60 s de execução.
 //
 // Nenhum token vai para log nem para a resposta.
 
@@ -17,7 +17,7 @@ import { chamarRpc, ok } from '../_shared/googleCalendar/banco.ts';
 import { sincronizarConexao, type ConexaoParaSync } from '../_shared/googleCalendar/sincronizarCalendario.ts';
 
 const CONEXOES_POR_EXECUCAO = 10;
-const ORCAMENTO_MS = 100 * 1000;
+const ORCAMENTO_MS = 60 * 1000;
 
 function jsonResponse(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });

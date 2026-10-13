@@ -9,6 +9,7 @@ import {
   instanteNoFuso,
   janelaDeImportacao,
   mapearEvento,
+  passaNoCorte,
   planejarLote,
   TITULO_PADRAO,
 } from '../../supabase/functions/_shared/googleCalendar/mapearEvento.js';
@@ -52,8 +53,10 @@ function itemAtual(extra = {}) {
 
 const VINCULO = { id: 'link-1', agenda_item_id: 'item-1', etag: '"e0"', origin: 'provider' };
 
-function decidir(bruto, { vinculo = VINCULO, item = itemAtual() } = {}) {
-  return decidirImportacao({ evento: mapearEvento(bruto, { workspaceId: ESPACO }), vinculo, item, janela: JANELA });
+function decidir(bruto, { vinculo = VINCULO, item = itemAtual(), escritoPelaImportacao = false, corte = null } = {}) {
+  return decidirImportacao({
+    evento: mapearEvento(bruto, { workspaceId: ESPACO }), vinculo, item, escritoPelaImportacao, janela: JANELA, corte,
+  });
 }
 
 test('janela de importação: 30 dias antes a 365 dias depois', () => {
@@ -134,8 +137,22 @@ test('evento novo: entra; privado, confidencial, cancelado, gravado pelo app e f
 
 test('privado não leva título nem descrição adiante', () => {
   const evento = mapearEvento(eventoComHorario({ visibility: 'private' }), { workspaceId: ESPACO });
-  assert.equal(evento.privado, true);
+  assert.equal(evento.naoEntra, 'privado');
   assert.equal(evento.campos, null);
+});
+
+test('local de trabalho, ausência, foco e convite recusado não entram', () => {
+  const novo = (extra) => decidir(eventoComHorario(extra), { vinculo: null, item: null });
+  assert.equal(novo({ eventType: 'workingLocation' }).motivo, 'tipo_de_evento');
+  assert.equal(novo({ eventType: 'outOfOffice' }).motivo, 'tipo_de_evento');
+  assert.equal(novo({ eventType: 'focusTime' }).motivo, 'tipo_de_evento');
+  assert.equal(novo({ eventType: 'birthday' }).motivo, 'tipo_de_evento');
+  assert.equal(novo({ eventType: 'default' }).tipo, 'inserir');
+  assert.equal(novo({ eventType: 'fromGmail' }).tipo, 'inserir');
+  const recusado = { attendees: [{ email: 'outra@x', responseStatus: 'accepted' }, { email: 'eu@x', self: true, responseStatus: 'declined' }] };
+  assert.equal(novo(recusado).motivo, 'recusado');
+  // Já importado e recusado depois: cancela.
+  assert.deepEqual(decidir(eventoComHorario(recusado)), { tipo: 'cancelar', motivo: 'recusado' });
 });
 
 test('mesmo etag do vínculo: só marca como visto', () => {
@@ -166,10 +183,32 @@ test('apagado no Google: cancela; já cancelado: visto', () => {
   assert.equal(decidir(eventoComHorario({ status: 'cancelled' }), { item: itemAtual({ status: 'cancelled' }) }).tipo, 'visto');
 });
 
-test('evento que voltou no Google reabre o item cancelado', () => {
-  const decisao = decidir(eventoComHorario(), { item: itemAtual({ status: 'cancelled' }) });
+test('item cancelado no app não é reaberto por uma edição no Google', () => {
+  const decisao = decidir(eventoComHorario({ description: 'Nova pauta' }), { item: itemAtual({ status: 'cancelled' }) });
   assert.equal(decisao.tipo, 'atualizar');
-  assert.equal(decisao.campos.status, 'scheduled');
+  assert.equal('status' in decisao.campos, false);
+});
+
+test('última gravação foi da importação: o Google vence mesmo com updated_at maior', () => {
+  // A importação gravou a versão anterior às 12h; o Google mudou às 11h59,
+  // entre a listagem e a gravação.
+  const item = itemAtual({ updated_at: '2026-10-13T12:00:00.000+00:00' });
+  const evento = eventoComHorario({ summary: 'Mudou durante o sync', updated: '2026-10-13T11:59:00.000Z' });
+  assert.equal(decidir(evento, { item }).tipo, 'visto');
+  assert.equal(decidir(evento, { item, escritoPelaImportacao: true }).tipo, 'atualizar');
+});
+
+test('sync completo repetido não traz de volta evento antigo sem vínculo (item excluído no app)', () => {
+  const corte = { desde: '2026-10-10T00:00:00.000Z', fimDaJanelaAnterior: '2027-10-10T00:00:00.000Z' };
+  const antigo = eventoComHorario({ updated: '2026-10-01T00:00:00.000Z' });
+  assert.deepEqual(decidir(antigo, { vinculo: null, item: null, corte }), { tipo: 'ignorar', motivo: 'anterior_ao_ultimo_completo' });
+  assert.equal(decidir(eventoComHorario({ updated: '2026-10-11T00:00:00.000Z' }), { vinculo: null, item: null, corte }).tipo, 'inserir');
+  // Ocorrência que acabou de entrar na janela entra mesmo sem mudança.
+  const novaNaJanela = mapearEvento(eventoComHorario({
+    updated: '2026-01-01T00:00:00.000Z', start: { dateTime: '2027-10-11T10:00:00Z' }, end: { dateTime: '2027-10-11T11:00:00Z' },
+  }), { workspaceId: ESPACO });
+  assert.equal(passaNoCorte(novaNaJanela, corte), true);
+  assert.equal(passaNoCorte(mapearEvento(antigo, { workspaceId: ESPACO }), null), true);
 });
 
 test('ficou privado: cancela o item que veio do Google e deixa o item criado no app', () => {
@@ -229,7 +268,7 @@ test('planejarLote: monta as operações da RPC com o updated_at como veio do ba
       { id: 'apagado', status: 'cancelled', etag: '"c"', updated: '2026-10-13T11:00:00Z' },
     ],
     estado: [
-      { external_id: 'evt1', vinculo: VINCULO, item: itemAtual() },
+      { external_id: 'evt1', vinculo: VINCULO, item: itemAtual(), escrito_pela_importacao: false },
       { external_id: 'apagado', vinculo: { ...VINCULO, id: 'link-2', agenda_item_id: 'item-2' }, item: itemAtual({ id: 'item-2' }) },
     ],
     workspaceId: ESPACO,

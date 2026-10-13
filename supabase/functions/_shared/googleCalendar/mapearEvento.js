@@ -11,12 +11,22 @@
 // - Evento com uniflow_workspace_id de outro espaço é ignorado.
 // - Evento com a marca deste espaço e sem vínculo foi gravado pelo app: o
 //   vínculo é da exportação (#100), a importação não cria outro item.
-// - Privado ou confidencial não entra (a agenda do espaço é vista por todos).
-//   Item que veio do Google e ficou privado é cancelado.
-// - Apagado no Google: o item vira 'cancelled'. Nada é apagado.
+// - Não entra (naoEntra): privado ou confidencial (a agenda do espaço é vista
+//   por todos), convite recusado e evento que não é compromisso (local de
+//   trabalho, ausência, foco, aniversário). Item que veio do Google e passou
+//   a ser um desses é cancelado.
+// - Apagado no Google: o item vira 'cancelled'. Nada é apagado. Item
+//   cancelado no app não é reaberto por uma edição no Google.
 // - Mesmo etag do vínculo: foi o próprio app que gravou, só marca como visto.
 // - Conflito: vence a alteração mais recente (updated do Google contra
-//   updated_at do item). Se o app vence, só grava remote_seen_at.
+//   updated_at do item). Se o app vence, só grava remote_seen_at. Quando a
+//   última gravação do item foi da própria importação, o Google vence: o
+//   updated_at dela é a hora da gravação, não a de uma edição no app.
+// - O mesmo evento em vários calendários do espaço (convite entre membros)
+//   vira um item só: a RPC não insere se o evento já tem vínculo no espaço.
+// - Sync completo repetido (semanal ou depois de um 410) só insere evento
+//   alterado desde o último completo ou que acabou de entrar na janela. Item
+//   que a pessoa excluiu no app não volta sem uma mudança no Google.
 // - Com horário: 'meeting'. Dia inteiro: 'other'. Vários dias inteiros:
 //   ends_at guarda o último dia (mesma convenção do eventoGoogle.js).
 // - Pagamento (payment_due, receivable) editado no Google: data local igual
@@ -33,6 +43,16 @@ const DIA_MS = 24 * 60 * 60 * 1000;
 const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIPOS_DE_PAGAMENTO = new Set(['payment_due', 'receivable']);
 const VISIBILIDADES_PRIVADAS = new Set(['private', 'confidential']);
+// Sem eventType é o compromisso comum. fromGmail é reserva (voo, hotel).
+const TIPOS_DE_EVENTO_IMPORTADOS = new Set(['default', 'fromGmail']);
+
+function motivoParaNaoEntrar(evento) {
+  if (VISIBILIDADES_PRIVADAS.has(evento?.visibility)) return 'privado';
+  if (evento?.eventType && !TIPOS_DE_EVENTO_IMPORTADOS.has(evento.eventType)) return 'tipo_de_evento';
+  const eu = Array.isArray(evento?.attendees) ? evento.attendees.find((convidado) => convidado?.self === true) : null;
+  if (eu?.responseStatus === 'declined') return 'recusado';
+  return null;
+}
 
 export function janelaDeImportacao(agora = new Date()) {
   const instante = new Date(agora).getTime();
@@ -126,7 +146,7 @@ export function mapearEvento(evento, { workspaceId, fuso = FUSO_PADRAO } = {}) {
     updated: instanteValido(evento?.updated),
     ignorar: null,
     cancelado: evento?.status === 'cancelled',
-    privado: VISIBILIDADES_PRIVADAS.has(evento?.visibility),
+    naoEntra: motivoParaNaoEntrar(evento),
     doApp: false,
     campos: null,
   };
@@ -138,7 +158,7 @@ export function mapearEvento(evento, { workspaceId, fuso = FUSO_PADRAO } = {}) {
   resultado.doApp = Boolean(espacoDaMarca);
 
   // Cancelado não precisa de campos; privado não pode levar o conteúdo adiante.
-  if (resultado.cancelado || resultado.privado) return resultado;
+  if (resultado.cancelado || resultado.naoEntra) return resultado;
 
   const horario = camposDoHorario(evento, fuso);
   if (!horario) return { ...resultado, ignorar: 'sem_data' };
@@ -173,8 +193,6 @@ export function camposDaAtualizacao(item, campos, fuso = FUSO_PADRAO) {
     ends_at: campos.ends_at,
     is_all_day: campos.is_all_day,
     has_explicit_time: campos.has_explicit_time,
-    // Evento de volta no Google (desfeito) reabre o item cancelado.
-    status: item.status === 'cancelled' ? 'scheduled' : item.status,
   };
 
   if (TIPOS_DE_PAGAMENTO.has(item.item_type)) {
@@ -216,12 +234,33 @@ function semMudanca(item, campos) {
     && mesmoInstante(item.starts_at, campos.starts_at)
     && mesmoInstante(item.ends_at, campos.ends_at)
     && Boolean(item.is_all_day) === Boolean(campos.is_all_day)
-    && (item.has_explicit_time !== false) === (campos.has_explicit_time !== false)
-    && item.status === campos.status;
+    && (item.has_explicit_time !== false) === (campos.has_explicit_time !== false);
+}
+
+// Num sync completo repetido, só entra evento novo alterado depois do último
+// completo ou que começa depois do fim da janela anterior. corte = null: entra
+// tudo o que cruza a janela (primeiro completo, incremental).
+export function passaNoCorte(evento, corte) {
+  if (!corte) return true;
+  const desde = Date.parse(corte.desde ?? '');
+  const fimAnterior = Date.parse(corte.fimDaJanelaAnterior ?? '');
+  if (Number.isNaN(desde) || Number.isNaN(fimAnterior)) return true;
+  const alterado = Date.parse(evento.updated ?? '');
+  return (!Number.isNaN(alterado) && alterado > desde) || Date.parse(evento.campos.starts_at) >= fimAnterior;
 }
 
 // { tipo: 'ignorar' | 'inserir' | 'atualizar' | 'cancelar' | 'visto', motivo?, campos? }
-export function decidirImportacao({ evento, vinculo = null, item = null, janela, fuso = FUSO_PADRAO }) {
+// escritoPelaImportacao: a última gravação do item foi desta importação
+// (google_calendar_import_estado compara updated_at do item e do vínculo).
+export function decidirImportacao({
+  evento,
+  vinculo = null,
+  item = null,
+  escritoPelaImportacao = false,
+  janela,
+  corte = null,
+  fuso = FUSO_PADRAO,
+}) {
   const temVinculo = Boolean(vinculo && item);
 
   if (evento.ignorar) {
@@ -231,9 +270,10 @@ export function decidirImportacao({ evento, vinculo = null, item = null, janela,
 
   if (!temVinculo) {
     if (evento.cancelado) return { tipo: 'ignorar', motivo: 'cancelado' };
-    if (evento.privado) return { tipo: 'ignorar', motivo: 'privado' };
+    if (evento.naoEntra) return { tipo: 'ignorar', motivo: evento.naoEntra };
     if (evento.doApp) return { tipo: 'ignorar', motivo: 'gravado_pelo_app' };
     if (!cruzaAJanela(evento.campos, janela)) return { tipo: 'ignorar', motivo: 'fora_da_janela' };
+    if (!passaNoCorte(evento, corte)) return { tipo: 'ignorar', motivo: 'anterior_ao_ultimo_completo' };
     return { tipo: 'inserir', campos: evento.campos };
   }
 
@@ -241,7 +281,7 @@ export function decidirImportacao({ evento, vinculo = null, item = null, janela,
 
   const noGoogle = Date.parse(evento.updated ?? '');
   const noApp = Date.parse(item.updated_at ?? '');
-  if (!Number.isNaN(noApp) && (Number.isNaN(noGoogle) || noApp > noGoogle)) {
+  if (!escritoPelaImportacao && !Number.isNaN(noApp) && (Number.isNaN(noGoogle) || noApp > noGoogle)) {
     return { tipo: 'visto', motivo: 'app_mais_novo' };
   }
 
@@ -249,9 +289,9 @@ export function decidirImportacao({ evento, vinculo = null, item = null, janela,
     return item.status === 'cancelled' ? { tipo: 'visto', motivo: 'ja_cancelado' } : { tipo: 'cancelar' };
   }
 
-  if (evento.privado) {
-    if (vinculo.origin === 'provider' && item.status !== 'cancelled') return { tipo: 'cancelar', motivo: 'privado' };
-    return { tipo: 'visto', motivo: 'privado' };
+  if (evento.naoEntra) {
+    if (vinculo.origin === 'provider' && item.status !== 'cancelled') return { tipo: 'cancelar', motivo: evento.naoEntra };
+    return { tipo: 'visto', motivo: evento.naoEntra };
   }
 
   const campos = camposDaAtualizacao(item, evento.campos, fuso);
@@ -261,7 +301,7 @@ export function decidirImportacao({ evento, vinculo = null, item = null, janela,
 
 // Uma página da listagem -> operações da RPC google_calendar_import_aplicar.
 // `estado` é a resposta de google_calendar_import_estado.
-export function planejarLote({ eventos, estado = [], workspaceId, janela, fuso = FUSO_PADRAO }) {
+export function planejarLote({ eventos, estado = [], workspaceId, janela, corte = null, fuso = FUSO_PADRAO }) {
   const atuais = new Map((Array.isArray(estado) ? estado : []).map((linha) => [linha.external_id, linha]));
   const operacoes = [];
   const vistos = new Set();
@@ -276,7 +316,15 @@ export function planejarLote({ eventos, estado = [], workspaceId, janela, fuso =
     if (evento.externalId) vistos.add(evento.externalId);
 
     const atual = evento.externalId ? atuais.get(evento.externalId) : null;
-    const decisao = decidirImportacao({ evento, vinculo: atual?.vinculo, item: atual?.item, janela, fuso });
+    const decisao = decidirImportacao({
+      evento,
+      vinculo: atual?.vinculo,
+      item: atual?.item,
+      escritoPelaImportacao: atual?.escrito_pela_importacao === true,
+      janela,
+      corte,
+      fuso,
+    });
     if (decisao.tipo === 'ignorar') continue;
 
     const operacao = { tipo: decisao.tipo, external_id: evento.externalId };

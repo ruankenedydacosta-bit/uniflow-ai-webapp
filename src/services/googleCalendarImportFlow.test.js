@@ -131,7 +131,7 @@ function instalarFetch({ db, google }) {
         }
         return resposta(200, contagem);
       }
-      if (rpc === 'google_calendar_import_varrer') return resposta(200, 0);
+      if (rpc === 'google_calendar_import_varrer') return db.varreduraFalha ? resposta(503, {}) : resposta(200, 0);
       throw new Error(`rpc não simulada: ${rpc}`);
     }
 
@@ -407,4 +407,18 @@ test('sync-dispatch: segredo errado 401; certo cria o canal que falta e renova',
   assert.equal(calendario.channel_id, watch.corpo.id);
   assert.equal(calendario.channel_token, watch.corpo.token);
   assert.equal(calendario.channel_resource_id, `res-${PRIMARIO}`);
+});
+
+test('varredura que falha não marca o sync completo como feito', async () => {
+  const ambiente = criarAmbiente();
+  const ultimoCompleto = '2026-10-01T00:00:00.000Z';
+  ambiente.db.calendars[0].sync_token = null;
+  ambiente.db.calendars[0].last_full_sync_at = ultimoCompleto;
+  ambiente.db.varreduraFalha = true;
+  instalarFetch(ambiente);
+  await avisar(ambiente, {});
+  const calendario = ambiente.db.calendars[0];
+  assert.equal(calendario.last_full_sync_at, ultimoCompleto);
+  assert.equal(calendario.last_sync_error, 'varredura_falhou');
+  assert.equal(calendario.sync_token, 'token-novo');
 });

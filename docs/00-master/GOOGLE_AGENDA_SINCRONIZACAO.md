@@ -18,6 +18,13 @@ Regras da importação (Google → app):
   sem `sync_token`, depois de um 410 e uma vez por semana.
 - O sync completo cancela o item vindo do Google cujo evento sumiu da janela.
   Nada é apagado.
+- Sync completo repetido só insere evento alterado desde o último completo ou
+  que acabou de entrar na janela. Um item importado e excluído no app só volta
+  se o evento mudar no Google.
+- Não entram: evento privado ou confidencial, convite recusado e evento que
+  não é compromisso (local de trabalho, ausência, foco, aniversário).
+- O mesmo evento em calendários de dois membros do espaço vira um item só.
+- Item cancelado no app continua cancelado quando o evento muda no Google.
 - Canal de 7 dias, renovado quando faltam menos de 2.
 - Calendário que deixa de ser lido perde o canal, o `sync_token` e a janela.
 
@@ -91,13 +98,18 @@ limit 20;
 | `calendario_ausente` | O calendário sumiu da conta. | Some da tabela na próxima lista de calendários. |
 | `sync_token_vencido` | 410 também no sync completo. | O próximo sync recomeça do zero. |
 | `banco_indisponivel` | RPC da importação falhou. | Veja os logs do Postgres e da função. |
-| `paginas_demais` | Mais de 40 páginas (10 mil eventos) na janela. | Calendário grande demais para uma execução. Avaliar caso a caso. |
+| `paginas_demais` | Mais de 40 páginas (10 mil eventos) numa passada. | O `sync_token` é descartado e o próximo sync é completo. Se o completo também passar do limite, o calendário é grande demais para uma execução. |
+| `varredura_falhou` | O completo listou tudo, mas a varredura falhou. | O próximo sync refaz o completo. |
 
 ## Limites conhecidos
 
-- Conexão que falha toda vez volta primeiro no dispatch, que pega 10 por
-  execução. Mais de 10 conexões falhando ao mesmo tempo atrasam as demais.
-- Um aviso do webhook que chega com o calendário em sync tenta de novo duas
+- O dispatch pega até 10 conexões por execução, em ordem aleatória, e para de
+  pegar conexão nova depois de 60 s.
+- O sync completo precisa terminar numa execução da função: a posição na
+  listagem (`pageToken`) não é guardada. Um calendário que estoure o tempo da
+  Edge Function fica sem `sync_token` e recomeça do zero a cada tentativa.
+- Um aviso do webhook que chega com o calendário em sync confere de novo três
   vezes em 10 s. Depois disso, a mudança espera o sync de segurança (até 40 min).
+  Uma rajada de avisos ainda gera vários syncs incrementais seguidos.
 - Item editado no app entre a leitura e a gravação de um lote fica com a versão
   do app. A mudança do Google só volta se o evento mudar de novo.

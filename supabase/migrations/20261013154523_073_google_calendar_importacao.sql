@@ -95,6 +95,11 @@ $$;
 -- exportado. O vínculo é do espaço (unique workspace, provider, calendar_id,
 -- external_id), não da pessoa: dois donos do mesmo calendário no mesmo espaço
 -- não duplicam o item.
+--
+-- escrito_pela_importacao: a importação grava o item e o vínculo na mesma
+-- transação, e os dois updated_at saem iguais (now()). Igualdade quer dizer
+-- que ninguém mexeu no item depois disso; aí o updated_at do item não é uma
+-- edição no app e não pode vencer o conflito com o Google.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.google_calendar_import_estado(
@@ -134,7 +139,8 @@ begin
       'has_explicit_time', item.has_explicit_time,
       'status', item.status,
       'updated_at', item.updated_at
-    )
+    ),
+    'escrito_pela_importacao', item.updated_at = link.updated_at
   )), '[]'::jsonb)
   into v_estado
   from public.agenda_item_links as link
@@ -205,6 +211,15 @@ begin
     v_gravou := false;
 
     if v_op->>'tipo' = 'inserir' then
+      -- O mesmo evento em outro calendário do espaço (convite entre membros
+      -- conectados) já tem item: não duplica.
+      continue when exists (
+        select 1
+        from public.agenda_item_links as link
+        where link.workspace_id = v_conexao.workspace_id
+          and link.provider = 'google'
+          and link.external_id = v_external_id
+      );
       begin
         insert into public.agenda_items (
           workspace_id, item_type, title, description, location,
@@ -376,7 +391,8 @@ $$;
 
 -- ---------------------------------------------------------------------------
 -- Conexões para o sync de segurança: ativas, sem escopo faltando, com o dono
--- ainda no espaço e sem passada nos últimos 30 minutos. A mais antiga primeiro.
+-- ainda no espaço e sem passada nos últimos 30 minutos. Ordem aleatória: uma
+-- conexão que falha toda vez não ocupa a vez das outras.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.google_calendar_sync_candidatas(p_limite integer default 10)
@@ -400,7 +416,7 @@ as $$
         and membro.status = 'active'
         and membro.role in ('owner', 'admin', 'member')
     )
-  order by conexao.last_synced_at asc nulls first, conexao.id
+  order by random()
   limit greatest(1, least(coalesce(p_limite, 10), 50));
 $$;
 
@@ -416,8 +432,8 @@ grant execute on function public.google_calendar_import_varrer(uuid, text, times
 grant execute on function public.google_calendar_sync_candidatas(integer) to service_role;
 
 -- ---------------------------------------------------------------------------
--- Agendamento: a cada 10 minutos, só quando há conexão sem passada nos
--- últimos 30 minutos. O webhook é o caminho principal; este cron cobre
+-- Agendamento: a cada 10 minutos, só quando há candidata (a mesma regra da
+-- google_calendar_sync_candidatas). O webhook é o caminho principal; este cron cobre
 -- notificação perdida, cria e renova os canais e refaz o sync completo da
 -- janela uma vez por semana. URL do projeto no Vault (project_url), nunca
 -- escrita aqui; sem ela o cron não chama nada.
@@ -448,12 +464,7 @@ select cron.schedule(
   )
   from vault.decrypted_secrets as segredo
   where segredo.name = 'project_url'
-    and exists (
-      select 1 from public.calendar_connections as conexao
-      where conexao.provider = 'google'
-        and conexao.status = 'active'
-        and (conexao.last_synced_at is null or conexao.last_synced_at < now() - interval '30 minutes')
-    );
+    and exists (select 1 from public.google_calendar_sync_candidatas(1));
   $cron$
 );
 

@@ -7,7 +7,10 @@
 //   janela now() - 30 dias a now() + 365 dias e, no fim, cancela o item vindo
 //   do Google cujo evento não apareceu (google_calendar_import_varrer). O
 //   completo semanal também traz as ocorrências de série que entraram na
-//   janela sem mudar no Google.
+//   janela sem mudar no Google. Repetido, só insere evento alterado desde o
+//   último completo ou que entrou agora na janela (passaNoCorte).
+// - O completo precisa terminar numa execução: não há pageToken guardado.
+//   Mais de 40 páginas (10 mil eventos) vira erro paginas_demais.
 // - Cada página: estado atual (RPC) -> planejarLote (mapearEvento.js) ->
 //   google_calendar_import_aplicar (RPC, com a variável anti-loop).
 //
@@ -129,7 +132,15 @@ async function passada({
       });
       if (!ok(estado.status) || !Array.isArray(estado.json)) return { erro: 'banco_indisponivel' };
 
-      const operacoes = planejarLote({ eventos, estado: estado.json, workspaceId: conexao.workspace_id, janela });
+      const operacoes = planejarLote({
+        eventos,
+        estado: estado.json,
+        workspaceId: conexao.workspace_id,
+        janela,
+        corte: completo && calendario.last_full_sync_at && calendario.sync_window_end
+          ? { desde: calendario.last_full_sync_at, fimDaJanelaAnterior: calendario.sync_window_end }
+          : null,
+      });
       if (operacoes.length > 0) {
         const aplicacao = await chamarRpc(config, 'google_calendar_import_aplicar', {
           p_connection_id: conexao.id,
@@ -187,8 +198,9 @@ export async function sincronizarCalendario({
       corpo: {
         sync_lock_until: null,
         last_sync_error: execucao.erro,
-        // Token vencido mesmo no completo: o próximo começa do zero.
-        ...(execucao.erro === 'sync_token_vencido' ? { sync_token: null } : {}),
+        // Token vencido mesmo no completo, ou mudança grande demais para o
+        // incremental: o próximo começa por um completo da janela.
+        ...(['sync_token_vencido', 'paginas_demais'].includes(execucao.erro) ? { sync_token: null } : {}),
       },
       prefer: 'return=minimal',
     });
@@ -196,6 +208,7 @@ export async function sincronizarCalendario({
   }
 
   const contagem = { ...execucao.contagem };
+  let varreu = false;
   if (completo) {
     const varredura = await chamarRpc(config, 'google_calendar_import_varrer', {
       p_connection_id: conexao.id,
@@ -204,9 +217,12 @@ export async function sincronizarCalendario({
       p_inicio: janela.inicio,
       p_fim: janela.fim,
     });
-    if (ok(varredura.status) && typeof varredura.json === 'number') contagem.cancelados += varredura.json;
+    varreu = ok(varredura.status) && typeof varredura.json === 'number';
+    if (varreu) contagem.cancelados += varredura.json as number;
   }
 
+  // Sem a varredura, o completo não conta como feito: o próximo sync refaz.
+  const completoFeito = completo && varreu;
   const agoraIso = new Date().toISOString();
   await chamarBanco(config, {
     metodo: 'PATCH',
@@ -216,8 +232,8 @@ export async function sincronizarCalendario({
       sync_token: execucao.syncToken,
       sync_lock_until: null,
       last_synced_at: agoraIso,
-      last_sync_error: null,
-      ...(completo ? { last_full_sync_at: agoraIso, sync_window_start: janela.inicio, sync_window_end: janela.fim } : {}),
+      last_sync_error: completo && !varreu ? 'varredura_falhou' : null,
+      ...(completoFeito ? { last_full_sync_at: agoraIso, sync_window_start: janela.inicio, sync_window_end: janela.fim } : {}),
     },
     prefer: 'return=minimal',
   });
