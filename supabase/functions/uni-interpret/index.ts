@@ -20,6 +20,9 @@ const TEMPO_LIMITE_MS = 15000;
 const MAX_CATEGORIAS = 200;
 const MAX_CONTAS = 60;
 const MAX_METAS = 40;
+// Memórias de categoria lidas por chamada (#79). O prompt usa até 30, só as
+// que dividem palavra com a frase.
+const MAX_MEMORIAS_LIDAS = 200;
 
 function getAllowedOrigins() {
   return (Deno.env.get('APP_ALLOWED_ORIGINS') ?? '')
@@ -72,11 +75,12 @@ async function lerComoUsuario(path: string, authorization: string, supabaseUrl: 
 // as genéricas ("Outras despesas", "Transferência"). Categoria oculta no
 // espaço (#184) sai da lista: o modelo não sugere o que a pessoa escondeu.
 // Metas: só as que a tela Metas mostra em aberto (ativas e pausadas), para
-// a pessoa apontar qual.
+// a pessoa apontar qual. Memórias de categoria (#79): a RLS só devolve as da
+// própria pessoa neste espaço; falha aqui só tira as memórias do prompt.
 function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, anonKey: string) {
   return async (workspaceId: string) => {
     const ler = (path: string) => lerComoUsuario(path, authorization, supabaseUrl, anonKey);
-    const [workspaces, todasCategorias, ocultas, contas, metas] = await Promise.all([
+    const [workspaces, todasCategorias, ocultas, contas, metas, memorias] = await Promise.all([
       ler(`workspaces?select=workspace_type&id=eq.${workspaceId}&limit=1`),
       ler(
         'categories?select=id,name,category_type,applies_to&is_active=eq.true'
@@ -91,6 +95,13 @@ function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, a
         `financial_goals?select=id,name&workspace_id=eq.${workspaceId}&archived_at=is.null`
           + `&status=in.(active,paused)&order=name&limit=${MAX_METAS}`,
       ),
+      ler(
+        // Só os dois campos do valor: os eventos guardados ficam no banco.
+        'uni_financial_memories?select=descricao:memory_value->>descricao,categoria_id:memory_value->>categoria_id'
+          + `&workspace_id=eq.${workspaceId}`
+          + '&memory_type=eq.merchant_category_mapping&status=in.(candidate,confirmed)'
+          + `&order=last_observed_at.desc&limit=${MAX_MEMORIAS_LIDAS}`,
+      ).catch(() => []),
     ]);
     const workspaceType = workspaces?.[0]?.workspace_type;
     if (workspaceType !== 'personal' && workspaceType !== 'business') return null;
@@ -102,7 +113,9 @@ function criarCarregadorDeContexto(authorization: string, supabaseUrl: string, a
       .filter((categoria) => categoria.applies_to === 'both' || categoria.applies_to === workspaceType)
       .filter((categoria) => !idsOcultos.has(categoria.id))
       .map(({ id, name, category_type }) => ({ id, name, category_type }));
-    return { workspaceType, categorias, contas, metas };
+    const memoriasDeCategoria = (memorias as Array<{ descricao?: unknown; categoria_id?: unknown }>)
+      .filter((memoria) => typeof memoria.descricao === 'string' && typeof memoria.categoria_id === 'string');
+    return { workspaceType, categorias, contas, metas, memorias: memoriasDeCategoria };
   };
 }
 

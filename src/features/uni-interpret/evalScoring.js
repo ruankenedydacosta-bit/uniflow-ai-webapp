@@ -12,7 +12,9 @@ import { DATA_REFERENCIA } from './evalCases.js';
 import { periodoDaConsulta } from './uniInterpretConsulta.js';
 import { normalizeSearchText } from '../../utils/searchText.js';
 
-export const INTENTS_DE_LANCAMENTO = new Set(['lancar_saida', 'lancar_entrada', 'transferir']);
+// corrigir: resposta que muda o rascunho aberto (#79). A régua mede a
+// operação já corrigida como um lançamento.
+export const INTENTS_DE_LANCAMENTO = new Set(['lancar_saida', 'lancar_entrada', 'transferir', 'corrigir']);
 
 function mesmoValor(esperado, obtido) {
   return Number.isFinite(obtido) && Math.round(esperado * 100) === Math.round(obtido * 100);
@@ -185,9 +187,9 @@ function pedidoDaInterpretacao(validada) {
 // conta como sugestão: é o que o card mostra pedindo confirmação.
 export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}) {
   const operacao = validada.operacoes[0] ?? null;
-  const intent = validada.intent === 'lancamento' && operacao
-    ? INTENT_POR_TIPO[operacao.tipo]
-    : INTENT_DO_INTERPRETADOR[validada.intent] ?? validada.intent;
+  let intent = INTENT_DO_INTERPRETADOR[validada.intent] ?? validada.intent;
+  if (validada.intent === 'lancamento' && operacao) intent = INTENT_POR_TIPO[operacao.tipo];
+  if (validada.intent === 'correcao' && operacao) intent = 'corrigir';
 
   if (!operacao) {
     const consulta = validada.consulta

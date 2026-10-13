@@ -84,8 +84,11 @@ if (!CONJUNTOS.includes(conjunto)) {
   console.error('Informe --conjunto ajuste|reservado|todos.');
   process.exit(1);
 }
+// Memória e rascunho (#79) só existem no caminho do uni-interpret: as regras
+// não leem memória e respondem ao card por outro fluxo.
 const casosDoConjunto = CASOS.filter((caso) => (
-  conjunto === 'todos' || (conjunto === 'reservado') === Boolean(caso.reservado)
+  (conjunto === 'todos' || (conjunto === 'reservado') === Boolean(caso.reservado))
+  && !caso.memorias && !caso.rascunho
 ));
 const vereditos = [];
 

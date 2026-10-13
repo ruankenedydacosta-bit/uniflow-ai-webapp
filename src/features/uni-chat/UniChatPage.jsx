@@ -75,6 +75,7 @@ import {
   montarHistoricoParaInterpretacao,
   montarRascunhoParaInterpretacao,
 } from '../uni-interpret/uniInterpretClient.js';
+import { registrarConfirmacaoNaMemoria } from '../uni-interpret/memoriaDeCategoria.js';
 import {
   montarPedidoDeCategoria,
   respostaAoPedidoDeCategoria,
@@ -1146,6 +1147,9 @@ export default function UniChatPage({ variant = 'full' }) {
   const [edicaoPendente, setEdicaoPendenteState] = useState(null);
   const edicaoPendenteRef = useRef(null);
   const ultimoConfirmadoRef = useRef(null);
+  // Categoria do primeiro rascunho de cada lançamento (#79), por
+  // clientOperationId: na confirmação, categoria diferente desta é troca.
+  const categoriaInicialPorOperacaoRef = useRef(new Map());
 
   function setEdicaoPendente(next) {
     edicaoPendenteRef.current = next;
@@ -3081,6 +3085,13 @@ export default function UniChatPage({ variant = 'full' }) {
 
   function publishConversationResult(result) {
     syncFinancialParentSnapshot(result);
+    const operacaoId = result?.action?.clientOperationId;
+    const categoriasIniciais = categoriaInicialPorOperacaoRef.current;
+    if (operacaoId && !categoriasIniciais.has(operacaoId)) {
+      categoriasIniciais.set(operacaoId, result.action.category?.id ?? null);
+      // Rascunho cancelado ou trocado não volta: guarda só os mais recentes.
+      if (categoriasIniciais.size > 20) categoriasIniciais.delete(categoriasIniciais.keys().next().value);
+    }
     if (
       result?.action?.issues?.[0]?.code === 'category_not_found'
       && result.action.proposedCategoryName
@@ -4285,6 +4296,28 @@ export default function UniChatPage({ variant = 'full' }) {
     }
   }
 
+  // Memória de categoria (#79): a descrição confirmada fica ligada à
+  // categoria, para a próxima interpretação. Em segundo plano: a falha só
+  // deixa de lembrar.
+  // Sem o primeiro card (rascunho restaurado de um reload), não há como saber
+  // se houve troca, e a confirmação não entra na memória.
+  function lembrarCategoriaConfirmada(acao, transacao, workspaceId) {
+    const operacaoId = acao?.clientOperationId;
+    if (!categoriaInicialPorOperacaoRef.current.has(operacaoId)) return;
+    const categoriaInicial = categoriaInicialPorOperacaoRef.current.get(operacaoId) ?? null;
+    categoriaInicialPorOperacaoRef.current.delete(operacaoId);
+    const categoriaId = acao?.category?.id ?? acao?.payload?.category_id ?? null;
+    void registrarConfirmacaoNaMemoria({
+      workspaceId,
+      descricao: acao?.payload?.description,
+      categoriaId,
+      tipo: acao?.payload?.transaction_type,
+      trocou: Boolean(categoriaInicial && categoriaId && categoriaInicial !== categoriaId),
+      transacaoId: transacao?.id,
+      data: getLocalIsoDate(),
+    });
+  }
+
   async function handleConfirmAction(id) {
     if (confirmingRef.current) return;
     if (categoriaPendenteRef.current?.messageId === id) {
@@ -4545,6 +4578,7 @@ export default function UniChatPage({ variant = 'full' }) {
         return;
       }
 
+      const acaoConfirmada = financialConversation.state.action;
       const outcome = await financialConversation.confirm();
 
       // Guard: se a conversa mudou durante a execução, abortar.
@@ -4563,6 +4597,9 @@ export default function UniChatPage({ variant = 'full' }) {
         confirmingRef.current = false;
         return;
       }
+      // Antes dos refresh: o lançamento já está gravado, mesmo que a pessoa
+      // troque de conversa enquanto a tela recarrega.
+      lembrarCategoriaConfirmada(acaoConfirmada, outcome.result.data, currentWorkspaceId);
 
       // BUG REAL (Sprint 2.1, BUG 1): a confirmação de um lançamento SIMPLES
       // (sem dependência de criação de conta/categoria) é persistida via
