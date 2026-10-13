@@ -4,6 +4,7 @@ import { useSession } from '../../app/SessionContext.jsx';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import UniCard from '../../components/ui/UniCard/index.js';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
+import ChatInput from '../uni-chat/components/ChatInput.jsx';
 import QuickSuggestions from '../uni-chat/components/QuickSuggestions.jsx';
 import { PwaInstallExperience, usePwaAutoUpdateBlock } from '../pwa-install/index.js';
 import SimplifiedHomeAgenda from './SimplifiedHomeAgenda.jsx';
@@ -405,6 +406,17 @@ function SimplifiedHomeView({
     onSaveEditAction(id, overrides);
   }
 
+  // Campo de lançamento rápido: vai pelo mesmo envio do chat e da voz, e a
+  // resposta aparece no card da Home. Com a Uni ocupada o envio não vale e o
+  // texto fica no campo.
+  const [quickText, setQuickText] = useState('');
+  function handleQuickSend(text) {
+    if (isTyping || isExecuting) return;
+    markHomeReply();
+    onSendTranscript(text);
+    setQuickText('');
+  }
+
   // Com a Uni ocupada o toque não vale: marcar a resposta antes esconderia a
   // pergunta e os chips sem nada novo a caminho.
   function handleChooseCategory(item) {
@@ -531,6 +543,17 @@ function SimplifiedHomeView({
           há como confirmar ou cancelar, e a atualização do app fica parada
           esperando (usePwaAutoUpdateBlock). */}
       {isVoiceModeOpen ? null : compactResponse}
+      {/* Fora da tela de voz: lá a resposta fica escondida atrás dela. */}
+      {isVoiceModeOpen ? null : (
+        <div className={styles.homeQuickInput}>
+          <ChatInput
+            value={quickText}
+            onChange={setQuickText}
+            onSend={handleQuickSend}
+            disabled={isInteractionBusy}
+          />
+        </div>
+      )}
       <SimplifiedHomeMonthReading />
 
       <SimplifiedHomeAgenda />

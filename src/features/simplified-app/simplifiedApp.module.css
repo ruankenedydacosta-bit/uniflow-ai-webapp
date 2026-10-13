@@ -829,6 +829,13 @@ html[data-uf-transicao="voltar"]::view-transition-new(uf-tela) {
   width: 100%;
 }
 
+/* Campo de lançamento rápido da Home: o ChatInput já traz 16px de recuo
+   lateral; a margem negativa alinha a pílula com os cards. */
+.homeQuickInput {
+  width: calc(100% + var(--uf-space-16) * 2);
+  margin-inline: calc(var(--uf-space-16) * -1);
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
