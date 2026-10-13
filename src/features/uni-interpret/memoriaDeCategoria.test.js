@@ -169,3 +169,11 @@ test('duas confirmações ao mesmo tempo: a segunda criação falha e soma na me
   assert.equal(resultado.registrada, true);
   assert.deepEqual(chamadas, ['criar', ['corrigir', MEMORIA, 2]]);
 });
+
+test('guarda os últimos valores confirmados', () => {
+  let valor = null;
+  for (const [indice, quantia] of [100, 120, 0, 130, 140, 150, 160].entries()) {
+    valor = memoriaDepoisDaConfirmacao(valor, confirmacao({ transacaoId: `v${indice}`, valor: quantia }));
+  }
+  assert.deepEqual(valor.valores, [120, 130, 140, 150, 160]);
+});

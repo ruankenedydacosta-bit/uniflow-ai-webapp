@@ -75,7 +75,21 @@ import {
   montarHistoricoParaInterpretacao,
   montarRascunhoParaInterpretacao,
 } from '../uni-interpret/uniInterpretClient.js';
-import { registrarConfirmacaoNaMemoria } from '../uni-interpret/memoriaDeCategoria.js';
+import {
+  lerMemoriaDaDescricao,
+  registrarConfirmacaoNaMemoria,
+  registrarDesfazerNaMemoria,
+  registrarLancamentoDiretoNaMemoria,
+} from '../uni-interpret/memoriaDeCategoria.js';
+import {
+  DESFAZER_LANCAMENTO_DIRETO_MS,
+  memoriaPermiteLancarDireto,
+  operacaoParaLancarDireto,
+  rascunhoPodeIrDireto,
+  TEXTO_LANCAMENTO_DIRETO_VENCIDO,
+  textoDoLancamentoDireto,
+  textoDoLancamentoDiretoDesfeito,
+} from '../uni-interpret/lancamentoDireto.js';
 import {
   montarPedidoDeCategoria,
   respostaAoPedidoDeCategoria,
@@ -1879,7 +1893,9 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!desfazivel) return;
     clearTimeout(desfazivel.timer);
     exclusaoDesfazivelRef.current = null;
-    if (status === 'expired') desfazerVencidoRef.current = { conversationId: desfazivel.conversationId, em: Date.now() };
+    if (status === 'expired') {
+      desfazerVencidoRef.current = { conversationId: desfazivel.conversationId, em: Date.now(), tipo: desfazivel.tipo ?? null };
+    }
     if (status) marcarDesfazer(desfazivel.messageId, status);
   }
 
@@ -2114,21 +2130,36 @@ export default function UniChatPage({ variant = 'full' }) {
 
   // Desfazer, pelo botão do aviso (messageId) ou falado ("desfazer", sem
   // id). O lançamento volta com os mesmos campos e um id novo.
-  async function desfazerExclusao(messageId = null) {
+  // tipoVencido: 'lancamento_direto' (#81) quando o aviso vencido era de um
+  // lançamento feito sem card; o texto do prazo vencido muda.
+  async function desfazerExclusao(messageId = null, tipoVencido = null) {
     const desfazivel = exclusaoDesfazivelRef.current;
     const vale = desfazivel
       && (!messageId || desfazivel.messageId === messageId)
       && desfazivel.conversationId === activeIdRef.current
       && desfazivel.workspaceId === effectiveWorkspace?.id;
     if (!vale) {
+      const tipo = tipoVencido ?? messages.find((message) => message.id === messageId)?.undo?.tipo;
       marcarDesfazer(messageId, 'expired');
-      createAssistantResponse(TEXTO_DESFAZER_VENCIDO, { deduplicateNarration: false });
+      createAssistantResponse(
+        tipo === 'lancamento_direto' ? TEXTO_LANCAMENTO_DIRETO_VENCIDO : TEXTO_DESFAZER_VENCIDO,
+        { deduplicateNarration: false },
+      );
       return;
     }
     if (confirmingRef.current) return;
     limparDesfazivel(null);
     confirmingRef.current = true;
     setIsExecutingAction(true);
+    if (desfazivel.tipo === 'lancamento_direto') {
+      try {
+        await desfazerLancamentoDireto(desfazivel);
+      } finally {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+      }
+      return;
+    }
     try {
       const resultado = await createTransaction(desfazivel.workspaceId, camposParaRecriar(desfazivel.transacao));
       if (resultado?.error || !resultado?.data) {
@@ -2158,6 +2189,165 @@ export default function UniChatPage({ variant = 'full' }) {
       setIsExecutingAction(false);
       confirmingRef.current = false;
     }
+  }
+
+  // Desfazer do lançamento direto (#81): apaga o lançamento e zera a
+  // contagem da memória, para a próxima vez mostrar o card.
+  async function desfazerLancamentoDireto(desfazivel) {
+    const { transacao } = desfazivel;
+    const falhou = () => {
+      marcarDesfazer(desfazivel.messageId, 'expired');
+      createAssistantResponse(
+        'Não consegui apagar o lançamento. Diga "apaga o último lançamento" ou exclua na tela Financeiro.',
+        { deduplicateNarration: false },
+      );
+    };
+    try {
+      const resultado = await transactionsState.removeTransaction(transacao.id);
+      if (resultado?.error || !resultado?.data) {
+        falhou();
+        return;
+      }
+      marcarDesfazer(desfazivel.messageId, 'done');
+      if (ultimoConfirmadoRef.current?.id === transacao.id) ultimoConfirmadoRef.current = null;
+      // A gravação do lançamento direto na memória vem antes: sem ela, o
+      // Desfazer marcaria o evento errado.
+      void Promise.resolve(desfazivel.memoriaGravada).then(() => registrarDesfazerNaMemoria({
+        workspaceId: desfazivel.workspaceId,
+        descricao: transacao.description,
+        tipo: transacao.tipo,
+        transacaoId: transacao.id,
+      }));
+      await Promise.all([balanceState.refresh(), accountState.refresh()]);
+      notifyFinancialDataChanged('uni-chat');
+      if (activeIdRef.current !== desfazivel.conversationId) return;
+      createAssistantResponse(withFollowUpQuestion(textoDoLancamentoDiretoDesfeito({
+        valor: transacao.amount,
+        categoria: transacao.categoryName,
+      })));
+    } catch {
+      falhou();
+    }
+  }
+
+  // Lançar direto com Desfazer (#81). true quando gravou: o card não aparece.
+  // false em qualquer dúvida (leitura do modelo, rascunho, memória, falha na
+  // gravação), e o chamador segue com o card de sempre.
+  async function tentarLancarDireto(interpretacao, action, turnToken) {
+    const operacao = operacaoParaLancarDireto(interpretacao);
+    if (!operacao || !rascunhoPodeIrDireto(action, operacao) || confirmingRef.current) return false;
+    // Com um Desfazer ainda valendo (exclusão ou outro lançamento direto), o
+    // card aparece: lançar agora venceria aquele Desfazer, e a mesma frase
+    // repetida pela voz não grava duas vezes sem a pessoa ver.
+    if (exclusaoDesfazivelRef.current) return false;
+    const workspaceId = effectiveWorkspace?.id;
+    const conversationId = activeIdRef.current;
+    const memoria = await lerMemoriaDaDescricao({
+      workspaceId,
+      descricao: action.payload.description,
+      tipo: action.transactionType,
+    });
+    // A leitura leva um instante: a conversa, o turno e o Desfazer podem ter
+    // mudado nesse meio-tempo.
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return false;
+    if (exclusaoDesfazivelRef.current || confirmingRef.current) return false;
+    if (!memoriaPermiteLancarDireto(memoria?.valor, {
+      categoriaId: action.category.id,
+      tipo: action.transactionType,
+      valor: action.amount,
+    })) {
+      return false;
+    }
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    let transacaoId = null;
+    let idempotente;
+    try {
+      // A mesma RPC do card, com o clientOperationId do rascunho: se falhar
+      // aqui, o card que aparece em seguida grava sem duplicar.
+      const resultado = await executeFinancialIntentAction(action, {
+        executeAtomicAction: executeConfirmedFinancialAction,
+      });
+      if (resultado?.error || !resultado?.data?.id) return false;
+      transacaoId = resultado.data.id;
+      idempotente = resultado.data.idempotent_replay !== false;
+    } catch {
+      return false;
+    } finally {
+      if (!transacaoId) {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+      }
+    }
+
+    // Daqui em diante o lançamento existe: nenhuma falha volta ao card, e a
+    // mensagem com o Desfazer sai antes dos refresh. Se a pessoa trocou de
+    // conversa durante a gravação, o aviso sai na conversa aberta, para ela
+    // saber do lançamento e poder desfazer.
+    try {
+      if (uniTurnTokenRef.current === turnToken) {
+        financialConversation.reset();
+        clearCurrentPendingAction();
+      }
+      ultimoConfirmadoRef.current = { id: transacaoId, workspaceId, conversationId: activeIdRef.current, em: Date.now() };
+      conversationalMemoryRef.current.remember({
+        account: action.account?.name ?? null,
+        category: action.category.name,
+      });
+      const memoriaGravada = registrarLancamentoDiretoNaMemoria({
+        workspaceId,
+        descricao: action.payload.description,
+        tipo: action.transactionType,
+        transacaoId,
+        data: getLocalIsoDate(),
+      });
+      const aviso = createAssistantResponse(textoDoLancamentoDireto({
+        valor: action.amount,
+        categoria: action.category.name,
+        descricao: action.payload.description,
+        conta: action.account?.name ?? null,
+      }), {
+        deduplicateNarration: false,
+        undo: { status: 'available', tipo: 'lancamento_direto' },
+      });
+      const timer = setTimeout(() => {
+        if (exclusaoDesfazivelRef.current?.timer === timer) limparDesfazivel('expired');
+      }, DESFAZER_LANCAMENTO_DIRETO_MS);
+      exclusaoDesfazivelRef.current = {
+        tipo: 'lancamento_direto',
+        transacao: {
+          id: transacaoId,
+          description: action.payload.description,
+          amount: action.amount,
+          categoryName: action.category.name,
+          tipo: action.transactionType,
+        },
+        messageId: aviso?.id ?? null,
+        workspaceId,
+        conversationId: activeIdRef.current,
+        timer,
+        memoriaGravada,
+      };
+      trackGa4ConfirmedTransactionCreation({
+        confirmed: true,
+        idempotentReplay: idempotente,
+        transactionType: action.transactionType,
+        origin: action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
+      });
+      await Promise.all([
+        transactionsState.refresh(),
+        balanceState.refresh(),
+        accountState.refresh(),
+      ]);
+      notifyFinancialDataChanged('uni-chat');
+    } catch {
+      // O lançamento já foi gravado e o aviso já saiu; um refresh que falha
+      // só atrasa a tela.
+    } finally {
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
+    return true;
   }
 
   function handleDesfazerExclusao(messageId) {
@@ -2194,9 +2384,10 @@ export default function UniChatPage({ variant = 'full' }) {
       && vencido.conversationId === activeIdRef.current
       && Date.now() - vencido.em <= DESFAZER_AVISO_VENCIDO_MS;
     if (!exclusaoDesfazivelRef.current && !avisaVencido) return false;
+    const tipoVencido = avisaVencido ? vencido.tipo : null;
     desfazerVencidoRef.current = null;
     syncMessageToSupabase(userMsg);
-    void desfazerExclusao(null);
+    void desfazerExclusao(null, tipoVencido);
     return true;
   }
 
@@ -3892,6 +4083,10 @@ export default function UniChatPage({ variant = 'full' }) {
           setIsTyping(false);
           return false;
         }
+        if (await tentarLancarDireto(interpretacao, result.action, turnToken)) {
+          setIsTyping(false);
+          return true;
+        }
         const phrased = await attemptNaturalPhrasing(result);
         if (uniTurnTokenRef.current !== turnToken) {
           financialConversation.reset();
@@ -4315,6 +4510,7 @@ export default function UniChatPage({ variant = 'full' }) {
       trocou: Boolean(categoriaInicial && categoriaId && categoriaInicial !== categoriaId),
       transacaoId: transacao?.id,
       data: getLocalIsoDate(),
+      valor: acao?.amount ?? null,
     });
   }
 
