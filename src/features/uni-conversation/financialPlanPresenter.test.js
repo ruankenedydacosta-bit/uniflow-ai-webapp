@@ -524,8 +524,6 @@ test('frase do botão Editar ("Quero alterar o valor para 2000") corrige o valor
 test('categoria a criar numa compra parcelada pede outra sem falar em várias operações', () => {
   const nova = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedCategory: { name: 'Esporte' } } });
   assert.equal(nova, 'A categoria Esporte ainda não existe. Diga uma categoria que já existe, ou crie antes com "cria a categoria Esporte".');
-  const parecida = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedCategory: { id: 'cat-lazer', name: 'Lazer' } } });
-  assert.equal(parecida, 'Qual categoria devo usar? A mais parecida é Lazer.');
   const conta = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedAccount: { name: 'Inter' } } });
   assert.doesNotMatch(conta, /várias operações/);
 });

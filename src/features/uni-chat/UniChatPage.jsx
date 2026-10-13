@@ -1009,6 +1009,9 @@ export default function UniChatPage({ variant = 'full' }) {
   const [conversations, setConversations] = useState(initialChatState.conversations);
   const [activeId, setActiveId] = useState(initialChatState.activeId);
   const [pendingAction, setPendingAction] = useState(null);
+  // Mensagem em que a Uni perguntou a categoria do rascunho (#80). Os chips
+  // só aparecem enquanto ela é a última resposta.
+  const [categoryQuestionMessageId, setCategoryQuestionMessageId] = useState(null);
   // Rascunho de agora, para quem volta de uma espera saber se ele mudou.
   const rascunhoAtualRef = useRef(null);
   useEffect(() => {
@@ -3106,10 +3109,30 @@ export default function UniChatPage({ variant = 'full' }) {
       return;
     }
 
-    createAssistantResponse(
+    const message = createAssistantResponse(
       result?.response?.text
         || 'Preciso de mais detalhes antes de preparar essa ação.',
     );
+    const issueCode = result?.action?.issues?.[0]?.code;
+    setCategoryQuestionMessageId(
+      issueCode === 'category_required' || issueCode === 'category_incompatible' ? message?.id ?? null : null,
+    );
+  }
+
+  // Toque num chip de categoria (#80). A escolha já traz o id: vai direto ao
+  // rascunho, sem reler o nome pelo modelo nem pelas regras. Duas categorias
+  // com o mesmo nome, uma de entrada e outra de saída, não se confundem.
+  function handleCategoryChoice(item) {
+    if (isTyping || isExecutingAction || !item?.id) return;
+    const escolha = buildUserMessage(item.label);
+    pushMessage(escolha);
+    syncMessageToSupabase(escolha);
+    lastUserTurnTextRef.current = item.label;
+    uniTurnTokenRef.current += 1;
+    stickToBottom.current = true;
+    setCategoryQuestionMessageId(null);
+    const result = financialConversation.provideInput({ categoryId: item.id });
+    void publishConversationResultWithInference(result);
   }
 
   function publishAccountCreationConfirmation(stack) {
@@ -4797,22 +4820,28 @@ export default function UniChatPage({ variant = 'full' }) {
     [pendingAction, accountState.accounts, categoriasSugeriveis],
   );
   // Rascunho esperando a categoria (#80): as categorias do tipo viram chips
-  // para a pessoa escolher. A Uni não escolhe por ela. O toque manda o nome,
-  // como se a pessoa o tivesse digitado.
+  // para a pessoa escolher. A Uni não escolhe por ela. Depois de outra
+  // resposta (a pessoa mudou de assunto), os chips saem; o rascunho continua.
+  const lastUniMessageId = useMemo(
+    () => [...messages].reverse().find((message) => message.from === 'uni')?.id ?? null,
+    [messages],
+  );
   const categoryChoices = useMemo(() => {
     const action = financialConversation.state.action;
     const issueCode = action?.issues?.[0]?.code;
     if (
       financialConversation.state.status !== 'needs_clarification'
       || (issueCode !== 'category_required' && issueCode !== 'category_incompatible')
+      || !categoryQuestionMessageId
+      || categoryQuestionMessageId !== lastUniMessageId
     ) {
       return [];
     }
-    const names = (action.options?.categories ?? []).map((category) => category?.name).filter(Boolean);
-    return [...new Set(names)]
-      .sort((left, right) => left.localeCompare(right, 'pt-BR', { sensitivity: 'base' }))
-      .map((name) => ({ label: name }));
-  }, [financialConversation.state.status, financialConversation.state.action]);
+    return (action.options?.categories ?? [])
+      .filter((category) => category?.id && category.name)
+      .map((category) => ({ id: category.id, label: category.name }))
+      .sort((left, right) => left.label.localeCompare(right.label, 'pt-BR', { sensitivity: 'base' }));
+  }, [financialConversation.state.status, financialConversation.state.action, categoryQuestionMessageId, lastUniMessageId]);
   const chatProcessingState = isExecutingAction ? 'executing' : (isTyping ? 'interpreting' : 'idle');
   const chatProcessingMessage = useUniProcessingMessage(chatProcessingState, {
     actionKind: pendingConfirmationMessage?.confirmation?.actionKind ?? null,
@@ -4860,6 +4889,7 @@ export default function UniChatPage({ variant = 'full' }) {
         editForm={pendingEditForm}
         onSaveEditAction={handleSaveEditAction}
         categoryChoices={categoryChoices}
+        onChooseCategory={handleCategoryChoice}
         onWelcomeVoiceSettled={handleWelcomeVoiceSettled}
         onRealtimeVoiceActiveChange={handleRealtimeVoiceActiveChange}
       />
@@ -4966,7 +4996,7 @@ export default function UniChatPage({ variant = 'full' }) {
         {!isEmpty && (categoryChoices.length ? (
           <QuickSuggestions
             items={categoryChoices}
-            onSelect={(item) => sendText(item.label)}
+            onSelect={handleCategoryChoice}
             variant="rail"
             label="Escolha a categoria"
           />

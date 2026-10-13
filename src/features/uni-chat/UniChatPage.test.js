@@ -241,13 +241,16 @@ test('categoria criada retoma a movimentação com ID real e preserva a pilha or
 });
 
 // #80: não há mais categoria aproximada por palavra. Rascunho sem categoria
-// mostra as categorias do tipo em chips, e o toque manda o nome.
-test('rascunho esperando a categoria mostra chips que mandam o nome escolhido', async () => {
+// mostra as categorias do tipo em chips enquanto a pergunta é a última
+// resposta, e o toque passa o id escolhido direto ao rascunho.
+test('rascunho esperando a categoria mostra chips que passam o id escolhido', async () => {
   const page = await source('UniChatPage.jsx');
   assert.doesNotMatch(page, /category_approximate/);
   assert.match(page, /issueCode !== 'category_required' && issueCode !== 'category_incompatible'/);
-  assert.match(page, /items=\{categoryChoices\}\s*onSelect=\{\(item\) => sendText\(item\.label\)\}/);
-  assert.match(page, /categoryChoices=\{categoryChoices\}/);
+  assert.match(page, /categoryQuestionMessageId !== lastUniMessageId/);
+  assert.match(page, /items=\{categoryChoices\}\s*onSelect=\{handleCategoryChoice\}/);
+  assert.match(page, /financialConversation\.provideInput\(\{ categoryId: item\.id \}\)/);
+  assert.match(page, /categoryChoices=\{categoryChoices\}\s*onChooseCategory=\{handleCategoryChoice\}/);
 });
 
 test('dependência de categoria pode ser cancelada sem perder a movimentação suspensa', async () => {

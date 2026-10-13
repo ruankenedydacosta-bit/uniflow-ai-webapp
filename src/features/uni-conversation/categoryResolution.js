@@ -39,12 +39,14 @@ function categoriaCitadaPeloNome(categorias, frase) {
   const texto = ` ${semPontuacao(frase)} `;
   if (!texto.includes(' categoria ')) return null;
   let escolhida = null;
+  let tamanhoEscolhido = 0;
   for (const categoria of categorias) {
     const nome = semPontuacao(categoria.name);
-    if (!nome) continue;
-    const citada = new RegExp(`\\scategoria\\s(?:(?:e|eh|de)\\s)?${escapeRegExp(nome)}\\s`).test(texto);
-    if (citada && (!escolhida || nome.length > semPontuacao(escolhida.name).length)) {
+    if (!nome || nome.length <= tamanhoEscolhido) continue;
+    const citada = new RegExp(`\\scategoria\\s(?:(?:e|eh|de|da|do|das|dos)\\s)?${escapeRegExp(nome)}\\s`).test(texto);
+    if (citada) {
       escolhida = categoria;
+      tamanhoEscolhido = nome.length;
     }
   }
   return escolhida;

@@ -145,3 +145,18 @@ test('categoria inativa não é candidata nem resolve', () => {
   assert.equal(result.category, undefined);
   assert.deepEqual(result.candidates, []);
 });
+
+test('"categoria da Educação" e "categoria do Mercado" também valem como escolha pelo nome', () => {
+  const daEducacao = resolveFinancialCategory({
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    input: 'Gastei 50 na categoria da Educação',
+  });
+  assert.equal(daEducacao.category?.id, 'cat-educacao');
+  const doMercado = resolveFinancialCategory({
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    input: 'lança 20 na categoria do mercado',
+  });
+  assert.equal(doMercado.category?.id, 'cat-mercado');
+});

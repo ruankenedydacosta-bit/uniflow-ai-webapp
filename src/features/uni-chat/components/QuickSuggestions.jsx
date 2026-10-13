@@ -5,7 +5,7 @@ export default function QuickSuggestions({ items, onSelect, variant = 'grid', la
     <div className={variant === 'grid' ? styles.grid : styles.rail} role="list" aria-label={label}>
       {items.map((item, i) => (
         <button
-          key={item.label}
+          key={item.id ?? item.label}
           type="button"
           role="listitem"
           className={styles.chip}

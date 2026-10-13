@@ -377,6 +377,7 @@ function SimplifiedHomeView({
   editForm = null,
   onSaveEditAction,
   categoryChoices = [],
+  onChooseCategory,
   onWelcomeVoiceSettled,
   onRealtimeVoiceActiveChange,
   realtimeVoiceEnabled = SIMPLIFIED_FEATURE_FLAGS.realtimeVoiceEnabled,
@@ -925,9 +926,12 @@ function SimplifiedHomeView({
     onSaveEditAction(id, overrides);
   }
 
+  // Com a Uni ocupada o toque não vale: marcar a resposta antes esconderia a
+  // pergunta e os chips sem nada novo a caminho.
   function handleChooseCategory(item) {
+    if (isTyping || isExecuting || typeof onChooseCategory !== 'function') return;
     markHomeReply();
-    onSendTranscript(item.label);
+    onChooseCategory(item);
   }
 
   const compactResponseMessages = isVoiceModeOpen
