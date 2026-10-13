@@ -8,6 +8,7 @@ import {
   resolveInstallmentStatus,
   splitInstallmentAmounts,
 } from '../../pages/financeiro/installmentUtils.js';
+import { RECURRENCE_FREQUENCIES } from '../../pages/financeiro/recurrenceUtils.js';
 
 // BLOCO E: "Pending Financial Plan" -- estende o padrao ja validado do
 // Bloco B (uma operacao financeira suspensa/retomada) para MULTIPLAS
@@ -58,14 +59,19 @@ const CAPABILITY_PENDING_MESSAGES = Object.freeze({
 });
 
 const RECURRING_OPERATION_TYPES = new Set(['recurring_expense', 'recurring_income']);
-const RECURRENCE_FREQUENCIES = new Set(['daily', 'weekly', 'monthly', 'yearly']);
+// Teto do intervalo da RPC criar_serie_recorrente.
+export const MAX_RECURRENCE_INTERVAL = 365;
 
-// Regra da série no formato da RPC; null sem frequência válida.
-function lerRecorrencia(operation) {
+// Regra da série no formato da RPC; null sem frequência válida. A correção
+// ("não, é toda semana") vence o que o modelo leu.
+function lerRecorrencia(operation, overrides) {
   if (!RECURRING_OPERATION_TYPES.has(operation.operationType)) return null;
-  const { frequency, interval } = operation.recurrence ?? {};
-  if (!RECURRENCE_FREQUENCIES.has(frequency)) return null;
-  return { frequency, interval: Number.isInteger(interval) && interval >= 1 && interval <= 365 ? interval : 1 };
+  const { frequency, interval } = overrides.recurrence ?? operation.recurrence ?? {};
+  if (!RECURRENCE_FREQUENCIES.includes(frequency)) return null;
+  return {
+    frequency,
+    interval: Number.isInteger(interval) && interval >= 1 && interval <= MAX_RECURRENCE_INTERVAL ? interval : 1,
+  };
 }
 
 // Número de parcelas: a correção ("foram 12x") vence o que o modelo leu.
@@ -144,7 +150,7 @@ function buildOperationState({
   });
 
   const installmentCount = operation.operationType === 'installment_purchase' ? contarParcelas(operation, overrides) : null;
-  const recurrence = lerRecorrencia(operation);
+  const recurrence = lerRecorrencia(operation, overrides);
   if (
     !OPERATION_TYPE_TO_INTENT[operation.operationType]
     || (operation.operationType === 'installment_purchase' && !installmentCount)
@@ -200,8 +206,14 @@ function buildOperationState({
     action = { ...builtAction, installments: resumirParcelas(builtAction.amount, installmentCount, builtAction.date, referenceDate) };
   } else if (recurrence) {
     // A série decide o status de cada lançamento pela data: o card não
-    // mostra a série inteira como prevista.
-    action = { ...builtAction, planned: false, recurrence };
+    // mostra a série inteira como prevista. Com o início antes de hoje, os
+    // lançamentos até hoje entram como realizados, e o card avisa.
+    action = {
+      ...builtAction,
+      planned: false,
+      recurrence,
+      startsBeforeToday: Boolean(builtAction.date && referenceDate && builtAction.date < referenceDate),
+    };
   }
 
   const needsDestinationClarification = operation.operationType === 'transfer'
@@ -365,10 +377,12 @@ export function markPlanOperationConfirmed(planState, temporaryId, result = null
   });
 }
 
-export function markPlanOperationFailed(planState, temporaryId) {
+// failure: o erro devolvido, para a resposta dar o motivo quando ele é do
+// pedido (repetir não resolve) e não da conexão.
+export function markPlanOperationFailed(planState, temporaryId, failure = null) {
   const operations = planState.operations.map((op) => (
     op.temporaryId === temporaryId
-      ? Object.freeze({ ...op, status: PLAN_OPERATION_STATUS.FAILED })
+      ? Object.freeze({ ...op, status: PLAN_OPERATION_STATUS.FAILED, failure })
       : op
   ));
   return Object.freeze({

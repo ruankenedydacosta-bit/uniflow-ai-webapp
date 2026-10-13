@@ -844,10 +844,13 @@ test('BLOCO E: confirmação do plano persiste uma operação por vez pelo mesmo
   assert.match(slice, /if \(op\.action\.installments\) executeAtomicAction = executeConfirmedInstallmentPurchase;/);
   assert.match(
     slice,
-    /else if \(op\.action\.recurrence\) \{\s*executeAtomicAction = \(action\) => executeConfirmedRecurringSeries\(action, effectiveWorkspace\?\.id\);\s*\}/,
+    /else if \(op\.action\.recurrence\) \{\s*executeAtomicAction = \(action\) => executeConfirmedRecurringSeries\(action, workingPlan\.workspaceId \?\? effectiveWorkspace\?\.id\);\s*\}/,
   );
   assert.match(slice, /executeFinancialIntentAction\(op\.action, \{ executeAtomicAction \}\)/);
-  assert.match(slice, /markPlanOperationFailed\(workingPlan, op\.temporaryId\)/);
+  // O erro vai junto: recusa do pedido vira o motivo na resposta.
+  assert.match(slice, /markPlanOperationFailed\(workingPlan, op\.temporaryId, result\?\.error \?\? null\)/);
+  // "Apaga o último" depois do plano vale para o lançamento confirmado.
+  assert.match(slice, /ultimoConfirmadoRef\.current = \{\s*id: result\.data\.id,/);
   // O retorno da RPC vai junto: a resposta repete quantas parcelas ficaram previstas.
   assert.match(slice, /markPlanOperationConfirmed\(workingPlan, op\.temporaryId, result\.data\)/);
 });

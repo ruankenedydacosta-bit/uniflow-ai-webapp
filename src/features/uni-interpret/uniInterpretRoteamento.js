@@ -8,6 +8,7 @@
 
 import { normalizeFinancialText } from '../uni-intents/index.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { MAX_RECURRENCE_INTERVAL } from '../uni-conversation/pendingFinancialPlan.js';
 
 export const ROTAS_INTERPRETACAO = Object.freeze({
   LANCAMENTO: 'lancamento',
@@ -37,7 +38,10 @@ function recorrenciaDaOperacao(operacao) {
   const frequency = FREQUENCY_POR_FREQUENCIA[operacao.frequencia];
   if (!frequency) return null;
   const intervalo = Number(operacao.intervalo);
-  return { frequency, interval: Number.isInteger(intervalo) && intervalo >= 1 ? intervalo : 1 };
+  return {
+    frequency,
+    interval: Number.isInteger(intervalo) && intervalo >= 1 && intervalo <= MAX_RECURRENCE_INTERVAL ? intervalo : 1,
+  };
 }
 
 // Parcela e recorrência com frequência vão para o plano, que cria a compra
@@ -127,13 +131,16 @@ export function interpretacaoParaRascunho(interpretacao, texto) {
   return { parsed, overrides };
 }
 
+// Recorrência sem frequência vira o lançamento comum, como numa operação só:
+// um falso positivo do modelo não tira a operação do plano.
 function tipoDaOperacaoDoPlano(operacao) {
   if (operacao.tipo === 'transferencia') return 'transfer';
+  const recorrente = Boolean(recorrenciaDaOperacao(operacao));
   if (operacao.tipo === 'saida') {
     if (operacao.parcelas) return 'installment_purchase';
-    return operacao.recorrente === true ? 'recurring_expense' : 'expense';
+    return recorrente ? 'recurring_expense' : 'expense';
   }
-  return operacao.recorrente === true ? 'recurring_income' : 'income';
+  return recorrente ? 'recurring_income' : 'income';
 }
 
 // Operações da interpretação → plano que createPendingFinancialPlan recebe.

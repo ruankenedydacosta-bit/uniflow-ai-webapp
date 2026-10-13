@@ -190,10 +190,21 @@ export function buildRecurringSeriesFromAction(action) {
 }
 
 export async function executeConfirmedRecurringSeries(action, workspaceId) {
+  if (!supabase) {
+    return createResult(null, {
+      code: 'SUPABASE_NOT_CONFIGURED',
+      message: 'O modo demo continua disponível sem conexão remota.',
+    });
+  }
+
   const request = buildRecurringSeriesFromAction(action);
   if (request.error) return createResult(null, request.error);
 
   const { data, error } = await createRecurringSeries(workspaceId, request.data);
+  // createRecurringSeries já traduz a recusa do pedido (regra, conta, espaço)
+  // em INVALID_TRANSACTION_REQUEST com o motivo: ele segue como está, porque
+  // repetir não resolve.
+  if (error?.code === 'INVALID_TRANSACTION_REQUEST') return createResult(null, error);
   if (error || !data?.series_id) {
     return createResult(null, createSafeError(error));
   }

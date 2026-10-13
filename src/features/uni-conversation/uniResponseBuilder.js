@@ -144,9 +144,14 @@ export function describeRecurrence(recurrence, startDate) {
   return day ? `todo ano, em ${day}/${month}` : 'todo ano';
 }
 
+// Com o início antes de hoje, a série grava como realizados os lançamentos
+// até hoje, e isso mexe no saldo: o texto avisa antes de confirmar.
 export function buildRecurringConfirmationText(action) {
   const valor = action.amount != null ? `${formatCurrency(action.amount)} ` : '';
-  return `Revise a repetição abaixo: ${valor}${describeRecurrence(action.recurrence, action.date)}, a partir de ${formatShortDate(action.date)}. Os lançamentos com data depois de hoje ficam previstos até você confirmar cada um.`;
+  const status = action.startsBeforeToday
+    ? 'Os lançamentos até hoje entram como realizados, e os seguintes ficam previstos até você confirmar cada um.'
+    : 'Os lançamentos com data depois de hoje ficam previstos até você confirmar cada um.';
+  return `Revise a repetição abaixo: ${valor}${describeRecurrence(action.recurrence, action.date)}, a partir de ${formatShortDate(action.date)}. ${status}`;
 }
 
 export function buildPlannedCompletionText(action) {

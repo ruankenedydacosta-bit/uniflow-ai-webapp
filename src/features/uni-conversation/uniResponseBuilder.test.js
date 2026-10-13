@@ -33,6 +33,13 @@ test('regra da recorrência como a pessoa diria (#222)', () => {
   assert.equal(describeRecurrence(null, '2026-10-12'), '');
 });
 
+test('texto do card da recorrência avisa quando o início é antes de hoje', () => {
+  assert.match(
+    buildRecurringConfirmationText({ amount: 10, date: '2026-01-05', startsBeforeToday: true, recurrence: { frequency: 'daily', interval: 1 } }),
+    /Os lançamentos até hoje entram como realizados/,
+  );
+});
+
 test('texto do card da recorrência repete valor, regra e início, para a voz falar', () => {
   assert.equal(
     buildRecurringConfirmationText({ amount: 1500, date: '2026-11-10', recurrence: { frequency: 'monthly', interval: 1 } }),

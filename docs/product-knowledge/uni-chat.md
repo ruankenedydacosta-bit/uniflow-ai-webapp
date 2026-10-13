@@ -30,7 +30,7 @@ Ao tocar em **Confirmar**, a Uni grava todas as parcelas de uma vez, uma por mê
 - a data do primeiro lançamento;
 - a categoria, a conta e a descrição.
 
-Sem dia na frase, o primeiro lançamento é hoje. Com um dia ("todo dia 10"), é a próxima vez que esse dia chega. Ao tocar em **Confirmar**, a Uni cria a série e os lançamentos dos próximos 3 meses. Os seguintes são criados sozinhos. Os lançamentos com data depois de hoje ficam previstos até você confirmar no Financeiro. Para mudar ou encerrar a série, use a tela Financeiro.
+Sem dia na frase, o primeiro lançamento é hoje. Com um dia ("todo dia 10"), é a próxima vez que esse dia chega. Com o verbo no passado ("paguei o aluguel dia 5, que é todo mês"), a série começa nesse dia, e os lançamentos até hoje entram como realizados. Para trocar a regra antes de confirmar, diga "não, é toda semana" ou "a cada 15 dias". Ao tocar em **Confirmar**, a Uni cria a série e os lançamentos dos próximos 3 meses. Os seguintes são criados sozinhos. Os lançamentos com data depois de hoje ficam previstos até você confirmar no Financeiro. Para mudar ou encerrar a série, use a tela Financeiro.
 
 **Alterar uma movimentação já salva**: diga qual é a movimentação e o que muda. Por exemplo:
 

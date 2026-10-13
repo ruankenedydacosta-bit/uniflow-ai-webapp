@@ -720,6 +720,9 @@ export default function UniChatPage({ variant = 'full' }) {
       : GA4_PRODUCT_ORIGINS.MANUAL;
     const newPlan = {
       ...createdPlan,
+      // Contas e categorias foram resolvidas neste espaço: a série é criada
+      // nele, mesmo que a pessoa troque de espaço antes de confirmar.
+      workspaceId: effectiveWorkspace?.id ?? null,
       analyticsOrigin,
       operations: createdPlan.operations.map((operation) => ({
         ...operation,
@@ -771,11 +774,11 @@ export default function UniChatPage({ variant = 'full' }) {
         let executeAtomicAction = executeConfirmedFinancialAction;
         if (op.action.installments) executeAtomicAction = executeConfirmedInstallmentPurchase;
         else if (op.action.recurrence) {
-          executeAtomicAction = (action) => executeConfirmedRecurringSeries(action, effectiveWorkspace?.id);
+          executeAtomicAction = (action) => executeConfirmedRecurringSeries(action, workingPlan.workspaceId ?? effectiveWorkspace?.id);
         }
         const result = await executeFinancialIntentAction(op.action, { executeAtomicAction });
         if (result?.error || !result?.data) {
-          workingPlan = markPlanOperationFailed(workingPlan, op.temporaryId);
+          workingPlan = markPlanOperationFailed(workingPlan, op.temporaryId, result?.error ?? null);
           setFinancialPlan(workingPlan);
           break;
         }
@@ -787,6 +790,14 @@ export default function UniChatPage({ variant = 'full' }) {
         });
         workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId, result.data);
         setFinancialPlan(workingPlan);
+        // "Apaga o último" vale para o lançamento que o card mostrou. Numa
+        // série ou compra parcelada, todos nascem com o mesmo created_at, e
+        // a ordem da lista não diria qual é.
+        if (result.data.id) {
+          ultimoConfirmadoRef.current = {
+            id: result.data.id, workspaceId: workingPlan.workspaceId ?? effectiveWorkspace?.id, conversationId: activeIdRef.current, em: Date.now(),
+          };
+        }
       }
 
       const planResultText = buildPlanResultText(workingPlan);
