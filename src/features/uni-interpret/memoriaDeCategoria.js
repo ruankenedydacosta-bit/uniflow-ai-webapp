@@ -86,6 +86,7 @@ export function memoriaDepoisDaConfirmacao(atual, {
     confirmacoes,
     total,
     trocas: inteiroNaoNegativo(anterior.trocas) + (trocou ? 1 : 0),
+    desfeitos: inteiroNaoNegativo(anterior.desfeitos),
     ultima_transacao_id: transacaoId,
     eventos: [...eventos, { n: total, data, trocou: Boolean(trocou) }].slice(-MAX_EVENTOS_DA_MEMORIA),
   };
@@ -153,4 +154,82 @@ export async function registrarConfirmacaoNaMemoria({
   } catch {
     return { registrada: false, motivo: 'erro' };
   }
+}
+
+// Lançamento direto (#81): conta como mais uma vez da descrição, sem somar
+// confirmação (ninguém conferiu o card). O evento marcado automatico dá a
+// taxa de Desfazer.
+export function memoriaDepoisDoLancamentoDireto(atual, { transacaoId, data }) {
+  if (!atual || typeof atual !== 'object' || Array.isArray(atual)) return null;
+  if (atual.ultima_transacao_id === transacaoId) return null;
+  const total = inteiroNaoNegativo(atual.total) + 1;
+  const eventos = Array.isArray(atual.eventos) ? atual.eventos : [];
+  return {
+    ...atual,
+    total,
+    ultima_transacao_id: transacaoId,
+    eventos: [...eventos, { n: total, data, trocou: false, automatico: true }].slice(-MAX_EVENTOS_DA_MEMORIA),
+  };
+}
+
+// Desfazer um lançamento direto zera a contagem: a próxima vez volta ao card.
+// null quando a memória já mudou depois daquele lançamento.
+export function memoriaDepoisDoDesfazer(atual, { transacaoId }) {
+  if (!atual || typeof atual !== 'object' || Array.isArray(atual)) return null;
+  if (atual.ultima_transacao_id !== transacaoId) return null;
+  const eventos = Array.isArray(atual.eventos) ? [...atual.eventos] : [];
+  const ultimo = eventos.at(-1);
+  if (ultimo?.automatico) eventos[eventos.length - 1] = { ...ultimo, desfeito: true };
+  return {
+    ...atual,
+    confirmacoes: 0,
+    desfeitos: inteiroNaoNegativo(atual.desfeitos) + 1,
+    eventos,
+  };
+}
+
+// A memória ativa da descrição, ou null. Nunca lança.
+export async function lerMemoriaDaDescricao({ workspaceId, descricao, servico = SERVICO_PADRAO } = {}) {
+  try {
+    if (!UUID.test(workspaceId ?? '')) return null;
+    const chave = await chaveDaDescricao(descricao);
+    if (!chave) return null;
+    const { data, error } = await servico.buscar({ workspace: { id: workspaceId } }, TIPO_MEMORIA_DE_CATEGORIA, chave);
+    if (error || !data?.id) return null;
+    return { id: data.id, valor: data.memory_value ?? null };
+  } catch {
+    return null;
+  }
+}
+
+async function atualizarMemoriaExistente({ workspaceId, descricao, servico, transformar }) {
+  try {
+    const memoria = await lerMemoriaDaDescricao({ workspaceId, descricao, servico });
+    if (!memoria) return { registrada: false, motivo: 'sem_memoria' };
+    const valor = transformar(memoria.valor);
+    if (!valor) return { registrada: false, motivo: 'ja_contada' };
+    const gravada = await servico.corrigir({ workspace: { id: workspaceId } }, memoria.id, valor);
+    if (gravada.error) return { registrada: false, motivo: 'gravacao' };
+    return { registrada: true, valor };
+  } catch {
+    return { registrada: false, motivo: 'erro' };
+  }
+}
+
+export function registrarLancamentoDiretoNaMemoria({ workspaceId, descricao, transacaoId, data, servico = SERVICO_PADRAO } = {}) {
+  return atualizarMemoriaExistente({
+    workspaceId,
+    descricao,
+    servico,
+    transformar: (valor) => memoriaDepoisDoLancamentoDireto(valor, { transacaoId, data }),
+  });
+}
+
+export function registrarDesfazerNaMemoria({ workspaceId, descricao, transacaoId, servico = SERVICO_PADRAO } = {}) {
+  return atualizarMemoriaExistente({
+    workspaceId,
+    descricao,
+    servico,
+    transformar: (valor) => memoriaDepoisDoDesfazer(valor, { transacaoId }),
+  });
 }

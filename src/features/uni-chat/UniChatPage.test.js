@@ -2304,3 +2304,21 @@ test('memória de categoria (#79): confirmar o card grava a descrição com a ca
   assert.match(lembrar, /if \(!categoriaInicialPorOperacaoRef\.current\.has\(operacaoId\)\) return;/);
   assert.match(lembrar, /void registrarConfirmacaoNaMemoria\(/);
 });
+
+test('lançar direto (#81): tenta antes do card, pela RPC do card, e o Desfazer apaga e zera a memória', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const rota = page.slice(page.indexOf('case ROTAS_INTERPRETACAO.LANCAMENTO: {'), page.indexOf('case ROTAS_INTERPRETACAO.PLANO:'));
+  assert.ok(rota.indexOf('await tentarLancarDireto(interpretacao, result.action, turnToken)') < rota.indexOf('publishConversationResult(phrased)'));
+
+  const tentar = page.slice(page.indexOf('async function tentarLancarDireto('), page.indexOf('function handleDesfazerExclusao('));
+  assert.ok(tentar.indexOf('memoriaPermiteLancarDireto(') < tentar.indexOf('executeFinancialIntentAction(action'));
+  assert.match(tentar, /executeAtomicAction: executeConfirmedFinancialAction/);
+  assert.match(tentar, /if \(uniTurnTokenRef\.current !== turnToken \|\| activeIdRef\.current !== conversationId\) return false;/);
+  assert.match(tentar, /undo: \{ status: 'available', tipo: 'lancamento_direto' \}/);
+  assert.match(tentar, /DESFAZER_LANCAMENTO_DIRETO_MS/);
+
+  const desfazer = page.slice(page.indexOf('async function desfazerLancamentoDireto('), page.indexOf('async function tentarLancarDireto('));
+  assert.match(desfazer, /transactionsState\.removeTransaction\(transacao\.id\)/);
+  assert.match(desfazer, /registrarDesfazerNaMemoria\(/);
+  assert.match(page, /if \(desfazivel\.tipo === 'lancamento_direto'\) \{\s*try \{\s*await desfazerLancamentoDireto\(desfazivel\);/);
+});
