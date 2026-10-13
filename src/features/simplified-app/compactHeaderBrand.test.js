@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -9,32 +9,33 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 // asset real em public/uniflow-icon.png (U estilizado, azul/roxo à
 // esquerda, verde/ciano à direita, com as terminações em ponto -- bate
 // com a identidade oficial). Nunca foi redesenhado por aproximação: o
-// arquivo final (src/assets/branding/uniflow-mark.png) é um recorte
+// arquivo final (src/assets/branding/uniflow-mark.png, trocado depois por uniflow-mark.svg) é um recorte
 // (trim da margem transparente) + otimização de paleta do MESMO PNG
 // oficial, nunca uma nova interpretação da marca.
 // ============================================================================
 
-test('o asset oficial recortado existe, preserva alpha e não distorce a proporção original', async () => {
-  const assetUrl = new URL('../../assets/branding/uniflow-mark.png', import.meta.url);
-  const info = await stat(assetUrl);
-  assert.ok(info.size > 0);
-  // PNG real (assinatura de arquivo), nunca um placeholder vazio.
-  const buffer = await readFile(assetUrl);
-  assert.equal(buffer.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+test('o asset do símbolo existe, é SVG sem fundo e tem a proporção 28:34 do viewBox', async () => {
+  const svg = await source('../../assets/branding/uniflow-mark.svg');
+  assert.match(svg, /viewBox="4 2 28 34"/);
+  assert.match(svg, /d="M6 6v16a12 12 0 0 0 24 0V6"/);
+  assert.match(svg, /d="M15 11v10a6 6 0 0 0 12 0v-6"/);
+  // Sem retângulo de fundo: o símbolo vale sobre qualquer tela.
+  assert.doesNotMatch(svg, /<rect/);
 });
 
 test('UniMark é a ÚNICA fonte do símbolo -- importa o asset oficial recortado, nunca desenha uma aproximação em SVG', async () => {
   const icons = await source('./SimplifiedIcons.jsx');
-  assert.match(icons, /import uniflowMarkAsset from '\.\.\/\.\.\/assets\/branding\/uniflow-mark\.png';/);
-  assert.match(icons, /export function UniMark\(\) \{\s*\n\s*return <img src=\{uniflowMarkAsset\} alt="" width="463" height="512" \/>;/);
+  assert.match(icons, /import uniflowMarkAsset from '\.\.\/\.\.\/assets\/branding\/uniflow-mark\.svg';/);
+  assert.match(icons, /export function UniMark\(\) \{\s*\n\s*return <img src=\{uniflowMarkAsset\} alt="" width="28" height="34" \/>;/);
   // Nunca mais um gradiente/path desenhado à mão tentando aproximar a marca.
   assert.doesNotMatch(icons, /linearGradient|stopColor/);
 });
 
 // Épico #99: o orb de voz usa o símbolo novo do design (dois U em SVG,
 // para que cada U gire no seu sentido). O cabeçalho continua com o asset
-// oficial até a troca de marca no cabeçalho, ícone e PWA.
-test('header usa o asset oficial; o orb de voz desenha o símbolo novo em SVG', async () => {
+// oficial até a troca de marca no cabeçalho, ícone e PWA (feita: o asset
+// do cabeçalho agora é o uniflow-mark.svg, com os mesmos traços do orb).
+test('header usa o asset oficial; o orb de voz desenha o símbolo novo em SVG; os dois usam os mesmos traços', async () => {
   const header = await source('./SimplifiedHeader.jsx');
   const navigation = await source('./SimplifiedBottomNavigation.jsx');
   const orb = await source('../../components/ui/UniRingOrb/UniRingOrb.jsx');
@@ -47,7 +48,7 @@ test('header usa o asset oficial; o orb de voz desenha o símbolo novo em SVG', 
   assert.doesNotMatch(orb, /\.png'/);
 });
 
-test('todo wrapper do UniMark usa object-fit:contain (nunca distorce a proporção 463:512 do asset)', async () => {
+test('todo wrapper do UniMark usa object-fit:contain (nunca distorce a proporção 28:34 do asset)', async () => {
   const css = await source('./simplifiedApp.module.css');
   const orbCss = await source('../../components/ui/UniNeuralOrb/UniNeuralOrb.module.css');
   assert.match(css, /\.brandMark img \{[\s\S]*?object-fit: contain;[\s\S]*?\}/);

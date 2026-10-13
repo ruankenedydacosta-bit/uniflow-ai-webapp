@@ -38,7 +38,7 @@ test('smoothing aproxima o alvo sem saltos e sem ultrapassá-lo', () => {
 test('componente usa OGL e a marca oficial sem redesenhar o símbolo', async () => {
   const component = await source('./UniNeuralOrb.jsx');
   assert.match(component, /from 'ogl'/);
-  assert.match(component, /uniflow-mark\.png/);
+  assert.match(component, /uniflow-mark\.svg/);
   assert.match(component, /logoSrc = uniflowMarkAsset/);
   assert.match(component, /<img className=\{styles\.logo\} src=\{logoSrc\} alt=""/);
 });
