@@ -5,6 +5,8 @@ import FilterChips from '../../components/ui/FilterChips/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { useAgenda } from '../../hooks/useAgenda.js';
 import { getAgendaItem } from '../../services/agendaService.js';
+import { obterConexao } from '../../services/googleCalendarService.js';
+import IconBox from '../../components/ui/IconBox/index.js';
 import AgendaDeleteConfirmModal from '../../pages/agenda/AgendaDeleteConfirmModal.jsx';
 import { AGENDA_ITEM_TYPE_LABELS, getAgendaItemErrorMessage } from '../../pages/agenda/agendaFormUtils.js';
 import AgendaReminderChoiceModal from './AgendaReminderChoiceModal.jsx';
@@ -33,8 +35,9 @@ import {
   WEEKDAY_HEADER_LABELS,
 } from './simplifiedAgendaCalendar.js';
 import { buildAgendaItemDetail } from './simplifiedHomeAgenda.js';
+import { resumoDaConexaoNaAgenda } from './googleAgendaPresentation.js';
 import { BellIcon, ChevronRightIcon } from './SimplifiedIcons.jsx';
-import { PhCaretLeftIcon, PhCaretRightIcon, PhPlusIcon } from './SimplifiedIcons.jsx';
+import { PhCaretLeftIcon, PhCaretRightIcon, PhGoogleLogoIcon, PhPlusIcon } from './SimplifiedIcons.jsx';
 import {
   cancelReminderAppliedAnimation,
   playReminderAppliedAnimation,
@@ -163,6 +166,27 @@ function SimplifiedAgendaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
+  // Épico #98: estado da conexão com o Google Agenda, na linha do topo. A
+  // resposta guarda o espaço: enquanto a do espaço aberto agora não chega,
+  // a linha mostra "Carregando…".
+  const [conexaoGoogle, setConexaoGoogle] = useState(null);
+  useEffect(() => {
+    if (!workspaceId) return undefined;
+    let cancelled = false;
+    obterConexao({ workspaceId }).then(({ data, error }) => {
+      if (cancelled) return;
+      setConexaoGoogle(error
+        ? { workspaceId, estado: 'erro', conexao: null }
+        : { workspaceId, estado: 'ok', conexao: data });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
+  const resumoGoogle = resumoDaConexaoNaAgenda(
+    conexaoGoogle?.workspaceId === workspaceId ? conexaoGoogle : { estado: 'carregando' },
+  );
+
   const groupedItems = useMemo(
     () => groupAgendaItemsByDay([...agenda.items, ...scheduledTransactions.items]),
     [agenda.items, scheduledTransactions.items],
@@ -287,6 +311,21 @@ function SimplifiedAgendaPage() {
           <h1>Agenda</h1>
         </div>
       </header>
+
+      <button
+        type="button"
+        className={styles.googleRow}
+        data-tom={resumoGoogle.tom}
+        onClick={() => navigate(SIMPLIFIED_ROUTES.AGENDA_GOOGLE)}
+        aria-label={`Google Agenda, ${resumoGoogle.detalhe}`}
+      >
+        <IconBox size={32}><PhGoogleLogoIcon /></IconBox>
+        <span className={styles.googleRowText}>
+          <span className={styles.googleRowTitle}>Google Agenda</span>
+          <span className={styles.googleRowDetail}>{resumoGoogle.detalhe}</span>
+        </span>
+        <span className={styles.itemChevron} aria-hidden="true"><ChevronRightIcon /></span>
+      </button>
 
       <section className={styles.calendarBlock} aria-label="Calendário">
         <nav className={styles.monthNav} aria-label="Navegação entre meses">

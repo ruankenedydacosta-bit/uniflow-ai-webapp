@@ -220,13 +220,13 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     category: KNOWLEDGE_CATEGORIES.SETTINGS,
     version: MANIFEST_VERSION,
     file: 'docs/product-knowledge/google-agenda.md',
-    routes: ['/app/conta/google-agenda'],
+    routes: ['/app/agenda/google', '/app/conta/google-agenda'],
     workspaces: WORKSPACE_SCOPE.BOTH,
     keywords: ['google agenda', 'google calendar', 'calendário do google', 'sincronizar agenda', 'sincronizar agora', 'conectar google', 'desconectar google', 'agenda de destino', 'agendas lidas', 'evento do google', 'integração com o google'],
     status: KNOWLEDGE_STATUS.LIMITED,
     updatedAt: UPDATED_AT,
     content:
-      'Google Agenda fica em Mais → Configurações → Preferências → Integrações (/app/conta/google-agenda), disponível só para algumas contas nesta fase. Ao conectar, o UniFlow cria a agenda "UniFlow · <nome do espaço>" (uma por espaço) e envia os compromissos futuros que você criou; item sem autor registrado não vai. Agenda de destino: só os compromissos novos vão para a agenda escolhida. Agendas lidas (a principal da conta e a do UniFlow vêm marcadas): os eventos das agendas marcadas, só da sua própria conta, entram no UniFlow (de 30 dias atrás até 1 ano à frente); evento privado no Google não entra; ao desmarcar, os já trazidos continuam. Sincronizar agora traz as mudanças na hora. Excluir no UniFlow um evento que veio do Google não o apaga no Google. Desconectar deixa a agenda e os eventos no Google. Erro de conexão: toque em Conectar de novo.',
+      'Google Agenda abre pela linha Google Agenda no topo da Agenda (/app/agenda/google), que mostra se a conta está conectada e a hora da última sincronização, e por Mais → Configurações → Preferências → Integrações (/app/conta/google-agenda). Está disponível só para algumas contas nesta fase. Ao conectar, o UniFlow cria a agenda "UniFlow · <nome do espaço>" (uma por espaço) e envia os compromissos futuros que você criou; item sem autor registrado não vai. Agenda de destino: só os compromissos novos vão para a agenda escolhida. Agendas lidas (a principal da conta e a do UniFlow vêm marcadas): os eventos das agendas marcadas, só da sua própria conta, entram no UniFlow (de 30 dias atrás até 1 ano à frente); evento privado no Google não entra; ao desmarcar, os já trazidos continuam. Sincronizar agora traz as mudanças na hora. Excluir no UniFlow um evento que veio do Google não o apaga no Google. Desconectar deixa a agenda e os eventos no Google. Erro de conexão: toque em Conectar de novo.',
   },
   {
     id: 'uni-chat',

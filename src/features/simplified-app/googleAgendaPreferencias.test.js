@@ -1,5 +1,5 @@
 // Épico #98 (#102): agenda de destino, agendas lidas, "Sincronizar agora" e
-// a entrada em Configurações → Preferências.
+// as entradas em Configurações → Preferências e no topo da Agenda.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -15,9 +15,11 @@ import {
   nomeDaAgenda,
   opcoesDeDestino,
   ordenarAgendas,
+  resumoDaConexaoNaAgenda,
   textoDoUltimoSync,
 } from './googleAgendaPresentation.js';
 import { resolveSimplifiedFeatureFlags, SIMPLIFIED_FEATURE_FLAG_KEYS } from './simplifiedFeatureFlags.js';
+import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -121,18 +123,56 @@ test('erro ao salvar: recusa por agenda alheia tem mensagem própria', () => {
   assert.match(mensagemDeErroAoSalvar({ code: 'PREFERENCES_SAVE_FAILED' }), /Tente de novo/);
 });
 
-test('flag VITE_AGENDA_GOOGLE_ENABLED: desligada por padrão, liga só com "true"', () => {
-  assert.equal(SIMPLIFIED_FEATURE_FLAG_KEYS.GOOGLE_AGENDA, 'VITE_AGENDA_GOOGLE_ENABLED');
-  assert.equal(resolveSimplifiedFeatureFlags({}).googleAgendaEnabled, false);
-  assert.equal(resolveSimplifiedFeatureFlags({ VITE_AGENDA_GOOGLE_ENABLED: '1' }).googleAgendaEnabled, false);
-  assert.equal(resolveSimplifiedFeatureFlags({ VITE_AGENDA_GOOGLE_ENABLED: 'true' }).googleAgendaEnabled, true);
+test('Google Agenda não tem flag: aparece para todos', () => {
+  assert.equal('GOOGLE_AGENDA' in SIMPLIFIED_FEATURE_FLAG_KEYS, false);
+  assert.equal('googleAgendaEnabled' in resolveSimplifiedFeatureFlags({ VITE_AGENDA_GOOGLE_ENABLED: 'true' }), false);
 });
 
-test('Preferências mostra o Google Agenda só com a flag', async () => {
+test('Preferências sempre mostra o Google Agenda', async () => {
   const page = await source('./SimplifiedThemePage.jsx');
-  assert.match(page, /SIMPLIFIED_FEATURE_FLAGS\.googleAgendaEnabled \? \(/);
+  assert.doesNotMatch(page, /googleAgendaEnabled/);
   assert.match(page, /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.GOOGLE_CALENDAR\]\.path/);
   assert.match(page, />Google Agenda</);
+});
+
+test('Agenda abre o Google Agenda pela linha do topo, com voltar e OAuth de volta para a Agenda', async () => {
+  assert.equal(SIMPLIFIED_ROUTES.AGENDA_GOOGLE, '/app/agenda/google');
+  // O callback só aceita /app/... sem query (normalizarReturnPath).
+  assert.match(SIMPLIFIED_ROUTES.AGENDA_GOOGLE, /^\/app\/[A-Za-z0-9\-_/]+$/);
+
+  const agenda = await source('./SimplifiedAgendaPage.jsx');
+  assert.match(agenda, /navigate\(SIMPLIFIED_ROUTES\.AGENDA_GOOGLE\)/);
+  assert.ok(agenda.indexOf('styles.googleRow') < agenda.indexOf('styles.calendarBlock'), 'a linha vem antes do calendário');
+
+  const routes = await source('../../app/routes.jsx');
+  assert.match(routes, /path: SIMPLIFIED_ROUTES\.AGENDA_GOOGLE,[\s\S]*?<SimplifiedGoogleAgendaPage origem="agenda" \/>/);
+
+  const page = await source('./SimplifiedGoogleAgendaPage.jsx');
+  assert.match(page, /iniciarConexao\(\{ workspaceId, returnPath: voltar\.retornoDoOAuth \}\)/);
+  assert.match(page, /retornoDoOAuth: SIMPLIFIED_ROUTES\.AGENDA_GOOGLE/);
+  assert.match(page, /rotulo: 'Voltar para a Agenda'/);
+
+  const shell = await source('./SimplifiedAppShell.jsx');
+  assert.match(shell, /location\.pathname === SIMPLIFIED_ROUTES\.AGENDA_GOOGLE/);
+});
+
+test('linha da Agenda: convite sem conexão, hora do sync quando ativa e alerta quando falhou', () => {
+  const agora = new Date('2026-10-13T18:00:00Z');
+  const timeZone = 'America/Sao_Paulo';
+  assert.deepEqual(resumoDaConexaoNaAgenda({ estado: 'carregando' }), { detalhe: 'Carregando…', tom: 'neutro' });
+  assert.equal(resumoDaConexaoNaAgenda({ estado: 'erro' }).tom, 'neutro');
+  assert.equal(resumoDaConexaoNaAgenda({ estado: 'ok', conexao: null }).tom, 'convite');
+  // Pendente ainda não foi confirmada: continua como convite.
+  assert.equal(resumoDaConexaoNaAgenda({ estado: 'ok', conexao: { status: 'pending' } }).tom, 'convite');
+  assert.deepEqual(
+    resumoDaConexaoNaAgenda({ estado: 'ok', conexao: { status: 'active', last_synced_at: '2026-10-13T17:32:00Z' }, agora, timeZone }),
+    { detalhe: 'Conectada · Hoje às 14:32', tom: 'ok' },
+  );
+  assert.equal(
+    resumoDaConexaoNaAgenda({ estado: 'ok', conexao: { status: 'active', last_synced_at: null } }).detalhe,
+    'Conectada · Ainda não sincronizado',
+  );
+  assert.equal(resumoDaConexaoNaAgenda({ estado: 'ok', conexao: { status: 'error' } }).tom, 'alerta');
 });
 
 test('tela: destino, agendas lidas com caixa só para agenda própria, último sync e Sincronizar agora', async () => {

@@ -80,6 +80,8 @@ function SimplifiedAppShell({ children }) {
     // Organizar (handoff 10): hub, lista e detalhe de categoria têm cabeçalho próprio.
     || location.pathname === SIMPLIFIED_ROUTES.ORGANIZAR
     || location.pathname.startsWith(`${SIMPLIFIED_ROUTES.ORGANIZAR}/`)
+    // Épico #98: Google Agenda aberto pela Agenda (seta voltar própria).
+    || location.pathname === SIMPLIFIED_ROUTES.AGENDA_GOOGLE
     // RELATORIO1/RELATORIO-FLATTEN1: cabeçalho próprio (← Relatório da
     // Uni + mês + resumo + planilha, tudo na mesma tela) -- nunca o
     // genérico (marca + sino) duplicado por cima.

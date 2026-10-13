@@ -45,6 +45,7 @@ import {
 import { PhGoogleLogoIcon, PhXIcon } from './SimplifiedIcons.jsx';
 import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
+import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
@@ -64,9 +65,10 @@ function AvisoDispensavel({ aviso, onDismiss }) {
 }
 
 /**
- * Épico #98, issue #99: conectar a conta Google à agenda. A entrada fica em
- * Configurações → Preferências, atrás de VITE_AGENDA_GOOGLE_ENABLED (#102).
- * O callback do OAuth volta para
+ * Épico #98, issue #99: conectar a conta Google à agenda. Abre pelo topo da
+ * Agenda (SIMPLIFIED_ROUTES.AGENDA_GOOGLE, `origem="agenda"`) e por
+ * Configurações → Preferências. Voltar e o retorno do OAuth respeitam a
+ * origem. O callback do OAuth volta para
  * cá com ?google_agenda=confirmar&pendente=<id> ou
  * ?google_agenda=negado|escopo_insuficiente|erro.
  *
@@ -78,7 +80,21 @@ function AvisoDispensavel({ aviso, onDismiss }) {
  * são gravadas na hora por UPDATE direto (salvarPreferencias); a RLS e os
  * triggers da 055 só deixam escolher agenda própria (access_role 'owner').
  */
-function SimplifiedGoogleAgendaPage() {
+const ORIGENS = Object.freeze({
+  agenda: Object.freeze({
+    caminho: SIMPLIFIED_ROUTES.AGENDA,
+    rotulo: 'Voltar para a Agenda',
+    retornoDoOAuth: SIMPLIFIED_ROUTES.AGENDA_GOOGLE,
+  }),
+  configuracoes: Object.freeze({
+    caminho: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path,
+    rotulo: 'Voltar para Configurações',
+    retornoDoOAuth: undefined,
+  }),
+});
+
+function SimplifiedGoogleAgendaPage({ origem = 'configuracoes' }) {
+  const voltar = ORIGENS[origem] ?? ORIGENS.configuracoes;
   const navigate = useNavegar();
   const { user, workspace, isLoading: isSessionLoading } = useSession();
   const workspaceId = workspace?.id;
@@ -208,7 +224,7 @@ function SimplifiedGoogleAgendaPage() {
     if (!workspaceId || isConnecting) return;
     setIsConnecting(true);
     setAviso(null);
-    const { data, error } = await iniciarConexao({ workspaceId });
+    const { data, error } = await iniciarConexao({ workspaceId, returnPath: voltar.retornoDoOAuth });
     if (error || !urlDeAutorizacaoValida(data?.authorization_url)) {
       setAviso({ tone: 'alert', message: mensagemDeErroAoConectar(error) });
       setIsConnecting(false);
@@ -302,8 +318,8 @@ function SimplifiedGoogleAgendaPage() {
     <div className={styles.page} data-simplified-google-agenda>
       <SimplifiedSubpageHeader
         title="Google Agenda"
-        onBack={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path)}
-        backLabel="Voltar para Configurações"
+        onBack={() => navigate(voltar.caminho)}
+        backLabel={voltar.rotulo}
       />
 
       {aviso ? <AvisoDispensavel aviso={aviso} onDismiss={() => setAviso(null)} /> : null}

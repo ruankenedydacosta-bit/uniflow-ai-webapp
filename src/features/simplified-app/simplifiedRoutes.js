@@ -13,6 +13,9 @@ export const SIMPLIFIED_ROUTES = Object.freeze({
   HOME: '/app/home',
   RECORDS: '/app/registros',
   AGENDA: '/app/agenda',
+  // Épico #98: a tela do Google Agenda aberta pelo topo da Agenda. Voltar e
+  // o retorno do OAuth trazem a pessoa para a Agenda.
+  AGENDA_GOOGLE: '/app/agenda/google',
   SUPPORT: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path,
   SUPPORT_CHAT: `${ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path}/uni`,
   ACCOUNT: '/app/conta',

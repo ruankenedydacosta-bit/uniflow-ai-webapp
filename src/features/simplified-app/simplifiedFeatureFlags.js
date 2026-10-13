@@ -1,8 +1,6 @@
 export const SIMPLIFIED_FEATURE_FLAG_KEYS = Object.freeze({
   AGENDA: 'VITE_SIMPLIFIED_AGENDA_ENABLED',
   SUPPORT_NAV: 'VITE_SIMPLIFIED_SUPPORT_NAV_ENABLED',
-  // Épico #98 (#102): entrada do Google Agenda em Configurações → Preferências.
-  GOOGLE_AGENDA: 'VITE_AGENDA_GOOGLE_ENABLED',
 });
 
 export function resolveSimplifiedFeatureFlags(env = {}) {
@@ -10,7 +8,6 @@ export function resolveSimplifiedFeatureFlags(env = {}) {
   return Object.freeze({
     agendaEnabled: safeEnv[SIMPLIFIED_FEATURE_FLAG_KEYS.AGENDA] === 'true',
     supportNavEnabled: safeEnv[SIMPLIFIED_FEATURE_FLAG_KEYS.SUPPORT_NAV] === 'true',
-    googleAgendaEnabled: safeEnv[SIMPLIFIED_FEATURE_FLAG_KEYS.GOOGLE_AGENDA] === 'true',
   });
 }
 
