@@ -17,7 +17,6 @@ Referência interna.
 - **Modo financeiro / modo suporte (`UNI_MODE`)**: dois modos internos de operação da Uni — financeiro, para dúvidas sobre os dados e ações financeiras do usuário; suporte, para dúvidas sobre como usar o produto, sem acesso aos dados financeiros detalhados.
 - **Papel (role)**: nível de permissão de um usuário dentro de um espaço — owner, admin, member ou viewer.
 - **Open Finance (nesta fase)**: demonstração visual de conexão bancária, sem integração real.
-- **Cache de voz**: reaproveitamento de um áudio já gerado pela Uni, para não gerar (e não gastar créditos) de novo para o mesmo texto e usuário.
 - **Status de conhecimento** (`available`, `limited`, `demo`, `future`, `deprecated`): classificação de cada funcionalidade nesta base — usada para impedir que a Uni descreva algo futuro/demo como se já estivesse disponível.
 
 ## Passo a passo
