@@ -95,8 +95,13 @@ test('feature não contém chamadas externas ou SDK social', async () => {
 // cinza-escuro -- sobre o fundo #020713 da página, a única saída era
 // recortar a imagem, e o recorte comia o slogan e o "TECHNOLOGY MONITORING".
 // O nome acessível de cada marca continua idêntico, agora via aria-label.
-test('experiência institucional desenha as duas marcas em vetor, sem PNG recortado', async () => {
+// O símbolo da UniFlow vem do UniMark (asset oficial com fundo
+// transparente, o mesmo do cabeçalho), e não de um desenho próprio.
+test('experiência institucional usa o símbolo oficial da UniFlow e a SmartTech em vetor, sem PNG recortado', async () => {
   const contents = await source('./components/AuthBrandExperience.jsx');
+  assert.match(contents, /import \{ UniMark \} from '\.\.\/\.\.\/simplified-app\/SimplifiedIcons\.jsx';/);
+  assert.match(contents, /<UniMark \/>/);
+  assert.doesNotMatch(contents, /function UniflowMark/);
   // Nenhum import de imagem: a regra é sobre o que o componente CARREGA,
   // não sobre citar os nomes dos PNGs antigos no comentário histórico.
   assert.doesNotMatch(contents, /^\s*import\s+.*\.(png|jpe?g|svg|webp)['"]/m);
