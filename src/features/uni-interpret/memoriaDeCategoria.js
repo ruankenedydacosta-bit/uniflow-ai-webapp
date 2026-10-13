@@ -27,6 +27,9 @@ export const TIPO_MEMORIA_DE_CATEGORIA = 'merchant_category_mapping';
 // mesma descrição caem" (o n-ésimo uso troca menos que o primeiro).
 export const MAX_EVENTOS_DA_MEMORIA = 20;
 export const MAX_DESCRICAO_DA_MEMORIA = 80;
+// Valores confirmados guardados por descrição (#81): o lançamento direto só
+// vale para um valor parecido com os que a pessoa já confirmou.
+export const MAX_VALORES_DA_MEMORIA = 5;
 
 const TIPOS_COM_MEMORIA = new Set(['expense', 'income']);
 // Descrição que não diz do que se trata não vira memória: "Compra" em Lazer
@@ -67,7 +70,7 @@ function inteiroNaoNegativo(valor) {
 // trocar. Trocar a categoria no card zera a contagem; confirmar uma categoria
 // diferente da memória sem trocar (o rascunho já veio com ela) recomeça em 1.
 export function memoriaDepoisDaConfirmacao(atual, {
-  descricao, categoriaId, tipo, trocou, transacaoId, data,
+  descricao, categoriaId, tipo, trocou, transacaoId, data, valor,
 }) {
   const anterior = atual && typeof atual === 'object' && !Array.isArray(atual) ? atual : {};
   if (anterior.ultima_transacao_id && anterior.ultima_transacao_id === transacaoId) return null;
@@ -79,6 +82,13 @@ export function memoriaDepoisDaConfirmacao(atual, {
 
   const total = inteiroNaoNegativo(anterior.total) + 1;
   const eventos = Array.isArray(anterior.eventos) ? anterior.eventos : [];
+  const valoresAnteriores = Array.isArray(anterior.valores)
+    ? anterior.valores.filter((item) => Number.isFinite(item) && item > 0)
+    : [];
+  const valorConfirmado = Number(valor);
+  const valores = Number.isFinite(valorConfirmado) && valorConfirmado > 0
+    ? [...valoresAnteriores, Math.round(valorConfirmado * 100) / 100].slice(-MAX_VALORES_DA_MEMORIA)
+    : valoresAnteriores;
   return {
     descricao: String(descricao ?? '').trim().slice(0, MAX_DESCRICAO_DA_MEMORIA).trim(),
     categoria_id: categoriaId,
@@ -87,6 +97,7 @@ export function memoriaDepoisDaConfirmacao(atual, {
     total,
     trocas: inteiroNaoNegativo(anterior.trocas) + (trocou ? 1 : 0),
     desfeitos: inteiroNaoNegativo(anterior.desfeitos),
+    valores,
     ultima_transacao_id: transacaoId,
     eventos: [...eventos, { n: total, data, trocou: Boolean(trocou) }].slice(-MAX_EVENTOS_DA_MEMORIA),
   };
@@ -110,6 +121,7 @@ export async function registrarConfirmacaoNaMemoria({
   trocou = false,
   transacaoId,
   data,
+  valor = null,
   servico = SERVICO_PADRAO,
 } = {}) {
   try {
@@ -124,33 +136,33 @@ export async function registrarConfirmacaoNaMemoria({
     const existente = await servico.buscar(sessao, TIPO_MEMORIA_DE_CATEGORIA, chave);
     if (existente.error) return { registrada: false, motivo: 'leitura' };
 
-    const valor = memoriaDepoisDaConfirmacao(existente.data?.memory_value, {
-      descricao, categoriaId, tipo, trocou, transacaoId, data,
+    const valorNovo = memoriaDepoisDaConfirmacao(existente.data?.memory_value, {
+      descricao, categoriaId, tipo, trocou, transacaoId, data, valor,
     });
-    if (!valor) return { registrada: false, motivo: 'ja_contada' };
+    if (!valorNovo) return { registrada: false, motivo: 'ja_contada' };
 
     if (existente.data) {
-      const corrigida = await servico.corrigir(sessao, existente.data.id, valor);
-      return corrigida.error ? { registrada: false, motivo: 'gravacao' } : { registrada: true, valor };
+      const corrigida = await servico.corrigir(sessao, existente.data.id, valorNovo);
+      return corrigida.error ? { registrada: false, motivo: 'gravacao' } : { registrada: true, valor: valorNovo };
     }
     const criada = await servico.criar(sessao, {
       type: TIPO_MEMORIA_DE_CATEGORIA,
       key: chave,
-      value: valor,
+      value: valorNovo,
       source: trocou ? 'user_correction' : 'explicit_user',
     }, { userInitiated: true });
-    if (!criada.error) return { registrada: true, valor };
+    if (!criada.error) return { registrada: true, valor: valorNovo };
 
     // Outra confirmação da mesma descrição criou a memória no meio do caminho
     // (o índice único recusa a segunda): soma nela, uma vez.
     const nova = await servico.buscar(sessao, TIPO_MEMORIA_DE_CATEGORIA, chave);
     if (nova.error || !nova.data) return { registrada: false, motivo: 'gravacao' };
-    const valorNovo = memoriaDepoisDaConfirmacao(nova.data.memory_value, {
-      descricao, categoriaId, tipo, trocou, transacaoId, data,
+    const somado = memoriaDepoisDaConfirmacao(nova.data.memory_value, {
+      descricao, categoriaId, tipo, trocou, transacaoId, data, valor,
     });
-    if (!valorNovo) return { registrada: false, motivo: 'ja_contada' };
-    const corrigida = await servico.corrigir(sessao, nova.data.id, valorNovo);
-    return corrigida.error ? { registrada: false, motivo: 'gravacao' } : { registrada: true, valor: valorNovo };
+    if (!somado) return { registrada: false, motivo: 'ja_contada' };
+    const corrigida = await servico.corrigir(sessao, nova.data.id, somado);
+    return corrigida.error ? { registrada: false, motivo: 'gravacao' } : { registrada: true, valor: somado };
   } catch {
     return { registrada: false, motivo: 'erro' };
   }
@@ -173,13 +185,15 @@ export function memoriaDepoisDoLancamentoDireto(atual, { transacaoId, data }) {
 }
 
 // Desfazer um lançamento direto zera a contagem: a próxima vez volta ao card.
-// null quando a memória já mudou depois daquele lançamento.
+// Zera mesmo que a memória tenha mudado depois daquele lançamento; o evento
+// só é marcado quando ele é o último.
 export function memoriaDepoisDoDesfazer(atual, { transacaoId }) {
   if (!atual || typeof atual !== 'object' || Array.isArray(atual)) return null;
-  if (atual.ultima_transacao_id !== transacaoId) return null;
   const eventos = Array.isArray(atual.eventos) ? [...atual.eventos] : [];
   const ultimo = eventos.at(-1);
-  if (ultimo?.automatico) eventos[eventos.length - 1] = { ...ultimo, desfeito: true };
+  if (ultimo?.automatico && atual.ultima_transacao_id === transacaoId) {
+    eventos[eventos.length - 1] = { ...ultimo, desfeito: true };
+  }
   return {
     ...atual,
     confirmacoes: 0,

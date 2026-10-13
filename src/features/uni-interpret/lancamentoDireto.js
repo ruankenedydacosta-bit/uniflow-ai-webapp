@@ -66,15 +66,28 @@ export function rascunhoPodeIrDireto(action, operacao) {
   );
 }
 
+// Valor dito longe demais dos já confirmados ("três mil" no lugar de
+// "trezentos") volta ao card.
+export const FAIXA_DE_VALOR_PARA_LANCAR_DIRETO = Object.freeze({ minimo: 0.5, maximo: 2 });
+
 // A memória da descrição autoriza: mesma categoria e tipo, confirmada vezes
-// suficientes desde a última troca ou o último Desfazer.
-export function memoriaPermiteLancarDireto(valor, { categoriaId, tipo }) {
+// suficientes desde a última troca ou o último Desfazer, e valor entre a
+// metade do menor e o dobro do maior valor confirmado.
+export function memoriaPermiteLancarDireto(memoria, { categoriaId, tipo, valor }) {
+  const valores = Array.isArray(memoria?.valores)
+    ? memoria.valores.filter((item) => Number.isFinite(item) && item > 0)
+    : [];
+  const quantia = Number(valor);
   return Boolean(
-    valor
-    && valor.categoria_id === categoriaId
-    && valor.tipo === tipo
-    && Number.isInteger(valor.confirmacoes)
-    && valor.confirmacoes >= MIN_CONFIRMACOES_PARA_LANCAR_DIRETO,
+    memoria
+    && memoria.categoria_id === categoriaId
+    && memoria.tipo === tipo
+    && Number.isInteger(memoria.confirmacoes)
+    && memoria.confirmacoes >= MIN_CONFIRMACOES_PARA_LANCAR_DIRETO
+    && valores.length > 0
+    && Number.isFinite(quantia)
+    && quantia >= Math.min(...valores) * FAIXA_DE_VALOR_PARA_LANCAR_DIRETO.minimo
+    && quantia <= Math.max(...valores) * FAIXA_DE_VALOR_PARA_LANCAR_DIRETO.maximo,
   );
 }
 

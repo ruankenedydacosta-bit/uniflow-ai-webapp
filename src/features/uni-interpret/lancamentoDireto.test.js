@@ -115,9 +115,9 @@ test('o rascunho do app precisa bater com a leitura e ter conta que já existe',
 
 test('memória: 3 confirmações seguidas na mesma categoria e tipo; troca zera', () => {
   const confirmar = (valor, transacaoId, extra = {}) => memoriaDepoisDaConfirmacao(valor, {
-    descricao: 'Mensalidade escolar', categoriaId: EDUCACAO.id, tipo: 'expense', trocou: false, transacaoId, data: '2026-10-12', ...extra,
+    descricao: 'Mensalidade escolar', categoriaId: EDUCACAO.id, tipo: 'expense', trocou: false, transacaoId, data: '2026-10-12', valor: 300, ...extra,
   });
-  const alvo = { categoriaId: EDUCACAO.id, tipo: 'expense' };
+  const alvo = { categoriaId: EDUCACAO.id, tipo: 'expense', valor: 300 };
   let valor = confirmar(null, 't1');
   valor = confirmar(valor, 't2');
   assert.equal(memoriaPermiteLancarDireto(valor, alvo), false, 'duas não bastam');
@@ -125,6 +125,12 @@ test('memória: 3 confirmações seguidas na mesma categoria e tipo; troca zera'
   assert.equal(memoriaPermiteLancarDireto(valor, alvo), true);
   assert.equal(memoriaPermiteLancarDireto(valor, { ...alvo, tipo: 'income' }), false);
   assert.equal(memoriaPermiteLancarDireto(valor, { ...alvo, categoriaId: 'outra' }), false);
+  // Valor longe dos confirmados ("três mil" no lugar de "trezentos") volta ao card.
+  assert.equal(memoriaPermiteLancarDireto(valor, { ...alvo, valor: 3000 }), false);
+  assert.equal(memoriaPermiteLancarDireto(valor, { ...alvo, valor: 100 }), false);
+  assert.equal(memoriaPermiteLancarDireto(valor, { ...alvo, valor: 600 }), true);
+  assert.equal(memoriaPermiteLancarDireto(valor, { ...alvo, valor: 150 }), true);
+  assert.equal(memoriaPermiteLancarDireto({ ...valor, valores: [] }, alvo), false, 'memória sem valores não autoriza');
 
   const trocada = confirmar(valor, 't4', { trocou: true });
   assert.equal(memoriaPermiteLancarDireto(trocada, alvo), false);
@@ -143,7 +149,9 @@ test('memória: lançamento direto não soma confirmação; Desfazer zera e marc
   assert.equal(desfeita.confirmacoes, 0);
   assert.equal(desfeita.desfeitos, 1);
   assert.equal(desfeita.eventos.at(-1).desfeito, true);
-  assert.equal(memoriaDepoisDoDesfazer(valor, { transacaoId: 'outra' }), null, 'memória que já mudou fica como está');
+  const mudou = memoriaDepoisDoDesfazer(valor, { transacaoId: 'outra' });
+  assert.equal(mudou.confirmacoes, 0, 'memória que mudou depois também zera');
+  assert.equal(mudou.eventos.at(-1).desfeito, undefined, 'mas o último evento não é daquele lançamento');
 
   const depois = memoriaDepoisDaConfirmacao(desfeita, {
     descricao: 'Mensalidade escolar', categoriaId: EDUCACAO.id, tipo: 'expense', trocou: false, transacaoId: 't5', data: '2026-10-13',

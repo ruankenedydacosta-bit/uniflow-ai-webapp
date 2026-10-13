@@ -32,6 +32,7 @@ O card volta com a categoria nova. Toque em **Confirmar** para salvar.
 A Uni só lança direto quando todas estas condições valem:
 
 - a frase traz uma despesa ou uma receita só, com o valor;
+- o valor fica entre a metade do menor e o dobro do maior valor que você já confirmou para essa descrição;
 - a conta já existe e ficou clara, porque você citou o nome ou porque é a única possível;
 - a data é hoje ou um dia que já passou;
 - a Uni tem certeza da categoria, e ela é a mesma que você confirmou 3 vezes.

@@ -2207,12 +2207,14 @@ export default function UniChatPage({ variant = 'full' }) {
       }
       marcarDesfazer(desfazivel.messageId, 'done');
       if (ultimoConfirmadoRef.current?.id === transacao.id) ultimoConfirmadoRef.current = null;
-      void registrarDesfazerNaMemoria({
+      // A gravação do lançamento direto na memória vem antes: sem ela, o
+      // Desfazer marcaria o evento errado.
+      void Promise.resolve(desfazivel.memoriaGravada).then(() => registrarDesfazerNaMemoria({
         workspaceId: desfazivel.workspaceId,
         descricao: transacao.description,
         tipo: transacao.tipo,
         transacaoId: transacao.id,
-      });
+      }));
       await Promise.all([balanceState.refresh(), accountState.refresh()]);
       notifyFinancialDataChanged('uni-chat');
       if (activeIdRef.current !== desfazivel.conversationId) return;
@@ -2242,52 +2244,60 @@ export default function UniChatPage({ variant = 'full' }) {
       descricao: action.payload.description,
       tipo: action.transactionType,
     });
+    // A leitura leva um instante: a conversa, o turno e o Desfazer podem ter
+    // mudado nesse meio-tempo.
     if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return false;
-    if (!memoriaPermiteLancarDireto(memoria?.valor, { categoriaId: action.category.id, tipo: action.transactionType })) {
+    if (exclusaoDesfazivelRef.current || confirmingRef.current) return false;
+    if (!memoriaPermiteLancarDireto(memoria?.valor, {
+      categoriaId: action.category.id,
+      tipo: action.transactionType,
+      valor: action.amount,
+    })) {
       return false;
     }
-    if (confirmingRef.current) return false;
     confirmingRef.current = true;
     setIsExecutingAction(true);
+    let transacaoId = null;
+    let idempotente;
     try {
       // A mesma RPC do card, com o clientOperationId do rascunho: se falhar
       // aqui, o card que aparece em seguida grava sem duplicar.
       const resultado = await executeFinancialIntentAction(action, {
         executeAtomicAction: executeConfirmedFinancialAction,
       });
-      const transacaoId = resultado?.data?.id;
-      if (resultado?.error || !transacaoId) return false;
-      trackGa4ConfirmedTransactionCreation({
-        confirmed: true,
-        idempotentReplay: resultado.data.idempotent_replay !== false,
-        transactionType: action.transactionType,
-        origin: action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
+      if (resultado?.error || !resultado?.data?.id) return false;
+      transacaoId = resultado.data.id;
+      idempotente = resultado.data.idempotent_replay !== false;
+    } catch {
+      return false;
+    } finally {
+      if (!transacaoId) {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+      }
+    }
+
+    // Daqui em diante o lançamento existe: nenhuma falha volta ao card, e a
+    // mensagem com o Desfazer sai antes dos refresh. Se a pessoa trocou de
+    // conversa durante a gravação, o aviso sai na conversa aberta, para ela
+    // saber do lançamento e poder desfazer.
+    try {
+      if (uniTurnTokenRef.current === turnToken) {
+        financialConversation.reset();
+        clearCurrentPendingAction();
+      }
+      ultimoConfirmadoRef.current = { id: transacaoId, workspaceId, conversationId: activeIdRef.current, em: Date.now() };
+      conversationalMemoryRef.current.remember({
+        account: action.account?.name ?? null,
+        category: action.category.name,
       });
-      financialConversation.reset();
-      clearCurrentPendingAction();
-      ultimoConfirmadoRef.current = { id: transacaoId, workspaceId, conversationId, em: Date.now() };
-      void registrarLancamentoDiretoNaMemoria({
+      const memoriaGravada = registrarLancamentoDiretoNaMemoria({
         workspaceId,
         descricao: action.payload.description,
         tipo: action.transactionType,
         transacaoId,
         data: getLocalIsoDate(),
       });
-      await Promise.all([
-        transactionsState.refresh(),
-        balanceState.refresh(),
-        accountState.refresh(),
-      ]);
-      notifyFinancialDataChanged('uni-chat');
-      if (activeIdRef.current !== conversationId) return true;
-      const transacao = {
-        id: transacaoId,
-        description: action.payload.description,
-        amount: action.amount,
-        categoryName: action.category.name,
-        tipo: action.transactionType,
-      };
-      limparDesfazivel('expired');
       const aviso = createAssistantResponse(textoDoLancamentoDireto({
         valor: action.amount,
         categoria: action.category.name,
@@ -2302,19 +2312,39 @@ export default function UniChatPage({ variant = 'full' }) {
       }, DESFAZER_LANCAMENTO_DIRETO_MS);
       exclusaoDesfazivelRef.current = {
         tipo: 'lancamento_direto',
-        transacao,
+        transacao: {
+          id: transacaoId,
+          description: action.payload.description,
+          amount: action.amount,
+          categoryName: action.category.name,
+          tipo: action.transactionType,
+        },
         messageId: aviso?.id ?? null,
         workspaceId,
-        conversationId,
+        conversationId: activeIdRef.current,
         timer,
+        memoriaGravada,
       };
-      return true;
+      trackGa4ConfirmedTransactionCreation({
+        confirmed: true,
+        idempotentReplay: idempotente,
+        transactionType: action.transactionType,
+        origin: action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
+      });
+      await Promise.all([
+        transactionsState.refresh(),
+        balanceState.refresh(),
+        accountState.refresh(),
+      ]);
+      notifyFinancialDataChanged('uni-chat');
     } catch {
-      return false;
+      // O lançamento já foi gravado e o aviso já saiu; um refresh que falha
+      // só atrasa a tela.
     } finally {
       setIsExecutingAction(false);
       confirmingRef.current = false;
     }
+    return true;
   }
 
   function handleDesfazerExclusao(messageId) {
@@ -4476,6 +4506,7 @@ export default function UniChatPage({ variant = 'full' }) {
       trocou: Boolean(categoriaInicial && categoriaId && categoriaInicial !== categoriaId),
       transacaoId: transacao?.id,
       data: getLocalIsoDate(),
+      valor: acao?.amount ?? null,
     });
   }
 

@@ -2317,6 +2317,11 @@ test('lançar direto (#81): tenta antes do card, pela RPC do card, e o Desfazer 
   assert.match(tentar, /if \(uniTurnTokenRef\.current !== turnToken \|\| activeIdRef\.current !== conversationId\) return false;/);
   assert.match(tentar, /undo: \{ status: 'available', tipo: 'lancamento_direto' \}/);
   assert.match(tentar, /DESFAZER_LANCAMENTO_DIRETO_MS/);
+  // Depois de ler a memória, confere de novo o Desfazer e a trava.
+  assert.ok(tentar.indexOf('if (exclusaoDesfazivelRef.current || confirmingRef.current) return false;') > tentar.indexOf('lerMemoriaDaDescricao('));
+  // Gravado, o aviso com Desfazer sai antes dos refresh, e nada volta ao card.
+  assert.ok(tentar.indexOf("undo: { status: 'available', tipo: 'lancamento_direto' }") < tentar.indexOf('transactionsState.refresh()'));
+  assert.match(tentar, /\n {4}return true;\n {2}\}\s*$/);
 
   const desfazer = page.slice(page.indexOf('async function desfazerLancamentoDireto('), page.indexOf('async function tentarLancarDireto('));
   assert.match(desfazer, /transactionsState\.removeTransaction\(transacao\.id\)/);
