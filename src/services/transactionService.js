@@ -301,6 +301,64 @@ export async function getTransaction(workspaceId, transactionId) {
   return normalizeSingleResult(data, error, 'Transacao nao encontrada.');
 }
 
+// Payload de criação validado, ou { error } com a mensagem da validação.
+function buildCreatePayload(workspaceId, transaction) {
+  // CONTA-OPCIONAL: account_id só precisa ser um UUID valido quando
+  // presente. Ausencia (null/undefined) e' aceita para entrada/despesa;
+  // hasRequiredTransactionFields (abaixo) e' quem decide se o TIPO da
+  // transacao exige conta (transferencia/ajuste continuam exigindo).
+  if (transaction.account_id != null && !isValidUuid(transaction.account_id)) {
+    return { error: 'Conta de origem invalida.' };
+  }
+  if (
+    transaction.destination_account_id &&
+    !isValidUuid(transaction.destination_account_id)
+  ) {
+    return { error: 'Conta de destino invalida.' };
+  }
+
+  if (transaction.category_id && !isValidUuid(transaction.category_id)) {
+    return { error: 'Categoria invalida.' };
+  }
+
+  if (!hasRequiredTransactionFields(transaction)) {
+    const accountRequired = transaction.transaction_type === 'transfer'
+      || transaction.transaction_type === 'adjustment';
+    return {
+      error: accountRequired
+        ? 'Conta, tipo, valor positivo e data sao obrigatorios.'
+        : 'Tipo, valor positivo e data sao obrigatorios.',
+    };
+  }
+
+  return {
+    payload: {
+      workspace_id: workspaceId,
+      ...pickDefined(transaction, [
+        'account_id',
+        'destination_account_id',
+        'category_id',
+        'transaction_type',
+        'description',
+        'amount',
+        'transaction_date',
+        'competence_date',
+        'status',
+        'payment_method',
+        'notes',
+        'is_recurring',
+        'recurrence_rule',
+        'installment_number',
+        'installment_total',
+        'adjustment_delta',
+        'adjustment_target',
+        'metadata',
+      ]),
+      description: normalizeTransactionDescription(transaction),
+    },
+  };
+}
+
 export async function createTransaction(workspaceId, transaction = {}) {
   if (!supabase) {
     return createUnavailableResult(null);
@@ -309,64 +367,43 @@ export async function createTransaction(workspaceId, transaction = {}) {
     return createValidationResult('Workspace invalido para criar a transacao.');
   }
 
-  // CONTA-OPCIONAL: account_id só precisa ser um UUID valido quando
-  // presente. Ausencia (null/undefined) e' aceita para entrada/despesa;
-  // hasRequiredTransactionFields (abaixo) e' quem decide se o TIPO da
-  // transacao exige conta (transferencia/ajuste continuam exigindo).
-  if (transaction.account_id != null && !isValidUuid(transaction.account_id)) {
-    return createValidationResult('Conta de origem invalida.');
-  }
-  if (
-    transaction.destination_account_id &&
-    !isValidUuid(transaction.destination_account_id)
-  ) {
-    return createValidationResult('Conta de destino invalida.');
-  }
-
-  if (transaction.category_id && !isValidUuid(transaction.category_id)) {
-    return createValidationResult('Categoria invalida.');
-  }
-
-  if (!hasRequiredTransactionFields(transaction)) {
-    const accountRequired = transaction.transaction_type === 'transfer'
-      || transaction.transaction_type === 'adjustment';
-    return createValidationResult(
-      accountRequired
-        ? 'Conta, tipo, valor positivo e data sao obrigatorios.'
-        : 'Tipo, valor positivo e data sao obrigatorios.',
-    );
-  }
-
-  const payload = {
-    workspace_id: workspaceId,
-    ...pickDefined(transaction, [
-      'account_id',
-      'destination_account_id',
-      'category_id',
-      'transaction_type',
-      'description',
-      'amount',
-      'transaction_date',
-      'competence_date',
-      'status',
-      'payment_method',
-      'notes',
-      'is_recurring',
-      'recurrence_rule',
-      'installment_number',
-      'installment_total',
-      'adjustment_delta',
-      'adjustment_target',
-      'metadata',
-    ]),
-    description: normalizeTransactionDescription(transaction),
-  };
+  const { payload, error: validationError } = buildCreatePayload(workspaceId, transaction);
+  if (validationError) return createValidationResult(validationError);
 
   const { data, error } = await supabase
     .from('transactions')
     .insert(payload)
     .select(TRANSACTION_FIELDS)
     .single();
+
+  return createResult(data, error);
+}
+
+// Várias transações num insert só: o PostgREST grava a lista numa transação,
+// então entram todas ou nenhuma. Usado nas parcelas de uma compra, que antes
+// iam uma a uma e podiam ficar pela metade.
+export async function createTransactions(workspaceId, transactions = []) {
+  if (!supabase) {
+    return createUnavailableResult([]);
+  }
+  if (!isValidUuid(workspaceId)) {
+    return createValidationResult('Workspace invalido para criar a transacao.');
+  }
+  if (!Array.isArray(transactions) || transactions.length === 0) {
+    return createValidationResult('Nenhuma transacao para criar.');
+  }
+
+  const payloads = [];
+  for (const transaction of transactions) {
+    const { payload, error: validationError } = buildCreatePayload(workspaceId, transaction ?? {});
+    if (validationError) return createValidationResult(validationError);
+    payloads.push(payload);
+  }
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert(payloads)
+    .select(TRANSACTION_FIELDS);
 
   return createResult(data, error);
 }

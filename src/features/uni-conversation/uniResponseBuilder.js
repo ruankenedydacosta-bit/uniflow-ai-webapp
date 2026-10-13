@@ -116,6 +116,17 @@ export function buildPlannedConfirmationText(action) {
   return `Perfeito. Revise as informações abaixo. A data é ${formatShortDate(action.date)}, então o lançamento fica previsto até você confirmar.`;
 }
 
+// Compra parcelada (#221): na voz, a Uni só fala o que está na resposta, então
+// o texto repete o que o card mostra.
+export function buildInstallmentConfirmationText(action) {
+  const { count, installmentAmount, futureCount } = action.installments;
+  const parcelas = installmentAmount == null ? `${count} parcelas` : `${count} parcelas de ${formatCurrency(installmentAmount)}`;
+  const previstas = futureCount
+    ? ` ${futureCount === count ? 'Todas ficam previstas' : 'As parcelas com data depois de hoje ficam previstas'} até você confirmar.`
+    : '';
+  return `Revise a compra abaixo: ${parcelas}, a primeira em ${formatShortDate(action.date)}.${previstas}`;
+}
+
 export function buildPlannedCompletionText(action) {
   const date = formatShortDate(action.date);
   if (action.transactionType === 'transfer') {

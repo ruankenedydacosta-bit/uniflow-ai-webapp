@@ -321,7 +321,7 @@ test('criação simples e parcelada entregam a movimentação a onCreated e nunc
   const submitStart = modal.indexOf('async function handleSubmit(event)');
   const submitEnd = modal.indexOf('async function concludeSave(onDone)', submitStart);
   const submit = modal.slice(submitStart, submitEnd);
-  assert.match(submit, /if \(!editingId && isInstallmentPurchase\(form\)\)[\s\S]*?firstInstallment \?\?= result\.data;[\s\S]*?await concludeSave\(onCreated && \(\(\) => onCreated\(firstInstallment\)\)\);\s*return;/);
+  assert.match(submit, /if \(!editingId && isInstallmentPurchase\(form\)\)[\s\S]*?const firstInstallment = result\.data\.find\(\(item\) => item\.installment_number === 1\) \?\? result\.data\[0\];[\s\S]*?await concludeSave\(onCreated && \(\(\) => onCreated\(firstInstallment\)\)\);\s*return;/);
   assert.match(submit, /: onCreated && \(\(\) => onCreated\(result\.data\)\);/);
   assert.doesNotMatch(submit.slice(submit.indexOf('// Criação de compra parcelada')), /onEdited\(firstInstallment|onEdited\(result/);
 });

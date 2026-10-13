@@ -375,15 +375,15 @@ test('handleDelete retorna cedo durante mutacao e nunca dispara duas vezes -- re
   );
 });
 
-test('parcelamento continua criando todas as parcelas: o loop de saveTransaction permanece sequencial (await dentro do for), sem alteracao de comportamento', async () => {
+test('parcelamento cria todas as parcelas num insert só: falha no meio não deixa a compra pela metade (#221)', async () => {
   const source = await readFile(
     new URL('../pages/financeiro/FinanceTransactionModal.jsx', import.meta.url),
     'utf8',
   );
-  assert.match(
-    source,
-    /for \(const payload of payloads\) \{\s*\n\s*const result = await transactionState\.saveTransaction\(payload, null\);/,
-  );
+  assert.match(source, /const result = await transactionState\.saveTransactions\(payloads\);/);
+  assert.doesNotMatch(source, /for \(const payload of payloads\)/);
+  const service = await readFile(new URL('../services/transactionService.js', import.meta.url), 'utf8');
+  assert.match(service, /\.insert\(payloads\)\s*\.select\(TRANSACTION_FIELDS\);/);
 });
 
 test('a correcao de concorrencia nao interrompe chamadas sequenciais legitimas: useTransactions documenta explicitamente por que o loop de parcelas continua funcionando com mutationRef', async () => {
@@ -423,7 +423,9 @@ test('performMutation centraliza saveTransaction/removeTransaction -- setIsMutat
 
 test('API publica de useTransactions preservada apos o refactor (mesmos nomes, sem refresh novo pos-mutacao)', async () => {
   const source = await readFile(new URL('./useTransactions.js', import.meta.url), 'utf8');
-  assert.match(source, /refresh,\s*\n\s*removeTransaction,\s*\n\s*saveTransaction,\s*\n\s*clearError: \(\) => setError\(null\),/);
+  // saveTransactions entrou para as parcelas de uma compra (#221); os nomes
+  // anteriores seguem iguais.
+  assert.match(source, /refresh,\s*\n\s*removeTransaction,\s*\n\s*saveTransaction,\s*\n\s*saveTransactions,\s*\n\s*clearError: \(\) => setError\(null\),/);
   assert.doesNotMatch(source, /applyLocalUpdate[\s\S]{0,80}refresh\(\)/);
 });
 

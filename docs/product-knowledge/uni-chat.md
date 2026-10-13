@@ -14,6 +14,15 @@ No topo da conversa ficam a Uni, o espaço ativo ("Espaço Pessoal") e dois bot�
 
 **Registrar uma movimentação por chat**: descreva a movimentação em linguagem natural (ex.: "gastei 50 reais no mercado"). A Uni mostra um card de rascunho com o tipo ("Saída · rascunho" ou "Entrada · rascunho"), a categoria, o valor, a conta, a descrição e a data. Confira os dados e toque em **Confirmar** para salvar. **Editar** abre os campos no próprio card e **Cancelar** descarta o rascunho. **Nada é salvo antes de você tocar em Confirmar.** A Uni nunca registra, edita ou apaga uma movimentação sem a sua confirmação.
 
+**Registrar uma compra parcelada**: diga o total e o número de parcelas, como "comprei uma TV de 3 mil em 10 vezes no Nubank" ou "parcelei a geladeira de 2.400 em 12x". O card "Compra parcelada · rascunho" mostra:
+
+- as parcelas, em destaque (ex.: "10x de R$ 300,00");
+- o valor total;
+- a última parcela, quando o arredondamento deixa um centavo de diferença;
+- a categoria, a conta e a data da primeira parcela.
+
+Ao tocar em **Confirmar**, a Uni grava todas as parcelas de uma vez, uma por mês a partir da primeira. As parcelas com data depois de hoje ficam previstas até você confirmar no Financeiro. Se você disser só o valor de cada parcela ("10x de 300"), a Uni calcula o total.
+
 **Alterar uma movimentação já salva**: diga qual é a movimentação e o que muda. Por exemplo:
 
 - "corrige o mercado de ontem pra 50 reais";

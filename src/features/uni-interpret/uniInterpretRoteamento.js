@@ -143,6 +143,7 @@ export function interpretacaoParaPlano(interpretacao) {
       accountId: operacao.conta?.id ?? null,
       destinationAccountId: operacao.contaDestino?.id ?? null,
       categoryId: operationType === 'transfer' ? null : operacao.categoria?.id ?? null,
+      installments: operationType === 'installment_purchase' ? { count: operacao.parcelas } : null,
     };
   });
   return { operations, clarificationQuestion: null };

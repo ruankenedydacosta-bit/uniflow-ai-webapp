@@ -79,6 +79,7 @@ export {
   buildCompletionResponse,
   buildConfirmationResponse,
   buildExecutionErrorResponse,
+  buildInstallmentConfirmationText,
   buildPlannedConfirmationText,
 } from './uniResponseBuilder.js';
 export {

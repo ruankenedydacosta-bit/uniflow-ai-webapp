@@ -228,17 +228,24 @@ test('plano do modelo: transferência resolve origem e destino pelas contas esco
   assert.equal(transferencia.destinationAccountResolution.account?.id, 'conta-pp');
 });
 
-test('plano do modelo: parcela e recorrência viram operação entendida mas ainda não registrável', () => {
+test('plano do modelo: parcela vira compra parcelada registrável; recorrência fica entendida mas não registrável', () => {
   const plano = interpretacaoParaPlano({
     intent: 'lancamento',
     operacoes: [operacao({ valor: 3600, parcelas: 12 }), operacao({ tipo: 'entrada', recorrente: true })],
     resposta: '',
   });
   assert.deepEqual(plano.operations.map((item) => item.operationType), ['installment_purchase', 'recurring_income']);
+  assert.deepEqual(plano.operations[0].installments, { count: 12 });
+  assert.equal(plano.operations[1].installments, null);
   const pendente = createPendingFinancialPlan({
     plan: plano, phrase: 'x', accounts: CONTAS, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-10',
   });
-  assert.ok(pendente.operations.every((item) => item.capabilityPending && item.status === PLAN_OPERATION_STATUS.BLOCKED));
+  const [parcelada, recorrente] = pendente.operations;
+  assert.equal(parcelada.capabilityPending, false);
+  assert.equal(parcelada.action.amount, 3600);
+  assert.equal(parcelada.action.installments.count, 12);
+  assert.equal(parcelada.action.installments.installmentAmount, 300);
+  assert.ok(recorrente.capabilityPending && recorrente.status === PLAN_OPERATION_STATUS.BLOCKED);
 });
 
 test('lançamento simples não vira plano', () => {

@@ -205,20 +205,67 @@ test('transferência com destino não resolvido pede esclarecimento, nunca assum
   assert.notEqual(operation.destinationAccountResolution.status, 'resolved');
 });
 
-test('parcelamento é compreendido e apresentado, mas marcado como capacidade pendente (sem persistência)', () => {
+test('compra parcelada vira saída com o total e o resumo das parcelas, pronta para confirmar (#221)', () => {
   const plan = buildPlan([
     rawOperation({
       operationType: 'installment_purchase',
+      amount: 3500,
       description: 'Celular',
-      categoryReference: null,
-      installments: { count: 10, installmentAmount: 350, totalAmount: 3500 },
+      installments: { count: 10 },
     }),
   ]);
   const operation = plan.operations[0];
-  assert.equal(operation.capabilityPending, true);
-  assert.equal(operation.status, PLAN_OPERATION_STATUS.BLOCKED);
-  assert.equal(operation.action, null);
-  assert.match(operation.blockedReason, /parceladas automaticamente/);
+  assert.equal(operation.capabilityPending, false);
+  assert.equal(operation.status, PLAN_OPERATION_STATUS.READY);
+  assert.equal(operation.action.transactionType, 'expense');
+  assert.equal(operation.action.amount, 3500);
+  assert.equal(operation.action.payload.amount, 3500);
+  // Primeira parcela hoje: as nove seguintes nascem previstas.
+  assert.deepEqual(operation.action.installments, {
+    count: 10, installmentAmount: 350, lastAmount: 350, futureCount: 9,
+  });
+  assert.equal(plan.status, PLAN_STATUS.READY_FOR_CONFIRMATION);
+});
+
+test('compra parcelada: o centavo do arredondamento vai na última parcela, como na RPC', () => {
+  const plan = buildPlan([
+    rawOperation({ operationType: 'installment_purchase', amount: 1000, installments: { count: 3 } }),
+  ]);
+  const { installmentAmount, lastAmount } = plan.operations[0].action.installments;
+  assert.equal(installmentAmount, 333.33);
+  assert.equal(lastAmount, 333.34);
+});
+
+test('compra parcelada: parcelas contadas da primeira, com o dia limitado ao fim do mês', () => {
+  // Primeira em 31/05 e hoje 30/06: a segunda cai em 30/06 (hoje, realizada),
+  // a terceira em 31/07 (prevista). Somar mês a mês daria 01/07 na segunda.
+  const plan = createPendingFinancialPlan({
+    plan: { operations: [{
+      temporaryId: 'op_1', operationType: 'installment_purchase', amount: 300, description: 'Sofá',
+      date: '2026-05-31', categoryReference: 'Alimentação', installments: { count: 3 },
+    }] },
+    accounts: ACCOUNTS, accountTypes: ACCOUNT_TYPES, categories: CATEGORIES, referenceDate: '2026-06-30',
+  });
+  assert.equal(plan.operations[0].action.installments.futureCount, 1);
+});
+
+test('compra parcelada sem número de parcelas válido fica bloqueada pedindo o número', () => {
+  for (const installments of [null, { count: 1 }, { count: 361 }, { count: 2.5 }]) {
+    const plan = buildPlan([rawOperation({ operationType: 'installment_purchase', amount: 300, installments })]);
+    const operation = plan.operations[0];
+    assert.equal(operation.capabilityPending, true);
+    assert.equal(operation.status, PLAN_OPERATION_STATUS.BLOCKED);
+    assert.match(operation.blockedReason, /número de parcelas/);
+  }
+});
+
+test('correção do valor de uma compra parcelada recalcula as parcelas', () => {
+  const plan = buildPlan([
+    rawOperation({ operationType: 'installment_purchase', amount: 3000, installments: { count: 10 } }),
+  ]);
+  const corrected = applyPlanOperationCorrection(plan, 'op_1', { amount: 1200 });
+  assert.equal(corrected.operations[0].action.amount, 1200);
+  assert.equal(corrected.operations[0].action.installments.installmentAmount, 120);
 });
 
 test('recorrência é compreendida e apresentada, mas marcada como capacidade pendente (sem persistência)', () => {
@@ -241,10 +288,10 @@ test('operação com capacidade pendente não bloqueia as demais operações pro
     rawOperation({ temporaryId: 'op_1', amount: 80, description: 'Mercado' }),
     rawOperation({
       temporaryId: 'op_2',
-      operationType: 'installment_purchase',
-      description: 'Celular',
+      operationType: 'recurring_expense',
+      description: 'Aluguel',
       categoryReference: null,
-      installments: { count: 10, installmentAmount: 350, totalAmount: 3500 },
+      recurrence: { frequency: 'monthly', interval: 1, dayOfMonth: 5, startDate: null, endDate: null },
     }),
   ]);
   assert.equal(plan.operations[0].status, PLAN_OPERATION_STATUS.READY);
@@ -332,14 +379,14 @@ test('cada operação preserva um client_operation_id próprio e único', () => 
   assert.ok(plan.operations[1].clientOperationId);
 });
 
-test('getPersistablePlanOperations exclui operações com capacidade pendente (parcelamento/recorrência)', () => {
+test('getPersistablePlanOperations exclui operações com capacidade pendente (recorrência)', () => {
   const plan = buildPlan([
     rawOperation({ temporaryId: 'op_1', amount: 80 }),
     rawOperation({
       temporaryId: 'op_2',
-      operationType: 'installment_purchase',
+      operationType: 'recurring_expense',
       categoryReference: null,
-      installments: { count: 2, installmentAmount: 50, totalAmount: 100 },
+      recurrence: { frequency: 'monthly', interval: 1, dayOfMonth: 5, startDate: null, endDate: null },
     }),
   ]);
   const persistable = getPersistablePlanOperations(plan);

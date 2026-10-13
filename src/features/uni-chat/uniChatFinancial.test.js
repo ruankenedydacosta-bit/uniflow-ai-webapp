@@ -369,6 +369,41 @@ test('card de lançamento com data futura mostra a Situação Previsto depois da
   assert.equal(card.rows.at(-1).value, 'Previsto');
 });
 
+test('card de compra parcelada mostra o total, as parcelas em destaque e a data da primeira (#221)', () => {
+  const card = buildConfirmationFromAction({
+    transactionType: 'expense',
+    category: { name: 'Casa' },
+    description: 'Geladeira',
+    amount: 1000,
+    date: '2026-10-12',
+    planned: false,
+    installments: { count: 3, installmentAmount: 333.33, lastAmount: 333.34, futureCount: 2 },
+  });
+  assert.equal(card.title, 'Nova compra parcelada');
+  assert.deepEqual(card.rows.map((row) => [row.label, row.value.replace(/\s/g, ' ')]), [
+    ['Tipo', 'Compra parcelada'],
+    ['Categoria', 'Casa'],
+    ['Descrição', 'Geladeira'],
+    ['Valor total', 'R$ 1.000,00'],
+    ['Parcelas', '3x de R$ 333,33'],
+    ['Última parcela', 'R$ 333,34'],
+    ['Primeira parcela', '12/10/2026'],
+  ]);
+  assert.deepEqual(card.rows.filter((row) => row.emphasis).map((row) => row.key), ['installments']);
+});
+
+test('card de compra parcelada com primeira parcela futura não marca a compra inteira como Previsto', () => {
+  const card = buildConfirmationFromAction({
+    transactionType: 'expense',
+    amount: 600,
+    date: '2026-11-05',
+    planned: true,
+    installments: { count: 6, installmentAmount: 100, lastAmount: 100, futureCount: 6 },
+  });
+  assert.equal(card.rows.some((row) => row.label === 'Situação'), false);
+  assert.equal(card.rows.some((row) => row.label === 'Última parcela'), false);
+});
+
 test('card financeiro sempre apresenta income/expense como Entrada/Saída, inclusive com label legado recebido', () => {
   const expense = buildConfirmationFromAction({
     typeLabel: 'Despesa', transactionType: 'expense', amount: 50, date: '2026-08-13',
