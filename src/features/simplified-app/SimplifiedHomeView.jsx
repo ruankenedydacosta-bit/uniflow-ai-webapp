@@ -406,10 +406,9 @@ function SimplifiedHomeView({
     onSaveEditAction(id, overrides);
   }
 
-  // Com a Uni ocupada o toque não vale: marcar a resposta antes esconderia a
-  // pergunta e os chips sem nada novo a caminho.
   // Campo de lançamento rápido: vai pelo mesmo envio do chat e da voz, e a
-  // resposta aparece no card da Home. O campo só limpa quando a Uni aceitou.
+  // resposta aparece no card da Home. Com a Uni ocupada o envio não vale e o
+  // texto fica no campo.
   const [quickText, setQuickText] = useState('');
   function handleQuickSend(text) {
     if (isTyping || isExecuting) return;
@@ -418,6 +417,8 @@ function SimplifiedHomeView({
     setQuickText('');
   }
 
+  // Com a Uni ocupada o toque não vale: marcar a resposta antes esconderia a
+  // pergunta e os chips sem nada novo a caminho.
   function handleChooseCategory(item) {
     if (isTyping || isExecuting || typeof onChooseCategory !== 'function') return;
     markHomeReply();
@@ -542,14 +543,17 @@ function SimplifiedHomeView({
           há como confirmar ou cancelar, e a atualização do app fica parada
           esperando (usePwaAutoUpdateBlock). */}
       {isVoiceModeOpen ? null : compactResponse}
-      <div className={styles.homeQuickInput}>
-        <ChatInput
-          value={quickText}
-          onChange={setQuickText}
-          onSend={handleQuickSend}
-          disabled={isInteractionBusy}
-        />
-      </div>
+      {/* Fora da tela de voz: lá a resposta fica escondida atrás dela. */}
+      {isVoiceModeOpen ? null : (
+        <div className={styles.homeQuickInput}>
+          <ChatInput
+            value={quickText}
+            onChange={setQuickText}
+            onSend={handleQuickSend}
+            disabled={isInteractionBusy}
+          />
+        </div>
+      )}
       <SimplifiedHomeMonthReading />
 
       <SimplifiedHomeAgenda />
