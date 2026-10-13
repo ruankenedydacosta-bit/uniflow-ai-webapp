@@ -64,7 +64,9 @@ function simularRede(cenario) {
       const corpo = JSON.parse(init.body);
       chamadas.sessoes.push(corpo.session.audio.input.transcription);
       const status = cenario.sessao?.[chamadas.sessoes.length - 1] ?? 200;
-      if (status !== 200) return Response.json({ error: { code: 'invalid_value' } }, { status });
+      if (status !== 200) {
+        return Response.json({ error: { code: 'invalid_value', param: cenario.param } }, { status });
+      }
       return Response.json({ value: 'chave-efemera', expires_at: 1 });
     }
     throw new Error(`endereço inesperado: ${endereco}`);
@@ -105,4 +107,23 @@ test('sessão em tempo real sem workspace_id abre sem vocabulário e sem segunda
   assert.equal(status, 502);
   assert.deepEqual(chamadas.sessoes, [{ model: 'gpt-4o-transcribe', language: 'pt' }]);
   assert.equal(chamadas.rest.length, 0);
+});
+
+test('recusa que aponta outro campo da sessão não tenta de novo sem o vocabulário', async () => {
+  const { status, chamadas } = await pedirSessao(
+    { sessao: [400, 200], param: 'session.audio.output.voice' },
+    { workspace_id: WORKSPACE },
+  );
+  assert.equal(status, 502);
+  assert.equal(chamadas.sessoes.length, 1);
+});
+
+test('recusa que aponta a transcrição tenta de novo sem o vocabulário', async () => {
+  const { status, chamadas } = await pedirSessao(
+    { sessao: [400, 200], param: 'session.audio.input.transcription.prompt' },
+    { workspace_id: WORKSPACE },
+  );
+  assert.equal(status, 200);
+  assert.equal(chamadas.sessoes.length, 2);
+  assert.equal(chamadas.sessoes[1].prompt, undefined);
 });

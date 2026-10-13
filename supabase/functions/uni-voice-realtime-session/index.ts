@@ -380,50 +380,61 @@ Deno.serve(async (request) => {
 
   const vocabulary = await vocabularyPromise;
   // Se a OpenAI recusar a sessão com o vocabulário (400), tenta de novo sem
-  // ele: o prompt da transcrição nunca pode impedir a conversa.
+  // ele: o prompt da transcrição nunca pode impedir a conversa. Recusa que
+  // aponta outro campo (voz, modelo) não tenta de novo: falharia igual.
   const transcriptionPrompts = vocabulary.prompt ? [vocabulary.prompt, ''] : [''];
   const safetyIdentifier = await sha256Hex(userId);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort('timeout'), timeoutMs);
   let providerResponse: Response | null = null;
   let data: {
     value?: unknown;
     expires_at?: unknown;
-    error?: { code?: unknown; message?: unknown };
+    error?: { code?: unknown; message?: unknown; param?: unknown };
   } | null = null;
+  let timedOut = false;
   try {
     for (const transcriptionPrompt of transcriptionPrompts) {
-      providerResponse = await fetch(OPENAI_CLIENT_SECRETS_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${providerKey}`,
-          'Content-Type': 'application/json',
-          // Identifica o usuário para a OpenAI sem expor o id: só o hash.
-          'OpenAI-Safety-Identifier': safetyIdentifier,
-        },
-        body: JSON.stringify(buildSessionConfig({
-          model,
-          voice,
-          eagerness,
-          nameInstructions,
-          transcriptionModel,
-          transcriptionPrompt,
-        })),
-        signal: controller.signal,
-      });
-      data = await providerResponse.json().catch(() => null);
-      if (providerResponse.status !== 400 || !transcriptionPrompt) break;
-      console.warn('uni_voice_realtime_transcription_prompt_rejected', {
+      // Cada tentativa tem o próprio tempo limite.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort('timeout');
+      }, timeoutMs);
+      try {
+        providerResponse = await fetch(OPENAI_CLIENT_SECRETS_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${providerKey}`,
+            'Content-Type': 'application/json',
+            // Identifica o usuário para a OpenAI sem expor o id: só o hash.
+            'OpenAI-Safety-Identifier': safetyIdentifier,
+          },
+          body: JSON.stringify(buildSessionConfig({
+            model,
+            voice,
+            eagerness,
+            nameInstructions,
+            transcriptionModel,
+            transcriptionPrompt,
+          })),
+          signal: controller.signal,
+        });
+        data = await providerResponse.json().catch(() => null);
+      } finally {
+        clearTimeout(timeout);
+      }
+      const param = typeof data?.error?.param === 'string' ? data.error.param : '';
+      const promptMayBeTheCause = !param || param.includes('transcription');
+      if (providerResponse?.status !== 400 || !transcriptionPrompt || !promptMayBeTheCause) break;
+      console.warn('uni_voice_realtime_retry_without_vocabulary', {
         code: data?.error?.code ?? null,
+        param: param || null,
       });
     }
   } catch {
-    console.warn('uni_voice_realtime_provider_unreachable', { timeout: controller.signal.aborted });
+    console.warn('uni_voice_realtime_provider_unreachable', { timeout: timedOut });
     await releaseReservation(supabaseUrl, serviceRoleKey, reservation);
     return errorResponse(502, 'PROVIDER_UNAVAILABLE', 'Não foi possível abrir a conversa agora. Tente de novo em instantes.', origin);
-  } finally {
-    clearTimeout(timeout);
   }
 
   if (!providerResponse?.ok || typeof data?.value !== 'string') {

@@ -70,7 +70,8 @@ export function montarVocabulario(listas = []) {
       const chaveDoNome = chave(nome);
       if (!nome || vistos.has(chaveDoNome)) continue;
       const custo = nome.length + (nomes.length ? SEPARADOR.length : 0);
-      if (caracteres + custo > MAX_CARACTERES_DO_VOCABULARIO) return nomes;
+      // Nome que não cabe sai, mas um mais curto depois dele ainda entra.
+      if (caracteres + custo > MAX_CARACTERES_DO_VOCABULARIO) continue;
       vistos.add(chaveDoNome);
       nomes.push(nome);
       caracteres += custo;

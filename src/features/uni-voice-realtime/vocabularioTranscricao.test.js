@@ -29,10 +29,6 @@ const HOME_VIEW = readFileSync(
   new URL('../simplified-app/SimplifiedHomeView.jsx', import.meta.url),
   'utf8',
 );
-const REALTIME_FUNCTION = readFileSync(
-  new URL('../../../supabase/functions/uni-voice-realtime-session/index.ts', import.meta.url),
-  'utf8',
-);
 
 function fetchFalso(respostas) {
   const chamadas = [];
@@ -74,6 +70,15 @@ test('montarVocabulario respeita o teto de nomes e o de caracteres', () => {
   assert.ok(cortados.join(', ').length <= MAX_CARACTERES_DO_VOCABULARIO);
   assert.ok(cortados.length < longos.length);
   assert.ok(montarPromptDeTranscricao(cortados).length <= ABERTURA_DO_PROMPT.length + MAX_CARACTERES_DO_VOCABULARIO + 1);
+});
+
+test('montarVocabulario pula o nome que não cabe e segue com os mais curtos', () => {
+  const quaseCheio = Array.from({ length: 12 }, (_, i) => `${'c'.repeat(36)}${String(i).padStart(3, '0')}`);
+  const naoCabe = 'Categoria com nome bem comprido demais';
+  const nomes = montarVocabulario([quaseCheio, [naoCabe, 'Pix']]);
+  assert.ok(!nomes.includes(naoCabe));
+  assert.ok(nomes.includes('Pix'));
+  assert.ok(nomes.join(', ').length <= MAX_CARACTERES_DO_VOCABULARIO);
 });
 
 test('montarPromptDeTranscricao fica vazio sem nomes', () => {
@@ -136,18 +141,6 @@ test('carregarVocabularioDoUsuario desiste quando a leitura passa do tempo limit
   });
   const resultado = await carregarVocabularioDoUsuario({ ...BASE, fetchImpl, tempoLimiteMs: 5 });
   assert.deepEqual(resultado, { nomes: [], prompt: '' });
-});
-
-test('uni-voice-realtime-session lê o vocabulário com o JWT da pessoa e só espera por ele depois da reserva', () => {
-  assert.match(REALTIME_FUNCTION, /const DEFAULT_TRANSCRIPTION_MODEL = 'gpt-4o-transcribe';/);
-  assert.match(REALTIME_FUNCTION, /Deno\.env\.get\('UNI_REALTIME_TRANSCRIPTION_MODEL'\) \|\| DEFAULT_TRANSCRIPTION_MODEL/);
-  // A leitura começa antes da reserva e só é esperada depois dela.
-  const inicio = REALTIME_FUNCTION.indexOf('const vocabularyPromise = carregarVocabularioDoUsuario(');
-  const reserva = REALTIME_FUNCTION.indexOf("'voice_reserve_block'");
-  const espera = REALTIME_FUNCTION.indexOf('const vocabulary = await vocabularyPromise;');
-  assert.ok(inicio > 0 && reserva > inicio && espera > reserva);
-  assert.match(REALTIME_FUNCTION, /authorization,\n\s*workspaceId: payload\?\.workspace_id,/);
-  assert.match(REALTIME_FUNCTION, /transcription: buildTranscriptionConfig\(transcriptionModel, transcriptionPrompt\)/);
 });
 
 test('o app manda o espaço ativo ao abrir a conversa por voz', () => {
