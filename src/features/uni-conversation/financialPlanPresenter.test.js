@@ -136,12 +136,23 @@ test('describePlanOperation descreve transferência com origem e destino', () =>
 });
 
 test('describePlanOperation descreve operação bloqueada (capacidade pendente) com a mensagem de limite', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense' })]);
+  const text = describePlanOperation(plan.operations[0]);
+  assert.match(text, /de quanto em quanto tempo/);
+});
+
+test('describePlanOperation descreve a recorrência com valor, regra, início e categoria (#222)', () => {
   const plan = buildPlan([rawOperation({
     operation_type: 'recurring_expense',
-    recurrence: { frequency: 'monthly', interval: 1, day_of_month: 5 },
+    description: 'Aluguel',
+    amount: 1500,
+    date_expression: 'hoje',
+    recurrence: { frequency: 'monthly', interval: 1 },
   })]);
-  const text = describePlanOperation(plan.operations[0]);
-  assert.match(text, /recorrências automaticamente/);
+  assert.equal(
+    describePlanOperation(plan.operations[0]),
+    '• Saída de R$ 1500,00 (Aluguel) todo mês, no dia 29, a partir de 29/07, em Alimentação',
+  );
 });
 
 test('describePlanOperation descreve a compra parcelada com o total, as parcelas e a categoria', () => {
@@ -222,10 +233,22 @@ test('buildPlanCancelledText e buildPlanOperationCancelledText nunca mencionam r
 });
 
 test('buildPlanResultText resume confirmados, falhos e bloqueados sem inventar sucesso', () => {
-  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense', recurrence: { frequency: 'monthly', interval: 1 } })]);
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense' })]);
   const text = buildPlanResultText(plan);
-  assert.match(text, /recorrências automaticamente/);
-  assert.doesNotMatch(text, /Registrei/);
+  assert.match(text, /de quanto em quanto tempo/);
+  assert.doesNotMatch(text, /Registrei|Criei/);
+});
+
+test('buildPlanResultText conta os lançamentos que a série criou e quantos ficaram previstos (#222)', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense', recurrence: { frequency: 'monthly', interval: 1 } })]);
+  const confirmed = markPlanOperationConfirmed(plan, 'op_1', { occurrences: 4, pending_occurrences: 3 });
+  assert.equal(
+    buildPlanResultText(confirmed),
+    'Criei a repetição com 4 lançamentos nos próximos meses. Os 3 próximos ficaram previstos. Confirme no Financeiro quando cada um acontecer. Os seguintes são criados sozinhos, sempre 3 meses à frente.',
+  );
+  const todos = markPlanOperationConfirmed(plan, 'op_1', { occurrences: 3, pending_occurrences: 3 });
+  assert.match(buildPlanResultText(todos), /Todos ficaram previstos/);
+  assert.doesNotMatch(buildPlanResultText(todos), /Registrei/);
 });
 
 test('buildPlanResultText conta a compra parcelada e quantas parcelas ficaram previstas', () => {

@@ -23,6 +23,15 @@ No topo da conversa ficam a Uni, o espaço ativo ("Espaço Pessoal") e dois bot�
 
 Ao tocar em **Confirmar**, a Uni grava todas as parcelas de uma vez, uma por mês a partir da primeira. As parcelas com data depois de hoje ficam previstas até você confirmar no Financeiro. Se você disser só o valor de cada parcela ("10x de 300"), a Uni calcula o total.
 
+**Registrar um lançamento recorrente**: diga o valor e de quanto em quanto tempo repete, como "aluguel de 1.500 todo dia 10", "pago 180 pra diarista toda semana" ou "recebo 2 mil do inquilino todo mês". O card "Saída recorrente · rascunho" (ou "Entrada recorrente") mostra:
+
+- o valor;
+- a regra, em "Repete" (ex.: "Todo mês, no dia 10", "A cada 2 semanas");
+- a data do primeiro lançamento;
+- a categoria, a conta e a descrição.
+
+Sem dia na frase, o primeiro lançamento é hoje. Com um dia ("todo dia 10"), é a próxima vez que esse dia chega. Ao tocar em **Confirmar**, a Uni cria a série e os lançamentos dos próximos 3 meses. Os seguintes são criados sozinhos. Os lançamentos com data depois de hoje ficam previstos até você confirmar no Financeiro. Para mudar ou encerrar a série, use a tela Financeiro.
+
 **Alterar uma movimentação já salva**: diga qual é a movimentação e o que muda. Por exemplo:
 
 - "corrige o mercado de ontem pra 50 reais";

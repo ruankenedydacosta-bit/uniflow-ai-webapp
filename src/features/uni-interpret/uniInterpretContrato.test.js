@@ -181,6 +181,31 @@ test('recorrente: só com true explícito, nunca em transferência nem junto de 
   assert.equal(parcelada.recorrente, false);
 });
 
+test('frequencia e intervalo: só com recorrente; intervalo fora de 1 a 365 vira 1', () => {
+  const validar = (campos) => validarInterpretacao(lancamento(operacao(campos)), CONTEXTO).operacoes[0];
+  const mensal = validar({ recorrente: true, frequencia: 'mensal', intervalo: 1 });
+  assert.equal(mensal.frequencia, 'mensal');
+  assert.equal(mensal.intervalo, 1);
+  const quinzenal = validar({ recorrente: true, frequencia: 'semanal', intervalo: 2 });
+  assert.equal(quinzenal.frequencia, 'semanal');
+  assert.equal(quinzenal.intervalo, 2);
+  assert.equal(validar({ recorrente: true, frequencia: 'mensal', intervalo: null }).intervalo, 1);
+  assert.equal(validar({ recorrente: true, frequencia: 'mensal', intervalo: 0 }).intervalo, 1);
+  assert.equal(validar({ recorrente: true, frequencia: 'mensal', intervalo: 366 }).intervalo, 1);
+  assert.equal(validar({ recorrente: true, frequencia: 'mensal', intervalo: 1.5 }).intervalo, 1);
+
+  // Recorrente sem frequência fica só com o rótulo.
+  const semFrequencia = validar({ recorrente: true, frequencia: 'quinzenal' });
+  assert.equal(semFrequencia.recorrente, true);
+  assert.equal(semFrequencia.frequencia, null);
+  assert.equal(semFrequencia.intervalo, null);
+
+  // Frequência sem recorrente não vale.
+  const avulso = validar({ frequencia: 'mensal', intervalo: 1 });
+  assert.equal(avulso.frequencia, null);
+  assert.equal(avulso.intervalo, null);
+});
+
 test('resposta fora do contrato vira nao_entendi sem lançar', () => {
   for (const bruta of [null, {}, { intent: 'apagar_tudo' }, lancamento(), lancamento({ tipo: 'emprestimo' })]) {
     assert.deepEqual(validarInterpretacao(bruta, CONTEXTO).operacoes, []);
@@ -443,7 +468,7 @@ test('normalização para a régua: confiança baixa vira sugestão, nova catego
 
   assert.deepEqual(normalizarInterpretacao(validar({})), {
     intent: 'lancar_saida', valor: 300, data: '2026-10-02', categoria: 'Educação', modoCategoria: 'resolveu',
-    parcelas: null, recorrente: false, titulo: null, consulta: null, pedido: null,
+    parcelas: null, recorrente: false, frequencia: null, titulo: null, consulta: null, pedido: null,
   });
   assert.equal(normalizarInterpretacao(validar({ confianca: 0.4 })).modoCategoria, 'sugeriu');
   assert.equal(normalizarInterpretacao(validar({ categoria: null, nova_categoria: 'Pets' })).modoCategoria, 'propos_criar');

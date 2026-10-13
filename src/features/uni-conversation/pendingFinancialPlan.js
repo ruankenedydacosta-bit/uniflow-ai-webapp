@@ -17,8 +17,8 @@ import {
 // ja usada por uma unica transacao. O plano em si NUNCA e persistido no
 // banco -- vive so em memoria (estado React), ate a confirmacao final de
 // cada operacao passar por uma RPC atomica, uma operacao por vez:
-// execute_confirmed_financial_action, ou registrar_compra_parcelada na
-// compra parcelada (#221).
+// execute_confirmed_financial_action, registrar_compra_parcelada na
+// compra parcelada (#221) ou criar_serie_recorrente na recorrência (#222).
 
 export const PLAN_OPERATION_STATUS = Object.freeze({
   NEEDS_CLARIFICATION: 'needs_clarification',
@@ -45,19 +45,28 @@ const OPERATION_TYPE_TO_INTENT = Object.freeze({
   // Compra parcelada é uma saída com o total; a RPC registrar_compra_parcelada
   // grava as parcelas (#221).
   installment_purchase: 'register_expense',
-  // BLOCO E -- LIMITE DE ESCOPO EXPLICITO: o backend ainda nao gera os
-  // proximos lancamentos de uma recorrencia (#222). Ela continua sendo
-  // COMPREENDIDA e apresentada (capabilityPending=true), mas nunca vira
-  // uma transacao real nem uma automacao silenciosa.
-  recurring_expense: null,
-  recurring_income: null,
+  // Recorrência com frequência vira a série; a RPC criar_serie_recorrente
+  // grava os lançamentos dos próximos 3 meses (#222).
+  recurring_expense: 'register_expense',
+  recurring_income: 'register_income',
 });
 
 const CAPABILITY_PENDING_MESSAGES = Object.freeze({
   installment_purchase: 'Não entendi em quantas parcelas foi a compra. Diga de novo com o número de parcelas.',
-  recurring_expense: 'Ainda não consigo criar recorrências automaticamente nesta versão -- entendi a recorrência, mas cada lançamento precisa ser feito manualmente.',
-  recurring_income: 'Ainda não consigo criar recorrências automaticamente nesta versão -- entendi a recorrência, mas cada lançamento precisa ser feito manualmente.',
+  recurring_expense: 'Não entendi de quanto em quanto tempo isso se repete. Diga de novo com a frequência, como "todo mês".',
+  recurring_income: 'Não entendi de quanto em quanto tempo isso se repete. Diga de novo com a frequência, como "todo mês".',
 });
+
+const RECURRING_OPERATION_TYPES = new Set(['recurring_expense', 'recurring_income']);
+const RECURRENCE_FREQUENCIES = new Set(['daily', 'weekly', 'monthly', 'yearly']);
+
+// Regra da série no formato da RPC; null sem frequência válida.
+function lerRecorrencia(operation) {
+  if (!RECURRING_OPERATION_TYPES.has(operation.operationType)) return null;
+  const { frequency, interval } = operation.recurrence ?? {};
+  if (!RECURRENCE_FREQUENCIES.has(frequency)) return null;
+  return { frequency, interval: Number.isInteger(interval) && interval >= 1 && interval <= 365 ? interval : 1 };
+}
 
 // Número de parcelas: a correção ("foram 12x") vence o que o modelo leu.
 // null fora de 2 a 360, o limite da RPC.
@@ -135,9 +144,11 @@ function buildOperationState({
   });
 
   const installmentCount = operation.operationType === 'installment_purchase' ? contarParcelas(operation, overrides) : null;
+  const recurrence = lerRecorrencia(operation);
   if (
     !OPERATION_TYPE_TO_INTENT[operation.operationType]
     || (operation.operationType === 'installment_purchase' && !installmentCount)
+    || (RECURRING_OPERATION_TYPES.has(operation.operationType) && !recurrence)
   ) {
     return Object.freeze({
       temporaryId: operation.temporaryId,
@@ -184,9 +195,14 @@ function buildOperationState({
     workspaceType,
     overrides: actionOverrides,
   });
-  const action = installmentCount
-    ? { ...builtAction, installments: resumirParcelas(builtAction.amount, installmentCount, builtAction.date, referenceDate) }
-    : builtAction;
+  let action = builtAction;
+  if (installmentCount) {
+    action = { ...builtAction, installments: resumirParcelas(builtAction.amount, installmentCount, builtAction.date, referenceDate) };
+  } else if (recurrence) {
+    // A série decide o status de cada lançamento pela data: o card não
+    // mostra a série inteira como prevista.
+    action = { ...builtAction, planned: false, recurrence };
+  }
 
   const needsDestinationClarification = operation.operationType === 'transfer'
     && destinationAccountResolution?.status !== 'resolved';

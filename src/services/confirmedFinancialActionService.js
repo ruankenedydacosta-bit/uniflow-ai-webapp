@@ -1,5 +1,6 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient.js';
 import { notifyFinancialDataChanged } from './financialDataEvents.js';
+import { createRecurringSeries } from './transactionService.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -149,6 +150,60 @@ export async function executeConfirmedInstallmentPurchase(action) {
     installment_group_id: data.installment_group_id,
     installments: data.installments,
     pending_installments: data.pending_installments,
+    account_id: action.account?.id ?? null,
+    idempotent_replay: Boolean(data.idempotent_replay),
+  });
+}
+
+// Recorrência confirmada pela Uni (#222): a mesma createRecurringSeries do
+// Financeiro cria a série e os lançamentos dos próximos 3 meses, no espaço
+// da tela. Confirmação automática desligada: pela Uni, cada lançamento
+// espera a pessoa confirmar.
+export function buildRecurringSeriesFromAction(action) {
+  const clientOperationId = action?.clientOperationId;
+  if (!UUID_PATTERN.test(clientOperationId ?? '')) {
+    return { data: null, error: { code: 'INVALID_OPERATION_ID', message: 'Confirmação inválida para este lançamento.' } };
+  }
+  if (action?.status !== 'ready' || !action?.payload || !action.recurrence?.frequency) {
+    return { data: null, error: { code: 'ACTION_NOT_READY', message: 'Revise os dados antes de confirmar.' } };
+  }
+  if (!['existing', 'none'].includes(getConfirmedAccountMode(action))) {
+    return { data: null, error: { code: 'ACTION_NOT_READY', message: 'Escolha uma conta que já existe para o lançamento recorrente.' } };
+  }
+
+  return {
+    data: {
+      clientOperationId,
+      transaction_type: action.payload.transaction_type,
+      account_id: action.account?.id ?? null,
+      category_id: action.category?.id ?? action.payload.category_id ?? null,
+      description: action.payload.description,
+      amount: action.payload.amount,
+      frequency: action.recurrence.frequency,
+      interval: action.recurrence.interval ?? 1,
+      start_date: action.payload.transaction_date,
+      end_date: null,
+      auto_confirm: false,
+    },
+    error: null,
+  };
+}
+
+export async function executeConfirmedRecurringSeries(action, workspaceId) {
+  const request = buildRecurringSeriesFromAction(action);
+  if (request.error) return createResult(null, request.error);
+
+  const { data, error } = await createRecurringSeries(workspaceId, request.data);
+  if (error || !data?.series_id) {
+    return createResult(null, createSafeError(error));
+  }
+
+  notifyFinancialDataChanged('confirmed-financial-action');
+  return createResult({
+    id: data.first_transaction_id,
+    series_id: data.series_id,
+    occurrences: data.occurrences,
+    pending_occurrences: data.pending_occurrences,
     account_id: action.account?.id ?? null,
     idempotent_replay: Boolean(data.idempotent_replay),
   });

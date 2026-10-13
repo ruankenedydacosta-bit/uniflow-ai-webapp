@@ -604,7 +604,7 @@ test('nenhum log de texto de mensagem/prompt no console -- só o(s) código(s) d
 
 test('escritas do chat usam a RPC atômica e allowlist restrita, incluindo transferência (BUG 2)', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /import \{\s*executeConfirmedFinancialAction,\s*executeConfirmedInstallmentPurchase,\s*\}/);
+  assert.match(page, /import \{\s*executeConfirmedFinancialAction,\s*executeConfirmedInstallmentPurchase,\s*executeConfirmedRecurringSeries,\s*\}/);
   assert.match(page, /executeAtomicAction: executeConfirmedFinancialAction/);
   assert.match(page, /ALLOWED_CHAT_WRITE_INTENTS = Object\.freeze\(\[/);
   assert.match(page, /'register_income',\s+'register_expense',\s+'set_balance',[\s\S]*?'ambiguous_balance_or_income',[\s\S]*?'register_transfer',/);
@@ -838,11 +838,15 @@ test('BLOCO E: confirmação do plano persiste uma operação por vez pelo mesmo
   assert.ok(end > -1);
   assert.match(slice, /getPersistablePlanOperations\(workingPlan\)\s*\.filter\(\(op\) => op\.status === PLAN_OPERATION_STATUS\.READY\)/);
   assert.match(slice, /for \(const op of persistable\) \{/);
-  // Compra parcelada vai pela RPC que grava todas as parcelas de uma vez (#221).
+  // Compra parcelada vai pela RPC que grava todas as parcelas de uma vez
+  // (#221); a recorrência cria a série no espaço da tela (#222).
+  assert.match(slice, /let executeAtomicAction = executeConfirmedFinancialAction;/);
+  assert.match(slice, /if \(op\.action\.installments\) executeAtomicAction = executeConfirmedInstallmentPurchase;/);
   assert.match(
     slice,
-    /executeFinancialIntentAction\(op\.action, \{\s*executeAtomicAction: op\.action\.installments\s*\? executeConfirmedInstallmentPurchase\s*: executeConfirmedFinancialAction,\s*\}\)/,
+    /else if \(op\.action\.recurrence\) \{\s*executeAtomicAction = \(action\) => executeConfirmedRecurringSeries\(action, effectiveWorkspace\?\.id\);\s*\}/,
   );
+  assert.match(slice, /executeFinancialIntentAction\(op\.action, \{ executeAtomicAction \}\)/);
   assert.match(slice, /markPlanOperationFailed\(workingPlan, op\.temporaryId\)/);
   // O retorno da RPC vai junto: a resposta repete quantas parcelas ficaram previstas.
   assert.match(slice, /markPlanOperationConfirmed\(workingPlan, op\.temporaryId, result\.data\)/);

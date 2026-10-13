@@ -22,6 +22,7 @@ Registrar, organizar e analisar movimentações financeiras (receitas, despesas,
 - Ligue "Confirmar automaticamente na data" para débito automático. Sem isso, os lançamentos futuros esperam você confirmar.
 - Ao editar ou excluir um lançamento da série, escolha o alcance: "Somente este", "Este e os próximos" ou "Todos da série". Mudar o valor, a descrição, a conta ou a categoria em "Este e os próximos" também vale para os lançamentos que a série ainda vai criar. Excluir "Este e os próximos" ou "Todos" encerra a série.
 - Transferência e ajuste de saldo não têm recorrência.
+- Pela conversa ou pela voz com a Uni, diga o valor e de quanto em quanto tempo repete, como "aluguel de 1.500 todo dia 10". A Uni mostra o card e, ao confirmar, cria a mesma série. Pela Uni, "Confirmar automaticamente na data" fica desligado: ligue no Financeiro, editando um lançamento da série com o alcance "Este e os próximos".
 
 **Filtrar**: por texto, período (semana/mês/trimestre/ano/tudo), tipo, conta, categoria, forma de pagamento, status de parcela e status de recorrência.
 
@@ -51,7 +52,6 @@ Ao menos uma conta cadastrada para registrar uma movimentação.
 
 ## Limitações atuais
 
-- Pela conversa com a Uni, um pedido recorrente ("pago 120 de academia todo mês") ainda registra só o lançamento do dia. Para criar a série, use a tela Financeiro.
 - Open Finance é 100% demonstrativo.
 - Relatórios têm ao menos um recurso ainda desabilitado ("Disponível em breve" em um dos botões da tela).
 - Registro por voz é feito na conversa por voz (toque na Uni, no centro da

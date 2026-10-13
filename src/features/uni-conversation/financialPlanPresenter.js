@@ -1,6 +1,12 @@
 import { normalizeFinancialText, resolveRelativeDateExpression } from '../uni-intents/index.js';
 import { PLAN_OPERATION_STATUS, PLAN_STATUS } from './pendingFinancialPlan.js';
-import { formatShortDate } from './uniResponseBuilder.js';
+import { describeRecurrence, formatShortDate } from './uniResponseBuilder.js';
+
+const BASE_OPERATION_TYPE = Object.freeze({
+  installment_purchase: 'expense',
+  recurring_expense: 'expense',
+  recurring_income: 'income',
+});
 
 // BLOCO E: camada de apresentacao/entrada do Pending Financial Plan --
 // texto sempre curto e falavel (nunca le ID, JSON ou percentual de
@@ -64,6 +70,12 @@ export function describePlanOperation(op) {
     const categoryName = op.action?.category?.name;
     const perInstallment = installments.installmentAmount == null ? '' : ` de ${formatAmountBRL(installments.installmentAmount)}`;
     return `• Compra parcelada de ${amountText}${description} em ${installments.count}x${perInstallment}${categoryName ? `, em ${categoryName}` : ''}`;
+  }
+  const recurrence = op.action?.recurrence;
+  if (recurrence) {
+    const label = op.operationType === 'recurring_income' ? 'Entrada' : 'Saída';
+    const categoryName = op.action?.category?.name;
+    return `• ${label} de ${amountText}${description} ${describeRecurrence(recurrence, op.action.date)}, a partir de ${formatShortDate(op.action.date)}${categoryName ? `, em ${categoryName}` : ''}`;
   }
   const label = op.operationType === 'income' ? 'Entrada' : 'Saída';
   const categoryName = op.action?.category?.name;
@@ -186,7 +198,24 @@ export function buildPlanResultText(planState) {
       parts.push(`As ${futureCount} próximas ficaram previstas. Confirme no Financeiro quando cada uma acontecer.`);
     }
   }
-  const single = confirmed.filter((op) => !op.action?.installments);
+  // Recorrência vira a série: o texto conta os lançamentos que a RPC criou
+  // nos próximos 3 meses e diz que os seguintes nascem sozinhos.
+  for (const op of confirmed.filter((item) => item.action?.recurrence)) {
+    const occurrences = op.result?.occurrences;
+    const pending = op.result?.pending_occurrences;
+    parts.push(occurrences > 1
+      ? `Criei a repetição com ${occurrences} lançamentos nos próximos meses.`
+      : 'Criei a repetição.');
+    if (pending === occurrences && pending > 0) {
+      parts.push('Todos ficaram previstos. Confirme no Financeiro quando cada um acontecer.');
+    } else if (pending === 1) {
+      parts.push('O próximo ficou previsto. Confirme no Financeiro quando ele acontecer.');
+    } else if (pending) {
+      parts.push(`Os ${pending} próximos ficaram previstos. Confirme no Financeiro quando cada um acontecer.`);
+    }
+    parts.push('Os seguintes são criados sozinhos, sempre 3 meses à frente.');
+  }
+  const single = confirmed.filter((op) => !op.action?.installments && !op.action?.recurrence);
   if (single.length) {
     parts.push(`Registrei ${single.length === 1 ? 'o lançamento' : `${single.length} lançamentos`} com sucesso.`);
     const planned = single.filter((op) => op.action?.planned).length;
@@ -218,8 +247,9 @@ export function parsePlanCorrectionOverrides({
   const trimmed = text.trim();
   const normalized = normalizeFinancialText(trimmed);
   const isTransfer = operation.operationType === 'transfer';
-  // Compra parcelada é uma saída: a categoria corrigida vem das de saída.
-  const operationType = operation.operationType === 'installment_purchase' ? 'expense' : operation.operationType;
+  // Compra parcelada é uma saída, e a recorrência tem o tipo da série: a
+  // categoria corrigida vem das do mesmo tipo.
+  const operationType = BASE_OPERATION_TYPE[operation.operationType] ?? operation.operationType;
   const transactionType = isTransfer
     ? 'transfer'
     : (operationType === 'income' || operationType === 'expense')

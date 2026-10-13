@@ -50,6 +50,7 @@ import {
   buildPlanResultText,
   buildPlanSummaryText,
   buildInstallmentConfirmationText,
+  buildRecurringConfirmationText,
   buildPlannedConfirmationText,
   describePlanOperation,
   findPlanOperationCancelTarget,
@@ -216,6 +217,7 @@ import { notifyFinancialDataChanged } from '../../services/financialDataEvents.j
 import {
   executeConfirmedFinancialAction,
   executeConfirmedInstallmentPurchase,
+  executeConfirmedRecurringSeries,
 } from '../../services/confirmedFinancialActionService.js';
 import {
   createTransaction,
@@ -679,6 +681,7 @@ export default function UniChatPage({ variant = 'full' }) {
 
     let text = 'Revise as informações antes de registrar.';
     if (action.installments) text = buildInstallmentConfirmationText(action);
+    else if (action.recurrence) text = buildRecurringConfirmationText(action);
     else if (action.planned) text = buildPlannedConfirmationText(action);
     const message = createAssistantResponse(text, {
       type: 'confirmation',
@@ -725,8 +728,8 @@ export default function UniChatPage({ variant = 'full' }) {
           : operation.action,
       })),
     };
-    // Só parcela e recorrência: nada a confirmar, e um plano parado ali
-    // prenderia as próximas frases até expirar.
+    // Só parcela sem número ou recorrência sem frequência: nada a confirmar,
+    // e um plano parado ali prenderia as próximas frases até expirar.
     if (newPlan.operations.every((operation) => operation.capabilityPending)) {
       createAssistantResponse(
         `Entendi o seguinte:\n${newPlan.operations.map(describePlanOperation).join('\n')}\n\nNada foi registrado.`,
@@ -748,8 +751,9 @@ export default function UniChatPage({ variant = 'full' }) {
 
 // Uma operação por vez, pelo MESMO RPC atômico já usado pelo registro
     // de uma única transação -- nunca uma "transação fantasma" que finge
-    // cobrir várias operações. A compra parcelada é a exceção: vai por
-    // registrar_compra_parcelada, que grava todas as parcelas dela juntas.
+    // cobrir várias operações. A compra parcelada e a recorrência são as
+    // exceções: vão por registrar_compra_parcelada e criar_serie_recorrente,
+    // que gravam todos os lançamentos delas juntos.
     // Cada operação usa seu próprio client_operation_id como chave de idempotência (o mesmo já
     // gerado por operação em createPendingFinancialPlan/
     // buildOperationState) -- confirmar duas vezes nunca duplica, o RPC
@@ -764,11 +768,12 @@ export default function UniChatPage({ variant = 'full' }) {
 
     try {
       for (const op of persistable) {
-        const result = await executeFinancialIntentAction(op.action, {
-          executeAtomicAction: op.action.installments
-            ? executeConfirmedInstallmentPurchase
-            : executeConfirmedFinancialAction,
-        });
+        let executeAtomicAction = executeConfirmedFinancialAction;
+        if (op.action.installments) executeAtomicAction = executeConfirmedInstallmentPurchase;
+        else if (op.action.recurrence) {
+          executeAtomicAction = (action) => executeConfirmedRecurringSeries(action, effectiveWorkspace?.id);
+        }
+        const result = await executeFinancialIntentAction(op.action, { executeAtomicAction });
         if (result?.error || !result?.data) {
           workingPlan = markPlanOperationFailed(workingPlan, op.temporaryId);
           setFinancialPlan(workingPlan);

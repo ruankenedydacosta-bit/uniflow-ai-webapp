@@ -126,6 +126,29 @@ export function buildInstallmentConfirmationText(action) {
   return `Revise a compra abaixo: ${parcelas}, a primeira em ${formatShortDate(action.date)}.${previstas}`;
 }
 
+const DIAS_DA_SEMANA = ['todo domingo', 'toda segunda-feira', 'toda terça-feira', 'toda quarta-feira', 'toda quinta-feira', 'toda sexta-feira', 'todo sábado'];
+const UNIDADES_DA_REPETICAO = { daily: 'dias', weekly: 'semanas', monthly: 'meses', yearly: 'anos' };
+
+// Regra da série falada como a pessoa diria (#222): "todo mês, no dia 10",
+// "toda segunda-feira", "a cada 2 semanas". O dia vem do primeiro lançamento.
+export function describeRecurrence(recurrence, startDate) {
+  const { frequency, interval = 1 } = recurrence ?? {};
+  if (!UNIDADES_DA_REPETICAO[frequency]) return '';
+  if (interval > 1) return `a cada ${interval} ${UNIDADES_DA_REPETICAO[frequency]}`;
+  const [, month, day] = /^\d{4}-(\d{2})-(\d{2})$/.exec(String(startDate ?? '')) ?? [];
+  if (frequency === 'daily') return 'todo dia';
+  if (frequency === 'weekly') {
+    return day ? DIAS_DA_SEMANA[new Date(`${startDate}T12:00:00Z`).getUTCDay()] : 'toda semana';
+  }
+  if (frequency === 'monthly') return day ? `todo mês, no dia ${Number(day)}` : 'todo mês';
+  return day ? `todo ano, em ${day}/${month}` : 'todo ano';
+}
+
+export function buildRecurringConfirmationText(action) {
+  const valor = action.amount != null ? `${formatCurrency(action.amount)} ` : '';
+  return `Revise a repetição abaixo: ${valor}${describeRecurrence(action.recurrence, action.date)}, a partir de ${formatShortDate(action.date)}. Os lançamentos com data depois de hoje ficam previstos até você confirmar cada um.`;
+}
+
 export function buildPlannedCompletionText(action) {
   const date = formatShortDate(action.date);
   if (action.transactionType === 'transfer') {

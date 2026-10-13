@@ -81,6 +81,8 @@ export {
   buildExecutionErrorResponse,
   buildInstallmentConfirmationText,
   buildPlannedConfirmationText,
+  buildRecurringConfirmationText,
+  describeRecurrence,
 } from './uniResponseBuilder.js';
 export {
   applyPlanOperationCorrection,
