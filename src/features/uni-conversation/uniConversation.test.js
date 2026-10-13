@@ -42,6 +42,12 @@ const categories = [
   { id: 'category-transfer', name: 'Transferência', category_type: 'transfer', is_active: true },
 ];
 
+// #80: a categoria vem do uni-interpret ou da pessoa (chips, card), nunca de
+// palavra da frase. Os testes que não tratam de categoria a recebem já
+// escolhida, como chega pelo id.
+const ESCOLHEU_ALIMENTACAO = Object.freeze({ categoryId: 'category-food' });
+const ESCOLHEU_SALARIO = Object.freeze({ categoryId: 'category-income' });
+
 function createAction(input, options = {}) {
   const parsed = parseFinancialText(input, { referenceDate: REFERENCE_DATE });
   return buildFinancialIntentAction({
@@ -54,7 +60,7 @@ function createAction(input, options = {}) {
 }
 
 test('despesa completa fica pronta para confirmação', () => {
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: ESCOLHEU_ALIMENTACAO });
 
   assert.equal(action.status, 'ready');
   assert.equal(action.transactionType, 'expense');
@@ -72,15 +78,15 @@ test('despesa completa fica pronta para confirmação', () => {
 // adiando a exibição do card -- exatamente o bug relatado com "Cinquenta
 // reais de gasolina." + "no Nubank".
 test('BUG REAL: transição para ready usa SEMPRE a mesma frase curta e determinística -- nunca repete valor/conta em prosa nem soa como nova pergunta', () => {
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: ESCOLHEU_ALIMENTACAO });
   const response = buildConfirmationResponse(action, { profileId: 'balanced' });
 
   assert.equal(response.text, 'Perfeito. Revise as informações abaixo antes de registrar.');
 });
 
 test('BUG REAL: a frase de ready é idêntica para despesa e receita, e independe da personalidade (nunca vira uma nova etapa de confirmação)', () => {
-  const expenseAction = createAction('Paguei 85 reais no mercado pelo Nubank.');
-  const incomeAction = createAction('Recebi 3000 reais de salário na Conta principal.');
+  const expenseAction = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: ESCOLHEU_ALIMENTACAO });
+  const incomeAction = createAction('Recebi 3000 reais de salário na Conta principal.', { overrides: ESCOLHEU_SALARIO });
   assert.equal(incomeAction.status, 'ready');
   assert.equal(incomeAction.transactionType, 'income');
 
@@ -125,7 +131,9 @@ const EXPENSE_CATEGORIES = [
 ];
 
 function stepOne() {
-  const parsed = parseFinancialText('Cinquenta reais de gasolina.', { referenceDate: REFERENCE_DATE });
+  // A categoria já escolhida pelo nome: estes testes tratam da conta.
+  const lido = parseFinancialText('Cinquenta reais de gasolina.', { referenceDate: REFERENCE_DATE });
+  const parsed = { ...lido, entities: { ...lido.entities, category: 'Transporte' } };
   const readyAction = buildFinancialIntentAction({
     parsed,
     accounts: EXPENSE_ACCOUNTS,
@@ -150,22 +158,22 @@ function stepOne() {
 
 // BLOCO CONTA-OPCIONAL: despesa/receita nunca mais bloqueiam nem perguntam
 // pela conta (financialIntentAction.js) -- "Gastei R$ 50 de gasolina" (e a
-// variação sem verbo) agora fica pronta DIRETO, sem nenhuma pergunta,
-// account fica null e o restante (valor/descrição/categoria via alias)
-// continua resolvido exatamente como antes.
-test('BUG REAL (ATUALIZADO): "Gastei R$ 50 de gasolina" (e a variação real sem verbo, "Cinquenta reais de gasolina.") nunca mais pergunta pela conta -- fica pronta direto', () => {
+// variação sem verbo) não pergunta a conta: account fica null. #80: sem o
+// uni-interpret, "gasolina" não escolhe Transporte; a Uni pergunta só a
+// categoria.
+test('BUG REAL (ATUALIZADO): "Gastei R$ 50 de gasolina" (e a variação real sem verbo, "Cinquenta reais de gasolina.") nunca mais pergunta pela conta, só a categoria', () => {
   for (const phrase of ['Gastei R$ 50 de gasolina.', 'Cinquenta reais de gasolina.']) {
     const parsed = parseFinancialText(phrase, { referenceDate: REFERENCE_DATE });
     const action = buildFinancialIntentAction({
       parsed, accounts: EXPENSE_ACCOUNTS, categories: EXPENSE_CATEGORIES, referenceDate: REFERENCE_DATE,
     });
-    assert.equal(action.status, 'ready');
-    assert.equal(action.issues.length, 0);
+    assert.equal(action.status, 'needs_clarification');
+    assert.deepEqual(action.issues.map((issue) => issue.code), ['category_required']);
+    assert.deepEqual(action.issues[0].candidates.map((category) => category.name), ['Transporte']);
     assert.equal(action.account, null);
-    assert.equal(action.payload.account_id, null);
     assert.equal(action.amount, 50);
     assert.equal(action.description, 'Gasolina');
-    assert.equal(action.category?.name, 'Transporte');
+    assert.equal(action.category, null);
   }
 });
 
@@ -358,7 +366,7 @@ test('BUG REAL: confirmar a ação pronta ainda executa exatamente uma vez (mesm
 });
 
 test('receita completa fica pronta para confirmação', () => {
-  const action = createAction('Recebi 3000 de salário pela Conta principal.');
+  const action = createAction('Recebi 3000 de salário pela Conta principal.', { overrides: ESCOLHEU_SALARIO });
 
   assert.equal(action.status, 'ready');
   assert.equal(action.transactionType, 'income');
@@ -418,7 +426,7 @@ test('despesa, transferência e ajuste de saldo usam perguntas específicas por 
 // agora significa: uma conta mencionada mas não encontrada NUNCA é usada
 // nem inventada, o lançamento simplesmente segue sem conta (account null).
 test('conta inexistente não é substituída silenciosamente -- despesa fica pronta sem conta, nunca inventa uma', () => {
-  const action = createAction('Paguei 40 de mercado pelo Banco Fantasma.');
+  const action = createAction('Paguei 40 de mercado pelo Banco Fantasma.', { overrides: ESCOLHEU_ALIMENTACAO });
 
   assert.equal(action.status, 'ready');
   assert.equal(action.account, null);
@@ -436,42 +444,64 @@ test('conta arquivada é bloqueada para novo lançamento (ajuste de saldo)', () 
   assert.equal(action.issues[0].code, 'account_archived');
 });
 
-test('categoria aproximada exige confirmação explícita antes de ser usada', () => {
-  const approximateCategories = [
-    { id: 'category-market', name: 'Alimentação e mercado', category_type: 'expense', is_active: true },
-  ];
+// #80: o nome de uma categoria dentro da frase não é escolha. "mercado" não
+// propõe "Alimentação e mercado": a Uni pergunta, e a pessoa escolhe.
+test('palavra da frase não propõe categoria parecida: a Uni pergunta', () => {
   const action = createAction('Paguei 40 no mercado pelo Nubank.', {
-    categories: approximateCategories,
+    categories: [
+      { id: 'category-market', name: 'Alimentação e mercado', category_type: 'expense', is_active: true },
+    ],
   });
 
   assert.equal(action.status, 'needs_clarification');
-  assert.equal(action.issues[0].field, 'category');
-  assert.equal(action.issues[0].code, 'category_approximate');
-  assert.equal(action.proposedCategory.id, 'category-market');
+  assert.equal(action.issues[0].code, 'category_required');
+  assert.deepEqual(action.issues[0].candidates.map((category) => category.id), ['category-market']);
   assert.equal(action.category, null);
-
-  const approved = createAction('Paguei 40 no mercado pelo Nubank.', {
-    categories: approximateCategories,
-    overrides: { categoryApproved: true },
-  });
-
-  assert.equal(approved.status, 'ready');
-  assert.equal(approved.category.id, 'category-market');
-  assert.equal(approved.categoryWasApproximate, true);
+  assert.equal(action.proposedCategory, null);
+  assert.equal(action.proposedCategoryName, null);
+  assert.equal(buildClarificationResponse(action).text, 'Em qual categoria essa movimentação se encaixa?');
 });
 
-test('categoria inexistente gera proposta de nome antes de criar', () => {
+test('BUG REAL: "mensalidade escolar das crianças" não vira Impostos', () => {
+  const action = createAction('Lance 300 reais referente a mensalidade escolar das crianças', {
+    categories: [
+      { id: 'category-tax', name: 'Impostos', category_type: 'expense', is_active: true },
+      { id: 'category-school', name: 'Educação', category_type: 'expense', is_active: true },
+    ],
+  });
+
+  assert.equal(action.amount, 300);
+  assert.equal(action.category, null);
+  assert.equal(action.issues[0].code, 'category_required');
+});
+
+test('descrição sem categoria não vira nome de categoria nova', () => {
   const action = createAction('Gastei 90 com pet pelo Nubank.', { categories: [] });
+
+  assert.equal(action.status, 'needs_clarification');
+  assert.equal(action.issues[0].code, 'category_required');
+  assert.equal(action.proposedCategoryName, null);
+});
+
+test('categoria pedida pelo nome e inexistente gera proposta de nome antes de criar', () => {
+  const action = createAction('Gastei 90 com pet pelo Nubank.', { categories: [], overrides: { categoryName: 'Pet' } });
 
   assert.equal(action.status, 'needs_clarification');
   assert.equal(action.issues[0].code, 'category_not_found');
   assert.equal(action.proposedCategoryName, 'Pet');
 });
 
+test('"na categoria Alimentação" na frase escolhe a categoria pelo nome', () => {
+  const action = createAction('Paguei 40 no mercado na categoria Alimentação pelo Nubank.');
+
+  assert.equal(action.status, 'ready');
+  assert.equal(action.category.id, 'category-food');
+});
+
 test('decisão de criar categoria fica pronta com proposta e sem exigir categoria existente', () => {
   const action = createAction('Gastei 90 com pet pelo Nubank.', {
     categories: [],
-    overrides: { categoryDecision: 'create_new' },
+    overrides: { categoryName: 'Pet', categoryDecision: 'create_new' },
   });
 
   assert.equal(action.status, 'ready');
@@ -482,26 +512,15 @@ test('decisão de criar categoria fica pronta com proposta e sem exigir categori
   assert.equal(action.payload.category_id, null);
 });
 
-test('mensagem de esclarecimento pergunta pela categoria aproximada por voz', () => {
-  const action = createAction('Paguei 40 no mercado pelo Nubank.', {
-    categories: [
-      { id: 'category-market', name: 'Alimentação e mercado', category_type: 'expense', is_active: true },
-    ],
-  });
-
-  const response = buildClarificationResponse(action);
-  assert.equal(response.text, 'Esse gasto parece ser de Alimentação e mercado. Posso usar essa categoria?');
-});
-
 test('mensagem de esclarecimento oferece criar a categoria inexistente por voz', () => {
-  const action = createAction('Gastei 90 com pet pelo Nubank.', { categories: [] });
+  const action = createAction('Gastei 90 com pet pelo Nubank.', { categories: [], overrides: { categoryName: 'Pet' } });
 
   const response = buildClarificationResponse(action);
   assert.equal(response.text, 'A categoria Pet ainda não existe. Deseja criá-la?');
 });
 
 test('confirmação envia somente o payload financeiro validado', async () => {
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: ESCOLHEU_ALIMENTACAO });
   let receivedPayload = null;
   const result = await executeFinancialIntentAction(action, async (payload) => {
     receivedPayload = payload;
@@ -523,7 +542,7 @@ test('confirmação envia somente o payload financeiro validado', async () => {
 });
 
 test('lançamento com data futura fica previsto: status pending, card e textos dizem isso', () => {
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: { date: '2026-07-20' } });
+  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: { ...ESCOLHEU_ALIMENTACAO, date: '2026-07-20' } });
 
   assert.equal(action.status, 'ready');
   assert.equal(action.planned, true);
@@ -541,7 +560,7 @@ test('lançamento com data futura fica previsto: status pending, card e textos d
 
 test('lançamento de hoje ou do passado não fica previsto', () => {
   for (const date of [REFERENCE_DATE, '2026-07-01']) {
-    const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: { date } });
+    const action = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: { ...ESCOLHEU_ALIMENTACAO, date } });
     assert.equal(action.planned, false, date);
     assert.equal(action.payload.status, 'completed', date);
     assert.equal(buildConfirmationResponse(action).text, 'Perfeito. Revise as informações abaixo antes de registrar.');
@@ -633,7 +652,7 @@ test('cancelamento muda o estado sem executar criação', () => {
 });
 
 test('erro do Supabase gera mensagem humana sem expor detalhe técnico', async () => {
-  const action = createAction('Paguei 85 no mercado pelo Nubank.');
+  const action = createAction('Paguei 85 no mercado pelo Nubank.', { overrides: ESCOLHEU_ALIMENTACAO });
   const result = await executeFinancialIntentAction(action, async () => ({
     data: null,
     error: { code: '42501', message: 'new row violates row-level security policy' },
@@ -808,7 +827,9 @@ test('resposta curta resolve conta, categoria, descrição e valor sem inventar 
 // buildFinancialIntentAction (mesma função usada por correct()).
 test('BLOCO B: Editar um campo do card pronto preserva os demais já resolvidos (nunca reconstrói do zero)', () => {
   const parsed = parseFinancialText('Paguei 85 reais no mercado pelo Nubank.', { referenceDate: REFERENCE_DATE });
-  const ready = buildFinancialIntentAction({ parsed, accounts, categories, referenceDate: REFERENCE_DATE });
+  const ready = buildFinancialIntentAction({
+    parsed, accounts, categories, referenceDate: REFERENCE_DATE, overrides: ESCOLHEU_ALIMENTACAO,
+  });
   assert.equal(ready.status, 'ready');
   assert.equal(ready.amount, 85);
   assert.equal(ready.account.id, 'account-nubank');
@@ -821,7 +842,7 @@ test('BLOCO B: Editar um campo do card pronto preserva os demais já resolvidos 
     accounts,
     categories,
     referenceDate: REFERENCE_DATE,
-    overrides: { amount: 90 },
+    overrides: { ...ESCOLHEU_ALIMENTACAO, amount: 90 },
   });
   assert.equal(editedAmount.status, 'ready');
   assert.equal(editedAmount.amount, 90);
@@ -836,7 +857,7 @@ test('BLOCO B: Editar um campo do card pronto preserva os demais já resolvidos 
     accounts,
     categories,
     referenceDate: REFERENCE_DATE,
-    overrides: { amount: 90, accountId: 'account-main' },
+    overrides: { ...ESCOLHEU_ALIMENTACAO, amount: 90, accountId: 'account-main' },
   });
   assert.equal(editedAccount.status, 'ready');
   assert.equal(editedAccount.amount, 90);
@@ -946,7 +967,7 @@ test('ação pendente restaura na mesma identidade e expira', () => {
     removeItem: (key) => values.delete(key),
   };
   const identity = { userId: 'user', workspaceId: 'workspace', conversationId: 'conversation' };
-  const snapshot = { action: createAction('Paguei 85 no mercado pelo Nubank.') };
+  const snapshot = { action: createAction('Paguei 85 no mercado pelo Nubank.', { overrides: ESCOLHEU_ALIMENTACAO }) };
   assert.equal(savePendingAction(identity, snapshot, storage, 1000), true);
   assert.equal(loadPendingAction(identity, storage, 1001)?.action.status, 'ready');
   assert.equal(loadPendingAction(identity, storage, 1000 + PENDING_ACTION_TTL_MS), null);
@@ -1035,7 +1056,7 @@ test('destinationAccount (transferência) também normaliza institution antes de
 });
 
 test('resolveFinancialAccount (via buildFinancialIntentAction) normaliza "No Bank" para a conta real Nubank', () => {
-  const action = createAction('Paguei 40 reais no mercado pelo No Bank.', { accounts });
+  const action = createAction('Paguei 40 reais no mercado pelo No Bank.', { accounts, overrides: ESCOLHEU_ALIMENTACAO });
   assert.equal(action.status, 'ready');
   assert.equal(action.account?.id, 'account-nubank');
   assert.equal(action.account?.name, 'Nubank');
@@ -1104,32 +1125,42 @@ test('nenhum ID é inventado: a conta resolvida sempre é uma conta real da list
 });
 
 // ============================================================================
-// BLOCO UNI 1A -- INTEGRAÇÃO PONTA A PONTA (Parte 7 do bloco, ATUALIZADO
-// pelo BLOCO CONTA-OPCIONAL): "Gastei R$ 50 no mercado" sem conta informada
-// -> despesa não bloqueia mais por conta, fica pronta DIRETO, com categoria
-// Alimentação já resolvida via alias determinístico (sem IA) -> confirmação
-// -> execução ÚNICA via executeFinancialIntentAction (RPC mockada) ->
-// nenhuma chamada de rede/IA em nenhum momento deste fluxo (aiInference
-// nunca é passado nem necessário aqui).
+// BLOCO UNI 1A -- INTEGRAÇÃO PONTA A PONTA (ATUALIZADO pelo #80): "Gastei R$
+// 50 no mercado" sem IA e sem conta -> despesa não bloqueia por conta, mas a
+// categoria não sai de "mercado": a Uni pergunta e mostra as categorias do
+// tipo -> a pessoa escolhe "Alimentação" (chip) -> pronta -> execução ÚNICA
+// via executeFinancialIntentAction (RPC mockada), sem nenhuma chamada de IA.
 // ============================================================================
 
-test('BLOCO UNI 1A: fluxo completo "Gastei R$ 50 no mercado" -> já fica ready sem perguntar conta, com Alimentação via alias -> confirmação -> execução única -- sem IA', async () => {
+test('BLOCO UNI 1A: fluxo completo "Gastei R$ 50 no mercado" sem IA -> pergunta a categoria -> a pessoa escolhe -> execução única', async () => {
+  const catalogo = [{ id: 'cat-alimentacao', name: 'Alimentação', category_type: 'expense', is_active: true }];
   const parsed = parseFinancialText('Gastei R$ 50 no mercado.', { referenceDate: REFERENCE_DATE });
-  const action = buildFinancialIntentAction({
+  const draft = buildFinancialIntentAction({
     parsed,
     accounts: EXPENSE_ACCOUNTS,
-    categories: [{ id: 'cat-alimentacao', name: 'Alimentação', category_type: 'expense', is_active: true }],
+    categories: catalogo,
     referenceDate: REFERENCE_DATE,
   });
 
-  // 1-2. despesa reconhecida e JÁ pronta -- categoria resolvida pelo alias
-  // determinístico "mercado" -> Alimentação, sem nenhuma chamada de IA
-  // (aiInference nunca foi passado), e SEM perguntar a conta (account
-  // fica null, nunca inventado).
+  // 1. sem conta e sem categoria escolhida: só a categoria é perguntada, com
+  // as candidatas que viram chips.
+  assert.equal(draft.status, 'needs_clarification');
+  assert.deepEqual(draft.issues.map((issue) => issue.code), ['category_required']);
+  assert.deepEqual(draft.options.categories.map((category) => category.id), ['cat-alimentacao']);
+  assert.equal(draft.category, null);
+
+  // 2. o chip manda o nome da categoria como resposta.
+  const escolha = resolvePendingActionInput({ value: 'Alimentação', action: draft, accounts: EXPENSE_ACCOUNTS, categories: catalogo });
+  assert.deepEqual(escolha, { kind: 'correction', overrides: { categoryId: 'cat-alimentacao' } });
+  const action = buildFinancialIntentAction({
+    parsed,
+    accounts: EXPENSE_ACCOUNTS,
+    categories: catalogo,
+    referenceDate: REFERENCE_DATE,
+    overrides: escolha.overrides,
+  });
   assert.equal(action.status, 'ready');
-  assert.equal(action.issues.length, 0);
   assert.equal(action.account, null);
-  assert.equal(action.category?.name, 'Alimentação', 'categoria já deveria estar resolvida via alias');
   assert.equal(action.category?.id, 'cat-alimentacao');
   assert.equal(action.amount, 50);
   assert.equal(action.payload.account_id, null);
@@ -1291,7 +1322,7 @@ test('BUG REAL: respostas reais de conta continuam resolvendo ("No Nubank.", "En
 // corrigir", e o ajuste com verbo e valor ("na verdade paguei 150 reais")
 // descartava o card como se fosse um lançamento novo.
 test('BUG REAL: ajuste falado corrige o card na tela e mantém os outros campos', () => {
-  const ready = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const ready = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: ESCOLHEU_ALIMENTACAO });
   assert.equal(ready.status, 'ready');
   const resolve = (value) => resolvePendingActionInput({
     value, action: ready, accounts, categories, referenceDate: REFERENCE_DATE,
@@ -1308,7 +1339,7 @@ test('BUG REAL: ajuste falado corrige o card na tela e mantém os outros campos'
   assert.equal(resolve('qual meu saldo').kind, 'invalid');
 
   const corrected = createAction('Paguei 85 reais no mercado pelo Nubank.', {
-    overrides: resolve('muda pra cento e cinquenta').overrides,
+    overrides: { ...ESCOLHEU_ALIMENTACAO, ...resolve('muda pra cento e cinquenta').overrides },
   });
   assert.equal(corrected.status, 'ready');
   assert.equal(corrected.amount, 150);
@@ -1372,7 +1403,7 @@ test('nome de categoria pedido no ajuste sai sem os conectivos', () => {
 });
 
 test('card pronto: "a categoria é X" inexistente pede para criar X, e X existente corrige o card', () => {
-  const ready = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const ready = createAction('Paguei 85 reais no mercado pelo Nubank.', { overrides: ESCOLHEU_ALIMENTACAO });
   assert.equal(ready.status, 'ready');
 
   const missing = resolvePendingActionInput({
@@ -1427,30 +1458,40 @@ test('"edite" também marca ajuste do rascunho', () => {
 // (entrada/saída) passa a ser um campo corrigível do rascunho.
 // ============================================================================
 
-test('pedido de salário vira receita pronta na categoria Salário, sem criar categoria', () => {
+// #80: sem o uni-interpret, "salário" não escolhe a categoria Salário; a
+// pessoa escolhe entre as categorias de entrada.
+test('pedido de salário vira receita e pergunta a categoria, sem criar categoria', () => {
   const action = createAction('Registre hoje um salário de 2500');
 
-  assert.equal(action.status, 'ready');
+  assert.equal(action.status, 'needs_clarification');
   assert.equal(action.transactionType, 'income');
   assert.equal(action.amount, 2500);
-  assert.equal(action.category.id, 'category-income');
-  assert.equal(action.payload.transaction_type, 'income');
+  assert.equal(action.issues[0].code, 'category_required');
+  assert.deepEqual(action.issues[0].candidates.map((category) => category.id), ['category-income']);
+  assert.equal(action.proposedCategoryName, null);
+
+  const escolhida = createAction('Registre hoje um salário de 2500', { overrides: ESCOLHEU_SALARIO });
+  assert.equal(escolhida.status, 'ready');
+  assert.equal(escolhida.payload.transaction_type, 'income');
 });
 
 test('overrides.transactionType troca despesa por receita e reavalia a categoria', () => {
   const expense = createAction('Gastei 2500 de salário');
   assert.equal(expense.transactionType, 'expense');
-  assert.equal(expense.issues[0].code, 'category_not_found');
+  assert.equal(expense.issues[0].code, 'category_required');
+  assert.deepEqual(expense.issues[0].candidates.map((category) => category.id), ['category-food']);
 
   const income = createAction('Gastei 2500 de salário', { overrides: { transactionType: 'income' } });
-  assert.equal(income.status, 'ready');
   assert.equal(income.transactionType, 'income');
   assert.equal(income.intent, 'register_income');
-  assert.equal(income.category.id, 'category-income');
+  assert.deepEqual(income.issues[0].candidates.map((category) => category.id), ['category-income']);
 
-  const backToExpense = createAction('Recebi 2500 de salário', { overrides: { transactionType: 'expense' } });
+  // A categoria escolhida para a entrada não serve à saída: volta a pergunta.
+  const backToExpense = createAction('Recebi 2500 de salário', {
+    overrides: { ...ESCOLHEU_SALARIO, transactionType: 'expense' },
+  });
   assert.equal(backToExpense.transactionType, 'expense');
-  assert.equal(backToExpense.issues[0].code, 'category_not_found');
+  assert.equal(backToExpense.issues[0].code, 'category_incompatible');
 });
 
 test('overrides.transactionType ignora tipos que não são entrada/saída e não mexe em transferência', () => {
@@ -1543,7 +1584,7 @@ test('card de despesa pronto: "não é despesa, é receita" corrige o tipo e a c
 test('corrigir o tipo no rascunho devolve o card de receita pronto, sem passar pela criação de categoria', () => {
   const parsed = parseFinancialText('Gastei 2500 de salário', { referenceDate: REFERENCE_DATE });
   const draft = createAction('Gastei 2500 de salário');
-  assert.equal(draft.issues[0].code, 'category_not_found');
+  assert.equal(draft.issues[0].code, 'category_required');
 
   const resolved = resolvePendingActionInput({
     value: 'Salário não é despesa, salário é uma receita.',

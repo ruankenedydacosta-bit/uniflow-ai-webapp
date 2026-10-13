@@ -30,7 +30,10 @@ function reducer(state, action) {
   return reduceRealtimeEvent(state, action.event, action.at);
 }
 
-async function requestClientSecret(eagerness) {
+// workspaceId: o servidor lê com o JWT da pessoa os nomes de contas e
+// categorias desse espaço para a transcrição (#79). Sem ele, a conversa abre
+// sem vocabulário.
+async function requestClientSecret({ eagerness, workspaceId }) {
   const { data } = await supabase.auth.getSession();
   const accessToken = data?.session?.access_token;
   if (!accessToken) throw new RealtimeSessionError('UNAUTHORIZED', 'Entre no app para conversar com a Uni.');
@@ -42,7 +45,7 @@ async function requestClientSecret(eagerness) {
       apikey: supabaseAnonKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ eagerness }),
+    body: JSON.stringify({ eagerness, workspace_id: workspaceId || undefined }),
   });
   const body = await response.json().catch(() => null);
   if (!response.ok || typeof body?.client_secret !== 'string') {
@@ -222,7 +225,7 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
   // Chame dentro do toque da pessoa: o iOS só libera microfone e áudio
   // numa ação do usuário, então os dois são pedidos antes de qualquer rede.
   // greetingInstructions: a Uni fala primeiro, assim que a conversa abre.
-  const start = useCallback(async ({ eagerness, greetingInstructions } = {}) => {
+  const start = useCallback(async ({ eagerness, greetingInstructions, workspaceId } = {}) => {
     if (connectionRef.current) return;
     const connection = {};
     connectionRef.current = connection;
@@ -245,7 +248,7 @@ export function useRealtimeVoiceSession({ onToolCall } = {}) {
       // Mutar durante a conexão vale para o microfone que acabou de abrir.
       setLocalStreamMuted(connection.localStream, connection.muted);
 
-      const session = await requestClientSecret(eagerness);
+      const session = await requestClientSecret({ eagerness, workspaceId });
       connection.reservation = createVoiceReservation({
         sessionId: session.voice_session_id,
         reservedUntil: session.reserved_until,

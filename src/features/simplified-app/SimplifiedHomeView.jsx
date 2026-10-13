@@ -5,6 +5,7 @@ import OutlineButton from '../../components/ui/OutlineButton/index.js';
 import UniCard from '../../components/ui/UniCard/index.js';
 import ActionConfirmation from '../uni-chat/components/ActionConfirmation.jsx';
 import { VOICE_TTS_STATUS } from '../uni-voice-tts/index.js';
+import QuickSuggestions from '../uni-chat/components/QuickSuggestions.jsx';
 import { PwaInstallExperience, usePwaAutoUpdateBlock } from '../pwa-install/index.js';
 import SimplifiedHomeAgenda from './SimplifiedHomeAgenda.jsx';
 import SimplifiedHomeFinancialGraph from './SimplifiedHomeFinancialGraph.jsx';
@@ -74,6 +75,8 @@ function CompactResponse({
   onUndoAction,
   editForm = null,
   onSaveEditAction,
+  categoryChoices = [],
+  onChooseCategory,
   interactionState,
   voiceStatus,
   voiceMessageId,
@@ -181,6 +184,16 @@ function CompactResponse({
               Desfazer
             </OutlineButton>
           ) : null}
+          {/* Rascunho esperando a categoria (#80). Na tela de voz a pessoa
+              diz o nome: o toque não chegaria à conversa falada. */}
+          {!isVoicePresentation && categoryChoices.length > 0 && typeof onChooseCategory === 'function' ? (
+            <QuickSuggestions
+              items={categoryChoices}
+              onSelect={onChooseCategory}
+              variant="rail"
+              label="Escolha a categoria"
+            />
+          ) : null}
         </>
       ) : null}
       {/* HOTFIX P1.4: "Ouvir resposta" removido do card compacto da Home --
@@ -226,6 +239,8 @@ function SimplifiedHomeView({
   onUndoAction,
   editForm = null,
   onSaveEditAction,
+  categoryChoices = [],
+  onChooseCategory,
   onRealtimeVoiceActiveChange,
 }) {
   const navigate = useNavigate();
@@ -281,7 +296,7 @@ function SimplifiedHomeView({
 
   // Conversa em tempo real (épico #116): a Uni ouve e fala continuamente, e
   // o que envolve dinheiro passa pelo mesmo envio do texto.
-  const { updateOwnProfile } = useSession();
+  const { updateOwnProfile, workspace } = useSession();
   const saveNamePronunciation = useCallback(
     (pronunciation) => updateOwnProfile({ name_pronunciation: pronunciation }),
     [updateOwnProfile],
@@ -363,6 +378,7 @@ function SimplifiedHomeView({
     onBeforeVoiceStart?.();
     setVoiceConversationPreviousIds(snapshotVoiceConversationStart(messages));
     void realtime.start({
+      workspaceId: workspace?.id,
       greetingInstructions: buildRealtimeGreetingInstructions({
         suggestedGreeting: greeting.spokenGreeting,
         hasPendingDraft: pendingConfirmation,
@@ -451,6 +467,14 @@ function SimplifiedHomeView({
     onSaveEditAction(id, overrides);
   }
 
+  // Com a Uni ocupada o toque não vale: marcar a resposta antes esconderia a
+  // pergunta e os chips sem nada novo a caminho.
+  function handleChooseCategory(item) {
+    if (isTyping || isExecuting || typeof onChooseCategory !== 'function') return;
+    markHomeReply();
+    onChooseCategory(item);
+  }
+
   const compactResponseMessages = isVoiceModeOpen
     ? selectVoiceConversationMessages(messages, voiceConversationPreviousIds)
     : messages;
@@ -471,6 +495,8 @@ function SimplifiedHomeView({
       homeReplyBaseline={homeReplyBaseline}
       editForm={editForm}
       onSaveEditAction={onSaveEditAction ? handleCardSaveEdit : undefined}
+      categoryChoices={categoryChoices}
+      onChooseCategory={handleChooseCategory}
     />
   );
 

@@ -45,8 +45,8 @@ function grupoDoIntent(intent, frase) {
 }
 
 function modoDaCategoria(action) {
-  if (action.category && !action.categoryWasApproximate) return 'resolveu';
-  if (action.category || action.proposedCategory) return 'sugeriu';
+  if (action.category) return 'resolveu';
+  if (action.proposedCategory) return 'sugeriu';
   if (action.proposedCategoryName) return 'propos_criar';
   return 'perguntou';
 }
@@ -84,8 +84,11 @@ if (!CONJUNTOS.includes(conjunto)) {
   console.error('Informe --conjunto ajuste|reservado|todos.');
   process.exit(1);
 }
+// Memória e rascunho (#79) só existem no caminho do uni-interpret: as regras
+// não leem memória e respondem ao card por outro fluxo.
 const casosDoConjunto = CASOS.filter((caso) => (
-  conjunto === 'todos' || (conjunto === 'reservado') === Boolean(caso.reservado)
+  (conjunto === 'todos' || (conjunto === 'reservado') === Boolean(caso.reservado))
+  && !caso.memorias && !caso.rascunho
 ));
 const vereditos = [];
 

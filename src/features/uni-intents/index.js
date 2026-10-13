@@ -11,7 +11,6 @@ export {
   extractDate,
   extractEntities,
 } from './entityExtractor.js';
-export { resolveCategory } from './categoryResolver.js';
 export {
   advanceConversationContext,
   applyConversationContext,

@@ -86,9 +86,7 @@ export function buildOperationClarificationQuestion(op) {
     return 'Essa conta ainda não existe. Qual conta já existente devo usar?';
   }
   if (op.action?.proposedCategory) {
-    const { id, name } = op.action.proposedCategory;
-    // Com id é uma categoria que já existe, só parecida com o pedido.
-    if (id && name) return `Qual categoria devo usar? A mais parecida é ${name}.`;
+    const { name } = op.action.proposedCategory;
     return name
       ? `A categoria ${name} ainda não existe. Diga uma categoria que já existe, ou crie antes com "cria a categoria ${name}".`
       : 'Essa categoria ainda não existe. Qual categoria já existente devo usar?';
