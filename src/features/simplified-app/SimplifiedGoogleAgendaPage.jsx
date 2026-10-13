@@ -96,9 +96,15 @@ function SimplifiedGoogleAgendaPage() {
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState(null);
   const [agendas, setAgendas] = useState([]);
+  // 'carregando' | 'ok' | 'erro'. Só a leitura que deu certo pode dizer que
+  // a conta não tem agendas.
+  const [estadoDasAgendas, setEstadoDasAgendas] = useState('carregando');
   // Uma gravação por vez: 'destino' ou o id da agenda cuja leitura muda.
   const [salvando, setSalvando] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  // Gravação e sincronização não correm juntas: a releitura depois de
+  // sincronizar desfaria uma marcação ainda não confirmada pelo banco.
+  const ocupado = Boolean(salvando) || isSyncing;
 
   // O resultado do retorno vira aviso uma vez só; a URL fica limpa.
   useEffect(() => {
@@ -114,6 +120,14 @@ function SimplifiedGoogleAgendaPage() {
   // sobrescrita pela leitura inicial, mais lenta.
   const ultimoPedidoRef = useRef(0);
 
+  // Espaço aberto agora. Gravação e sincronização que terminam depois de
+  // trocar de espaço não mostram aviso nem releem: a leitura do espaço novo
+  // já foi disparada pela troca.
+  const workspaceIdRef = useRef(workspaceId);
+  useEffect(() => {
+    workspaceIdRef.current = workspaceId;
+  }, [workspaceId]);
+
   // `silencioso` relê sem voltar ao "Carregando…" (depois de sincronizar).
   const carregarConexao = useCallback(({ silencioso = false } = {}) => {
     const pedido = ultimoPedidoRef.current + 1;
@@ -122,7 +136,10 @@ function SimplifiedGoogleAgendaPage() {
       setIsLoading(false);
       return;
     }
-    if (!silencioso) setIsLoading(true);
+    if (!silencioso) {
+      setIsLoading(true);
+      setEstadoDasAgendas('carregando');
+    }
     obterConexao({ workspaceId }).then(async ({ data, error }) => {
       if (ultimoPedidoRef.current !== pedido) return;
       let lidas = [];
@@ -133,8 +150,13 @@ function SimplifiedGoogleAgendaPage() {
         lidas = resposta.data ?? [];
         erroDasAgendas = resposta.error;
       }
+      // Na releitura depois de sincronizar, uma falha mantém o que já está
+      // na tela em vez de mostrar "Nenhuma conta conectada" e o aviso da
+      // sincronização continua visível.
+      if (silencioso && (error || erroDasAgendas)) return;
       setConexao(data ?? null);
-      setAgendas(lidas);
+      setAgendas(erroDasAgendas ? [] : lidas);
+      setEstadoDasAgendas(error || erroDasAgendas ? 'erro' : 'ok');
       if (error) setAviso({ tone: 'alert', message: MENSAGEM_ERRO_AO_CARREGAR });
       else if (erroDasAgendas) setAviso({ tone: 'alert', message: MENSAGEM_ERRO_AO_CARREGAR_AGENDAS });
       setIsLoading(false);
@@ -164,10 +186,11 @@ function SimplifiedGoogleAgendaPage() {
       }, 0);
       return;
     }
+    const espacoDoPedido = workspaceIdRef.current;
     confirmarConexao({ pendente }).then(({ error }) => {
       setAviso(avisoDaConfirmacao(error));
       setIsConfirming(false);
-      carregarConexao();
+      if (workspaceIdRef.current === espacoDoPedido) carregarConexao();
     });
   }, [pendente, isSessionLoading, user?.id, carregarConexao]);
 
@@ -211,8 +234,9 @@ function SimplifiedGoogleAgendaPage() {
   }
 
   async function handleEscolherDestino(agenda) {
-    if (!conexao || salvando || agenda.external_calendar_id === conexao.destination_calendar_id) return;
+    if (!conexao || ocupado || agenda.external_calendar_id === conexao.destination_calendar_id) return;
     const connectionId = conexao.id;
+    const espacoDoPedido = workspaceId;
     setSalvando('destino');
     setAviso(null);
     const { data, error } = await salvarPreferencias({
@@ -220,6 +244,7 @@ function SimplifiedGoogleAgendaPage() {
       destinationCalendarId: agenda.external_calendar_id,
     });
     setSalvando(null);
+    if (workspaceIdRef.current !== espacoDoPedido) return;
     if (error) {
       setAviso({ tone: 'alert', message: mensagemDeErroAoSalvar(error) });
       return;
@@ -232,13 +257,15 @@ function SimplifiedGoogleAgendaPage() {
 
   // Marca na hora e desfaz se o banco recusar.
   async function handleLeitura(agenda, lido) {
-    if (!conexao || salvando || !agendaPropria(agenda)) return;
+    if (!conexao || ocupado || !agendaPropria(agenda)) return;
     const connectionId = conexao.id;
+    const espacoDoPedido = workspaceId;
     setSalvando(agenda.id);
     setAviso(null);
     setAgendas((atuais) => comLeitura(atuais, agenda.id, lido));
     const { error } = await salvarPreferencias({ connectionId, calendarioId: agenda.id, lido });
     setSalvando(null);
+    if (workspaceIdRef.current !== espacoDoPedido) return;
     if (error) {
       setAgendas((atuais) => comLeitura(atuais, agenda.id, !lido));
       setAviso({ tone: 'alert', message: mensagemDeErroAoSalvar(error) });
@@ -248,11 +275,13 @@ function SimplifiedGoogleAgendaPage() {
   }
 
   async function handleSincronizar() {
-    if (!workspaceId || isSyncing) return;
+    if (!workspaceId || ocupado) return;
+    const espacoDoPedido = workspaceId;
     setIsSyncing(true);
     setAviso(null);
     const resposta = await sincronizarAgora({ workspaceId });
     setIsSyncing(false);
+    if (workspaceIdRef.current !== espacoDoPedido) return;
     setAviso(avisoDaSincronizacao(resposta));
     // Relê a hora do último sync e o estado da conexão (RECONNECT_REQUIRED
     // deixa a conexão em erro e mostra o botão de conectar de novo).
@@ -264,6 +293,10 @@ function SimplifiedGoogleAgendaPage() {
   const destinos = opcoesDeDestino(agendas);
   const agendasOrdenadas = ordenarAgendas(agendas);
   const mostrarPreferencias = Boolean(conexao) && !isConfirming;
+  const textoSemAgendas = {
+    carregando: 'Carregando…',
+    erro: 'Não foi possível carregar as agendas. Volte a esta tela para tentar de novo.',
+  };
 
   return (
     <div className={styles.page} data-simplified-google-agenda>
@@ -324,7 +357,7 @@ function SimplifiedGoogleAgendaPage() {
               <span className={groups.rowTitle}>Última sincronização</span>
               <span className={groups.rowSubtitle}>{textoDoUltimoSync(conexao.last_synced_at)}</span>
             </span>
-            <OutlineButton variant="secondary" onClick={handleSincronizar} loading={isSyncing}>
+            <OutlineButton variant="secondary" onClick={handleSincronizar} loading={isSyncing} disabled={Boolean(salvando)}>
               Sincronizar agora
             </OutlineButton>
           </div>
@@ -345,13 +378,13 @@ function SimplifiedGoogleAgendaPage() {
                   title={nomeDaAgenda(agenda)}
                   description={descricaoDaAgenda(agenda)}
                   checked={agenda.external_calendar_id === conexao.destination_calendar_id}
-                  disabled={Boolean(salvando)}
+                  disabled={ocupado}
                   onClick={() => handleEscolherDestino(agenda)}
                 />
               ))}
             </div>
           ) : (
-            <p className={styles.hint}>{isLoading ? 'Carregando…' : 'Nenhuma agenda sua foi encontrada na conta Google.'}</p>
+            <p className={styles.hint}>{textoSemAgendas[estadoDasAgendas] ?? 'Nenhuma agenda sua foi encontrada na conta Google.'}</p>
           )}
         </section>
       ) : null}
@@ -381,7 +414,7 @@ function SimplifiedGoogleAgendaPage() {
                       type="checkbox"
                       className={styles.checkbox}
                       checked={Boolean(agenda.is_read)}
-                      disabled={!podeLer || Boolean(salvando)}
+                      disabled={!podeLer || ocupado}
                       onChange={(event) => handleLeitura(agenda, event.target.checked)}
                     />
                   </label>
@@ -389,7 +422,7 @@ function SimplifiedGoogleAgendaPage() {
               })}
             </div>
           ) : (
-            <p className={styles.hint}>{isLoading ? 'Carregando…' : 'Nenhuma agenda foi encontrada na conta Google.'}</p>
+            <p className={styles.hint}>{textoSemAgendas[estadoDasAgendas] ?? 'Nenhuma agenda foi encontrada na conta Google.'}</p>
           )}
         </section>
       ) : null}

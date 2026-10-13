@@ -14,7 +14,7 @@ Mais → Configurações → Preferências → Integrações → Google Agenda (
 2. Ao conectar, o UniFlow cria na sua conta Google a agenda **"UniFlow · <nome do espaço>"**. Cada espaço tem a sua agenda. Se você conectar a mesma conta Google no espaço Pessoal e no espaço Empresa, aparecem duas agendas no Google.
 3. Os compromissos futuros que você criou no espaço vão para o Google logo depois de conectar. A partir daí, cada compromisso que você criar, alterar ou cancelar no UniFlow é atualizado no Google.
 4. Em **Agenda de destino**, escolha para qual agenda do Google vão os compromissos novos. A agenda "UniFlow · <nome do espaço>" vem marcada. Ao trocar de agenda, só os compromissos novos vão para a agenda escolhida. Os que já estão no Google continuam onde estão.
-5. Em **Agendas lidas**, marque as agendas do Google cujos eventos devem aparecer no UniFlow. A agenda "UniFlow · <nome do espaço>" vem marcada. Ao desmarcar uma agenda, o UniFlow para de trazer eventos dela, e os eventos já trazidos continuam no app.
+5. Em **Agendas lidas**, marque as agendas do Google cujos eventos devem aparecer no UniFlow. A agenda principal da conta e a agenda "UniFlow · <nome do espaço>" vêm marcadas. Se você conectar a mesma conta no espaço Empresa, desmarque a agenda principal para não trazer os eventos pessoais. Ao desmarcar uma agenda, o UniFlow para de trazer eventos dela, e os eventos já trazidos continuam no app.
 6. Em **Sincronização**, confira a hora da última sincronização. Para trazer as mudanças do Google na hora, toque em **Sincronizar agora**. Depois de sincronizar, aguarde 30 segundos para sincronizar de novo.
 
 ## O que vai para o Google

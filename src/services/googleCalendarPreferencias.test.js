@@ -112,6 +112,12 @@ test('salvarPreferencias: recusa do trigger, linha fora da RLS, banco fora e ped
     'READ_NOT_ALLOWED',
   );
 
+  const destinoSemLinha = fakeSupabase({ respostas: [{ data: null, error: null }] });
+  assert.equal(
+    (await makeService({ supabase: destinoSemLinha }).salvarPreferencias({ connectionId: 'c', destinationCalendarId: 'g' })).error.code,
+    'PREFERENCES_SAVE_FAILED',
+  );
+
   const semLinha = fakeSupabase({ respostas: [{ data: null, error: null }] });
   assert.equal(
     (await makeService({ supabase: semLinha }).salvarPreferencias({ connectionId: 'c', calendarioId: 'k', lido: true })).error.code,

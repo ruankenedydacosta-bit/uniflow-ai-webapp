@@ -140,13 +140,22 @@ test('tela: destino, agendas lidas com caixa só para agenda própria, último s
   assert.match(page, /salvarPreferencias\(\{\s*connectionId,\s*destinationCalendarId: agenda\.external_calendar_id,/);
   assert.match(page, /salvarPreferencias\(\{ connectionId, calendarioId: agenda\.id, lido \}\)/);
   assert.match(page, /type="checkbox"/);
-  assert.match(page, /disabled=\{!podeLer \|\| Boolean\(salvando\)\}/);
+  assert.match(page, /disabled=\{!podeLer \|\| ocupado\}/);
   assert.match(page, /textoDoUltimoSync\(conexao\.last_synced_at\)/);
   assert.match(page, /sincronizarAgora\(\{ workspaceId \}\)/);
   assert.match(page, /setAviso\(avisoDaSincronizacao\(resposta\)\)/);
   assert.match(page, /Sincronizar agora/);
   assert.match(page, /os que já estão no Google continuam onde estão/);
   assert.match(page, /os eventos já trazidos continuam no UniFlow/);
-  // Leitura que o banco recusa volta ao estado anterior.
+  // Presença no fonte: a leitura que o banco recusa volta ao valor anterior.
   assert.match(page, /comLeitura\(atuais, agenda\.id, !lido\)/);
+});
+
+test('tela: gravação e sincronização não correm juntas, e resposta de outro espaço é descartada', async () => {
+  const page = await source('./SimplifiedGoogleAgendaPage.jsx');
+  assert.match(page, /const ocupado = Boolean\(salvando\) \|\| isSyncing;/);
+  assert.match(page, /loading=\{isSyncing\} disabled=\{Boolean\(salvando\)\}/);
+  assert.equal(page.match(/if \(workspaceIdRef\.current !== espacoDoPedido\) return;/g)?.length, 3);
+  // Falha na releitura depois de sincronizar não apaga a conexão da tela.
+  assert.match(page, /if \(silencioso && \(error \|\| erroDasAgendas\)\) return;/);
 });
