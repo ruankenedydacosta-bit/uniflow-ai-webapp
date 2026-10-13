@@ -2312,6 +2312,7 @@ test('lançar direto (#81): tenta antes do card, pela RPC do card, e o Desfazer 
 
   const tentar = page.slice(page.indexOf('async function tentarLancarDireto('), page.indexOf('function handleDesfazerExclusao('));
   assert.ok(tentar.indexOf('memoriaPermiteLancarDireto(') < tentar.indexOf('executeFinancialIntentAction(action'));
+  assert.ok(tentar.indexOf('if (exclusaoDesfazivelRef.current) return false;') < tentar.indexOf('lerMemoriaDaDescricao('));
   assert.match(tentar, /executeAtomicAction: executeConfirmedFinancialAction/);
   assert.match(tentar, /if \(uniTurnTokenRef\.current !== turnToken \|\| activeIdRef\.current !== conversationId\) return false;/);
   assert.match(tentar, /undo: \{ status: 'available', tipo: 'lancamento_direto' \}/);

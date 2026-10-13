@@ -105,6 +105,7 @@ test('o rascunho do app precisa bater com a leitura e ter conta que já existe',
     outroValor: rascunho({ amount: 30 }),
     semConta: rascunho({ account: null, accountResolution: { status: 'missing' }, payload: { ...rascunho().payload, account_id: null } }),
     contaNova: rascunho({ accountResolution: { status: 'will_create' } }),
+    contaArquivada: rascunho({ accountResolution: { status: 'resolved', provisioning: 'reactivate' } }),
     comAviso: rascunho({ issues: [{ field: 'category' }] }),
   };
   for (const [nome, caso] of Object.entries(casos)) {

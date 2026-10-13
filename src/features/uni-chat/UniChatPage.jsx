@@ -2230,6 +2230,10 @@ export default function UniChatPage({ variant = 'full' }) {
   async function tentarLancarDireto(interpretacao, action, turnToken) {
     const operacao = operacaoParaLancarDireto(interpretacao);
     if (!operacao || !rascunhoPodeIrDireto(action, operacao) || confirmingRef.current) return false;
+    // Com um Desfazer ainda valendo (exclusão ou outro lançamento direto), o
+    // card aparece: lançar agora venceria aquele Desfazer, e a mesma frase
+    // repetida pela voz não grava duas vezes sem a pessoa ver.
+    if (exclusaoDesfazivelRef.current) return false;
     const workspaceId = effectiveWorkspace?.id;
     const conversationId = activeIdRef.current;
     const memoria = await lerMemoriaDaDescricao({ workspaceId, descricao: action.payload.description });

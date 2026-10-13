@@ -60,6 +60,7 @@ export function rascunhoPodeIrDireto(action, operacao) {
     && Number(action.amount) === Number(operacao.valor)
     && action.account?.id
     && action.accountResolution?.status === 'resolved'
+    && !action.accountResolution.provisioning
     && action.payload.account_id === action.account.id
     && (action.issues ?? []).length === 0,
   );
