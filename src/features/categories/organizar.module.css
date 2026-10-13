@@ -154,8 +154,8 @@
 }
 
 .moreButton svg {
-  width: 18px;
-  height: 18px;
+  width: var(--uf-icon-size-md);
+  height: var(--uf-icon-size-md);
   flex-shrink: 0;
 }
 
