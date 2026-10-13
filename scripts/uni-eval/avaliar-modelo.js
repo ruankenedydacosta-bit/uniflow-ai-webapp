@@ -20,7 +20,13 @@ import Anthropic from '@anthropic-ai/sdk';
 import { validarInterpretacao } from '../../supabase/functions/_shared/uniInterpret/contrato.js';
 import { INSTRUCOES, montarMensagemUsuario } from '../../supabase/functions/_shared/uniInterpret/prompt.js';
 import { interpretarComAnthropic, interpretarComOpenAi } from '../../supabase/functions/_shared/uniInterpret/provedores.js';
-import { catalogoDoWorkspace, contasDaAvaliacao, metasDaAvaliacao } from '../../src/features/uni-interpret/evalCatalog.js';
+import {
+  catalogoDoCaso,
+  contasDaAvaliacao,
+  memoriasDoCaso,
+  metasDaAvaliacao,
+  rascunhoDoCaso,
+} from '../../src/features/uni-interpret/evalCatalog.js';
 import { CASOS, DATA_REFERENCIA } from '../../src/features/uni-interpret/evalCases.js';
 import { avaliarCaso, normalizarInterpretacao, resumirAvaliacao } from '../../src/features/uni-interpret/evalScoring.js';
 
@@ -87,7 +93,7 @@ const casosDoConjunto = CASOS.filter((caso) => (
 
 for (const caso of casosDoConjunto) {
   const workspaceType = caso.workspace ?? 'personal';
-  const categorias = catalogoDoWorkspace(workspaceType);
+  const categorias = catalogoDoCaso(caso);
   const metas = metasDaAvaliacao();
   const contas = caso.contas ? contasDaAvaliacao() : [];
   const mensagem = montarMensagemUsuario({
@@ -97,6 +103,8 @@ for (const caso of casosDoConjunto) {
     categorias,
     contas,
     metas,
+    memorias: memoriasDoCaso(caso, categorias),
+    rascunho: rascunhoDoCaso(caso, categorias),
     historico: caso.historico ?? [],
   });
 

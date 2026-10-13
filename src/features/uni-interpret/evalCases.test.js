@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { catalogoDoWorkspace, contasDaAvaliacao, metasDaAvaliacao } from './evalCatalog.js';
+import {
+  catalogoDoCaso,
+  catalogoDoWorkspace,
+  contasDaAvaliacao,
+  memoriasDoCaso,
+  metasDaAvaliacao,
+  rascunhoDoCaso,
+} from './evalCatalog.js';
 import { CASOS } from './evalCases.js';
 import { avaliarCaso, INTENTS_DE_LANCAMENTO, resumirAvaliacao } from './evalScoring.js';
 
@@ -17,9 +24,12 @@ test('cada caso tem id único e intent conhecido', () => {
 
 test('categoria esperada existe no catálogo do workspace do caso, com o tipo certo', () => {
   const tipoPorIntent = { lancar_saida: 'expense', lancar_entrada: 'income', transferir: 'transfer' };
+  const tipoDoCaso = (caso) => (caso.esperado.intent === 'corrigir'
+    ? { saida: 'expense', entrada: 'income' }[caso.rascunho?.tipo]
+    : tipoPorIntent[caso.esperado.intent]);
   for (const caso of CASOS.filter((item) => INTENTS_DE_LANCAMENTO.has(item.esperado.intent))) {
-    const catalogo = catalogoDoWorkspace(caso.workspace ?? 'personal')
-      .filter((category) => category.category_type === tipoPorIntent[caso.esperado.intent])
+    const catalogo = catalogoDoCaso(caso)
+      .filter((category) => category.category_type === tipoDoCaso(caso))
       .map((category) => category.name);
     const { novaCategoria } = caso.esperado;
     assert.ok(caso.esperado.categoria !== undefined || novaCategoria, `${caso.id}: categoria esperada ausente`);
@@ -80,6 +90,22 @@ test('conta esperada e histórico: só com contas no caso e turnos bem formados'
     for (const turno of caso.historico ?? []) {
       assert.ok(['usuario', 'uni'].includes(turno.autor) && typeof turno.texto === 'string' && turno.texto, `${caso.id}: turno inválido`);
     }
+  }
+});
+
+// #79: a categoria de cada memória e a do rascunho existem no catálogo do
+// caso, e corrigir só aparece com rascunho.
+test('memória e rascunho apontam para categorias do catálogo do caso', () => {
+  for (const caso of CASOS) {
+    const categorias = catalogoDoCaso(caso);
+    for (const memoria of memoriasDoCaso(caso, categorias)) {
+      assert.ok(memoria.categoria_id && memoria.descricao, `${caso.id}: memória sem categoria do catálogo`);
+    }
+    if (caso.rascunho) {
+      const [operacao] = rascunhoDoCaso(caso, categorias).operacoes;
+      assert.ok(['saida', 'entrada'].includes(operacao.tipo) && operacao.categoria, `${caso.id}: rascunho inválido`);
+    }
+    if (caso.esperado.intent === 'corrigir') assert.ok(caso.rascunho, `${caso.id}: corrigir sem rascunho`);
   }
 });
 

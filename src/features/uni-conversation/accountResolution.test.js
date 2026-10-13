@@ -22,6 +22,10 @@ const categories = [
   { id: 'food', name: 'Alimentação', category_type: 'expense', is_active: true },
 ];
 
+// #80: a categoria vem do uni-interpret ou da pessoa, nunca de palavra da
+// frase. Os testes de conta a recebem já escolhida.
+const ESCOLHEU_ALIMENTACAO = Object.freeze({ categoryId: 'food' });
+
 function createAction(input, accounts = [], overrides = {}) {
   return buildFinancialIntentAction({
     parsed: parseFinancialText(input, { referenceDate: REFERENCE_DATE }),
@@ -35,7 +39,7 @@ function createAction(input, accounts = [], overrides = {}) {
 
 test('conta ativa existente é selecionada automaticamente', () => {
   const account = { id: 'nubank', name: 'Nubank', is_active: true };
-  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', [account]);
+  const action = createAction('Paguei 85 reais no mercado pelo Nubank.', [account], ESCOLHEU_ALIMENTACAO);
   assert.equal(action.status, 'ready');
   assert.equal(action.account.id, 'nubank');
   assert.equal(action.payload.account_id, 'nubank');
@@ -235,7 +239,7 @@ test('confirmação financeira continua obrigatória', () => {
 });
 
 test('receita/despesa nunca bloqueiam nem criam conta a partir de nome ambíguo/inexistente', () => {
-  const semConta = createAction('Paguei 85 reais no mercado pelo Nubank.');
+  const semConta = createAction('Paguei 85 reais no mercado pelo Nubank.', [], ESCOLHEU_ALIMENTACAO);
   assert.equal(semConta.status, 'ready');
   assert.equal(semConta.accountResolution.status, ACCOUNT_RESOLUTION_STATUS.MISSING);
   assert.equal(semConta.proposedAccount, null);
@@ -243,14 +247,14 @@ test('receita/despesa nunca bloqueiam nem criam conta a partir de nome ambíguo/
 
   const arquivada = createAction('Paguei 85 reais no mercado pelo Nubank.', [
     { id: 'archived', name: 'Nubank', is_active: false },
-  ]);
+  ], ESCOLHEU_ALIMENTACAO);
   assert.equal(arquivada.status, 'ready');
   assert.equal(arquivada.payload.account_id, null);
 
   const ambigua = createAction('Paguei 85 reais no mercado pelo Nubank.', [
     { id: 'one', name: 'Nubank', is_active: true },
     { id: 'two', name: 'Nu Bank', is_active: true },
-  ]);
+  ], ESCOLHEU_ALIMENTACAO);
   assert.equal(ambigua.status, 'ready');
   assert.equal(ambigua.payload.account_id, null);
 });

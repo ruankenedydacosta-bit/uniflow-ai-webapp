@@ -117,6 +117,29 @@ test('sucesso: devolve a proposta com ids reais e data de referência, e o model
   assert.match(chamadas[0].mensagem, /Hoje: 2026-10-02 \(sexta-feira\)/);
 });
 
+test('memórias de categoria (#79) do contexto do servidor chegam ao prompt com apelido', async () => {
+  const { chamarModelo, chamadas } = modeloQueResponde(LANCAMENTO_ESCOLA);
+  await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'Paguei 300 da escola' },
+    carregarContexto: async () => ({
+      ...CONTEXTO,
+      memorias: [{ descricao: 'Escola das crianças', categoria_id: 'cat-edu' }],
+    }),
+    chamarModelo,
+    agora: AGORA,
+  });
+  assert.match(chamadas[0].mensagem, /<memorias>\n- "Escola das crianças" → c2\n<\/memorias>/);
+
+  const semMemorias = modeloQueResponde(LANCAMENTO_ESCOLA);
+  await interpretarFrase({
+    corpo: { workspaceId: WORKSPACE, frase: 'Paguei 300 da escola' },
+    carregarContexto: async () => CONTEXTO,
+    chamarModelo: semMemorias.chamarModelo,
+    agora: AGORA,
+  });
+  assert.doesNotMatch(semMemorias.chamadas[0].mensagem, /<memorias>/);
+});
+
 test('consulta: devolve só ids e nomes dos registros filtrados', async () => {
   const { chamarModelo } = modeloQueResponde({
     intent: 'consulta',

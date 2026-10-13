@@ -12,7 +12,7 @@ No topo da conversa ficam a Uni, o espaço ativo ("Espaço Pessoal") e dois bot�
 
 ## Passo a passo
 
-**Registrar uma movimentação por chat**: descreva a movimentação em linguagem natural (ex.: "gastei 50 reais no mercado"). A Uni mostra um card de rascunho com o tipo ("Saída · rascunho" ou "Entrada · rascunho"), a categoria, o valor, a conta, a descrição e a data. Confira os dados e toque em **Confirmar** para salvar. **Editar** abre os campos no próprio card e **Cancelar** descarta o rascunho. **Nada é salvo antes de você tocar em Confirmar.** A Uni nunca registra, edita ou apaga uma movimentação sem a sua confirmação.
+**Registrar uma movimentação por chat**: descreva a movimentação em linguagem natural (ex.: "gastei 50 reais no mercado"). A Uni mostra um card de rascunho com o tipo ("Saída · rascunho" ou "Entrada · rascunho"), a categoria, o valor, a conta, a descrição e a data. Confira os dados e toque em **Confirmar** para salvar. **Editar** abre os campos no próprio card e **Cancelar** descarta o rascunho. **Nada é salvo antes de você tocar em Confirmar.** A Uni nunca registra, edita ou apaga uma movimentação sem a sua confirmação. A exceção é o lançamento direto: uma despesa ou receita cuja descrição você já confirmou 3 vezes seguidas na mesma categoria pode ser lançada sem card, com o botão **Desfazer** por 60 segundos. Veja o artigo "Como a Uni escolhe a categoria".
 
 **Registrar uma compra parcelada**: diga o total e o número de parcelas, como "comprei uma TV de 3 mil em 10 vezes no Nubank" ou "parcelei a geladeira de 2.400 em 12x". O card "Compra parcelada · rascunho" mostra:
 
@@ -75,7 +75,7 @@ Sessão autenticada. A geração de respostas por IA depende de configuração d
 
 ## Limitações atuais
 
-- A Uni não executa ações sozinha — sempre pede confirmação.
+- A Uni pede confirmação antes de qualquer ação. A única exceção é o lançamento direto com Desfazer, descrito em "Como a Uni escolhe a categoria".
 - A Uni não acessa dados de outro espaço ou de outro usuário.
 - Pela conversa não dá para alterar ou excluir transferências, ajustes de saldo, parcelas nem movimentações importadas, nem trocar despesa por receita. Faça isso na tela Financeiro.
 - A Uni exclui uma movimentação por vez. Exclusão em lote só na tela Financeiro.
@@ -90,4 +90,4 @@ Quando a IA não está configurada ou falha, a Uni informa que não conseguiu ge
 ## Funcionalidades ainda não disponíveis
 
 - Atalhos de "Perguntar à Uni" a partir de outras telas do produto.
-- Execução de ações fora do fluxo de confirmação explícita.
+- Execução de ações fora do fluxo de confirmação explícita, além do lançamento direto com Desfazer.

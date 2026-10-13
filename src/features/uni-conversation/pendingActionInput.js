@@ -456,7 +456,12 @@ function resolveForField(field, { text, parsed, accounts, categories, workspaceI
     const availableCategories = (Array.isArray(categories) ? categories : [])
       .filter((category) => category?.is_active !== false);
     const requestedCategoryName = extractRequestedCategoryName(text);
-    const [category] = findMatches(categories, requestedCategoryName || text);
+    const answer = requestedCategoryName || text;
+    const matches = findMatches(categories, answer);
+    // Chip "Mercado" com "Supermercado" também na lista: o nome exato vem
+    // antes de quem só contém a resposta.
+    const answerName = normalizeFinancialText(answer.replace(/[.!?]+$/g, ''));
+    const category = matches.find((item) => normalizeFinancialText(item.name) === answerName) ?? matches[0];
     if (category) {
       return { kind: 'correction', overrides: { categoryId: category.id } };
     }

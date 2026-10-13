@@ -240,13 +240,17 @@ test('categoria criada retoma a movimentação com ID real e preserva a pilha or
   assert.match(page, /publishConversationResult\(resumedResult\)/);
 });
 
-test('categoria aproximada exige resposta explícita e rejeição volta ao esclarecimento', async () => {
+// #80: não há mais categoria aproximada por palavra. Rascunho sem categoria
+// mostra as categorias do tipo em chips enquanto a pergunta é a última
+// resposta, e o toque passa o id escolhido direto ao rascunho.
+test('rascunho esperando a categoria mostra chips que passam o id escolhido', async () => {
   const page = await source('UniChatPage.jsx');
-  assert.match(page, /categoryIssueCode === 'category_approximate'/);
-  assert.match(page, /categoryApproved: true/);
-  assert.match(page, /rejectedCategoryId: action\.proposedCategory\?\.id/);
-  assert.match(page, /rejectedCategoryName: action\.proposedCategory\?\.name/);
-  assert.match(page, /outra categoria/);
+  assert.doesNotMatch(page, /category_approximate/);
+  assert.match(page, /issueCode !== 'category_required' && issueCode !== 'category_incompatible'/);
+  assert.match(page, /categoryQuestionMessageId !== lastUniMessageId/);
+  assert.match(page, /items=\{categoryChoices\}\s*onSelect=\{handleCategoryChoice\}/);
+  assert.match(page, /financialConversation\.provideInput\(\{ categoryId: item\.id \}\)/);
+  assert.match(page, /categoryChoices=\{categoryChoices\}\s*onChooseCategory=\{handleCategoryChoice\}/);
 });
 
 test('dependência de categoria pode ser cancelada sem perder a movimentação suspensa', async () => {
@@ -1897,4 +1901,47 @@ test('pedido de categoria: grava pelo hook da tela, com o texto de erro de lá',
   // recarregam as categorias.
   assert.ok(corpo.indexOf('categoriaPendenteRef.current = null;') < corpo.indexOf('if (activeIdRef.current !== pendente.conversationId) return;'));
   assert.match(corpo, /notifyFinancialDataChanged\('uni-chat'\);/);
+});
+
+test('memória de categoria (#79): confirmar o card grava a descrição com a categoria e se houve troca', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
+  // A ação lida antes de confirmar: depois, o reset apaga o rascunho.
+  assert.ok(confirmar.indexOf('const acaoConfirmada = financialConversation.state.action;')
+    < confirmar.indexOf('const outcome = await financialConversation.confirm();'));
+  assert.match(confirmar, /lembrarCategoriaConfirmada\(acaoConfirmada, outcome\.result\.data, currentWorkspaceId\);/);
+  // Logo depois de gravar, antes dos refresh e da troca de conversa.
+  assert.ok(confirmar.indexOf('lembrarCategoriaConfirmada(') < confirmar.indexOf('transactionsState.refresh()'));
+
+  // A categoria do primeiro card de cada lançamento é a base da troca.
+  const publicar = page.slice(page.indexOf('function publishConversationResult(result) {'), page.indexOf('function publishAccountCreationConfirmation('));
+  assert.match(publicar, /if \(operacaoId && !categoriasIniciais\.has\(operacaoId\)\) \{/);
+  const lembrar = page.slice(page.indexOf('function lembrarCategoriaConfirmada('), page.indexOf('async function handleConfirmAction(id) {'));
+  assert.match(lembrar, /trocou: Boolean\(categoriaInicial && categoriaId && categoriaInicial !== categoriaId\)/);
+  assert.match(lembrar, /if \(!categoriaInicialPorOperacaoRef\.current\.has\(operacaoId\)\) return;/);
+  assert.match(lembrar, /void registrarConfirmacaoNaMemoria\(/);
+});
+
+test('lançar direto (#81): tenta antes do card, pela RPC do card, e o Desfazer apaga e zera a memória', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const rota = page.slice(page.indexOf('case ROTAS_INTERPRETACAO.LANCAMENTO: {'), page.indexOf('case ROTAS_INTERPRETACAO.PLANO:'));
+  assert.ok(rota.indexOf('await tentarLancarDireto(interpretacao, result.action, turnToken)') < rota.indexOf('publishConversationResult(phrased)'));
+
+  const tentar = page.slice(page.indexOf('async function tentarLancarDireto('), page.indexOf('function handleDesfazerExclusao('));
+  assert.ok(tentar.indexOf('memoriaPermiteLancarDireto(') < tentar.indexOf('executeFinancialIntentAction(action'));
+  assert.ok(tentar.indexOf('if (exclusaoDesfazivelRef.current) return false;') < tentar.indexOf('lerMemoriaDaDescricao('));
+  assert.match(tentar, /executeAtomicAction: executeConfirmedFinancialAction/);
+  assert.match(tentar, /if \(uniTurnTokenRef\.current !== turnToken \|\| activeIdRef\.current !== conversationId\) return false;/);
+  assert.match(tentar, /undo: \{ status: 'available', tipo: 'lancamento_direto' \}/);
+  assert.match(tentar, /DESFAZER_LANCAMENTO_DIRETO_MS/);
+  // Depois de ler a memória, confere de novo o Desfazer e a trava.
+  assert.ok(tentar.indexOf('if (exclusaoDesfazivelRef.current || confirmingRef.current) return false;') > tentar.indexOf('lerMemoriaDaDescricao('));
+  // Gravado, o aviso com Desfazer sai antes dos refresh, e nada volta ao card.
+  assert.ok(tentar.indexOf("undo: { status: 'available', tipo: 'lancamento_direto' }") < tentar.indexOf('transactionsState.refresh()'));
+  assert.match(tentar, /\n {4}return true;\n {2}\}\s*$/);
+
+  const desfazer = page.slice(page.indexOf('async function desfazerLancamentoDireto('), page.indexOf('async function tentarLancarDireto('));
+  assert.match(desfazer, /transactionsState\.removeTransaction\(transacao\.id\)/);
+  assert.match(desfazer, /registrarDesfazerNaMemoria\(/);
+  assert.match(page, /if \(desfazivel\.tipo === 'lancamento_direto'\) \{\s*try \{\s*await desfazerLancamentoDireto\(desfazivel\);/);
 });

@@ -114,12 +114,10 @@ function sanitizeDescription(value) {
 // BLOCO B: mapeia o status de resolveFinancialCategory (categoryResolution.js)
 // para o codigo de issue exibido/interpretado pelo restante do fluxo.
 // 'category_incompatible' preserva o comportamento anterior (categoryId
-// explicito mas de tipo errado). 'category_approximate' e 'category_will_create'
-// sao novos (Bloco B1/B2/B3). 'category_required' e o fallback final quando
-// nao ha nem correspondencia nem nome algum para propor.
+// explicito mas de tipo errado). 'category_required' e o fallback final quando
+// nao ha nome algum para propor: a pessoa escolhe a categoria.
 function mapCategoryIssueCode(categoryResult) {
   if (categoryResult.incompatible) return 'category_incompatible';
-  if (categoryResult.status === CATEGORY_RESOLUTION_STATUS.PENDING_APPROXIMATE) return 'category_approximate';
   if (categoryResult.status === CATEGORY_RESOLUTION_STATUS.WILL_CREATE) return 'category_will_create';
   if (categoryResult.status === CATEGORY_RESOLUTION_STATUS.NOT_FOUND) {
     return categoryResult.proposedCategoryName ? 'category_not_found' : 'category_required';
@@ -242,10 +240,7 @@ export function buildFinancialIntentAction({
         // categoryName: a categoria que o card de criação já propunha, preservada
         // quando o rascunho volta com uma correção de outro campo.
         requestedName: overrides.categoryName ?? parsed.entities.category,
-        description: parsed.entities.description,
-        normalizedInput: parsed.normalizedInput,
-        approved: overrides.categoryApproved,
-        excludedCategoryId: overrides.rejectedCategoryId,
+        input: parsed.input,
         excludedCategoryName: overrides.rejectedCategoryName,
         decision: overrides.categoryDecision,
         workspaceType,
@@ -401,7 +396,6 @@ export function buildFinancialIntentAction({
       ? overrides.destinationAccountName ?? parsed.entities.destinationAccount ?? null
       : null,
     category: isAdjustment ? null : categoryResult.category ?? null,
-    categoryWasApproximate: isAdjustment ? false : Boolean(categoryResult.approximate),
     proposedCategory: isAdjustment ? null : categoryResult.proposedCategory ?? null,
     proposedCategoryName: isAdjustment ? null : categoryResult.proposedCategoryName ?? null,
     balanceTarget,

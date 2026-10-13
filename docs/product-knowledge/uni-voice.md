@@ -16,7 +16,10 @@ recebe apenas texto e as respostas não são lidas em voz alta.
 a conversa por voz. Fale normalmente, com pausas: a Uni responde quando você
 termina e você pode interromper a Uni falando. Para registrar, consultar saldo
 ou mexer na agenda, a Uni usa o mesmo caminho do texto, e lançamentos continuam
-exigindo confirmação no card. Para encerrar sem tocar na tela, diga "pode
+exigindo confirmação no card. A exceção é o lançamento direto: uma despesa ou
+receita cuja descrição você já confirmou 3 vezes seguidas na mesma categoria é
+lançada sem card. A Uni fala o que lançou, e você diz "desfazer" em até 60
+segundos para apagar. Veja o artigo "Como a Uni escolhe a categoria". Para encerrar sem tocar na tela, diga "pode
 desligar" ou "encerra a conversa": a Uni se despede e a conversa termina. A
 conversa também termina depois de um minuto sem ninguém falar ou quando você
 sai do app.

@@ -354,7 +354,7 @@ function tituloDeAgenda(valor) {
   return titulo || null;
 }
 
-function semAcentoNemCaixa(texto) {
+export function semAcentoNemCaixa(texto) {
   return String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 

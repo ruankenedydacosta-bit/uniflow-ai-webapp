@@ -80,3 +80,44 @@ const CONTAS = [
 export function contasDaAvaliacao() {
   return CONTAS.map(([id, name]) => ({ id, name }));
 }
+
+// Catálogo que o caso manda ao modelo: o de sistema do tipo do workspace e
+// as categorias criadas pela pessoa (categoriasExtras).
+export function catalogoDoCaso(caso) {
+  const extras = (caso.categoriasExtras ?? []).map(([name, categoryType], indice) => ({
+    id: `extra-${String(indice + 1).padStart(2, '0')}`,
+    name,
+    category_type: categoryType,
+    applies_to: 'both',
+    is_system: false,
+    is_active: true,
+  }));
+  return [...catalogoDoWorkspace(caso.workspace ?? 'personal'), ...extras];
+}
+
+// Memórias do caso (#79) no formato que o uni-interpret lê do banco.
+export function memoriasDoCaso(caso, categorias) {
+  return (caso.memorias ?? []).map(({ descricao, categoria }) => ({
+    descricao,
+    categoria_id: categorias.find((registro) => registro.name === categoria)?.id ?? null,
+  }));
+}
+
+// Rascunho do caso (#79) no formato que o app manda ao uni-interpret.
+export function rascunhoDoCaso(caso, categorias) {
+  if (!caso.rascunho) return null;
+  const { tipo, valor, data, descricao, categoria } = caso.rascunho;
+  const registro = categorias.find((item) => item.name === categoria);
+  return {
+    operacoes: [{
+      tipo,
+      valor,
+      data: data ?? null,
+      descricao,
+      categoria: registro ? { id: registro.id, name: registro.name } : null,
+      novaCategoria: null,
+      conta: null,
+      contaDestino: null,
+    }],
+  };
+}

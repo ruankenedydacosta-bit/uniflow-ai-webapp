@@ -17,12 +17,13 @@ function assertEntityShape(result) {
   assert.doesNotThrow(() => JSON.stringify(result));
 }
 
+// #80: o parser não escolhe categoria por palavra ("gasolina" → Transporte).
 test('interpreta pagamento de gasolina como despesa', () => {
   const result = parseFinancialText('paguei 80 reais de gasolina');
 
   assert.equal(result.intent, 'register_expense');
   assert.equal(result.entities.amount, 80);
-  assert.equal(result.entities.category, 'Transporte');
+  assert.equal(result.entities.category, null);
   assert.equal(result.entities.description, 'Gasolina');
   assert.equal(result.ready, true);
   assert.equal(result.requiresConfirmation, true);
@@ -66,7 +67,7 @@ test('interpreta recebimento de salario como entrada', () => {
 
   assert.equal(result.intent, 'register_income');
   assert.equal(result.entities.amount, 3000);
-  assert.equal(result.entities.category, 'Salário');
+  assert.equal(result.entities.category, null);
   assert.equal(result.entities.description, 'Salário');
   assert.equal(result.ready, true);
 });
@@ -94,13 +95,13 @@ test('vocabulário público Entradas/Saídas preserva todos os aliases e contrat
 // intent 'question' (nenhum verbo reconhecido), o que fazia a frase inteira
 // cair no chat geral em vez do fluxo transacional. "coloquei/botei" foram
 // adicionados às regras de register_expense.
-test('BUG REAL: "Coloquei duzentos reais de gasolina." é reconhecida como despesa (tipo, valor, descrição e categoria corretos)', () => {
+test('BUG REAL: "Coloquei duzentos reais de gasolina." é reconhecida como despesa (tipo, valor e descrição corretos, sem chutar categoria)', () => {
   const result = parseFinancialText('Coloquei duzentos reais de gasolina.');
 
   assert.equal(result.intent, 'register_expense');
   assert.equal(result.entities.amount, 200);
   assert.equal(result.entities.description, 'Gasolina');
-  assert.equal(result.entities.category, 'Transporte');
+  assert.equal(result.entities.category, null);
   assert.equal(result.entities.account, null);
   assert.equal(result.ready, true);
   assert.equal(result.requiresConfirmation, true);
@@ -130,7 +131,7 @@ test('BUG REAL: "Fiz uma compra de 200 reais no mercado." nunca deixa "Fiz" ou "
   const comMercado = parseFinancialText('Fiz uma compra de 200 reais no mercado.');
   const semMercado = parseFinancialText('Fiz uma compra de vinte reais.');
 
-  assert.equal(comMercado.entities.category, 'Alimentação');
+  assert.equal(comMercado.entities.category, null);
   assert.doesNotMatch(comMercado.entities.description ?? '', /fiz|compra/i);
   // Sem nenhum substantivo reconhecível na frase, a descrição fica vazia
   // (null) -- nunca a frase inteira usada como se fosse um nome de verdade.
@@ -179,7 +180,7 @@ test('BUG REAL: "Coloca pra mim aí setenta e cinco reais no mercado." é reconh
 // quando a pessoa é quem paga.
 // ============================================================================
 
-test('BUG REAL: pedido de lançamento de salário é receita com valor e categoria Salário', () => {
+test('BUG REAL: pedido de lançamento de salário é receita com valor, sem chutar a categoria', () => {
   for (const phrase of [
     'Registre hoje um salário de 2500',
     'Lance o salário de 2500 reais',
@@ -194,7 +195,7 @@ test('BUG REAL: pedido de lançamento de salário é receita com valor e categor
 
   const salary = parseFinancialText('Registre hoje um salário de 2500');
   assert.equal(salary.entities.amount, 2500);
-  assert.equal(salary.entities.category, 'Salário');
+  assert.equal(salary.entities.category, null);
 });
 
 test('declaração nominal "Salário de 2500" é receita, e pergunta com salário não é lançamento', () => {
@@ -293,7 +294,7 @@ test('BUG REAL: "Cinquenta reais de gasolina." (sem nenhum verbo) é reconhecida
   assert.equal(result.intent, 'register_expense');
   assert.equal(result.entities.amount, 50);
   assert.equal(result.entities.description, 'Gasolina');
-  assert.equal(result.entities.category, 'Transporte');
+  assert.equal(result.entities.category, null);
   assert.equal(result.entities.account, null);
   assert.equal(result.missingEntities.length, 0, 'amount é o único campo exigido pelo parser -- account é resolvido depois, na ação');
 });
@@ -391,7 +392,7 @@ test('interpreta objetivo com valor abreviado e finalidade', () => {
 
   assert.equal(result.intent, 'create_goal');
   assert.equal(result.entities.amount, 20000);
-  assert.equal(result.entities.category, 'Moradia');
+  assert.equal(result.entities.category, null);
   assert.equal(result.entities.description, 'Casa');
   assert.equal(result.entities.account, null);
   assert.equal(result.ready, true);
@@ -405,23 +406,22 @@ test('distingue consulta de saldo de pergunta generica', () => {
   );
 });
 
-test('herda despesa e categoria em frase sequencial', () => {
+// #80: a categoria não sai mais de palavra da frase, então só a descrição
+// é herdada; a categoria quem escolhe é a pessoa ou o uni-interpret.
+test('herda despesa e descrição em frase sequencial, sem categoria', () => {
   const first = parseFinancialText('Paguei 80 no mercado.');
   const second = parseFinancialText('Mais 30.', {
     context: first.nextContext,
   });
 
   assert.equal(first.intent, 'register_expense');
-  assert.equal(first.entities.category, 'Alimentação');
+  assert.equal(first.entities.category, null);
   assert.equal(second.intent, 'register_expense');
   assert.equal(second.entities.amount, 30);
-  assert.equal(second.entities.category, 'Alimentação');
+  assert.equal(second.entities.category, null);
   assert.equal(second.entities.description, 'Mercado');
   assert.equal(second.context.usedPreviousTurn, true);
-  assert.deepEqual(second.context.inheritedEntities, [
-    'category',
-    'description',
-  ]);
+  assert.deepEqual(second.context.inheritedEntities, ['description']);
 });
 
 test('processa conversa inteira sem mutar contexto inicial', () => {
@@ -551,7 +551,7 @@ test('BUG REAL: pedido falado de lançamento vira despesa com valor, descrição
     assert.equal(result.entities.description, description, text);
     assert.equal(result.entities.date, date, text);
   }
-  assert.equal(parseFinancialText('Eu quero que você lance uma saída no iFood de R$50,00.').entities.category, 'Alimentação');
+  assert.equal(parseFinancialText('Eu quero que você lance uma saída no iFood de R$50,00.').entities.category, null);
 });
 
 test('BUG REAL: pedido falado de entrada vira receita; pergunta e pedido sem valor seguem como question', () => {

@@ -102,8 +102,7 @@ export function interpretacaoParaRascunho(interpretacao, texto) {
   const overrides = {};
   if (operacao.categoria?.id) overrides.categoryId = operacao.categoria.id;
   // Categoria pedida pelo nome e ausente do catálogo: o card propõe criá-la
-  // com esse nome. Sem a decisão explícita, os apelidos fixos trocariam
-  // "Viagem de férias" por "Lazer".
+  // com esse nome.
   if (novaCategoria) {
     overrides.categoryName = novaCategoria;
     overrides.categoryDecision = 'create_new';

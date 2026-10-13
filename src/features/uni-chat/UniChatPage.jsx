@@ -76,6 +76,21 @@ import {
   montarRascunhoParaInterpretacao,
 } from '../uni-interpret/uniInterpretClient.js';
 import {
+  lerMemoriaDaDescricao,
+  registrarConfirmacaoNaMemoria,
+  registrarDesfazerNaMemoria,
+  registrarLancamentoDiretoNaMemoria,
+} from '../uni-interpret/memoriaDeCategoria.js';
+import {
+  DESFAZER_LANCAMENTO_DIRETO_MS,
+  memoriaPermiteLancarDireto,
+  operacaoParaLancarDireto,
+  rascunhoPodeIrDireto,
+  TEXTO_LANCAMENTO_DIRETO_VENCIDO,
+  textoDoLancamentoDireto,
+  textoDoLancamentoDiretoDesfeito,
+} from '../uni-interpret/lancamentoDireto.js';
+import {
   montarPedidoDeCategoria,
   respostaAoPedidoDeCategoria,
   textoDoPedidoFeito,
@@ -902,6 +917,9 @@ export default function UniChatPage({ variant = 'full' }) {
   const [conversations, setConversations] = useState(initialChatState.conversations);
   const [activeId, setActiveId] = useState(initialChatState.activeId);
   const [pendingAction, setPendingAction] = useState(null);
+  // Mensagem em que a Uni perguntou a categoria do rascunho (#80). Os chips
+  // só aparecem enquanto ela é a última resposta.
+  const [categoryQuestionMessageId, setCategoryQuestionMessageId] = useState(null);
   // Rascunho de agora, para quem volta de uma espera saber se ele mudou.
   const rascunhoAtualRef = useRef(null);
   useEffect(() => {
@@ -1036,6 +1054,9 @@ export default function UniChatPage({ variant = 'full' }) {
   const [edicaoPendente, setEdicaoPendenteState] = useState(null);
   const edicaoPendenteRef = useRef(null);
   const ultimoConfirmadoRef = useRef(null);
+  // Categoria do primeiro rascunho de cada lançamento (#79), por
+  // clientOperationId: na confirmação, categoria diferente desta é troca.
+  const categoriaInicialPorOperacaoRef = useRef(new Map());
 
   function setEdicaoPendente(next) {
     edicaoPendenteRef.current = next;
@@ -1765,7 +1786,9 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!desfazivel) return;
     clearTimeout(desfazivel.timer);
     exclusaoDesfazivelRef.current = null;
-    if (status === 'expired') desfazerVencidoRef.current = { conversationId: desfazivel.conversationId, em: Date.now() };
+    if (status === 'expired') {
+      desfazerVencidoRef.current = { conversationId: desfazivel.conversationId, em: Date.now(), tipo: desfazivel.tipo ?? null };
+    }
     if (status) marcarDesfazer(desfazivel.messageId, status);
   }
 
@@ -2000,21 +2023,36 @@ export default function UniChatPage({ variant = 'full' }) {
 
   // Desfazer, pelo botão do aviso (messageId) ou falado ("desfazer", sem
   // id). O lançamento volta com os mesmos campos e um id novo.
-  async function desfazerExclusao(messageId = null) {
+  // tipoVencido: 'lancamento_direto' (#81) quando o aviso vencido era de um
+  // lançamento feito sem card; o texto do prazo vencido muda.
+  async function desfazerExclusao(messageId = null, tipoVencido = null) {
     const desfazivel = exclusaoDesfazivelRef.current;
     const vale = desfazivel
       && (!messageId || desfazivel.messageId === messageId)
       && desfazivel.conversationId === activeIdRef.current
       && desfazivel.workspaceId === effectiveWorkspace?.id;
     if (!vale) {
+      const tipo = tipoVencido ?? messages.find((message) => message.id === messageId)?.undo?.tipo;
       marcarDesfazer(messageId, 'expired');
-      createAssistantResponse(TEXTO_DESFAZER_VENCIDO, { deduplicateNarration: false });
+      createAssistantResponse(
+        tipo === 'lancamento_direto' ? TEXTO_LANCAMENTO_DIRETO_VENCIDO : TEXTO_DESFAZER_VENCIDO,
+        { deduplicateNarration: false },
+      );
       return;
     }
     if (confirmingRef.current) return;
     limparDesfazivel(null);
     confirmingRef.current = true;
     setIsExecutingAction(true);
+    if (desfazivel.tipo === 'lancamento_direto') {
+      try {
+        await desfazerLancamentoDireto(desfazivel);
+      } finally {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+      }
+      return;
+    }
     try {
       const resultado = await createTransaction(desfazivel.workspaceId, camposParaRecriar(desfazivel.transacao));
       if (resultado?.error || !resultado?.data) {
@@ -2044,6 +2082,165 @@ export default function UniChatPage({ variant = 'full' }) {
       setIsExecutingAction(false);
       confirmingRef.current = false;
     }
+  }
+
+  // Desfazer do lançamento direto (#81): apaga o lançamento e zera a
+  // contagem da memória, para a próxima vez mostrar o card.
+  async function desfazerLancamentoDireto(desfazivel) {
+    const { transacao } = desfazivel;
+    const falhou = () => {
+      marcarDesfazer(desfazivel.messageId, 'expired');
+      createAssistantResponse(
+        'Não consegui apagar o lançamento. Diga "apaga o último lançamento" ou exclua na tela Financeiro.',
+        { deduplicateNarration: false },
+      );
+    };
+    try {
+      const resultado = await transactionsState.removeTransaction(transacao.id);
+      if (resultado?.error || !resultado?.data) {
+        falhou();
+        return;
+      }
+      marcarDesfazer(desfazivel.messageId, 'done');
+      if (ultimoConfirmadoRef.current?.id === transacao.id) ultimoConfirmadoRef.current = null;
+      // A gravação do lançamento direto na memória vem antes: sem ela, o
+      // Desfazer marcaria o evento errado.
+      void Promise.resolve(desfazivel.memoriaGravada).then(() => registrarDesfazerNaMemoria({
+        workspaceId: desfazivel.workspaceId,
+        descricao: transacao.description,
+        tipo: transacao.tipo,
+        transacaoId: transacao.id,
+      }));
+      await Promise.all([balanceState.refresh(), accountState.refresh()]);
+      notifyFinancialDataChanged('uni-chat');
+      if (activeIdRef.current !== desfazivel.conversationId) return;
+      createAssistantResponse(withFollowUpQuestion(textoDoLancamentoDiretoDesfeito({
+        valor: transacao.amount,
+        categoria: transacao.categoryName,
+      })));
+    } catch {
+      falhou();
+    }
+  }
+
+  // Lançar direto com Desfazer (#81). true quando gravou: o card não aparece.
+  // false em qualquer dúvida (leitura do modelo, rascunho, memória, falha na
+  // gravação), e o chamador segue com o card de sempre.
+  async function tentarLancarDireto(interpretacao, action, turnToken) {
+    const operacao = operacaoParaLancarDireto(interpretacao);
+    if (!operacao || !rascunhoPodeIrDireto(action, operacao) || confirmingRef.current) return false;
+    // Com um Desfazer ainda valendo (exclusão ou outro lançamento direto), o
+    // card aparece: lançar agora venceria aquele Desfazer, e a mesma frase
+    // repetida pela voz não grava duas vezes sem a pessoa ver.
+    if (exclusaoDesfazivelRef.current) return false;
+    const workspaceId = effectiveWorkspace?.id;
+    const conversationId = activeIdRef.current;
+    const memoria = await lerMemoriaDaDescricao({
+      workspaceId,
+      descricao: action.payload.description,
+      tipo: action.transactionType,
+    });
+    // A leitura leva um instante: a conversa, o turno e o Desfazer podem ter
+    // mudado nesse meio-tempo.
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return false;
+    if (exclusaoDesfazivelRef.current || confirmingRef.current) return false;
+    if (!memoriaPermiteLancarDireto(memoria?.valor, {
+      categoriaId: action.category.id,
+      tipo: action.transactionType,
+      valor: action.amount,
+    })) {
+      return false;
+    }
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    let transacaoId = null;
+    let idempotente;
+    try {
+      // A mesma RPC do card, com o clientOperationId do rascunho: se falhar
+      // aqui, o card que aparece em seguida grava sem duplicar.
+      const resultado = await executeFinancialIntentAction(action, {
+        executeAtomicAction: executeConfirmedFinancialAction,
+      });
+      if (resultado?.error || !resultado?.data?.id) return false;
+      transacaoId = resultado.data.id;
+      idempotente = resultado.data.idempotent_replay !== false;
+    } catch {
+      return false;
+    } finally {
+      if (!transacaoId) {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+      }
+    }
+
+    // Daqui em diante o lançamento existe: nenhuma falha volta ao card, e a
+    // mensagem com o Desfazer sai antes dos refresh. Se a pessoa trocou de
+    // conversa durante a gravação, o aviso sai na conversa aberta, para ela
+    // saber do lançamento e poder desfazer.
+    try {
+      if (uniTurnTokenRef.current === turnToken) {
+        financialConversation.reset();
+        clearCurrentPendingAction();
+      }
+      ultimoConfirmadoRef.current = { id: transacaoId, workspaceId, conversationId: activeIdRef.current, em: Date.now() };
+      conversationalMemoryRef.current.remember({
+        account: action.account?.name ?? null,
+        category: action.category.name,
+      });
+      const memoriaGravada = registrarLancamentoDiretoNaMemoria({
+        workspaceId,
+        descricao: action.payload.description,
+        tipo: action.transactionType,
+        transacaoId,
+        data: getLocalIsoDate(),
+      });
+      const aviso = createAssistantResponse(textoDoLancamentoDireto({
+        valor: action.amount,
+        categoria: action.category.name,
+        descricao: action.payload.description,
+        conta: action.account?.name ?? null,
+      }), {
+        deduplicateNarration: false,
+        undo: { status: 'available', tipo: 'lancamento_direto' },
+      });
+      const timer = setTimeout(() => {
+        if (exclusaoDesfazivelRef.current?.timer === timer) limparDesfazivel('expired');
+      }, DESFAZER_LANCAMENTO_DIRETO_MS);
+      exclusaoDesfazivelRef.current = {
+        tipo: 'lancamento_direto',
+        transacao: {
+          id: transacaoId,
+          description: action.payload.description,
+          amount: action.amount,
+          categoryName: action.category.name,
+          tipo: action.transactionType,
+        },
+        messageId: aviso?.id ?? null,
+        workspaceId,
+        conversationId: activeIdRef.current,
+        timer,
+        memoriaGravada,
+      };
+      trackGa4ConfirmedTransactionCreation({
+        confirmed: true,
+        idempotentReplay: idempotente,
+        transactionType: action.transactionType,
+        origin: action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
+      });
+      await Promise.all([
+        transactionsState.refresh(),
+        balanceState.refresh(),
+        accountState.refresh(),
+      ]);
+      notifyFinancialDataChanged('uni-chat');
+    } catch {
+      // O lançamento já foi gravado e o aviso já saiu; um refresh que falha
+      // só atrasa a tela.
+    } finally {
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
+    return true;
   }
 
   function handleDesfazerExclusao(messageId) {
@@ -2080,9 +2277,10 @@ export default function UniChatPage({ variant = 'full' }) {
       && vencido.conversationId === activeIdRef.current
       && Date.now() - vencido.em <= DESFAZER_AVISO_VENCIDO_MS;
     if (!exclusaoDesfazivelRef.current && !avisaVencido) return false;
+    const tipoVencido = avisaVencido ? vencido.tipo : null;
     desfazerVencidoRef.current = null;
     syncMessageToSupabase(userMsg);
-    void desfazerExclusao(null);
+    void desfazerExclusao(null, tipoVencido);
     return true;
   }
 
@@ -2858,6 +3056,13 @@ export default function UniChatPage({ variant = 'full' }) {
 
   function publishConversationResult(result) {
     syncFinancialParentSnapshot(result);
+    const operacaoId = result?.action?.clientOperationId;
+    const categoriasIniciais = categoriaInicialPorOperacaoRef.current;
+    if (operacaoId && !categoriasIniciais.has(operacaoId)) {
+      categoriasIniciais.set(operacaoId, result.action.category?.id ?? null);
+      // Rascunho cancelado ou trocado não volta: guarda só os mais recentes.
+      if (categoriasIniciais.size > 20) categoriasIniciais.delete(categoriasIniciais.keys().next().value);
+    }
     if (
       result?.action?.issues?.[0]?.code === 'category_not_found'
       && result.action.proposedCategoryName
@@ -2886,10 +3091,30 @@ export default function UniChatPage({ variant = 'full' }) {
       return;
     }
 
-    createAssistantResponse(
+    const message = createAssistantResponse(
       result?.response?.text
         || 'Preciso de mais detalhes antes de preparar essa ação.',
     );
+    const issueCode = result?.action?.issues?.[0]?.code;
+    setCategoryQuestionMessageId(
+      issueCode === 'category_required' || issueCode === 'category_incompatible' ? message?.id ?? null : null,
+    );
+  }
+
+  // Toque num chip de categoria (#80). A escolha já traz o id: vai direto ao
+  // rascunho, sem reler o nome pelo modelo nem pelas regras. Duas categorias
+  // com o mesmo nome, uma de entrada e outra de saída, não se confundem.
+  function handleCategoryChoice(item) {
+    if (isTyping || isExecutingAction || !item?.id) return;
+    const escolha = buildUserMessage(item.label);
+    pushMessage(escolha);
+    syncMessageToSupabase(escolha);
+    lastUserTurnTextRef.current = item.label;
+    uniTurnTokenRef.current += 1;
+    stickToBottom.current = true;
+    setCategoryQuestionMessageId(null);
+    const result = financialConversation.provideInput({ categoryId: item.id });
+    void publishConversationResultWithInference(result);
   }
 
   function publishAccountCreationConfirmation(stack) {
@@ -3135,10 +3360,7 @@ export default function UniChatPage({ variant = 'full' }) {
     const accountDependencyActive = isAccountCreationDependency(activeStackAction);
     const categoryDependencyActive = isCategoryCreationDependency(activeStackAction);
     const categoryIssueCode = action?.issues?.[0]?.code ?? null;
-    const categoryConfirmationPending = [
-      'category_approximate',
-      'category_not_found',
-    ].includes(categoryIssueCode);
+    const categoryConfirmationPending = categoryIssueCode === 'category_not_found';
     // BUG REAL (achado em validação manual): quando a Uni está esperando um
     // CAMPO ausente que não é conta/categoria (ex.: "Em qual conta você fez
     // esse pagamento?" já resolvido, mas ainda faltando valor/descrição/data
@@ -3165,8 +3387,8 @@ export default function UniChatPage({ variant = 'full' }) {
     // Cancelamento do lançamento simples AINDA em esclarecimento (sem card de
     // confirmação, sem dependência de conta/categoria ativa) -- nunca deixa
     // "cancelar" ser interpretado como o valor do campo pendente. Categoria
-    // aproximada/inexistente mantém seu próprio fluxo de rejeição (troca de
-    // categoria, não cancelamento total), por isso fica de fora daqui.
+    // inexistente mantém seu próprio fluxo de rejeição (troca de categoria,
+    // não cancelamento total), por isso fica de fora daqui.
     if (
       !pendingAction
       && !accountDependencyActive
@@ -3225,22 +3447,6 @@ export default function UniChatPage({ variant = 'full' }) {
         'Para continuar, confirme a criação da categoria, cancele apenas a criação ou diga “cancelar tudo”.',
       );
       return true;
-    }
-
-    if (categoryIssueCode === 'category_approximate') {
-      const accepted = replyType === 'confirm';
-      const rejected = replyType === 'cancel'
-        || /^(?:outra|outra categoria)[.!]?$/i.test(text.trim());
-      if (accepted || rejected) {
-        const result = financialConversation.provideInput(accepted
-          ? { categoryApproved: true }
-          : {
-              rejectedCategoryId: action.proposedCategory?.id,
-              rejectedCategoryName: action.proposedCategory?.name,
-            });
-        publishConversationResult(result);
-        return true;
-      }
     }
 
     if (categoryIssueCode === 'category_not_found') {
@@ -3655,6 +3861,10 @@ export default function UniChatPage({ variant = 'full' }) {
           setIsTyping(false);
           return false;
         }
+        if (await tentarLancarDireto(interpretacao, result.action, turnToken)) {
+          setIsTyping(false);
+          return true;
+        }
         const phrased = await attemptNaturalPhrasing(result);
         if (uniTurnTokenRef.current !== turnToken) {
           financialConversation.reset();
@@ -4053,6 +4263,29 @@ export default function UniChatPage({ variant = 'full' }) {
     }
   }
 
+  // Memória de categoria (#79): a descrição confirmada fica ligada à
+  // categoria, para a próxima interpretação. Em segundo plano: a falha só
+  // deixa de lembrar.
+  // Sem o primeiro card (rascunho restaurado de um reload), não há como saber
+  // se houve troca, e a confirmação não entra na memória.
+  function lembrarCategoriaConfirmada(acao, transacao, workspaceId) {
+    const operacaoId = acao?.clientOperationId;
+    if (!categoriaInicialPorOperacaoRef.current.has(operacaoId)) return;
+    const categoriaInicial = categoriaInicialPorOperacaoRef.current.get(operacaoId) ?? null;
+    categoriaInicialPorOperacaoRef.current.delete(operacaoId);
+    const categoriaId = acao?.category?.id ?? acao?.payload?.category_id ?? null;
+    void registrarConfirmacaoNaMemoria({
+      workspaceId,
+      descricao: acao?.payload?.description,
+      categoriaId,
+      tipo: acao?.payload?.transaction_type,
+      trocou: Boolean(categoriaInicial && categoriaId && categoriaInicial !== categoriaId),
+      transacaoId: transacao?.id,
+      data: getLocalIsoDate(),
+      valor: acao?.amount ?? null,
+    });
+  }
+
   async function handleConfirmAction(id) {
     if (confirmingRef.current) return;
     if (categoriaPendenteRef.current?.messageId === id) {
@@ -4226,7 +4459,6 @@ export default function UniChatPage({ variant = 'full' }) {
           categories: categoriasSugeriveis,
           transactionType: requestedCategory.category_type,
           requestedName: requestedCategory.name,
-          normalizedInput: requestedCategory.name,
         });
 
         let dependencyOutcome;
@@ -4314,6 +4546,7 @@ export default function UniChatPage({ variant = 'full' }) {
         return;
       }
 
+      const acaoConfirmada = financialConversation.state.action;
       const outcome = await financialConversation.confirm();
 
       // Guard: se a conversa mudou durante a execução, abortar.
@@ -4332,6 +4565,9 @@ export default function UniChatPage({ variant = 'full' }) {
         confirmingRef.current = false;
         return;
       }
+      // Antes dos refresh: o lançamento já está gravado, mesmo que a pessoa
+      // troque de conversa enquanto a tela recarrega.
+      lembrarCategoriaConfirmada(acaoConfirmada, outcome.result.data, currentWorkspaceId);
 
       // BUG REAL (Sprint 2.1, BUG 1): a confirmação de um lançamento SIMPLES
       // (sem dependência de criação de conta/categoria) é persistida via
@@ -4583,6 +4819,29 @@ export default function UniChatPage({ variant = 'full' }) {
       : null),
     [pendingAction, accountState.accounts, categoriasSugeriveis],
   );
+  // Rascunho esperando a categoria (#80): as categorias do tipo viram chips
+  // para a pessoa escolher. A Uni não escolhe por ela. Depois de outra
+  // resposta (a pessoa mudou de assunto), os chips saem; o rascunho continua.
+  const lastUniMessageId = useMemo(
+    () => [...messages].reverse().find((message) => message.from === 'uni')?.id ?? null,
+    [messages],
+  );
+  const categoryChoices = useMemo(() => {
+    const action = financialConversation.state.action;
+    const issueCode = action?.issues?.[0]?.code;
+    if (
+      financialConversation.state.status !== 'needs_clarification'
+      || (issueCode !== 'category_required' && issueCode !== 'category_incompatible')
+      || !categoryQuestionMessageId
+      || categoryQuestionMessageId !== lastUniMessageId
+    ) {
+      return [];
+    }
+    return (action.options?.categories ?? [])
+      .filter((category) => category?.id && category.name)
+      .map((category) => ({ id: category.id, label: category.name }))
+      .sort((left, right) => left.label.localeCompare(right.label, 'pt-BR', { sensitivity: 'base' }));
+  }, [financialConversation.state.status, financialConversation.state.action, categoryQuestionMessageId, lastUniMessageId]);
   const chatProcessingState = isExecutingAction ? 'executing' : (isTyping ? 'interpreting' : 'idle');
   const chatProcessingMessage = useUniProcessingMessage(chatProcessingState, {
     actionKind: pendingConfirmationMessage?.confirmation?.actionKind ?? null,
@@ -4618,6 +4877,8 @@ export default function UniChatPage({ variant = 'full' }) {
         onUndoAction={handleDesfazerExclusao}
         editForm={pendingEditForm}
         onSaveEditAction={handleSaveEditAction}
+        categoryChoices={categoryChoices}
+        onChooseCategory={handleCategoryChoice}
       />
     );
   }
@@ -4709,9 +4970,16 @@ export default function UniChatPage({ variant = 'full' }) {
       </div>
 
       <div className={styles.footer}>
-        {!isEmpty && (
+        {!isEmpty && (categoryChoices.length ? (
+          <QuickSuggestions
+            items={categoryChoices}
+            onSelect={handleCategoryChoice}
+            variant="rail"
+            label="Escolha a categoria"
+          />
+        ) : (
           <QuickSuggestions items={suggestions} onSelect={handleSuggestionSelect} variant="rail" />
-        )}
+        ))}
         <ChatInput
           value={inputValue}
           onChange={setInputValue}
