@@ -2,27 +2,49 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
+import ChoiceRow from '../../components/ui/ChoiceRow/index.js';
 import IconBox from '../../components/ui/IconBox/index.js';
 import OutlineButton from '../../components/ui/OutlineButton/index.js';
-import { confirmarConexao, desconectar, iniciarConexao, obterConexao } from '../../services/googleCalendarService.js';
+import {
+  confirmarConexao,
+  desconectar,
+  iniciarConexao,
+  listarCalendarios,
+  obterConexao,
+  salvarPreferencias,
+  sincronizarAgora,
+} from '../../services/googleCalendarService.js';
 import { cx } from '../../utils/cx.js';
 import {
+  agendaPropria,
   AVISO_SEM_SESSAO,
   avisoDaConfirmacao,
+  avisoDaLeituraSalva,
+  avisoDaSincronizacao,
+  avisoDoDestinoSalvo,
   avisoInicialDoRetorno,
+  comLeitura,
+  descricaoDaAgenda,
+  descricaoDaLeitura,
   GOOGLE_AGENDA_PENDING_PARAM,
   GOOGLE_AGENDA_RETURN_PARAM,
   MENSAGEM_ERRO_AO_CARREGAR,
+  MENSAGEM_ERRO_AO_CARREGAR_AGENDAS,
   MENSAGEM_ERRO_AO_DESCONECTAR,
   mensagemDeErroAoConectar,
+  mensagemDeErroAoSalvar,
   mensagemDoEstadoDaConexao,
+  nomeDaAgenda,
   nomeDaAgendaDoEspaco,
+  opcoesDeDestino,
+  ordenarAgendas,
   pendenciaDoRetorno,
+  textoDoUltimoSync,
   urlDeAutorizacaoValida,
 } from './googleAgendaPresentation.js';
 import { PhGoogleLogoIcon, PhXIcon } from './SimplifiedIcons.jsx';
 import SimplifiedConfirmModal from './SimplifiedConfirmModal.jsx';
-import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import SimplifiedSubpageHeader from './SimplifiedSubpageHeader.jsx';
 import { useNavegar } from './movimentoDeTelaContext.js';
 import groups from './simplifiedGroups.module.css';
@@ -42,14 +64,19 @@ function AvisoDispensavel({ aviso, onDismiss }) {
 }
 
 /**
- * Épico #98, issue #99: conectar a conta Google à agenda. Rota fora do menu
- * até a #102 pôr a entrada em Preferências. O callback do OAuth volta para
+ * Épico #98, issue #99: conectar a conta Google à agenda. A entrada fica em
+ * Configurações → Preferências, atrás de VITE_AGENDA_GOOGLE_ENABLED (#102).
+ * O callback do OAuth volta para
  * cá com ?google_agenda=confirmar&pendente=<id> ou
  * ?google_agenda=negado|escopo_insuficiente|erro.
  *
  * "confirmar": a tela chama google-calendar-confirm com a sessão aberta. A
  * função só ativa a conexão se esta é a pessoa que iniciou o fluxo; se o
  * link foi aberto por outra conta, nada é conectado e a tela avisa.
+ *
+ * #102: agenda de destino, agendas lidas e "Sincronizar agora". As escolhas
+ * são gravadas na hora por UPDATE direto (salvarPreferencias); a RLS e os
+ * triggers da 055 só deixam escolher agenda própria (access_role 'owner').
  */
 function SimplifiedGoogleAgendaPage() {
   const navigate = useNavegar();
@@ -68,6 +95,10 @@ function SimplifiedGoogleAgendaPage() {
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState(null);
+  const [agendas, setAgendas] = useState([]);
+  // Uma gravação por vez: 'destino' ou o id da agenda cuja leitura muda.
+  const [salvando, setSalvando] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // O resultado do retorno vira aviso uma vez só; a URL fica limpa.
   useEffect(() => {
@@ -83,18 +114,29 @@ function SimplifiedGoogleAgendaPage() {
   // sobrescrita pela leitura inicial, mais lenta.
   const ultimoPedidoRef = useRef(0);
 
-  const carregarConexao = useCallback(() => {
+  // `silencioso` relê sem voltar ao "Carregando…" (depois de sincronizar).
+  const carregarConexao = useCallback(({ silencioso = false } = {}) => {
     const pedido = ultimoPedidoRef.current + 1;
     ultimoPedidoRef.current = pedido;
     if (!workspaceId) {
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
-    obterConexao({ workspaceId }).then(({ data, error }) => {
+    if (!silencioso) setIsLoading(true);
+    obterConexao({ workspaceId }).then(async ({ data, error }) => {
       if (ultimoPedidoRef.current !== pedido) return;
+      let lidas = [];
+      let erroDasAgendas = null;
+      if (data?.id) {
+        const resposta = await listarCalendarios({ connectionId: data.id });
+        if (ultimoPedidoRef.current !== pedido) return;
+        lidas = resposta.data ?? [];
+        erroDasAgendas = resposta.error;
+      }
       setConexao(data ?? null);
+      setAgendas(lidas);
       if (error) setAviso({ tone: 'alert', message: MENSAGEM_ERRO_AO_CARREGAR });
+      else if (erroDasAgendas) setAviso({ tone: 'alert', message: MENSAGEM_ERRO_AO_CARREGAR_AGENDAS });
       setIsLoading(false);
     });
   }, [workspaceId]);
@@ -164,18 +206,71 @@ function SimplifiedGoogleAgendaPage() {
     }
     setShowDisconnectConfirm(false);
     setConexao(null);
+    setAgendas([]);
     setAviso({ tone: 'success', message: 'Google Agenda desconectado.' });
   }
 
+  async function handleEscolherDestino(agenda) {
+    if (!conexao || salvando || agenda.external_calendar_id === conexao.destination_calendar_id) return;
+    const connectionId = conexao.id;
+    setSalvando('destino');
+    setAviso(null);
+    const { data, error } = await salvarPreferencias({
+      connectionId,
+      destinationCalendarId: agenda.external_calendar_id,
+    });
+    setSalvando(null);
+    if (error) {
+      setAviso({ tone: 'alert', message: mensagemDeErroAoSalvar(error) });
+      return;
+    }
+    setConexao((atual) => (atual?.id === connectionId
+      ? { ...atual, destination_calendar_id: data.destination_calendar_id }
+      : atual));
+    setAviso(avisoDoDestinoSalvo(nomeDaAgenda(agenda)));
+  }
+
+  // Marca na hora e desfaz se o banco recusar.
+  async function handleLeitura(agenda, lido) {
+    if (!conexao || salvando || !agendaPropria(agenda)) return;
+    const connectionId = conexao.id;
+    setSalvando(agenda.id);
+    setAviso(null);
+    setAgendas((atuais) => comLeitura(atuais, agenda.id, lido));
+    const { error } = await salvarPreferencias({ connectionId, calendarioId: agenda.id, lido });
+    setSalvando(null);
+    if (error) {
+      setAgendas((atuais) => comLeitura(atuais, agenda.id, !lido));
+      setAviso({ tone: 'alert', message: mensagemDeErroAoSalvar(error) });
+      return;
+    }
+    setAviso(avisoDaLeituraSalva(nomeDaAgenda(agenda), lido));
+  }
+
+  async function handleSincronizar() {
+    if (!workspaceId || isSyncing) return;
+    setIsSyncing(true);
+    setAviso(null);
+    const resposta = await sincronizarAgora({ workspaceId });
+    setIsSyncing(false);
+    setAviso(avisoDaSincronizacao(resposta));
+    // Relê a hora do último sync e o estado da conexão (RECONNECT_REQUIRED
+    // deixa a conexão em erro e mostra o botão de conectar de novo).
+    carregarConexao({ silencioso: true });
+  }
+
   const estadoDaConexao = mensagemDoEstadoDaConexao(conexao);
-  const nomeDaAgenda = nomeDaAgendaDoEspaco(workspace?.name);
+  const nomeDaAgendaNova = nomeDaAgendaDoEspaco(workspace?.name);
+  const destinos = opcoesDeDestino(agendas);
+  const agendasOrdenadas = ordenarAgendas(agendas);
+  const mostrarPreferencias = Boolean(conexao) && !isConfirming;
 
   return (
     <div className={styles.page} data-simplified-google-agenda>
       <SimplifiedSubpageHeader
         title="Google Agenda"
-        onBack={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
-        backLabel="Voltar para Mais"
+        onBack={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path)}
+        backLabel="Voltar para Configurações"
       />
 
       {aviso ? <AvisoDispensavel aviso={aviso} onDismiss={() => setAviso(null)} /> : null}
@@ -196,7 +291,7 @@ function SimplifiedGoogleAgendaPage() {
                   ? 'Carregando…'
                   : conexao
                     ? (conexao.account_email || 'Conta Google')
-                    : `Ao conectar, a agenda “${nomeDaAgenda}” é criada na sua conta Google.`}
+                    : `Ao conectar, a agenda “${nomeDaAgendaNova}” é criada na sua conta Google.`}
               </span>
             </span>
             {conexao && !estadoDaConexao ? <span className={cx(groups.pill, groups.pillGreen)}>Conectada</span> : null}
@@ -220,6 +315,84 @@ function SimplifiedGoogleAgendaPage() {
           </div>
         ) : null}
       </section>
+
+      {mostrarPreferencias && !estadoDaConexao ? (
+        <section className={groups.group} aria-label="Sincronização">
+          <h2 className={groups.groupLabel}>Sincronização</h2>
+          <div className={cx(groups.row, groups.rowPlain, styles.staticRow)}>
+            <span className={groups.rowText}>
+              <span className={groups.rowTitle}>Última sincronização</span>
+              <span className={groups.rowSubtitle}>{textoDoUltimoSync(conexao.last_synced_at)}</span>
+            </span>
+            <OutlineButton variant="secondary" onClick={handleSincronizar} loading={isSyncing}>
+              Sincronizar agora
+            </OutlineButton>
+          </div>
+        </section>
+      ) : null}
+
+      {mostrarPreferencias ? (
+        <section className={groups.group} aria-labelledby="google-agenda-destino">
+          <h2 id="google-agenda-destino" className={groups.groupLabel}>Agenda de destino</h2>
+          <p className={styles.hint}>
+            Os compromissos novos do UniFlow vão para a agenda escolhida. Ao trocar de agenda, os que já estão no Google continuam onde estão.
+          </p>
+          {destinos.length > 0 ? (
+            <div className={styles.choices} role="group" aria-labelledby="google-agenda-destino">
+              {destinos.map((agenda) => (
+                <ChoiceRow
+                  key={agenda.id}
+                  title={nomeDaAgenda(agenda)}
+                  description={descricaoDaAgenda(agenda)}
+                  checked={agenda.external_calendar_id === conexao.destination_calendar_id}
+                  disabled={Boolean(salvando)}
+                  onClick={() => handleEscolherDestino(agenda)}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className={styles.hint}>{isLoading ? 'Carregando…' : 'Nenhuma agenda sua foi encontrada na conta Google.'}</p>
+          )}
+        </section>
+      ) : null}
+
+      {mostrarPreferencias ? (
+        <section className={groups.group} aria-labelledby="google-agenda-lidas">
+          <h2 id="google-agenda-lidas" className={groups.groupLabel}>Agendas lidas</h2>
+          <p className={styles.hint}>
+            Os eventos das agendas marcadas aparecem na agenda do UniFlow. Ao desmarcar uma agenda, os eventos já trazidos continuam no UniFlow.
+          </p>
+          {agendasOrdenadas.length > 0 ? (
+            <div className={groups.list}>
+              {agendasOrdenadas.map((agenda) => {
+                const podeLer = agendaPropria(agenda);
+                const descricao = descricaoDaLeitura(agenda, { conexaoComErro: Boolean(estadoDaConexao) });
+                return (
+                  <label
+                    key={agenda.id}
+                    className={cx(groups.row, groups.rowPlain, styles.checkRow)}
+                    data-disabled={podeLer ? undefined : 'true'}
+                  >
+                    <span className={groups.rowText}>
+                      <span className={groups.rowTitle}>{nomeDaAgenda(agenda)}</span>
+                      {descricao ? <span className={cx(groups.rowSubtitle, styles.wrap)}>{descricao}</span> : null}
+                    </span>
+                    <input
+                      type="checkbox"
+                      className={styles.checkbox}
+                      checked={Boolean(agenda.is_read)}
+                      disabled={!podeLer || Boolean(salvando)}
+                      onChange={(event) => handleLeitura(agenda, event.target.checked)}
+                    />
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <p className={styles.hint}>{isLoading ? 'Carregando…' : 'Nenhuma agenda foi encontrada na conta Google.'}</p>
+          )}
+        </section>
+      ) : null}
 
       <SimplifiedConfirmModal
         open={showDisconnectConfirm}

@@ -215,6 +215,20 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
       'Em /configuracoes: Perfil permite editar nome e telefone (e-mail e avatar não podem ser alterados pelo usuário). Preferências tem o seletor de tema e o interruptor de voz da Uni. Segurança só oferece troca de senha por e-mail — sem autenticação em duas etapas e sem gerenciamento de sessões ativas. Várias seções estão marcadas "Em breve": Perguntar à Uni, Preferências da Uni, Voz e interação (avançado), Notificações (preferências) e Leitura da Uni personalizada.',
   },
   {
+    id: 'google-agenda',
+    title: 'Google Agenda',
+    category: KNOWLEDGE_CATEGORIES.SETTINGS,
+    version: MANIFEST_VERSION,
+    file: 'docs/product-knowledge/google-agenda.md',
+    routes: ['/app/conta/google-agenda'],
+    workspaces: WORKSPACE_SCOPE.BOTH,
+    keywords: ['google agenda', 'google calendar', 'calendário do google', 'sincronizar agenda', 'sincronizar agora', 'conectar google', 'desconectar google', 'agenda de destino', 'agendas lidas', 'evento do google', 'integração'],
+    status: KNOWLEDGE_STATUS.LIMITED,
+    updatedAt: UPDATED_AT,
+    content:
+      'Google Agenda fica em Mais → Configurações → Preferências → Integrações (/app/conta/google-agenda), disponível só para algumas contas nesta fase. Ao conectar, o UniFlow cria a agenda "UniFlow · <nome do espaço>" (uma por espaço) e envia os compromissos futuros que você criou; item sem autor registrado não vai. Agenda de destino: só os compromissos novos vão para a agenda escolhida. Agendas lidas: os eventos das agendas marcadas, só da sua própria conta, entram no UniFlow (de 30 dias atrás até 1 ano à frente); evento privado no Google não entra; ao desmarcar, os já trazidos continuam. Sincronizar agora traz as mudanças na hora. Excluir no UniFlow um evento que veio do Google não o apaga no Google. Desconectar deixa a agenda e os eventos no Google. Erro de conexão: toque em Conectar de novo.',
+  },
+  {
     id: 'uni-chat',
     title: 'Chat da Uni',
     category: KNOWLEDGE_CATEGORIES.UNI,
