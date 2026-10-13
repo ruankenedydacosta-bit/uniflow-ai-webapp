@@ -20,7 +20,6 @@ import {
   readAudioReviews,
   writeAudioReview,
 } from './audioReviewStorage.js';
-import TtsPlayground from './components/TtsPlayground.jsx';
 import styles from './AudioLibraryPage.module.css';
 
 const EMPTY_FILTERS = Object.freeze({
@@ -133,8 +132,6 @@ export default function AudioLibraryPage() {
           Exportar revisão
         </button>
       </header>
-
-      <TtsPlayground />
 
       <section className={styles.summary} aria-label="Resumo da biblioteca">
         <SummaryItem label="Total de áudios" value={counts.total} />

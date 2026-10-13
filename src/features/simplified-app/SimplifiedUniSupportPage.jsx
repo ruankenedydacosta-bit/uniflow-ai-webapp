@@ -8,22 +8,15 @@
 //   mostra apenas a última pergunta e a última resposta do turno atual;
 // - próximas sugestões aparecem ABAIXO da resposta (SUPPORT_SUGGESTED_QUESTIONS,
 //   mesma fonte da Central de Suporte);
-// - TTS/voz existentes (useUniVoiceTts/useVoicePreference) com autoplay
-//   apenas para resposta nova e botões Ouvir/Pausar/Parar no card;
 // - visual 100% dentro do shell/scroll único do Lote F (classes do
 //   simplifiedApp.module.css: .compactResponse/.transcript/.uniResponse),
 //   tokens --uf-* escuros já garantidos pela .shell.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAccess } from '../../app/AccessContext';
 import { useUniSupportChat } from '../uni-support/useUniSupportChat.js';
 import { SUPPORT_SUGGESTED_QUESTIONS } from '../uni-support/supportFaq.js';
 import ChatInput from '../uni-chat/components/ChatInput.jsx';
 import SafeMarkdown from '../../components/content/SafeMarkdown.jsx';
-import {
-  useUniVoiceTts,
-  useVoicePreference,
-  VOICE_TTS_STATUS,
-} from '../uni-voice-tts/index.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedApp.module.css';
@@ -68,13 +61,7 @@ export default function SimplifiedUniSupportPage() {
   const workspaceType = access.currentWorkspace;
 
   const chat = useUniSupportChat({ workspaceId, workspaceType });
-  const uniVoice = useUniVoiceTts();
-  const voicePreference = useVoicePreference();
-  const [voiceMessageId, setVoiceMessageId] = useState(null);
   const [inputValue, setInputValue] = useState('');
-  const lastSpokenIdRef = useRef(null);
-
-  useEffect(() => () => uniVoice.stop(), [uniVoice]);
 
   const lastUser = useMemo(
     () => [...chat.messages].reverse().find((message) => message.from === 'user') ?? null,
@@ -85,37 +72,9 @@ export default function SimplifiedUniSupportPage() {
     [chat.messages],
   );
 
-  const handleSpeakMessage = useCallback((message) => {
-    if (!message?.text) return;
-    uniVoice.stop();
-    setVoiceMessageId(message.id);
-    void uniVoice.speak(message.text);
-  }, [uniVoice]);
-
-  const handlePauseResumeVoice = useCallback(() => {
-    if (uniVoice.status === VOICE_TTS_STATUS.PLAYING) uniVoice.pause();
-    else if (uniVoice.status === VOICE_TTS_STATUS.PAUSED) uniVoice.resume();
-  }, [uniVoice]);
-
-  const handleStopVoice = useCallback(() => uniVoice.stop(), [uniVoice]);
-
-  // LOTE E -- autoplay de UMA resposta por vez (mesmo contrato da Home):
-  // só narra quando uma mensagem NOVA da Uni aparece (registro por id),
-  // nunca histórico/remount; interrompe TTS anterior antes de falar.
-  useEffect(() => {
-    if (!voicePreference.enabled || chat.isTyping) return;
-    if (!lastUni?.text) return;
-    if (voiceMessageId === lastUni.id || lastSpokenIdRef.current === lastUni.id) return;
-    lastSpokenIdRef.current = lastUni.id;
-    handleSpeakMessage(lastUni);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastUni?.id, lastUni?.text, chat.isTyping, voicePreference.enabled]);
-
   function ask(text) {
     const trimmed = String(text ?? '').trim();
     if (!trimmed || chat.isTyping) return;
-    uniVoice.stop();
-    setVoiceMessageId(null);
     chat.sendText(trimmed);
     setInputValue('');
   }
@@ -128,9 +87,6 @@ export default function SimplifiedUniSupportPage() {
   const showResponse = Boolean(lastUni?.text) && !isProcessing;
   const showError = !chat.isTyping && chat.aiStatus === 'error';
   const showCancelled = !chat.isTyping && chat.aiStatus === 'cancelled';
-  const activeVoice = voiceMessageId === lastUni?.id ? uniVoice.status : VOICE_TTS_STATUS.IDLE;
-  const isVoicePlaying = activeVoice === VOICE_TTS_STATUS.PLAYING;
-  const isVoicePaused = activeVoice === VOICE_TTS_STATUS.PAUSED;
 
   return (
     <div className={pageStyles.page} data-simplified-uni-support>
@@ -190,35 +146,6 @@ export default function SimplifiedUniSupportPage() {
             <div className={styles.uniResponse}>
               <span>Uni Suporte</span>
               <SafeMarkdown className={pageStyles.responseText}>{lastUni.text}</SafeMarkdown>
-            </div>
-          )}
-          {showResponse && voicePreference.enabled && (
-            <div className={pageStyles.voiceRow}>
-              <button
-                type="button"
-                className={pageStyles.voiceButton}
-                onClick={() => {
-                  if (isVoicePlaying || isVoicePaused) handlePauseResumeVoice();
-                  else if (lastUni?.text) handleSpeakMessage(lastUni);
-                }}
-                disabled={activeVoice === VOICE_TTS_STATUS.LOADING}
-                aria-pressed={isVoicePlaying || isVoicePaused}
-                aria-label={isVoicePlaying ? 'Pausar leitura da resposta' : isVoicePaused ? 'Retomar leitura da resposta' : 'Ouvir resposta da Uni'}
-              >
-                <span className={pageStyles.voiceButtonLabel}>
-                  {isVoicePlaying ? 'Pausar' : isVoicePaused ? 'Retomar' : activeVoice === VOICE_TTS_STATUS.ERROR ? 'Ouvir novamente' : 'Ouvir resposta'}
-                </span>
-              </button>
-              {isVoicePlaying || isVoicePaused ? (
-                <button type="button" className={pageStyles.voiceStop} onClick={handleStopVoice}>
-                  Parar
-                </button>
-              ) : null}
-              {activeVoice === VOICE_TTS_STATUS.ERROR ? (
-                <span className={pageStyles.voiceError} role="status">
-                  Não foi possível reproduzir esta resposta.
-                </span>
-              ) : null}
             </div>
           )}
           <div className={pageStyles.nextSuggestions} aria-label="Próximas sugestões">

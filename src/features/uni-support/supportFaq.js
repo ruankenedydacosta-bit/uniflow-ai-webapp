@@ -66,10 +66,10 @@ export const SUPPORT_FAQ_CATEGORIES = Object.freeze([
     id: 'voz',
     label: 'Voz',
     items: [
-      { question: 'Como ouço uma resposta da Uni?', knowledgeId: 'uni-voice' },
+      { question: 'Como converso com a Uni por voz?', knowledgeId: 'uni-voice' },
       { question: 'Como configurar a voz da Uni?', knowledgeId: 'uni-voice' },
-      { question: 'A voz consome crédito toda vez que repito?', knowledgeId: 'uni-voice' },
-      { question: 'Como desativo a voz?', knowledgeId: 'uni-voice' },
+      { question: 'A Uni lê as respostas do chat em voz alta?', knowledgeId: 'uni-voice' },
+      { question: 'Como uso a Uni sem voz?', knowledgeId: 'uni-voice' },
     ],
   },
   {

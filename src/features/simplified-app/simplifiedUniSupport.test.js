@@ -4,7 +4,7 @@
 // Library/jsdom): valida que a página usa a base de suporte existente
 // (useUniSupportChat / conversation_type='support' / SUPPORT_SUGGESTED_QUESTIONS),
 // apresenta UMA resposta de cada vez sem empilhar todo o histórico,
-// reutiliza a voz/TTS existentes e não carrega nenhum contexto financeiro.
+// não carrega nenhum contexto financeiro.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -36,13 +36,9 @@ test('LOTE E: mostra UMA última resposta por vez (nunca o histórico empilhado 
   assert.match(page, /aria-label="Próximas sugestões"/);
 });
 
-test('LOTE E: reutiliza TTS/voz existentes (useUniVoiceTts/useVoicePreference + VOICE_TTS_STATUS)', async () => {
+test('Uni Suporte não fala as respostas: sem botão Ouvir nem narração', async () => {
   const page = await source('./SimplifiedUniSupportPage.jsx');
-  assert.match(page, /useUniVoiceTts\(\)/);
-  assert.match(page, /useVoicePreference\(\)/);
-  assert.match(page, /VOICE_TTS_STATUS\.PLAYING/);
-  assert.match(page, /uniVoice\.speak\(message\.text\)/);
-  assert.match(page, /aria-label=\{isVoicePlaying \? 'Pausar leitura da resposta'/);
+  assert.doesNotMatch(page, /useUniVoiceTts|useVoicePreference|VOICE_TTS_STATUS|uni-voice-tts|Ouvir resposta/);
 });
 
 test('LOTE E: página não importa nada financeiro (nem ferramentas, nem contexto financeiro)', async () => {

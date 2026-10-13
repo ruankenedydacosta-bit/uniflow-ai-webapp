@@ -277,11 +277,9 @@ test('fechar, ir para o chat ou deixar o app em segundo plano encerra a conversa
   assert.match(home, /if \(isRealtimeActiveRef\.current\) stopRealtimeRef\.current\?\.\('lifecycle'\);/);
 });
 
-test('com a conversa em tempo real aberta, a voz antiga não narra as respostas', async () => {
+test('o chat não fala as respostas: a única voz é a da conversa em tempo real', async () => {
   const chat = await source('../uni-chat/UniChatPage.jsx');
-  assert.match(chat, /const handleAutomaticSpeakMessage = useCallback\(\(message\) => \{\s*if \(realtimeVoiceActiveRef\.current\) return;/);
-  assert.match(chat, /if \(realtimeVoiceActiveRef\.current\) return;\s*void uniVoice\.speak\(/);
-  assert.match(chat, /onRealtimeVoiceActiveChange=\{handleRealtimeVoiceActiveChange\}/);
+  assert.doesNotMatch(chat, /uni-voice-tts|uniVoice\.speak|handleAutomaticSpeakMessage|onRealtimeVoiceActiveChange/);
 });
 
 test('a conversa em tempo real é o padrão: não existe flag para desligá-la', async () => {

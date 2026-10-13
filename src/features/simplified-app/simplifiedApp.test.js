@@ -1126,12 +1126,11 @@ test('HOTFIX P1.4: SimplifiedHomeView não repassa onSpeakMessage/voiceEnabled p
   assert.doesNotMatch(block, /onSpeakMessage=\{onSpeakMessage\}/);
 });
 
-test('abrir a conversa em tempo real para a voz do chat antes de conectar', async () => {
+test('abrir a conversa em tempo real não depende da voz do chat, que saiu', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
   const begin = home.slice(home.indexOf('function beginRealtimeConversation() {'));
-  assert.match(begin, /^[^}]*onBeforeVoiceStart\?\.\(\);[^}]*realtime\.start\(/);
-  const chat = await source('../uni-chat/UniChatPage.jsx');
-  assert.match(chat, /function handleBeforeVoiceStart\(\) \{\s*uniVoice\.stop\(\);/);
+  assert.match(begin, /^[^}]*realtime\.start\(/);
+  assert.doesNotMatch(home, /voiceController|onBeforeVoiceStart|uni-voice-tts/);
 });
 
 test('rótulos do botão central usam tipografia menor sem alterar o orb', async () => {

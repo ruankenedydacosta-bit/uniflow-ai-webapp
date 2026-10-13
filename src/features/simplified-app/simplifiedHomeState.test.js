@@ -5,54 +5,21 @@ import {
   SIMPLIFIED_UNI_STATES,
 } from './simplifiedHomeState.js';
 
-// ============================================================================
-// BLOCO UNI 2: `speaking` é o estado novo desta máquina -- reflete a SAÍDA
-// de voz (TTS), nunca a captura. A causa raiz da regressão de voz era
-// justamente esta máquina ser cega à saída: sem `isSpeaking`, não havia
-// como sequer representar "a Uni está falando" na interface da Home.
-// ============================================================================
+// Estado da Uni no card da Home. A voz é só a conversa em tempo real, que
+// tem o próprio estado: aqui não existe "falando" nem "ouvindo".
 
 const BASE = Object.freeze({
   isTyping: false,
   isExecuting: false,
   hasPendingConfirmation: false,
   hasError: false,
-  isSpeaking: false,
 });
 
-test('isSpeaking=true e nenhum estado mais prioritário ativo -> SPEAKING', () => {
-  const state = resolveSimplifiedUniState({ ...BASE, isSpeaking: true });
-  assert.equal(state, SIMPLIFIED_UNI_STATES.SPEAKING);
-});
-
-test('erro sempre vence "falando" -- nunca mostra SPEAKING durante um erro', () => {
-  const state = resolveSimplifiedUniState({ ...BASE, isSpeaking: true, hasError: true });
+test('erro vence qualquer outro estado', () => {
+  const state = resolveSimplifiedUniState({
+    ...BASE, hasError: true, isExecuting: true, isTyping: true, hasPendingConfirmation: true,
+  });
   assert.equal(state, SIMPLIFIED_UNI_STATES.ERROR);
-});
-
-test('executando sempre vence "falando"', () => {
-  const state = resolveSimplifiedUniState({ ...BASE, isSpeaking: true, isExecuting: true });
-  assert.equal(state, SIMPLIFIED_UNI_STATES.EXECUTING);
-});
-
-test('confirmação pendente sempre vence "falando" -- mesmo que a confirmação esteja sendo falada nesse instante', () => {
-  const state = resolveSimplifiedUniState({ ...BASE, isSpeaking: true, hasPendingConfirmation: true });
-  assert.equal(state, SIMPLIFIED_UNI_STATES.WAITING_CONFIRMATION);
-});
-
-test('digitando (interpretando) sempre vence "falando"', () => {
-  const state = resolveSimplifiedUniState({ ...BASE, isSpeaking: true, isTyping: true });
-  assert.equal(state, SIMPLIFIED_UNI_STATES.INTERPRETING);
-});
-
-test('isSpeaking=false e nada em andamento -> IDLE', () => {
-  assert.equal(resolveSimplifiedUniState({ ...BASE }), SIMPLIFIED_UNI_STATES.IDLE);
-});
-
-test('SIMPLIFIED_UNI_STATES.SPEAKING existe e é distinto de todos os outros valores', () => {
-  const values = Object.values(SIMPLIFIED_UNI_STATES);
-  assert.ok(values.includes('speaking'));
-  assert.equal(new Set(values).size, values.length, 'nenhum valor duplicado');
 });
 
 test('executando vence confirmação pendente, que vence o estado parado', () => {
@@ -64,4 +31,21 @@ test('executando vence confirmação pendente, que vence o estado parado', () =>
     resolveSimplifiedUniState({ ...BASE, isExecuting: true, hasPendingConfirmation: true }),
     SIMPLIFIED_UNI_STATES.EXECUTING,
   );
+});
+
+test('confirmação pendente vence digitando (interpretando)', () => {
+  const state = resolveSimplifiedUniState({ ...BASE, isTyping: true, hasPendingConfirmation: true });
+  assert.equal(state, SIMPLIFIED_UNI_STATES.WAITING_CONFIRMATION);
+  assert.equal(resolveSimplifiedUniState({ ...BASE, isTyping: true }), SIMPLIFIED_UNI_STATES.INTERPRETING);
+});
+
+test('nada em andamento -> IDLE', () => {
+  assert.equal(resolveSimplifiedUniState({ ...BASE }), SIMPLIFIED_UNI_STATES.IDLE);
+  assert.equal(resolveSimplifiedUniState(), SIMPLIFIED_UNI_STATES.IDLE);
+});
+
+test('a Home não tem estado de voz falando: a voz é só a conversa em tempo real', () => {
+  const values = Object.values(SIMPLIFIED_UNI_STATES);
+  assert.equal(values.includes('speaking'), false);
+  assert.equal(new Set(values).size, values.length, 'nenhum valor duplicado');
 });

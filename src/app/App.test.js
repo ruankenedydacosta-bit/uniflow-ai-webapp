@@ -341,13 +341,10 @@ test('SessionContext persiste conversationStyle e reflete a resposta imediatamen
   assert.match(session, /updateConversationStyle,/);
 });
 
-test('SessionContext persiste provider de voz e estilo de conversa em uma única preferência', async () => {
+test('SessionContext não grava mais o provedor de voz: só o estilo de conversa', async () => {
   const session = await source('SessionContext.jsx');
-  assert.match(session, /const updateVoicePreferences = useCallback/);
-  assert.match(session, /conversation_style: conversationStyle/);
-  assert.match(session, /voice_provider: voiceProvider/);
-  assert.match(session, /voice_provider: resolveVoiceProvider\(result\.data\.voice_provider\)/);
-  assert.match(session, /updateVoicePreferences,/);
+  assert.match(session, /const updateConversationStyle = useCallback/);
+  assert.doesNotMatch(session, /updateVoicePreferences|voice_provider: voiceProvider|uni-voice-tts/);
 });
 
 test('apresentação é protegida, standalone e anterior ao fallback final', async () => {

@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAccess } from '../../app/AccessContext';
 import { useSession } from '../../app/SessionContext';
 import { AI_STATUS } from '../uni-llm';
-import { useUniVoiceTts, useVoicePreference, VOICE_TTS_STATUS } from '../uni-voice-tts';
 import MessageBubble from '../uni-chat/components/MessageBubble';
 import TypingIndicator from '../uni-chat/components/TypingIndicator';
 import ErrorState from '../uni-chat/components/ErrorState';
@@ -22,9 +21,6 @@ export default function SupportCenterPage() {
   const workspaceType = access.currentWorkspace;
 
   const chat = useUniSupportChat({ workspaceId, workspaceType });
-  const uniVoice = useUniVoiceTts();
-  const voicePreference = useVoicePreference();
-  const [voiceMessageId, setVoiceMessageId] = useState(null);
   const [inputValue, setInputValue] = useState('');
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestFormPrefill, setRequestFormPrefill] = useState({ category: '', subject: '' });
@@ -32,25 +28,8 @@ export default function SupportCenterPage() {
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [lastCreatedRequest, setLastCreatedRequest] = useState(null);
 
-  useEffect(() => () => uniVoice.stop(), [uniVoice]);
-
-  const handleSpeakMessage = useCallback((message) => {
-    if (!message?.text) return;
-    setVoiceMessageId(message.id);
-    void uniVoice.speak(message.text);
-  }, [uniVoice]);
-
-  const handlePauseResumeVoice = useCallback(() => {
-    if (uniVoice.status === VOICE_TTS_STATUS.PLAYING) uniVoice.pause();
-    else if (uniVoice.status === VOICE_TTS_STATUS.PAUSED) uniVoice.resume();
-  }, [uniVoice]);
-
-  const handleStopVoice = useCallback(() => uniVoice.stop(), [uniVoice]);
-
   function ask(text) {
     if (!text || !text.trim()) return;
-    uniVoice.stop();
-    setVoiceMessageId(null);
     chat.sendText(text);
     setInputValue('');
   }
@@ -129,13 +108,6 @@ export default function SupportCenterPage() {
               <MessageBubble
                 key={message.id}
                 message={message}
-                voiceEnabled={voicePreference.enabled}
-                voiceStatus={uniVoice.status}
-                voiceError={uniVoice.error}
-                isActiveVoiceMessage={voiceMessageId === message.id}
-                onSpeakMessage={handleSpeakMessage}
-                onPauseResumeVoice={handlePauseResumeVoice}
-                onStopVoice={handleStopVoice}
               />
             ))}
             {chat.isTyping && (

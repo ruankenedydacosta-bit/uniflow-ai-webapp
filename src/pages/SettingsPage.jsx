@@ -9,7 +9,6 @@ import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { cx } from '../utils/cx';
 import { ThemeSelector } from '../features/theme';
-import { useVoicePreference } from '../features/uni-voice-tts';
 import { getPasswordResetRequestFeedback } from '../features/auth-mobile/passwordRecoveryUtils.js';
 import ComingSoonSection from './configuracoes/ComingSoonSection.jsx';
 import ProfileEditModal from './configuracoes/ProfileEditModal.jsx';
@@ -56,7 +55,6 @@ function SettingsPage() {
   const [searchParams] = useSearchParams();
   const [isRequestingReset, setIsRequestingReset] = useState(false);
   const [resetFeedback, setResetFeedback] = useState(null);
-  const voicePreference = useVoicePreference();
 
   const profileDisplayName = getProfileDisplayName(profile, user);
   const profileEmail = user?.email ?? '';
@@ -258,29 +256,6 @@ function SettingsPage() {
           description="Como a Uni deve orientar sem aumentar esforço mental."
           message="Personalização de tom, explicações e alertas estará disponível em uma próxima etapa."
         />
-
-        <Card variant="outline" padding="lg" className={styles.spacesCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h3>Voz das respostas</h3>
-              <p>Controla se as respostas da Uni no chat podem ser ouvidas em voz alta.</p>
-            </div>
-          </div>
-          <label className={styles.voiceToggleRow} htmlFor="voice-preference-toggle">
-            <input
-              id="voice-preference-toggle"
-              type="checkbox"
-              role="switch"
-              aria-checked={voicePreference.enabled}
-              checked={voicePreference.enabled}
-              onChange={(event) => voicePreference.setEnabled(event.target.checked)}
-            />
-            <span>
-              Permitir voz nas respostas da Uni
-              <small>Nunca toca sozinha — você sempre escolhe quando ouvir cada resposta.</small>
-            </span>
-          </label>
-        </Card>
 
         <ComingSoonSection
           title="Voz e interação"
