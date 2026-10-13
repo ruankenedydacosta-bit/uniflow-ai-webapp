@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { guardarAssinatura } from '../../services/assinaturaCache.js';
-import { getSubscription } from '../../services/billingService.js';
+import { atualizarAssinatura } from '../../services/assinaturaCache.js';
 import { resolvePersonalPlanAccess } from './resolvePersonalPlanAccess.js';
 
 // GUARD FIX: consulta real de acesso ao Plano Pessoal -- App.jsx usava
@@ -47,11 +46,11 @@ export function usePersonalPlanAccessGuard({ workspaceId, enabled, revalidateWhe
         return;
       }
       setStatus('loading');
-      getSubscription({ workspaceId, localOnly: true }).then(({ data, error }) => {
+      // Busca pelo cache da assinatura (só o status do banco, sem a Asaas):
+      // a resposta fica guardada e Mais e Seu plano abrem com o plano certo.
+      // `forcar`: sempre uma busca nova, nunca uma que já estava em andamento.
+      atualizarAssinatura(workspaceId, { forcar: true }).then(({ data, error }) => {
         if (cancelled) return;
-        // A mesma resposta abastece as telas de Mais e Seu plano, que assim
-        // abrem já com o plano certo, sem buscar de novo.
-        if (!error) guardarAssinatura(workspaceId, data);
         // Falha de rede/backend: nunca libera acesso sem confirmação real.
         setStatus(error ? 'blocked' : resolvePersonalPlanAccess(data));
       });
@@ -68,9 +67,8 @@ export function usePersonalPlanAccessGuard({ workspaceId, enabled, revalidateWhe
     const timeoutId = window.setTimeout(() => {
       if (cancelled) return;
       setStatus('loading');
-      getSubscription({ workspaceId, localOnly: true }).then(({ data, error }) => {
+      atualizarAssinatura(workspaceId, { forcar: true }).then(({ data, error }) => {
         if (cancelled) return;
-        if (!error) guardarAssinatura(workspaceId, data);
         setStatus(error ? 'blocked' : resolvePersonalPlanAccess(data));
       });
     }, 0);

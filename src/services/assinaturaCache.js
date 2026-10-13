@@ -9,16 +9,18 @@
 // Pessoal, que chama getSubscription direto).
 //
 // Fica só em memória, nunca no localStorage: some ao recarregar a página, e
-// o guarda de acesso do App.jsx preenche de novo ao abrir o app. O logout
-// limpa tudo (SessionContext.signOut).
+// o guarda de acesso do App.jsx busca por aqui ao abrir o app, deixando o
+// valor pronto para o menu. A sessão encerrada limpa tudo
+// (SessionContext.synchronizeSession).
 import { getSubscription } from './billingService.js';
 
 const VAZIA = Object.freeze({ temDado: false, assinatura: null, erro: null, carregando: false });
 
 export function createAssinaturaCache({ buscar }) {
   const entradas = new Map();
-  // Número da busca mais recente por workspace. Resposta de busca antiga
-  // não sobrescreve a nova (ex.: revalidação disparada antes de cancelar).
+  // Busca mais recente por workspace: { numero, promessa }. Resposta de
+  // busca antiga não sobrescreve a nova (ex.: revalidação disparada antes
+  // de cancelar o plano).
   const ultimaBusca = new Map();
   const ouvintes = new Set();
   let contador = 0;
@@ -32,22 +34,14 @@ export function createAssinaturaCache({ buscar }) {
     return entradas.get(workspaceId) ?? VAZIA;
   }
 
-  function guardar(workspaceId, assinatura) {
-    if (!workspaceId) return;
-    contador += 1;
-    ultimaBusca.set(workspaceId, contador);
-    gravar(workspaceId, { temDado: true, assinatura: assinatura ?? null, erro: null, carregando: false });
-  }
-
-  async function atualizar(workspaceId) {
-    if (!workspaceId) return null;
-    contador += 1;
-    const numero = contador;
-    ultimaBusca.set(workspaceId, numero);
-    gravar(workspaceId, { carregando: true });
-
-    const resultado = await buscar({ workspaceId, localOnly: true });
-    if (ultimaBusca.get(workspaceId) !== numero) return resultado;
+  async function executar(workspaceId, numero) {
+    let resultado;
+    try {
+      resultado = await buscar({ workspaceId, localOnly: true });
+    } catch {
+      resultado = { data: null, error: { code: 'NETWORK', message: 'billing_request_failed' } };
+    }
+    if (ultimaBusca.get(workspaceId)?.numero !== numero) return resultado;
 
     if (resultado.error) {
       // Com valor guardado, a falha da revalidação não apaga o que a tela
@@ -57,6 +51,25 @@ export function createAssinaturaCache({ buscar }) {
       gravar(workspaceId, { temDado: true, assinatura: resultado.data ?? null, erro: null, carregando: false });
     }
     return resultado;
+  }
+
+  // Sem opções, reaproveita a busca em andamento. `forcar` sempre faz uma
+  // busca nova: o guarda de acesso não decide com uma resposta que saiu
+  // antes do pagamento. `descartar` também apaga o valor guardado: depois de
+  // cancelar ou trocar de plano, a tela volta a mostrar "Carregando" e, se a
+  // busca falhar, o erro, em vez do plano antigo.
+  function atualizar(workspaceId, { forcar = false, descartar = false } = {}) {
+    if (!workspaceId) return Promise.resolve(null);
+    const emAndamento = ultimaBusca.get(workspaceId);
+    if (!forcar && !descartar && emAndamento && ler(workspaceId).carregando) return emAndamento.promessa;
+
+    contador += 1;
+    const numero = contador;
+    gravar(workspaceId, descartar ? { ...VAZIA, carregando: true } : { carregando: true });
+    const busca = { numero, promessa: null };
+    ultimaBusca.set(workspaceId, busca);
+    busca.promessa = executar(workspaceId, numero);
+    return busca.promessa;
   }
 
   function ouvir(ouvinte) {
@@ -70,13 +83,23 @@ export function createAssinaturaCache({ buscar }) {
     ouvintes.forEach((ouvinte) => ouvinte());
   }
 
-  return { ler, guardar, atualizar, ouvir, limpar };
+  return { ler, atualizar, ouvir, limpar };
+}
+
+// O que as telas mostram a partir da entrada guardada. `carregando` só fica
+// true quando ainda não há valor guardado: revisitar a tela não mostra
+// "Carregando" de novo.
+export function resumirAssinatura(estado, workspaceId) {
+  return {
+    assinatura: estado.assinatura,
+    carregando: Boolean(workspaceId) && !estado.temDado && (estado.carregando || !estado.erro),
+    erro: estado.temDado ? null : estado.erro,
+  };
 }
 
 const assinaturaCache = createAssinaturaCache({ buscar: getSubscription });
 
 export const lerAssinatura = assinaturaCache.ler;
-export const guardarAssinatura = assinaturaCache.guardar;
 export const atualizarAssinatura = assinaturaCache.atualizar;
 export const ouvirAssinaturas = assinaturaCache.ouvir;
 export const limparAssinaturas = assinaturaCache.limpar;

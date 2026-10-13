@@ -86,11 +86,12 @@ function SimplifiedPlanPage() {
   const [changePlanError, setChangePlanError] = useState(null);
   const [upgradePix, setUpgradePix] = useState(null);
 
-  // A assinatura revalida sozinha ao montar (useAssinatura). Aqui fica o
-  // saldo de voz e a revalidação depois de trocar ou cancelar o plano.
+  // A assinatura revalida sozinha ao montar (useAssinatura). Aqui fica a
+  // recarga depois de trocar ou cancelar o plano: descarta o valor guardado
+  // para a tela não seguir mostrando o plano antigo (nem o botão Cancelar).
   const loadSubscription = useCallback(() => {
     if (!workspaceId) return;
-    reloadSubscription();
+    reloadSubscription({ descartar: true });
     getMyVoiceBalance().then(({ data }) => setVoiceBalance(data ?? null));
   }, [workspaceId, reloadSubscription]);
 

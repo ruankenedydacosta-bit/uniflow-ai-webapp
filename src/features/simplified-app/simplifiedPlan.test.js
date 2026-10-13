@@ -58,7 +58,8 @@ test('lê a assinatura guardada e revalida via loadSubscription (useCallback), r
   const content = await source('./SimplifiedPlanPage.jsx');
   assert.match(content, /\} = useAssinatura\(workspaceId\);/);
   assert.match(content, /const loadSubscription = useCallback\(\(\) => \{/);
-  assert.match(content, /reloadSubscription\(\);/);
+  // Depois de cancelar ou trocar de plano, a tela não segue mostrando o plano antigo.
+  assert.match(content, /reloadSubscription\(\{ descartar: true \}\);/);
   assert.doesNotMatch(content, /getSubscription\(/);
 });
 

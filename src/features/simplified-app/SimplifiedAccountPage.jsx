@@ -168,7 +168,10 @@ function SimplifiedAccountPage() {
       id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
       Icon: PhCreditCardIcon,
       title: 'Pagamento e assinatura',
-      subtitle: planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
+      // Sem valor guardado ainda, nenhum dos dois textos: ambos supõem um estado.
+      subtitle: isLoadingSubscription
+        ? null
+        : planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.VOICE,

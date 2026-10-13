@@ -68,8 +68,9 @@ test('active com assinatura ainda existente mas internal_status incomum/desconhe
 // do projeto, sem @testing-library/react).
 // ============================================================================
 
-test('hook só chama getSubscription (billing-get-subscription) -- nunca outra função de billing', () => {
-  assert.match(HOOK_SOURCE, /import \{ getSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+test('hook só consulta a assinatura (billing-get-subscription, pelo cache) -- nunca outra função de billing', () => {
+  assert.match(HOOK_SOURCE, /import \{ atualizarAssinatura \} from '\.\.\/\.\.\/services\/assinaturaCache\.js';/);
+  assert.doesNotMatch(HOOK_SOURCE, /billingService/);
   assert.doesNotMatch(HOOK_SOURCE, /createSubscription|createCustomer|cancelSubscription|createCheckout/);
 });
 
@@ -105,9 +106,13 @@ test('hook cancela a consulta em andamento no cleanup -- nunca aplica um resulta
 });
 
 test('ao abrir o app, o guard pede só o status do banco, sem consultar a Asaas', () => {
-  const calls = HOOK_SOURCE.match(/getSubscription\(\{[^}]*\}\)/g) ?? [];
+  // O cache busca sempre com localOnly (coberto em assinaturaCache.test.js).
+  // `forcar`: o guard nunca decide com uma busca que já estava em andamento.
+  const calls = HOOK_SOURCE.match(/atualizarAssinatura\([^)]*\)/g) ?? [];
   assert.equal(calls.length, 2);
-  for (const call of calls) assert.match(call, /localOnly: true/);
+  for (const call of calls) assert.match(call, /\{ forcar: true \}/);
+  const cache = readFileSync(new URL('../../services/assinaturaCache.js', import.meta.url), 'utf8');
+  assert.match(cache, /buscar\(\{ workspaceId, localOnly: true \}\)/);
   const edge = readFileSync(
     new URL('../../../supabase/functions/billing-get-subscription/index.ts', import.meta.url),
     'utf8',
