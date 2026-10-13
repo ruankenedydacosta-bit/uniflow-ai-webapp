@@ -169,14 +169,25 @@ export const CASOS = [
   {
     id: 'academia-todo-mes',
     frase: 'pago 120 de academia todo mês',
-    esperado: { intent: 'lancar_saida', valor: 120, categoria: 'Saúde', aceitas: ['Lazer'], recorrente: true },
+    esperado: { intent: 'lancar_saida', valor: 120, categoria: 'Saúde', aceitas: ['Lazer'], recorrente: true, frequencia: 'mensal' },
   },
   {
     id: 'aluguel-recebido-todo-mes',
     // Sem dia do mês: numa recorrência, "todo dia 5" não diz quando foi o
     // lançamento, e a régua não tem como esperar uma data só.
     frase: 'recebo 2.000 do aluguel do apartamento todo mês',
-    esperado: { intent: 'lancar_entrada', valor: 2000, categoria: 'Aluguel recebido', recorrente: true },
+    esperado: { intent: 'lancar_entrada', valor: 2000, categoria: 'Aluguel recebido', recorrente: true, frequencia: 'mensal' },
+  },
+  {
+    id: 'aluguel-todo-dia-10',
+    // Hoje é 02/10: o primeiro lançamento da série é o próximo dia 10.
+    frase: 'aluguel de 1.500 todo dia 10',
+    esperado: { intent: 'lancar_saida', valor: 1500, data: '2026-10-10', categoria: 'Moradia', recorrente: true, frequencia: 'mensal' },
+  },
+  {
+    id: 'diarista-toda-semana',
+    frase: 'pago 180 pra diarista toda semana',
+    esperado: { intent: 'lancar_saida', valor: 180, categoria: 'Moradia', aceitas: ['Outras despesas'], recorrente: true, frequencia: 'semanal' },
   },
   // Falsos positivos conhecidos das regras de palavra-chave.
   {

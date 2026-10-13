@@ -268,19 +268,45 @@ test('correção do valor de uma compra parcelada recalcula as parcelas', () => 
   assert.equal(corrected.operations[0].action.installments.installmentAmount, 120);
 });
 
-test('recorrência é compreendida e apresentada, mas marcada como capacidade pendente (sem persistência)', () => {
+test('recorrência sem frequência é apresentada, mas fica bloqueada pedindo a frequência (sem persistência)', () => {
   const plan = buildPlan([
     rawOperation({
       operationType: 'recurring_expense',
       description: 'Aluguel',
       categoryReference: null,
-      recurrence: { frequency: 'monthly', interval: 1, dayOfMonth: 5, startDate: null, endDate: null },
+      recurrence: null,
     }),
   ]);
   const operation = plan.operations[0];
   assert.equal(operation.capabilityPending, true);
   assert.equal(operation.status, PLAN_OPERATION_STATUS.BLOCKED);
-  assert.match(operation.blockedReason, /recorrências automaticamente/);
+  assert.match(operation.blockedReason, /de quanto em quanto tempo/);
+});
+
+test('recorrência com frequência vira série pronta para confirmar, com a regra na ação (#222)', () => {
+  const plan = buildPlan([
+    rawOperation({
+      operationType: 'recurring_expense',
+      description: 'Aluguel',
+      recurrence: { frequency: 'monthly', interval: 1 },
+    }),
+  ]);
+  const [operation] = plan.operations;
+  assert.equal(operation.capabilityPending, false);
+  assert.equal(operation.action.transactionType, 'expense');
+  assert.deepEqual(operation.action.recurrence, { frequency: 'monthly', interval: 1 });
+  assert.equal(operation.action.planned, false);
+  assert.equal(getPersistablePlanOperations(plan).length, 1);
+});
+
+test('recorrência: intervalo fora de 1 a 365 vira 1, e frequência desconhecida bloqueia', () => {
+  const comIntervalo = (recurrence) => buildPlan([
+    rawOperation({ operationType: 'recurring_income', description: 'Aluguel recebido', categoryReference: null, recurrence }),
+  ]).operations[0];
+  assert.equal(comIntervalo({ frequency: 'weekly', interval: 0 }).action.recurrence.interval, 1);
+  assert.equal(comIntervalo({ frequency: 'weekly', interval: 400 }).action.recurrence.interval, 1);
+  assert.equal(comIntervalo({ frequency: 'weekly', interval: 2 }).action.recurrence.interval, 2);
+  assert.equal(comIntervalo({ frequency: 'quinzenal', interval: 1 }).capabilityPending, true);
 });
 
 test('operação com capacidade pendente não bloqueia as demais operações prontas do mesmo plano', () => {
@@ -291,7 +317,7 @@ test('operação com capacidade pendente não bloqueia as demais operações pro
       operationType: 'recurring_expense',
       description: 'Aluguel',
       categoryReference: null,
-      recurrence: { frequency: 'monthly', interval: 1, dayOfMonth: 5, startDate: null, endDate: null },
+      recurrence: null,
     }),
   ]);
   assert.equal(plan.operations[0].status, PLAN_OPERATION_STATUS.READY);
@@ -379,14 +405,14 @@ test('cada operação preserva um client_operation_id próprio e único', () => 
   assert.ok(plan.operations[1].clientOperationId);
 });
 
-test('getPersistablePlanOperations exclui operações com capacidade pendente (recorrência)', () => {
+test('getPersistablePlanOperations exclui operações com capacidade pendente (recorrência sem frequência)', () => {
   const plan = buildPlan([
     rawOperation({ temporaryId: 'op_1', amount: 80 }),
     rawOperation({
       temporaryId: 'op_2',
       operationType: 'recurring_expense',
       categoryReference: null,
-      recurrence: { frequency: 'monthly', interval: 1, dayOfMonth: 5, startDate: null, endDate: null },
+      recurrence: null,
     }),
   ]);
   const persistable = getPersistablePlanOperations(plan);

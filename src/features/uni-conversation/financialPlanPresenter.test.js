@@ -5,6 +5,7 @@ import {
   applyPlanOperationCorrection,
   cancelPlanOperation,
   markPlanOperationConfirmed,
+  markPlanOperationFailed,
   PLAN_STATUS,
 } from './pendingFinancialPlan.js';
 import {
@@ -136,12 +137,23 @@ test('describePlanOperation descreve transferência com origem e destino', () =>
 });
 
 test('describePlanOperation descreve operação bloqueada (capacidade pendente) com a mensagem de limite', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense' })]);
+  const text = describePlanOperation(plan.operations[0]);
+  assert.match(text, /de quanto em quanto tempo/);
+});
+
+test('describePlanOperation descreve a recorrência com valor, regra, início e categoria (#222)', () => {
   const plan = buildPlan([rawOperation({
     operation_type: 'recurring_expense',
-    recurrence: { frequency: 'monthly', interval: 1, day_of_month: 5 },
+    description: 'Aluguel',
+    amount: 1500,
+    date_expression: 'hoje',
+    recurrence: { frequency: 'monthly', interval: 1 },
   })]);
-  const text = describePlanOperation(plan.operations[0]);
-  assert.match(text, /recorrências automaticamente/);
+  assert.equal(
+    describePlanOperation(plan.operations[0]),
+    '• Saída de R$ 1500,00 (Aluguel) todo mês, no dia 29, a partir de 29/07, em Alimentação',
+  );
 });
 
 test('describePlanOperation descreve a compra parcelada com o total, as parcelas e a categoria', () => {
@@ -222,10 +234,67 @@ test('buildPlanCancelledText e buildPlanOperationCancelledText nunca mencionam r
 });
 
 test('buildPlanResultText resume confirmados, falhos e bloqueados sem inventar sucesso', () => {
-  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense', recurrence: { frequency: 'monthly', interval: 1 } })]);
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense' })]);
   const text = buildPlanResultText(plan);
-  assert.match(text, /recorrências automaticamente/);
-  assert.doesNotMatch(text, /Registrei/);
+  assert.match(text, /de quanto em quanto tempo/);
+  assert.doesNotMatch(text, /Registrei|Criei/);
+});
+
+test('buildPlanResultText conta os lançamentos que a série criou e quantos ficaram previstos (#222)', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense', recurrence: { frequency: 'monthly', interval: 1 } })]);
+  const confirmed = markPlanOperationConfirmed(plan, 'op_1', { occurrences: 4, pending_occurrences: 3 });
+  assert.equal(
+    buildPlanResultText(confirmed),
+    'Criei a repetição. 1 lançamento entrou como realizado. 3 ficaram previstos. Confirme no Financeiro quando cada um acontecer. Os seguintes são criados sozinhos, sempre 3 meses à frente.',
+  );
+  assert.doesNotMatch(buildPlanResultText(confirmed), /Registrei/);
+});
+
+test('buildPlanResultText: série com um lançamento só fala no singular, e início no passado conta os realizados', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense', recurrence: { frequency: 'yearly', interval: 1 } })]);
+  assert.equal(
+    buildPlanResultText(markPlanOperationConfirmed(plan, 'op_1', { occurrences: 1, pending_occurrences: 1 })),
+    'Criei a repetição. 1 ficou previsto. Confirme no Financeiro quando ele acontecer. Os seguintes são criados sozinhos, sempre 3 meses à frente.',
+  );
+  assert.match(
+    buildPlanResultText(markPlanOperationConfirmed(plan, 'op_1', { occurrences: 40, pending_occurrences: 13 })),
+    /^Criei a repetição\. 27 lançamentos entraram como realizados, até hoje\. 13 ficaram previstos\./,
+  );
+});
+
+test('buildPlanResultText: recusa do pedido dá o motivo; falha de conexão pede para tentar de novo', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense', recurrence: { frequency: 'daily', interval: 1 } })]);
+  const recusada = markPlanOperationFailed(plan, 'op_1', {
+    code: 'INVALID_TRANSACTION_REQUEST',
+    message: 'A repetição começa muito antes de hoje. Use uma data de início mais recente.',
+  });
+  assert.equal(
+    buildPlanResultText(recusada),
+    'Não consegui registrar: A repetição começa muito antes de hoje. Use uma data de início mais recente.',
+  );
+  const caiu = markPlanOperationFailed(plan, 'op_1', { code: 'ATOMIC_FINANCIAL_ACTION_FAILED', message: 'x' });
+  assert.match(buildPlanResultText(caiu), /pode tentar de novo/);
+});
+
+test('correção da regra no plano: "toda semana", "a cada 15 dias" e "quinzenal" trocam a repetição', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense', recurrence: { frequency: 'monthly', interval: 1 } })]);
+  const [operation] = plan.operations;
+  const corrigir = (text) => parsePlanCorrectionOverrides({
+    text, referenceDate: REFERENCE_DATE, accounts: ACCOUNTS, categories: CATEGORIES, operation,
+  });
+  assert.deepEqual(corrigir('não, é toda semana'), { recurrence: { frequency: 'weekly', interval: 1 } });
+  assert.deepEqual(corrigir('é a cada 15 dias'), { recurrence: { frequency: 'daily', interval: 15 } });
+  assert.deepEqual(corrigir('na verdade é quinzenal'), { recurrence: { frequency: 'weekly', interval: 2 } });
+  assert.deepEqual(corrigir('todo ano'), { recurrence: { frequency: 'yearly', interval: 1 } });
+
+  const corrigido = applyPlanOperationCorrection(plan, 'op_1', corrigir('não, é toda semana'));
+  assert.deepEqual(corrigido.operations[0].action.recurrence, { frequency: 'weekly', interval: 1 });
+
+  // Fora de uma recorrência, "todo mês" não vira regra.
+  const avulsa = buildPlan([rawOperation()]).operations[0];
+  assert.equal(parsePlanCorrectionOverrides({
+    text: 'todo mês', referenceDate: REFERENCE_DATE, accounts: ACCOUNTS, categories: CATEGORIES, operation: avulsa,
+  }), null);
 });
 
 test('buildPlanResultText conta a compra parcelada e quantas parcelas ficaram previstas', () => {

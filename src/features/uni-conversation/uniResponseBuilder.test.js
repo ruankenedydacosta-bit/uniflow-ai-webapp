@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildInstallmentConfirmationText } from './uniResponseBuilder.js';
+import { buildInstallmentConfirmationText, buildRecurringConfirmationText, describeRecurrence } from './uniResponseBuilder.js';
 
 const semEspacoDuro = (texto) => texto.replace(/\s/g, ' ');
 
@@ -20,4 +20,29 @@ test('compra parcelada: todas futuras ou todas passadas', () => {
   assert.match(futura, /Todas ficam previstas até você confirmar\.$/);
   const passada = buildInstallmentConfirmationText({ date: '2025-01-05', installments: { count: 3, installmentAmount: 100, futureCount: 0 } });
   assert.match(passada, /a primeira em 05\/01\.$/);
+});
+
+test('regra da recorrência como a pessoa diria (#222)', () => {
+  assert.equal(describeRecurrence({ frequency: 'monthly', interval: 1 }, '2026-10-10'), 'todo mês, no dia 10');
+  assert.equal(describeRecurrence({ frequency: 'weekly', interval: 1 }, '2026-10-12'), 'toda segunda-feira');
+  assert.equal(describeRecurrence({ frequency: 'weekly', interval: 1 }, '2026-10-17'), 'todo sábado');
+  assert.equal(describeRecurrence({ frequency: 'daily', interval: 1 }, '2026-10-10'), 'todo dia');
+  assert.equal(describeRecurrence({ frequency: 'yearly', interval: 1 }, '2026-03-05'), 'todo ano, em 05/03');
+  assert.equal(describeRecurrence({ frequency: 'weekly', interval: 2 }, '2026-10-12'), 'a cada 2 semanas');
+  assert.equal(describeRecurrence({ frequency: 'monthly', interval: 3 }, '2026-10-12'), 'a cada 3 meses');
+  assert.equal(describeRecurrence(null, '2026-10-12'), '');
+});
+
+test('texto do card da recorrência avisa quando o início é antes de hoje', () => {
+  assert.match(
+    buildRecurringConfirmationText({ amount: 10, date: '2026-01-05', startsBeforeToday: true, recurrence: { frequency: 'daily', interval: 1 } }),
+    /Os lançamentos até hoje entram como realizados/,
+  );
+});
+
+test('texto do card da recorrência repete valor, regra e início, para a voz falar', () => {
+  assert.equal(
+    buildRecurringConfirmationText({ amount: 1500, date: '2026-11-10', recurrence: { frequency: 'monthly', interval: 1 } }),
+    'Revise a repetição abaixo: R$ 1.500,00 todo mês, no dia 10, a partir de 10/11. Os lançamentos com data depois de hoje ficam previstos até você confirmar cada um.',
+  );
 });

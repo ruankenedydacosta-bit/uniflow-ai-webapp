@@ -228,13 +228,13 @@ test('plano do modelo: transferência resolve origem e destino pelas contas esco
   assert.equal(transferencia.destinationAccountResolution.account?.id, 'conta-pp');
 });
 
-test('plano do modelo: parcela vira compra parcelada registrável; recorrência fica entendida mas não registrável', () => {
+test('plano do modelo: parcela vira compra parcelada registrável; recorrência sem frequência vira a entrada comum', () => {
   const plano = interpretacaoParaPlano({
     intent: 'lancamento',
     operacoes: [operacao({ valor: 3600, parcelas: 12 }), operacao({ tipo: 'entrada', recorrente: true })],
     resposta: '',
   });
-  assert.deepEqual(plano.operations.map((item) => item.operationType), ['installment_purchase', 'recurring_income']);
+  assert.deepEqual(plano.operations.map((item) => item.operationType), ['installment_purchase', 'income']);
   assert.deepEqual(plano.operations[0].installments, { count: 12 });
   assert.equal(plano.operations[1].installments, null);
   const pendente = createPendingFinancialPlan({
@@ -245,7 +245,8 @@ test('plano do modelo: parcela vira compra parcelada registrável; recorrência 
   assert.equal(parcelada.action.amount, 3600);
   assert.equal(parcelada.action.installments.count, 12);
   assert.equal(parcelada.action.installments.installmentAmount, 300);
-  assert.ok(recorrente.capabilityPending && recorrente.status === PLAN_OPERATION_STATUS.BLOCKED);
+  assert.equal(recorrente.capabilityPending, false);
+  assert.equal(recorrente.action.recurrence, undefined);
 });
 
 test('lançamento simples não vira plano', () => {
@@ -358,4 +359,73 @@ test('exclusão de lançamento vai para a rota própria; sem o bloco (função a
     ROTAS_INTERPRETACAO.EXCLUSAO,
   );
   assert.equal(escolherRotaDaInterpretacao({ intent: 'exclusao', operacoes: [], resposta: '' }), null);
+});
+
+test('recorrência com frequência vai para o plano e vira série registrável (#222)', () => {
+  const interpretacao = {
+    intent: 'lancamento',
+    operacoes: [operacao({ valor: 1500, descricao: 'Aluguel', data: '2026-10-10', recorrente: true, frequencia: 'mensal', intervalo: 1 })],
+    resposta: '',
+  };
+  assert.equal(escolherRotaDaInterpretacao(interpretacao), ROTAS_INTERPRETACAO.PLANO);
+  assert.equal(interpretacaoParaRascunho(interpretacao, 'aluguel de 1500 todo dia 10'), null);
+
+  const plano = interpretacaoParaPlano(interpretacao);
+  assert.equal(plano.operations[0].operationType, 'recurring_expense');
+  assert.deepEqual(plano.operations[0].recurrence, { frequency: 'monthly', interval: 1 });
+
+  const pendente = createPendingFinancialPlan({
+    plan: plano, phrase: 'x', accounts: CONTAS, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-02',
+  });
+  const [serie] = pendente.operations;
+  assert.equal(serie.capabilityPending, false);
+  assert.equal(serie.status, PLAN_OPERATION_STATUS.READY);
+  assert.deepEqual(serie.action.recurrence, { frequency: 'monthly', interval: 1 });
+  assert.equal(serie.action.transactionType, 'expense');
+  assert.equal(serie.action.date, '2026-10-10');
+  // A série decide o status de cada lançamento: o card não diz "Previsto".
+  assert.equal(serie.action.planned, false);
+  assert.equal(describePlanOperation(serie), '• Saída de R$ 1500,00 (Aluguel) todo mês, no dia 10, a partir de 10/10, em Educação');
+});
+
+test('recorrência: quinzenal vira semanal a cada 2, e entrada vira recurring_income', () => {
+  const plano = interpretacaoParaPlano({
+    intent: 'lancamento',
+    operacoes: [operacao({ tipo: 'entrada', recorrente: true, frequencia: 'semanal', intervalo: 2 })],
+    resposta: '',
+  });
+  assert.equal(plano.operations[0].operationType, 'recurring_income');
+  assert.deepEqual(plano.operations[0].recurrence, { frequency: 'weekly', interval: 2 });
+});
+
+test('recorrência sem frequência segue como lançamento deste mês, sozinha ou no plano', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'lancamento', operacoes: [operacao({ recorrente: true, frequencia: null })], resposta: '' }),
+    ROTAS_INTERPRETACAO.LANCAMENTO,
+  );
+  const plano = interpretacaoParaPlano({
+    intent: 'lancamento',
+    operacoes: [operacao({ valor: 40 }), operacao({ recorrente: true, frequencia: null })],
+    resposta: '',
+  });
+  assert.equal(plano.operations[1].operationType, 'expense');
+  assert.equal(plano.operations[1].recurrence, null);
+  const pendente = createPendingFinancialPlan({
+    plan: plano, phrase: 'x', accounts: CONTAS, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-10',
+  });
+  assert.equal(pendente.operations[1].capabilityPending, false);
+  assert.equal(pendente.operations[1].status, PLAN_OPERATION_STATUS.READY);
+});
+
+test('recorrência: intervalo acima de 365 vira 1, e o início antes de hoje fica marcado no card', () => {
+  const plano = interpretacaoParaPlano({
+    intent: 'lancamento',
+    operacoes: [operacao({ data: '2026-09-10', recorrente: true, frequencia: 'mensal', intervalo: 400 })],
+    resposta: '',
+  });
+  assert.deepEqual(plano.operations[0].recurrence, { frequency: 'monthly', interval: 1 });
+  const pendente = createPendingFinancialPlan({
+    plan: plano, phrase: 'x', accounts: CONTAS, categories: CATEGORIAS_PLANO, referenceDate: '2026-10-02',
+  });
+  assert.equal(pendente.operations[0].action.startsBeforeToday, true);
 });

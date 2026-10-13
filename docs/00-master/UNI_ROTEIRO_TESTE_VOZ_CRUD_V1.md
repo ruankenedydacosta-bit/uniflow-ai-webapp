@@ -23,6 +23,8 @@ A conversa por voz não decide nada. Ela passa a frase ao chat (`enviar_para_uni
 | 4b | "Apaga todos os Uber" | Não exclui nada. | Que pela conversa exclui um lançamento por vez e que o lote é na tela Financeiro. |
 | 4c | "Apaga o Uber" (com três Uber recentes) | Lista até 5 candidatos. | Pergunta qual. Diga "o de ontem" ou "o número 2". |
 | 4d | "Comprei uma TV de 3 mil em 10 vezes no Nubank" (#221) | Card "Compra parcelada · rascunho": parcelas 10x de R$ 300,00 em destaque, valor total, conta e a data da primeira parcela. Depois de confirmar: 10 lançamentos no Financeiro, a primeira parcela hoje e as outras 9 previstas, uma por mês. | As parcelas, o valor de cada uma e a data da primeira, e pergunta se pode confirmar. Diga "pode". Depois: que registrou em 10 parcelas e que as 9 próximas ficaram previstas. |
+| 4e | "Aluguel de mil e quinhentos todo dia dez" (#222) | Card "Saída recorrente · rascunho": valor R$ 1.500,00 em destaque, "Repete: Todo mês, no dia 10" e o primeiro lançamento no próximo dia 10. Depois de confirmar: no Financeiro, o aluguel do próximo dia 10 e os dos meses seguintes até 3 meses à frente, todos previstos e com o seletor de alcance da série ao editar. | O valor, "todo mês, no dia 10" e a data do primeiro lançamento, e pergunta se pode confirmar. Diga "pode". Depois: que criou a repetição, quantos lançamentos ficaram previstos e que os seguintes são criados sozinhos. |
+| 4f | "Pago academia todo mês, 120" seguido de "cancela" | Card "Saída recorrente · rascunho" com o primeiro lançamento hoje. Depois de cancelar: nada no Financeiro. | Que cancelou e nada foi registrado. |
 
 ## Categorias
 

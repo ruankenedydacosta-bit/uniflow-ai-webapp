@@ -57,6 +57,12 @@ como "comprei uma TV de três mil em dez vezes". A Uni fala o número de
 parcelas, o valor de cada uma e a data da primeira, e pergunta se pode
 confirmar. As parcelas com data depois de hoje ficam previstas.
 
+Lançamento recorrente também: diga o valor e de quanto em quanto tempo
+repete, como "aluguel de mil e quinhentos todo dia dez". A Uni fala o valor,
+a regra e a data do primeiro lançamento, e pergunta se pode confirmar. Ao
+confirmar, ela cria os lançamentos dos próximos 3 meses, e os seguintes são
+criados sozinhos.
+
 Também dá para alterar uma movimentação já salva falando, por exemplo
 "corrige o mercado de ontem pra cinquenta" ou "o Uber de segunda foi no
 Nubank". A Uni mostra o card "Alteração · rascunho" com o antes e o depois e

@@ -1,4 +1,5 @@
 import { nextMessageId } from './messageIdRegistry.js';
+import { describeRecurrence } from '../uni-conversation/uniResponseBuilder.js';
 
 function now() {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -71,12 +72,16 @@ export function buildConfirmationFromAction(action) {
   const isTransfer = action.transactionType === 'transfer';
   const publicTypeLabel = resolvePublicTypeLabel(action);
   const installments = action.installments?.count ? action.installments : null;
+  const recurrence = action.recurrence?.frequency ? action.recurrence : null;
 
   // BUG REAL (BUG 5): cada linha tem key estável semântica -- labels se
   // repetem (transferência mostra duas linhas de conta) e key={label}
   // duplicava a chave React ("Conta").
   if (publicTypeLabel) {
-    rows.push({ key: 'type', label: 'Tipo', value: installments ? 'Compra parcelada' : publicTypeLabel });
+    let typeValue = publicTypeLabel;
+    if (installments) typeValue = 'Compra parcelada';
+    else if (recurrence) typeValue = `${publicTypeLabel} recorrente`;
+    rows.push({ key: 'type', label: 'Tipo', value: typeValue });
   }
   if (action.account?.name) {
     rows.push({
@@ -119,9 +124,16 @@ export function buildConfirmationFromAction(action) {
         rows.push({ key: 'last-installment', label: 'Última parcela', value: formatCurrency(installments.lastAmount) });
       }
     }
+    if (recurrence) {
+      const rule = describeRecurrence(recurrence, action.date);
+      rows.push({ key: 'recurrence', label: 'Repete', value: rule.charAt(0).toUpperCase() + rule.slice(1) });
+    }
   }
   if (action.date) {
-    rows.push({ key: 'date', label: installments ? 'Primeira parcela' : 'Data', value: formatDate(action.date) });
+    let dateLabel = 'Data';
+    if (installments) dateLabel = 'Primeira parcela';
+    else if (recurrence) dateLabel = 'Primeiro lançamento';
+    rows.push({ key: 'date', label: dateLabel, value: formatDate(action.date) });
   }
   // Na compra parcelada só as parcelas com data futura ficam previstas: a
   // linha "Previsto" diria que a compra inteira está.
@@ -132,6 +144,7 @@ export function buildConfirmationFromAction(action) {
   let title = `Nova ${(publicTypeLabel || 'movimentação').toLowerCase()}`;
   if (isBalanceAdjustment) title = 'Novo ajuste de saldo';
   else if (installments) title = 'Nova compra parcelada';
+  else if (recurrence) title = `Nova ${publicTypeLabel.toLowerCase()} recorrente`;
 
   return {
     title,
