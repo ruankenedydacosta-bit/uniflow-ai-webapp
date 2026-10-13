@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
-import { getSubscription } from '../../services/billingService.js';
 import Avatar from '../../components/ui/Avatar/Avatar.jsx';
 import IconBox from '../../components/ui/IconBox/index.js';
 import { cx } from '../../utils/cx.js';
@@ -20,6 +19,7 @@ import { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
 import { formatDate, resolvePlanState, resolveRenewsAt } from './subscriptionPresentation.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useAssinatura } from './useAssinatura.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import {
   PhCalendarIcon,
@@ -46,8 +46,8 @@ import groups from './simplifiedGroups.module.css';
 import styles from './simplifiedAccount.module.css';
 
 /**
- * Correção (Bloco Saldo + Cobrança): esta tela busca sua PRÓPRIA assinatura
- * via billingService.getSubscription() (mesma fonte de "Seu plano"/
+ * Correção (Bloco Saldo + Cobrança): esta tela lê sua PRÓPRIA assinatura
+ * via useAssinatura (mesmo valor guardado de "Seu plano"/
  * "Pagamento e assinatura") em vez de reaproveitar useSession().subscription
  * -- aquele valor vem de workspaceService.getWorkspaceSubscription(),
  * filtrado para status IN ('trialing','active','past_due') para fins de
@@ -71,30 +71,12 @@ function SimplifiedAccountPage() {
   const [showAnalyticsPreferences, setShowAnalyticsPreferences] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState(null);
-  const [subscription, setSubscription] = useState(null);
+  const { assinatura: subscription, carregando: isLoadingSubscription } = useAssinatura(workspaceId);
   const { status: analyticsConsentStatus } = useAnalyticsConsent();
   // UNIUPD2: limit:1 -- só precisa da versão atual (mesma fonte de Sobre a
   // UniFlow AI e da notificação), nunca o histórico inteiro.
   const { currentVersion } = useUniUpdates({ limit: 1 });
   const platformAdminStatus = useIsPlatformAdmin();
-
-  useEffect(() => {
-    let isActive = true;
-    // Mesmo padrao de deferimento via setTimeout(0) usado por
-    // SimplifiedPlanPage.jsx/SimplifiedPaymentsPage.jsx -- evita disparar
-    // setState sincrono direto no corpo do efeito.
-    const timeoutId = window.setTimeout(() => {
-      if (!workspaceId) return;
-      getSubscription({ workspaceId }).then((result) => {
-        if (!isActive) return;
-        setSubscription(result.data ?? null);
-      });
-    }, 0);
-    return () => {
-      isActive = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [workspaceId]);
 
   const greeting = useMemo(() => resolveSimplifiedGreeting(profile, user), [profile, user]);
   const displayName = greeting.hasKnownName
@@ -186,7 +168,10 @@ function SimplifiedAccountPage() {
       id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
       Icon: PhCreditCardIcon,
       title: 'Pagamento e assinatura',
-      subtitle: planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
+      // Sem valor guardado ainda, nenhum dos dois textos: ambos supõem um estado.
+      subtitle: isLoadingSubscription
+        ? null
+        : planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.VOICE,
@@ -286,7 +271,10 @@ function SimplifiedAccountPage() {
       <button type="button" className={cx(styles.planCard, styles[`plan_${planState.tone}`])} onClick={() => goTo(ACCOUNT_SUBROUTE_IDS.PLAN)}>
         <IconBox className={styles.planIcon}><PhCrownIcon /></IconBox>
         <span className={styles.planInfo}>
-          <strong className={styles.planStatusLabel}>{planState.label}</strong>
+          {/* Sem valor guardado ainda, o card não afirma "Nenhuma assinatura ativa". */}
+          {isLoadingSubscription ? null : (
+            <strong className={styles.planStatusLabel}>{planState.label}</strong>
+          )}
           <span className={styles.planName}>Plano Pessoal</span>
           {renewsAt ? (
             <small>Renova em {formatDate(renewsAt)}</small>

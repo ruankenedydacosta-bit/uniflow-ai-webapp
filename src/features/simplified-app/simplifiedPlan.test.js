@@ -41,9 +41,10 @@ test('index.js exporta SimplifiedPlanPage', async () => {
 // pending/suspended/cancel_at_period_end.
 // ============================================================================
 
-test('usa billingService.getSubscription/cancelSubscription -- nunca mais getWorkspaceSubscriptionAny', async () => {
+test('usa useAssinatura e billingService.cancelSubscription -- nunca mais getWorkspaceSubscriptionAny', async () => {
   const content = await source('./SimplifiedPlanPage.jsx');
-  assert.match(content, /import \{ cancelSubscription, changePlan, getSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+  assert.match(content, /import \{ cancelSubscription, changePlan \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+  assert.match(content, /import \{ useAssinatura \} from '\.\/useAssinatura\.js';/);
   assert.doesNotMatch(content, /import.*workspaceService/);
   assert.doesNotMatch(content, /getWorkspaceSubscriptionAny\(/);
 });
@@ -53,10 +54,13 @@ test('getWorkspaceSubscriptionAny continua existindo em workspaceService.js (nã
   assert.match(content, /export async function getWorkspaceSubscriptionAny\(workspaceId\)/);
 });
 
-test('carrega a assinatura via loadSubscription (useCallback) reaproveitável pelo cancelamento', async () => {
+test('lê a assinatura guardada e revalida via loadSubscription (useCallback), reaproveitável pelo cancelamento', async () => {
   const content = await source('./SimplifiedPlanPage.jsx');
+  assert.match(content, /\} = useAssinatura\(workspaceId\);/);
   assert.match(content, /const loadSubscription = useCallback\(\(\) => \{/);
-  assert.match(content, /getSubscription\(\{ workspaceId \}\)\.then/);
+  // Depois de cancelar ou trocar de plano, a tela não segue mostrando o plano antigo.
+  assert.match(content, /reloadSubscription\(\{ descartar: true \}\);/);
+  assert.doesNotMatch(content, /getSubscription\(/);
 });
 
 // ============================================================================

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSession } from '../../app/SessionContext.jsx';
-import { getSubscription, listPayments } from '../../services/billingService.js';
+import { listPayments } from '../../services/billingService.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
@@ -11,6 +11,7 @@ import {
 } from '../personal-plan/personalPlanConfig.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useAssinatura } from './useAssinatura.js';
 import {
   formatDate,
   resolveCancelEffectiveAt,
@@ -48,8 +49,8 @@ function BackIcon() {
 
 /**
  * Correção (Bloco Saldo + Cobrança): esta tela agora lê a MESMA fonte que
- * "Seu plano" (billingService.getSubscription() -> billing-get-subscription,
- * já testado) e reaproveita o mesmo mapeamento de estado
+ * "Seu plano" (useAssinatura -> billing-get-subscription, o mesmo valor
+ * guardado que Mais e Seu plano usam) e reaproveita o mesmo mapeamento de estado
  * (subscriptionPresentation.js) -- antes lia getWorkspaceSubscriptionAny()
  * (leitura direta da tabela) com seu próprio mapeamento incompleto (não
  * distinguia 'pending'/'suspended', ambos caíam em "Expirado"), podendo
@@ -65,9 +66,11 @@ function SimplifiedPaymentsPage() {
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
 
-  const [subscription, setSubscription] = useState(null);
-  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
-  const [subscriptionError, setSubscriptionError] = useState(null);
+  const {
+    assinatura: subscription,
+    carregando: isLoadingSubscription,
+    erro: subscriptionError,
+  } = useAssinatura(workspaceId);
   const [payments, setPayments] = useState([]);
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
   const [paymentsError, setPaymentsError] = useState(null);
@@ -81,18 +84,10 @@ function SimplifiedPaymentsPage() {
     // sincrono direto no corpo do efeito.
     const timeoutId = window.setTimeout(() => {
       if (!workspaceId) {
-        setIsLoadingSubscription(false);
         setIsLoadingPayments(false);
         return;
       }
-      setIsLoadingSubscription(true);
       setIsLoadingPayments(true);
-      getSubscription({ workspaceId }).then((result) => {
-        if (!isActive) return;
-        setSubscription(result.data ?? null);
-        setSubscriptionError(result.error ?? null);
-        setIsLoadingSubscription(false);
-      });
       listPayments({ workspaceId, limit: HISTORY_SUMMARY_LIMIT }).then((result) => {
         if (!isActive) return;
         setPayments(result.data ?? []);

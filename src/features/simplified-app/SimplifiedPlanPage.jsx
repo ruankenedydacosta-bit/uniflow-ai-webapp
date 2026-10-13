@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSession } from '../../app/SessionContext.jsx';
 import { useTransactions } from '../../hooks/index.js';
-import { cancelSubscription, changePlan, getSubscription } from '../../services/billingService.js';
+import { cancelSubscription, changePlan } from '../../services/billingService.js';
 import { getMyVoiceBalance } from '../../services/voiceQuotaService.js';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
@@ -18,6 +18,7 @@ import {
 import { describePlanChange, describeVoiceBalance } from './planChangePresentation.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useAssinatura } from './useAssinatura.js';
 import {
   formatDate,
   resolveCancelEffectiveAt,
@@ -67,9 +68,12 @@ function SimplifiedPlanPage() {
   const { workspace } = useSession();
   const workspaceId = workspace?.id;
 
-  const [subscription, setSubscription] = useState(null);
-  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
-  const [subscriptionError, setSubscriptionError] = useState(null);
+  const {
+    assinatura: subscription,
+    carregando: isLoadingSubscription,
+    erro: subscriptionError,
+    recarregar: reloadSubscription,
+  } = useAssinatura(workspaceId);
   const [showManageModal, setShowManageModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
@@ -82,19 +86,14 @@ function SimplifiedPlanPage() {
   const [changePlanError, setChangePlanError] = useState(null);
   const [upgradePix, setUpgradePix] = useState(null);
 
+  // A assinatura revalida sozinha ao montar (useAssinatura). Aqui fica a
+  // recarga depois de trocar ou cancelar o plano: descarta o valor guardado
+  // para a tela não seguir mostrando o plano antigo (nem o botão Cancelar).
   const loadSubscription = useCallback(() => {
-    if (!workspaceId) {
-      setIsLoadingSubscription(false);
-      return;
-    }
-    setIsLoadingSubscription(true);
-    getSubscription({ workspaceId }).then(({ data, error }) => {
-      setSubscription(data ?? null);
-      setSubscriptionError(error ?? null);
-      setIsLoadingSubscription(false);
-    });
+    if (!workspaceId) return;
+    reloadSubscription({ descartar: true });
     getMyVoiceBalance().then(({ data }) => setVoiceBalance(data ?? null));
-  }, [workspaceId]);
+  }, [workspaceId, reloadSubscription]);
 
   useEffect(() => {
     let isActive = true;
@@ -102,14 +101,16 @@ function SimplifiedPlanPage() {
     // useTransactions.js -- evita disparar setState sincrono direto no
     // corpo do efeito.
     const timeoutId = window.setTimeout(() => {
-      if (!isActive) return;
-      loadSubscription();
+      if (!isActive || !workspaceId) return;
+      getMyVoiceBalance().then(({ data }) => {
+        if (isActive) setVoiceBalance(data ?? null);
+      });
     }, 0);
     return () => {
       isActive = false;
       window.clearTimeout(timeoutId);
     };
-  }, [loadSubscription]);
+  }, [workspaceId]);
 
   const dateFrom = useMemo(() => firstDayOfMonthISO(), []);
   const dateTo = useMemo(() => todayISO(), []);

@@ -164,16 +164,17 @@ test('nenhum item do Mais leva a tela que o app simplificado não tem (Visão de
 // Correção (Bloco Saldo + Cobrança): esta tela não reimplementa mais seu
 // próprio resolvePlanState -- reaproveita subscriptionPresentation.js (a
 // MESMA fonte de "Seu plano"/"Pagamento e assinatura"), buscando sua
-// própria assinatura via billingService.getSubscription() em vez de
+// própria assinatura via useAssinatura (billing-get-subscription) em vez de
 // useSession().subscription (esse último é filtrado para controle de
 // acesso e escondia assinaturas canceladas/suspensas/pendentes como "sem
 // assinatura"). Cobertura detalhada de cada estado vive em
 // subscriptionPresentation.test.js.
 
-test('busca a própria assinatura via billingService.getSubscription() -- nunca mais reaproveita useSession().subscription (filtrado para controle de acesso) para exibição', async () => {
+test('lê a própria assinatura via useAssinatura (billing-get-subscription) -- nunca mais reaproveita useSession().subscription (filtrado para controle de acesso) para exibição', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  assert.match(page, /import \{ getSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
-  assert.match(page, /getSubscription\(\{ workspaceId \}\)\.then/);
+  assert.match(page, /import \{ useAssinatura \} from '\.\/useAssinatura\.js';/);
+  assert.match(page, /useAssinatura\(workspaceId\)/);
+  assert.doesNotMatch(page, /getSubscription\(/);
   assert.doesNotMatch(page, /const \{ user, profile, workspace, subscription, signOut \} = useSession\(\);/);
 });
 
