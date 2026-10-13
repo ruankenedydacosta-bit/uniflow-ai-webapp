@@ -198,6 +198,8 @@ import {
   saveActiveId,
   createConversation as createLocalConversation,
   persistConversation,
+  resolveConversationTitle,
+  titleToSync,
   resolveInitialConversationState,
   saveActiveSource,
 } from './chatHistory';
@@ -886,6 +888,7 @@ export default function UniChatPage({ variant = 'full' }) {
 
   const [connectionStatus, setConnectionStatus] = useState(dataService.getConnectionStatus);
   const initialLoadDone = useRef(false);
+  const titlesSyncedRef = useRef({});
   const promotionInProgressRef = useRef(false);
   const loadRequestIdRef = useRef(0);
 
@@ -2455,7 +2458,14 @@ export default function UniChatPage({ variant = 'full' }) {
         .map((c) => {
           if (c.source === 'supabase' && dbIdSet.has(c.id)) {
             const dbConv = supabaseConvs.find((db) => db.id === c.id);
-            return { ...dbConv, messages: c.messages || [], source: 'supabase' };
+            const messages = c.messages || [];
+            const title = resolveConversationTitle({
+              dbTitle: dbConv.title,
+              localTitle: c.title,
+              messages,
+            });
+            if (dbConv.title) titlesSyncedRef.current[c.id] = dbConv.title;
+            return { ...dbConv, title, messages, source: 'supabase' };
           }
           return c;
         });
@@ -2465,6 +2475,7 @@ export default function UniChatPage({ variant = 'full' }) {
       );
       for (const [id, conv] of newDbIds) {
         if (!existingLocalIdsInDb.has(id)) {
+          if (conv.title) titlesSyncedRef.current[id] = conv.title;
           merged.push({ ...conv, messages: [], source: 'supabase' });
         }
       }
@@ -2600,6 +2611,19 @@ export default function UniChatPage({ variant = 'full' }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setConversations(updated);
   }, [messages, activeId, mode, conversations]);
+
+  // Grava no banco o título derivado da 1ª mensagem do usuário. Cobre conversa
+  // nova, promoção local -> supabase e conversa antiga (title '') ao abrir.
+  useEffect(() => {
+    const current = conversations.find((c) => c.id === activeId);
+    const title = titleToSync(current, titlesSyncedRef.current);
+    if (!title) return;
+    const id = current.id;
+    titlesSyncedRef.current[id] = title;
+    dataService.updateConversationTitle(id, title).then((ok) => {
+      if (!ok && titlesSyncedRef.current[id] === title) delete titlesSyncedRef.current[id];
+    });
+  }, [conversations, activeId]);
 
   // Hidratação (reload/login): `historyHydrated` marca o fim da fase de
   // hidratação inicial. `pendingRestoresRef` conta restaurações assíncronas
