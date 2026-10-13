@@ -186,7 +186,7 @@
 .rankRow {
   min-height: var(--uf-space-56);
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-columns: var(--uf-space-24) minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--uf-space-8);
   padding: 10px 0;

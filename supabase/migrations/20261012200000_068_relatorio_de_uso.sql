@@ -4,15 +4,19 @@ begin;
 -- uso da Uni (prompts e minutos de voz) por pessoa.
 --
 -- O tempo no app vem de app_usage_days: o app chama registrar_uso_do_app()
--- ao abrir, a cada minuto com a tela visível e ao sair da tela. Quem mede é
--- o relógio do banco: cada chamada soma o intervalo desde a anterior, se ele
--- for de até 90 segundos. Intervalo maior é pausa (app fechado ou em segundo
--- plano) e não conta. Duas abas abertas não dobram o tempo, porque o
--- intervalo é medido desde a última chamada de qualquer uma delas.
+-- ao abrir ou voltar à tela (p_retomando), a cada minuto com a tela visível
+-- e ao sair da tela. Quem mede é o relógio do banco: cada chamada soma o
+-- intervalo desde a anterior, se ele for de até 90 segundos. Intervalo maior
+-- é pausa e não conta. A chamada de retomada nunca soma: o intervalo antes
+-- dela é o tempo em segundo plano. Duas abas abertas não dobram o tempo,
+-- porque o intervalo é medido desde a última chamada de qualquer uma delas.
 --
--- Uma linha por pessoa e dia de São Paulo, sem rota nem tela visitada.
--- Linhas com mais de 62 dias saem na primeira chamada de cada dia, sem job à
--- parte (mesmo prazo da política de privacidade).
+-- Uma linha por pessoa e dia de São Paulo, sem rota nem tela visitada. Uso
+-- que atravessa a meia-noite vira um acesso em cada dia.
+--
+-- Linhas com mais de 62 dias, de qualquer pessoa, saem sempre que alguém
+-- abre a primeira linha do dia, sem job à parte (prazo da política de
+-- privacidade).
 
 create table if not exists public.app_usage_days (
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -26,6 +30,9 @@ create table if not exists public.app_usage_days (
   constraint app_usage_days_visits_check check (visits >= 1)
 );
 
+create index if not exists app_usage_days_usage_date_idx
+  on public.app_usage_days (usage_date);
+
 alter table public.app_usage_days enable row level security;
 revoke all on table public.app_usage_days from anon, authenticated;
 
@@ -33,7 +40,7 @@ comment on table public.app_usage_days is
   'Acessos e tempo com o app aberto por pessoa e dia (São Paulo). Escrita só por registrar_uso_do_app.';
 
 -- Acesso novo: primeira chamada do dia ou volta depois de 30 minutos parado.
-create or replace function public.registrar_uso_do_app()
+create or replace function public.registrar_uso_do_app(p_retomando boolean default false)
 returns void
 language plpgsql
 security definer
@@ -52,7 +59,8 @@ begin
   values (v_user_id, v_today)
   on conflict (user_id, usage_date) do update
     set active_seconds = usage.active_seconds + case
-          when now() - usage.last_seen_at <= interval '90 seconds'
+          when not coalesce(p_retomando, false)
+            and now() - usage.last_seen_at <= interval '90 seconds'
             then floor(extract(epoch from now() - usage.last_seen_at))::integer
           else 0
         end,
@@ -65,16 +73,16 @@ begin
 
   if v_inserted then
     delete from public.app_usage_days u
-    where u.user_id = v_user_id and u.usage_date < v_today - 62;
+    where u.usage_date < v_today - 61;
   end if;
 end;
 $$;
 
 -- Uso de cada pessoa nos últimos p_days dias de São Paulo, hoje incluído.
 -- Só entra quem teve algum uso no período. Prompts são as mensagens da pessoa
--- à Uni, escritas ou repassadas pela conversa por voz. Minutos de voz seguem
--- a cobrança da cota: sessão encerrada pelo que foi cobrado, falha de conexão
--- zero, sessão aberta ou abandonada pelo tempo até agora ou até expirar.
+-- à Uni, escritas ou repassadas pela conversa por voz, enquanto a conversa
+-- existir. Minutos de voz são os cobrados da cota; sessão ainda aberta conta
+-- o tempo até agora, até o limite da reserva.
 create or replace function public.admin_usage_report(p_days integer)
 returns table (
   user_id uuid,
@@ -121,21 +129,19 @@ begin
     group by d.user_id
   ),
   mensagens as (
-    select c.user_id, count(*)::integer as prompts
+    select m.user_id, count(*)::integer as prompts
     from public.uni_messages m
-    join public.uni_conversations c on c.id = m.conversation_id
     where m.role = 'user' and m.created_at >= v_start_at
-    group by c.user_id
+    group by m.user_id
   ),
   voz as (
     select
       s.user_id,
       count(*)::integer as voice_sessions,
-      sum(case
-        when s.status = 'closed' then coalesce(s.charged_seconds, 0)
-        when s.status = 'failed' then 0
-        else greatest(0, floor(extract(epoch from least(now(), s.expires_at) - s.started_at)))::integer
-      end)::integer as voice_seconds
+      sum(coalesce(
+        s.charged_seconds,
+        least(s.reserved_seconds, greatest(0, floor(extract(epoch from now() - s.started_at)))::integer)
+      ))::integer as voice_seconds
     from public.voice_sessions s
     where s.started_at >= v_start_at
     group by s.user_id
@@ -164,14 +170,13 @@ begin
   left join uso on uso.user_id = u.id
   left join mensagens on mensagens.user_id = u.id
   left join voz on voz.user_id = u.id
-  order by coalesce(uso.active_seconds, 0) desc, u.created_at
-  limit 1000;
+  order by coalesce(uso.active_seconds, 0) desc, u.created_at;
 end;
 $$;
 
-revoke execute on function public.registrar_uso_do_app() from public, anon;
+revoke execute on function public.registrar_uso_do_app(boolean) from public, anon;
 revoke execute on function public.admin_usage_report(integer) from public, anon;
-grant execute on function public.registrar_uso_do_app() to authenticated;
+grant execute on function public.registrar_uso_do_app(boolean) to authenticated;
 grant execute on function public.admin_usage_report(integer) to authenticated;
 
 commit;

@@ -7,20 +7,21 @@ export const USO_DO_APP_INTERVALO_MS = 60_000;
 
 // Avisa o banco que o app está aberto, para o relatório de uso do painel de
 // administração. Só conta com a tela visível: em segundo plano o timer para,
-// e a chamada ao esconder fecha o último minuto.
+// a chamada ao esconder fecha o último minuto e a chamada ao voltar não soma
+// o tempo em que o app ficou escondido.
 export function useRegistroDeUsoDoApp(isEnabled) {
   useEffect(() => {
     if (!isEnabled) return undefined;
     let intervalId = null;
 
-    function registrar() {
-      registrarUsoDoApp().catch(() => {});
+    function registrar(retomando = false) {
+      registrarUsoDoApp({ retomando }).catch(() => {});
     }
 
     function iniciar() {
       if (intervalId) return;
-      registrar();
-      intervalId = window.setInterval(registrar, USO_DO_APP_INTERVALO_MS);
+      registrar(true);
+      intervalId = window.setInterval(() => registrar(), USO_DO_APP_INTERVALO_MS);
     }
 
     function parar() {
