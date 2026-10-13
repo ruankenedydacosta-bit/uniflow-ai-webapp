@@ -150,7 +150,6 @@ import {
   hasNarratedText,
   markNarratedText,
 } from '../uni-voice-tts/narratedTextSession.js';
-import { buildWelcomeSessionKey, isWelcomeVoicePending, markWelcomeVoiceSettled } from '../simplified-app/welcomeVoiceSession.js';
 import { useUniProcessingMessage } from './useUniProcessingMessage.js';
 import { resolveOperationHintFromIntent } from './uniProcessingMessages.js';
 import { useTextAudioSync } from './useTextAudioSync.js';
@@ -350,7 +349,6 @@ export default function UniChatPage({ variant = 'full' }) {
   const simplifiedProduct = useOptionalSimplifiedProduct();
   const {
     profile,
-    session,
     user,
     workspace,
     switchWorkspace,
@@ -475,13 +473,6 @@ export default function UniChatPage({ variant = 'full' }) {
   const handleStopVoice = useCallback(() => {
     uniVoice.stop();
   }, [uniVoice]);
-
-  // BLOCO UNI 2: reflete SÓ a saída de voz (TTS gerando/tocando) -- nunca a
-  // captura. Usado para: (a) mostrar o estado "falando" na Home; (b) impedir
-  // que o botão de voz (Home ou /app/uni) inicie uma gravação nova enquanto
-  // a Uni ainda está respondendo (o toque interrompe a fala em vez disso).
-  const isSpeaking = uniVoice.status === VOICE_TTS_STATUS.LOADING
-    || uniVoice.status === VOICE_TTS_STATUS.PLAYING;
 
   const financialFallback = isSimplifiedExperience
     ? EMPTY_FINANCIAL_FALLBACK
@@ -2735,10 +2726,6 @@ export default function UniChatPage({ variant = 'full' }) {
   // 4. marcas também nos próprios pontos de restauração
   //    (loadMessages/switchConversation): mesmo uma restauração que assente
   //    depois do armamento nunca fala;
-  // 5. a saudação tem prioridade exclusiva: o armamento espera a voz da
-  //    boas-vindas terminar ou falhar (markWelcomeVoiceSettled via
-  //    onWelcomeVoiceSettled ← SimplifiedHomeView). Enquanto ela estiver
-  //    preparando/carregando/tocando, o autoplay fica bloqueado.
   const [historyHydrated, setHistoryHydrated] = useState(false);
   const historyHydratedRef = useRef(false);
   const pendingRestoresRef = useRef(0);
@@ -2748,8 +2735,6 @@ export default function UniChatPage({ variant = 'full' }) {
     if (pendingRestoresRef.current > 0) return;
     // Sessão ainda não carregada (modo configurado): espera o user.id.
     if (isSupabaseConfigured && !user?.id) return;
-    // Saudação reivindicada mas não concluída: espera terminar/falhar.
-    if (isWelcomeVoicePending(buildWelcomeSessionKey(user, session))) return;
     historyHydratedRef.current = true;
     // Snapshot da hidratação: o histórico restaurado presente neste
     // instante é marcado como já narrado -- nunca fala.
@@ -2758,10 +2743,10 @@ export default function UniChatPage({ variant = 'full' }) {
     // colidem com o histórico restaurado.
     reserveMessageIds(messages);
     setHistoryHydrated(true);
-  }, [messages, session, user]);
+  }, [messages, user]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- armamento controlado do autoplay: só dispara UMA vez (guarda historyHydratedRef), nunca em loop; sem ele, o autoplay poderia narrar histórico restaurado antes da hidratação/saudação concluírem.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- armamento controlado do autoplay: só dispara UMA vez (guarda historyHydratedRef), nunca em loop; sem ele, o autoplay poderia narrar histórico restaurado antes da hidratação concluir.
     maybeArmAutoplay();
   }, [maybeArmAutoplay]);
 
@@ -2775,17 +2760,6 @@ export default function UniChatPage({ variant = 'full' }) {
     reserveMessageIds(messages);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleWelcomeVoiceSettled = useCallback(() => {
-    // BLOCO VOZ HIDRATAÇÃO (deadlock corrigido): a fala da saudação
-    // terminou ou falhou (finally em SimplifiedHomeView) -- LIBERA a chave
-    // pendente ANTES de tentar armar o autoplay. Sem markWelcomeVoiceSettled
-    // aqui, pendingWelcomeKeys nunca esvazia, isWelcomeVoicePending fica
-    // true para sempre e historyHydrated nunca é armado (deadlock: o
-    // pipeline renderiza, mas speakMessage nunca é chamado).
-    markWelcomeVoiceSettled(buildWelcomeSessionKey(user, session));
-    maybeArmAutoplay();
-  }, [maybeArmAutoplay, user, session]);
 
   // BLOCO UNI 2 / BLOCO VOZ 1: reprodução automática da resposta ATUAL da
   // Uni -- causa raiz da regressão original relatada era a AUSÊNCIA total
@@ -2816,7 +2790,7 @@ export default function UniChatPage({ variant = 'full' }) {
   useEffect(() => {
     if (!isSimplifiedExperience || !voicePreference.enabled) return;
     // BLOCO VOZ HIDRATAÇÃO: autoplay só depois da hidratação inicial
-    // (sessão carregada + histórico restaurado + saudação concluída) --
+    // (sessão carregada + histórico restaurado) --
     // mensagens restauradas já foram marcadas como narradas e nunca falam.
     if (!historyHydrated) return;
     const lastMessage = messages.at(-1);
@@ -2836,8 +2810,8 @@ export default function UniChatPage({ variant = 'full' }) {
   // ele — nenhum pushMessage solto volta a falar por fora.
   //
   // Gates do autoplay imediato: idênticos aos do efeito de autoplay
-  // (experiência simplificada + voz habilitada + hidratação concluída +
-  // saudação não pendente). Se os gates fecham neste instante, a mensagem
+  // (experiência simplificada + voz habilitada + hidratação concluída).
+  // Se os gates fecham neste instante, a mensagem
   // fica sem marca e o efeito de autoplay a narra assim que abrirem — a
   // marcação só acontece no momento de falar, nunca há duplicação.
   // A política de resposta financeira pública entra no ÚNICO ponto de
@@ -2860,7 +2834,6 @@ export default function UniChatPage({ variant = 'full' }) {
       isSimplifiedExperience
       && voicePreference.enabled
       && historyHydrated
-      && !isWelcomeVoicePending(buildWelcomeSessionKey(user, session))
     ),
     hasSpoken: hasAutoSpokenMessage,
     markSpoken: markAutoSpokenMessage,
@@ -5104,13 +5077,11 @@ export default function UniChatPage({ variant = 'full' }) {
       <SimplifiedHomeView
         profile={profile}
         user={user}
-        session={session}
         messages={messages}
         isTyping={isTyping}
         isExecuting={isExecutingAction}
         executionError={executionError}
         aiStatus={aiStatus}
-        voiceEnabled={voicePreference.enabled}
         voiceController={uniVoice}
         voiceMessageId={voiceMessageId}
         interpretingOperationHint={interpretingOperationHint}
@@ -5123,7 +5094,6 @@ export default function UniChatPage({ variant = 'full' }) {
         onSaveEditAction={handleSaveEditAction}
         categoryChoices={categoryChoices}
         onChooseCategory={handleCategoryChoice}
-        onWelcomeVoiceSettled={handleWelcomeVoiceSettled}
         onRealtimeVoiceActiveChange={handleRealtimeVoiceActiveChange}
       />
     );
@@ -5240,10 +5210,7 @@ export default function UniChatPage({ variant = 'full' }) {
           value={inputValue}
           onChange={setInputValue}
           onSend={sendText}
-          onBeforeVoiceStart={handleBeforeVoiceStart}
           disabled={isTyping || isExecutingAction}
-          isSpeaking={isSpeaking}
-          onInterruptSpeech={handleStopVoice}
         />
       </div>
     </div>

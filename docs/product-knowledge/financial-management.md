@@ -54,8 +54,8 @@ Ao menos uma conta cadastrada para registrar uma movimentação.
 - Pela conversa com a Uni, um pedido recorrente ("pago 120 de academia todo mês") ainda registra só o lançamento do dia. Para criar a série, use a tela Financeiro.
 - Open Finance é 100% demonstrativo.
 - Relatórios têm ao menos um recurso ainda desabilitado ("Disponível em breve" em um dos botões da tela).
-- Registro por voz está limitado a receita e despesa, exige a Edge de
-  transcrição configurada e sempre solicita confirmação explícita.
+- Registro por voz é feito na conversa por voz (toque na Uni, no centro da
+  barra inferior) e sempre pede confirmação no card.
 
 ## Mensagens de erro conhecidas
 

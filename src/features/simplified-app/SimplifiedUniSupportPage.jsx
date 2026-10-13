@@ -242,10 +242,7 @@ export default function SimplifiedUniSupportPage() {
           value={inputValue}
           onChange={setInputValue}
           onSend={handleSend}
-          onBeforeVoiceStart={handleStopVoice}
           disabled={chat.isTyping}
-          isSpeaking={isVoicePlaying || isVoicePaused || activeVoice === VOICE_TTS_STATUS.LOADING}
-          onInterruptSpeech={handleStopVoice}
         />
       </div>
     </div>

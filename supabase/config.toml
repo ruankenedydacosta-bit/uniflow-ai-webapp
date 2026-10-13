@@ -75,9 +75,6 @@ verify_jwt = true
 [functions.uni-voice-realtime-session]
 verify_jwt = true
 
-[functions.uni-voice-transcribe]
-verify_jwt = true
-
 [functions.uni-voice-tts]
 verify_jwt = true
 

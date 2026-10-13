@@ -152,10 +152,9 @@ test('renderiza somente um shell por viewport (AppShell OU MobileAppShell, nunca
   assert.equal((content.match(/<MobileAppShell/g) ?? []).length, 1);
 });
 
-test('controlador de voz compartilhado envolve todo o ramo autenticado em desktop e mobile', async () => {
+test('layout legado não monta captura de voz: falar com a Uni é só pela conversa em tempo real', async () => {
   const content = await source('AuthenticatedLayout.jsx');
-  assert.equal((content.match(/<UniVoiceInputProvider>/g) ?? []).length, 2);
-  assert.equal((content.match(/<\/UniVoiceInputProvider>/g) ?? []).length, 2);
+  assert.doesNotMatch(content, /UniVoiceInputProvider|uni-voice\//);
 });
 
 test('modo imersivo, titulo e headerProps de workspace continuam intactos', async () => {

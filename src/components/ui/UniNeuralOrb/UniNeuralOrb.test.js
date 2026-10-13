@@ -45,7 +45,7 @@ test('componente usa OGL e a marca oficial sem redesenhar o símbolo', async () 
 
 test('análise visual reaproveita o stream ativo e nunca abre ou encerra o microfone', async () => {
   const component = await source('./UniNeuralOrb.jsx');
-  assert.match(component, /from '\.\.\/\.\.\/\.\.\/features\/uni-voice\/useVoiceIntensity\.js'/);
+  assert.match(component, /from '\.\.\/\.\.\/\.\.\/features\/uni-voice-realtime\/useVoiceIntensity\.js'/);
   assert.match(component, /useVoiceIntensity\(\{[\s\S]*?getStream: getVoiceStream,[\s\S]*?publishState: false,/);
   assert.doesNotMatch(component, /getUserMedia|MediaRecorder/);
   assert.doesNotMatch(component, /getTracks\(\)|track\.stop\(/);

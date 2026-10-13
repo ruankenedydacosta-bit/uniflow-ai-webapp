@@ -1,7 +1,6 @@
 // Registro em nível de módulo dos IDs de mensagens da Uni já narradas pelo
-// autoplay durante a sessão atual do navegador, separado por usuário -- o
-// mesmo padrão de welcomeVoiceSession.js (Set de módulo chaveado por sessão),
-// já validado em produção para a saudação.
+// autoplay durante a sessão atual do navegador, separado por usuário (Set
+// de módulo).
 //
 // Por que existe: o guard anterior (autoSpokenMessageIdRef, um useRef local
 // de UniChatPage) era perdido no unmount ao trocar de rota -- ao voltar para

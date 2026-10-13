@@ -10,7 +10,6 @@ import ChatInput from '../../../features/uni-chat/components/ChatInput.jsx';
 import MessageBubble from '../../../features/uni-chat/components/MessageBubble.jsx';
 import chatStyles from '../../../features/uni-chat/UniChatPage.module.css';
 import { buildConfirmationFromAction } from '../../../features/uni-chat/uniChatAdapter.js';
-import { UniVoiceInputProvider } from '../../../features/uni-voice/index.js';
 
 // Telas 02 (Conversa) e 03 (Voz) do handoff com dados de exemplo, para
 // comparar em 390px sem sessão (épico #91, #88). Só em desenvolvimento.
@@ -69,35 +68,33 @@ const VOICE_STATES = Object.freeze({
 export function UniConversationPreview() {
   const [value, setValue] = useState('');
   return (
-    <UniVoiceInputProvider>
-      <div className={appStyles.shell} data-simplified-app-shell>
-        <div className={appStyles.shellSurface}>
-          <div className={appStyles.shellTopRegion} />
-          <main className={appStyles.mainContent} data-uni-chat="true">
-            <div className={chatStyles.page}>
-              <ChatHeader mode="pessoal" onHistory={() => {}} onNewChat={() => {}} showModeSelector={false} />
-              <div className={chatStyles.body}>
-                <div className={chatStyles.messages}>
-                  {MESSAGES.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      onConfirmAction={() => {}}
-                      onCancelAction={() => {}}
-                      onEditAction={() => {}}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className={chatStyles.footer}>
-                <ChatInput value={value} onChange={setValue} onSend={() => setValue('')} />
+    <div className={appStyles.shell} data-simplified-app-shell>
+      <div className={appStyles.shellSurface}>
+        <div className={appStyles.shellTopRegion} />
+        <main className={appStyles.mainContent} data-uni-chat="true">
+          <div className={chatStyles.page}>
+            <ChatHeader mode="pessoal" onHistory={() => {}} onNewChat={() => {}} showModeSelector={false} />
+            <div className={chatStyles.body}>
+              <div className={chatStyles.messages}>
+                {MESSAGES.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    onConfirmAction={() => {}}
+                    onCancelAction={() => {}}
+                    onEditAction={() => {}}
+                  />
+                ))}
               </div>
             </div>
-          </main>
-          <SimplifiedBottomNavigation />
-        </div>
+            <div className={chatStyles.footer}>
+              <ChatInput value={value} onChange={setValue} onSend={() => setValue('')} />
+            </div>
+          </div>
+        </main>
+        <SimplifiedBottomNavigation />
       </div>
-    </UniVoiceInputProvider>
+    </div>
   );
 }
 
