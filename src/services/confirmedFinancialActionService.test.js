@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   buildConfirmedFinancialActionRpcPayload,
   buildInstallmentPurchaseRpcPayload,
+  buildRecurringSeriesFromAction,
   executeConfirmedFinancialAction,
   getConfirmedAccountMode,
 } from './confirmedFinancialActionService.js';
@@ -366,4 +367,37 @@ test('compra parcelada: recusa sem parcelas, sem chave válida ou com conta a cr
     installments: { count: 3 },
   });
   assert.equal(buildInstallmentPurchaseRpcPayload(criar).error.code, 'ACTION_NOT_READY');
+});
+
+test('recorrência: a série leva a regra e a primeira data, com confirmação automática desligada (#222)', () => {
+  const action = createAction({ recurrence: { frequency: 'monthly', interval: 1 } });
+  const result = buildRecurringSeriesFromAction(action);
+  assert.equal(result.error, null);
+  assert.deepEqual(result.data, {
+    clientOperationId: OPERATION_ID,
+    transaction_type: 'expense',
+    account_id: 'account-id',
+    category_id: 'category-id',
+    description: 'Mercado',
+    amount: 85,
+    frequency: 'monthly',
+    interval: 1,
+    start_date: '2026-07-12',
+    end_date: null,
+    auto_confirm: false,
+  });
+});
+
+test('recorrência: recusa sem regra, sem chave válida ou com conta a criar; sem conta vai nula', () => {
+  const recurrence = { frequency: 'weekly', interval: 2 };
+  assert.equal(buildRecurringSeriesFromAction(createAction()).error.code, 'ACTION_NOT_READY');
+  assert.equal(
+    buildRecurringSeriesFromAction(createAction({ recurrence, clientOperationId: 'x' })).error.code,
+    'INVALID_OPERATION_ID',
+  );
+  assert.equal(
+    buildRecurringSeriesFromAction(createAction({ recurrence, accountResolution: { status: 'will_create' } })).error.code,
+    'ACTION_NOT_READY',
+  );
+  assert.equal(buildRecurringSeriesFromAction(createAction({ recurrence, account: null })).data.account_id, null);
 });

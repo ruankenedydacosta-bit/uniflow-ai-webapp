@@ -3,7 +3,7 @@
 // regras atuais e o uni-interpret sejam medidos exatamente do mesmo jeito.
 //
 // Resultado normalizado:
-//   { intent, valor, data, categoria, modoCategoria, parcelas, recorrente, titulo, consulta }
+//   { intent, valor, data, categoria, modoCategoria, parcelas, recorrente, frequencia, titulo, consulta }
 // modoCategoria: 'resolveu' | 'sugeriu' | 'propos_criar' | 'perguntou'.
 // consulta: { tipo, inicio, fim, categoria, termo }; ausente em quem não lê
 // parâmetros de consulta (as regras atuais).
@@ -130,10 +130,12 @@ export function avaliarCaso(caso, resultado) {
     data: intent && resultado.data === (esperado.data ?? DATA_REFERENCIA),
     categoria: intent && avaliarCategoria(esperado, resultado),
     // Parcelamento e recorrência: por padrão, compra à vista e única. Pagar
-    // "a parcela do IPTU" não pode virar parcelamento.
+    // "a parcela do IPTU" não pode virar parcelamento. A frequência só conta
+    // quando o caso diz qual espera.
     modalidade: intent
       && (resultado.parcelas ?? null) === (esperado.parcelas ?? null)
-      && (resultado.recorrente === true) === (esperado.recorrente === true),
+      && (resultado.recorrente === true) === (esperado.recorrente === true)
+      && (!esperado.frequencia || resultado.frequencia === esperado.frequencia),
     titulo: null,
     consulta: null,
     pedido: null,
@@ -209,6 +211,7 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
       modoCategoria: 'perguntou',
       parcelas: null,
       recorrente: false,
+      frequencia: null,
       titulo: validada.agenda?.titulo ?? null,
       consulta,
       pedido: pedidoDaInterpretacao(validada),
@@ -230,6 +233,7 @@ export function normalizarInterpretacao(validada, { limiarConfianca = 0.7 } = {}
     modoCategoria,
     parcelas: operacao.parcelas ?? null,
     recorrente: operacao.recorrente === true,
+    frequencia: operacao.frequencia ?? null,
     titulo: null,
     consulta: null,
     pedido: null,

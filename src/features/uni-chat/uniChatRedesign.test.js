@@ -112,3 +112,22 @@ test('campo da conversa: "Escreva para a Uni", só texto, com enviar sempre vis�
   // O chat é só texto: falar com a Uni é pela conversa em tempo real.
   assert.doesNotMatch(input, /PhMicrophoneIcon|uni-voice|handleVoiceClick/);
 });
+
+test('recorrência vira "Saída recorrente · rascunho", com a regra e o primeiro lançamento (#222)', () => {
+  const data = buildConfirmationFromAction({
+    transactionType: 'expense',
+    category: { name: 'Moradia' },
+    description: 'Aluguel',
+    amount: 1500,
+    date: '2026-11-10',
+    recurrence: { frequency: 'monthly', interval: 1 },
+  });
+  assert.equal(data.title, 'Nova saída recorrente');
+  const card = resolveConfirmationCard(data);
+  assert.equal(card.kind, 'Saída recorrente · rascunho');
+  assert.match(card.amount, /^R\$\s1\.500,00$/);
+  assert.deepEqual(
+    card.details.map((row) => [row.label, row.value]),
+    [['Descrição', 'Aluguel'], ['Repete', 'Todo mês, no dia 10'], ['Primeiro lançamento', '10/11/2026']],
+  );
+});

@@ -142,7 +142,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.LIMITED,
     updatedAt: UPDATED_AT,
     content:
-      'Na experiência simplificada, movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni. Registrar entrada, saída, transferência ou ajuste exige os campos obrigatórios e confirmação explícita antes de salvar. Movimentação com data futura, registrada no formulário ou pela Uni, fica prevista: aparece em Previstos no Financeiro, fora do saldo e dos totais, até ser confirmada. Contas podem ser consultadas em Conta → Minhas contas. Cada operação respeita o espaço Pessoal/Empresa ativo. Open Finance continua sendo DEMONSTRAÇÃO VISUAL, sem conexão bancária real.',
+      'Movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni, sempre com os campos obrigatórios e confirmação explícita antes de salvar. Open Finance é DEMONSTRAÇÃO VISUAL, sem conexão bancária real. Data futura fica prevista: aparece em Previstos no Financeiro, fora do saldo e dos totais, até ser confirmada. Lançamento recorrente, pelo formulário ou pela Uni, vira uma série: os próximos 3 meses entram na hora e os seguintes são criados sozinhos. Cada operação respeita o espaço Pessoal/Empresa ativo. Contas ficam em Conta → Minhas contas.',
   },
   {
     id: 'goals',
@@ -215,6 +215,20 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
       'Em /configuracoes: Perfil permite editar nome e telefone (e-mail e avatar não podem ser alterados pelo usuário). Preferências tem o seletor de tema e o interruptor de voz da Uni. Segurança só oferece troca de senha por e-mail — sem autenticação em duas etapas e sem gerenciamento de sessões ativas. Várias seções estão marcadas "Em breve": Perguntar à Uni, Preferências da Uni, Voz e interação (avançado), Notificações (preferências) e Leitura da Uni personalizada.',
   },
   {
+    id: 'google-agenda',
+    title: 'Google Agenda',
+    category: KNOWLEDGE_CATEGORIES.SETTINGS,
+    version: MANIFEST_VERSION,
+    file: 'docs/product-knowledge/google-agenda.md',
+    routes: ['/app/conta/google-agenda'],
+    workspaces: WORKSPACE_SCOPE.BOTH,
+    keywords: ['google agenda', 'google calendar', 'calendário do google', 'sincronizar agenda', 'sincronizar agora', 'conectar google', 'desconectar google', 'agenda de destino', 'agendas lidas', 'evento do google', 'integração com o google'],
+    status: KNOWLEDGE_STATUS.LIMITED,
+    updatedAt: UPDATED_AT,
+    content:
+      'Google Agenda fica em Mais → Configurações → Preferências → Integrações (/app/conta/google-agenda), disponível só para algumas contas nesta fase. Ao conectar, o UniFlow cria a agenda "UniFlow · <nome do espaço>" (uma por espaço) e envia os compromissos futuros que você criou; item sem autor registrado não vai. Agenda de destino: só os compromissos novos vão para a agenda escolhida. Agendas lidas (a principal da conta e a do UniFlow vêm marcadas): os eventos das agendas marcadas, só da sua própria conta, entram no UniFlow (de 30 dias atrás até 1 ano à frente); evento privado no Google não entra; ao desmarcar, os já trazidos continuam. Sincronizar agora traz as mudanças na hora. Excluir no UniFlow um evento que veio do Google não o apaga no Google. Desconectar deixa a agenda e os eventos no Google. Erro de conexão: toque em Conectar de novo.',
+  },
+  {
     id: 'uni-chat',
     title: 'Chat da Uni',
     category: KNOWLEDGE_CATEGORIES.UNI,
@@ -222,7 +236,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/uni-chat.md',
     routes: ['/app/home', '/app/uni', '/app/conta/voz'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['uni', 'chat', 'conversar com a uni', 'assistente', 'registrar por chat', 'apagar conversa', 'histórico de conversa', 'excluir movimentação', 'desfazer', 'criar categoria pela conversa', 'listar lançamentos', 'meta pela conversa', 'aporte pela conversa'],
+    keywords: ['uni', 'chat', 'conversar com a uni', 'assistente', 'registrar por chat', 'apagar conversa', 'histórico de conversa', 'excluir movimentação', 'desfazer', 'criar categoria pela conversa', 'listar lançamentos', 'meta pela conversa', 'aporte pela conversa', 'recorrente pela conversa'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
@@ -236,7 +250,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     file: 'docs/product-knowledge/uni-voice.md',
     routes: ['/app/home', '/app/uni'],
     workspaces: WORKSPACE_SCOPE.BOTH,
-    keywords: ['ouvir a uni', 'ouvir resposta', 'voz', 'áudio', 'reproduzir resposta', 'desativar voz', 'usar sem voz', 'conversa por voz', 'minutos de voz', 'interromper a uni', 'excluir pela voz', 'categoria pela voz', 'meta pela voz', 'aporte pela voz', 'agenda pela voz', 'desfazer'],
+    keywords: ['ouvir a uni', 'ouvir resposta', 'voz', 'áudio', 'reproduzir resposta', 'desativar voz', 'usar sem voz', 'conversa por voz', 'minutos de voz', 'interromper a uni', 'excluir pela voz', 'categoria pela voz', 'meta pela voz', 'aporte pela voz', 'agenda pela voz', 'recorrente pela voz', 'desfazer'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
@@ -282,7 +296,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Problemas comuns: e-mail de recuperação não chegou (checar spam, reenviar é seguro); CRM/Clientes/Projetos sumiram (só existem no Espaço Empresa); Relatórios sumiu (exige plano Pro+); movimentação recorrente não se repetiu (esperado, é só um rótulo); Open Finance não conecta banco de verdade (é demonstração); Uni "esqueceu" algo (sem memória ilimitada entre conversas nesta fase); notificação não some ao excluir (não é possível excluir, só marcar como lida); upgrade de plano (ainda não disponível pela interface). Fora desses casos mapeados, admitir que não há resposta confirmada e indicar suporte humano.',
+      'Problemas comuns: e-mail de recuperação não chegou (checar spam, reenviar é seguro); CRM/Clientes/Projetos sumiram (só existem no Espaço Empresa); Relatórios sumiu (exige plano Pro+); movimentação recorrente não se repetiu (a série cria os lançamentos dos próximos 3 meses como previstos; recorrências marcadas antes da série eram só um rótulo); Open Finance não conecta banco de verdade (é demonstração); Uni "esqueceu" algo (sem memória ilimitada entre conversas nesta fase); notificação não some ao excluir (não é possível excluir, só marcar como lida); upgrade de plano (ainda não disponível pela interface). Fora desses casos mapeados, admitir que não há resposta confirmada e indicar suporte humano.',
   },
   {
     id: 'glossary',

@@ -48,6 +48,11 @@ export const MAX_TITULO_AGENDA = 80;
 // compra à vista.
 export const MIN_PARCELAS = 2;
 export const MAX_PARCELAS = 72;
+// Recorrência (#222): de quanto em quanto tempo o lançamento se repete.
+// "Quinzenal" é semanal com intervalo 2. O teto do intervalo é o da RPC
+// criar_serie_recorrente.
+export const FREQUENCIAS = Object.freeze(['diaria', 'semanal', 'mensal', 'anual']);
+export const MAX_INTERVALO = 365;
 export const MAX_TERMO = 40;
 export const MAX_NOME_META = 60;
 // Prazo de meta: até dez anos. Mais que isso é erro de leitura.
@@ -78,6 +83,7 @@ const ESQUEMA_OPERACAO = {
   required: [
     'tipo', 'valor', 'data', 'descricao', 'categoria', 'nova_categoria',
     'alternativas', 'conta', 'conta_destino', 'confianca', 'parcelas', 'recorrente',
+    'frequencia', 'intervalo',
   ],
   properties: {
     tipo: { type: 'string', enum: [...TIPOS] },
@@ -92,6 +98,8 @@ const ESQUEMA_OPERACAO = {
     confianca: { type: 'number' },
     parcelas: { type: ['integer', 'null'], description: 'número de parcelas da compra parcelada' },
     recorrente: { type: 'boolean' },
+    frequencia: { type: ['string', 'null'], enum: [...FREQUENCIAS, null] },
+    intervalo: { type: ['integer', 'null'], description: 'repete a cada quantas frequências; 1 se não diz' },
   },
 };
 
@@ -261,6 +269,13 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
     ? parcelasBrutas
     : null;
   const recorrente = tipo !== 'transferencia' && !parcelas && bruta.recorrente === true;
+  // Sem frequência, a recorrência fica só com o rótulo: o app registra este
+  // lançamento e orienta a criar a série no Financeiro.
+  const frequencia = recorrente && FREQUENCIAS.includes(bruta.frequencia) ? bruta.frequencia : null;
+  const intervaloBruto = Number(bruta.intervalo);
+  const intervalo = frequencia
+    ? (Number.isInteger(intervaloBruto) && intervaloBruto >= 1 && intervaloBruto <= MAX_INTERVALO ? intervaloBruto : 1)
+    : null;
 
   const confiancaBruta = Number(bruta.confianca);
   const confianca = Number.isFinite(confiancaBruta) ? Math.min(1, Math.max(0, confiancaBruta)) : 0;
@@ -283,6 +298,8 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
     confianca,
     parcelas,
     recorrente,
+    frequencia,
+    intervalo,
     faltando,
     ajustes,
   };

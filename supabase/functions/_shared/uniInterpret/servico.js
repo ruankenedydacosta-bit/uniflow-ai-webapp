@@ -116,6 +116,8 @@ function serializar(validada) {
       confianca: operacao.confianca,
       parcelas: operacao.parcelas,
       recorrente: operacao.recorrente,
+      frequencia: operacao.frequencia,
+      intervalo: operacao.intervalo,
       faltando: operacao.faltando,
       ajustes: operacao.ajustes,
     })),

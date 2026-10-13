@@ -13,7 +13,7 @@ Referência interna usada pela Uni no modo suporte; não é uma tela do aplicati
 - **Não recebi o e-mail de recuperação de senha**: verificar a caixa de spam; a mensagem exibida é sempre neutra por segurança, então reenviar a solicitação também é seguro.
 - **Não consigo ver CRM/Clientes/Projetos**: esses módulos só existem no Espaço Empresa. Confirmar qual espaço está ativo no alternador Pessoal/Empresa.
 - **Não vejo Relatórios**: Relatórios exige plano Pro, Business ou Enterprise.
-- **Uma movimentação recorrente não repetiu sozinha**: a série cria os lançamentos dos próximos 3 meses como previstos. Procure no mês seguinte, no bloco de previstos do Financeiro. Se a série foi criada pela Uni, ela registrou só o lançamento do dia: crie a série na tela Financeiro. Séries criadas antes desta versão eram só um rótulo e não repetem.
+- **Uma movimentação recorrente não repetiu sozinha**: a série cria os lançamentos dos próximos 3 meses como previstos. Procure no mês seguinte, no bloco de previstos do Financeiro. Se você pediu pela Uni sem dizer de quanto em quanto tempo repete ("pago academia todo mês" repete; "pago academia" não), ela registrou só o lançamento do dia: peça de novo com a frequência ou crie a série na tela Financeiro. Séries criadas antes desta versão eram só um rótulo e não repetem.
 - **Não consigo conectar meu banco pelo Open Finance**: correto — a tela de Open Finance é uma demonstração visual, sem conexão bancária real.
 - **A Uni "esqueceu" algo que falei antes**: esperado nesta fase — a Uni usa o histórico da conversa atual e dados financeiros reais, mas não mantém uma memória psicológica ilimitada entre conversas.
 - **Excluí uma notificação e ela sumiu**: não é possível excluir notificações hoje, apenas marcar como lida.

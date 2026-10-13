@@ -1,6 +1,12 @@
 import { normalizeFinancialText, resolveRelativeDateExpression } from '../uni-intents/index.js';
 import { PLAN_OPERATION_STATUS, PLAN_STATUS } from './pendingFinancialPlan.js';
-import { formatShortDate } from './uniResponseBuilder.js';
+import { describeRecurrence, formatShortDate } from './uniResponseBuilder.js';
+
+const BASE_OPERATION_TYPE = Object.freeze({
+  installment_purchase: 'expense',
+  recurring_expense: 'expense',
+  recurring_income: 'income',
+});
 
 // BLOCO E: camada de apresentacao/entrada do Pending Financial Plan --
 // texto sempre curto e falavel (nunca le ID, JSON ou percentual de
@@ -65,6 +71,12 @@ export function describePlanOperation(op) {
     const perInstallment = installments.installmentAmount == null ? '' : ` de ${formatAmountBRL(installments.installmentAmount)}`;
     return `• Compra parcelada de ${amountText}${description} em ${installments.count}x${perInstallment}${categoryName ? `, em ${categoryName}` : ''}`;
   }
+  const recurrence = op.action?.recurrence;
+  if (recurrence) {
+    const label = op.operationType === 'recurring_income' ? 'Entrada' : 'Saída';
+    const categoryName = op.action?.category?.name;
+    return `• ${label} de ${amountText}${description} ${describeRecurrence(recurrence, op.action.date)}, a partir de ${formatShortDate(op.action.date)}${categoryName ? `, em ${categoryName}` : ''}`;
+  }
   const label = op.operationType === 'income' ? 'Entrada' : 'Saída';
   const categoryName = op.action?.category?.name;
   return `• ${label} de ${amountText}${description}${categoryName ? ` em ${categoryName}` : ''}${describePlannedDate(op)}`;
@@ -73,6 +85,32 @@ export function describePlanOperation(op) {
 // Operação com data futura fica como previsto: o resumo mostra o dia.
 function describePlannedDate(op) {
   return op.action?.planned ? `, prevista para ${formatShortDate(op.action.date)}` : '';
+}
+
+const FREQUENCIA_POR_PALAVRA = Object.freeze({
+  dia: 'daily', dias: 'daily',
+  semana: 'weekly', semanas: 'weekly',
+  mes: 'monthly', meses: 'monthly',
+  ano: 'yearly', anos: 'yearly',
+});
+
+// Regra dita na correção, já sem acento e em minúsculas: "toda semana",
+// "todo mes", "a cada 2 semanas", "quinzenal". null quando a frase não
+// traz uma.
+function lerRegraDaRepeticao(normalized) {
+  if (/\bquinzena(l|lmente)?\b/.test(normalized)) return { frequency: 'weekly', interval: 2 };
+  const cada = normalized.match(/\ba cada (\d{1,3}) (dias?|semanas?|mes|meses|anos?)\b/);
+  if (cada) {
+    const interval = Number(cada[1]);
+    if (interval >= 1 && interval <= 365) return { frequency: FREQUENCIA_POR_PALAVRA[cada[2]], interval };
+  }
+  const todo = normalized.match(/\btod[oa] (dia|semana|mes|ano)\b/);
+  if (todo) return { frequency: FREQUENCIA_POR_PALAVRA[todo[1]], interval: 1 };
+  if (/\b(diari[oa]|diariamente)\b/.test(normalized)) return { frequency: 'daily', interval: 1 };
+  if (/\bsemana(l|lmente)\b/.test(normalized)) return { frequency: 'weekly', interval: 1 };
+  if (/\b(mensal|mensalmente)\b/.test(normalized)) return { frequency: 'monthly', interval: 1 };
+  if (/\b(anual|anualmente)\b/.test(normalized)) return { frequency: 'yearly', interval: 1 };
+  return null;
 }
 
 export function buildOperationClarificationQuestion(op) {
@@ -186,7 +224,21 @@ export function buildPlanResultText(planState) {
       parts.push(`As ${futureCount} próximas ficaram previstas. Confirme no Financeiro quando cada uma acontecer.`);
     }
   }
-  const single = confirmed.filter((op) => !op.action?.installments);
+  // Recorrência vira a série: o texto conta os lançamentos que a RPC criou,
+  // os realizados (data até hoje) e os previstos, e diz que os seguintes
+  // nascem sozinhos.
+  for (const op of confirmed.filter((item) => item.action?.recurrence)) {
+    const occurrences = Number(op.result?.occurrences) || 0;
+    const pending = Number(op.result?.pending_occurrences) || 0;
+    const completed = occurrences - pending;
+    parts.push('Criei a repetição.');
+    if (completed === 1) parts.push('1 lançamento entrou como realizado.');
+    else if (completed > 1) parts.push(`${completed} lançamentos entraram como realizados, até hoje.`);
+    if (pending === 1) parts.push('1 ficou previsto. Confirme no Financeiro quando ele acontecer.');
+    else if (pending > 1) parts.push(`${pending} ficaram previstos. Confirme no Financeiro quando cada um acontecer.`);
+    parts.push('Os seguintes são criados sozinhos, sempre 3 meses à frente.');
+  }
+  const single = confirmed.filter((op) => !op.action?.installments && !op.action?.recurrence);
   if (single.length) {
     parts.push(`Registrei ${single.length === 1 ? 'o lançamento' : `${single.length} lançamentos`} com sucesso.`);
     const planned = single.filter((op) => op.action?.planned).length;
@@ -196,8 +248,15 @@ export function buildPlanResultText(planState) {
       parts.push(`${planned === single.length ? 'Todos' : `${planned} deles`} ficaram previstos. Confirme no Financeiro quando acontecerem.`);
     }
   }
-  if (failed.length) {
-    parts.push(`Não consegui registrar ${failed.length === 1 ? 'um dos lançamentos' : `${failed.length} lançamentos`}. Nada foi perdido -- pode tentar de novo.`);
+  // Recusa do próprio pedido (regra inválida, conta fora do espaço): repetir
+  // não resolve, então a resposta dá o motivo em vez de "tente de novo".
+  const refused = failed.filter((op) => op.failure?.code === 'INVALID_TRANSACTION_REQUEST' && op.failure.message);
+  for (const op of refused) {
+    parts.push(`Não consegui registrar: ${op.failure.message}`);
+  }
+  const retryable = failed.length - refused.length;
+  if (retryable) {
+    parts.push(`Não consegui registrar ${retryable === 1 ? 'um dos lançamentos' : `${retryable} lançamentos`}. Nada foi perdido -- pode tentar de novo.`);
   }
   if (blocked.length) {
     parts.push(blocked.map((op) => op.blockedReason).join(' '));
@@ -218,8 +277,9 @@ export function parsePlanCorrectionOverrides({
   const trimmed = text.trim();
   const normalized = normalizeFinancialText(trimmed);
   const isTransfer = operation.operationType === 'transfer';
-  // Compra parcelada é uma saída: a categoria corrigida vem das de saída.
-  const operationType = operation.operationType === 'installment_purchase' ? 'expense' : operation.operationType;
+  // Compra parcelada é uma saída, e a recorrência tem o tipo da série: a
+  // categoria corrigida vem das do mesmo tipo.
+  const operationType = BASE_OPERATION_TYPE[operation.operationType] ?? operation.operationType;
   const transactionType = isTransfer
     ? 'transfer'
     : (operationType === 'income' || operationType === 'expense')
@@ -269,6 +329,12 @@ export function parsePlanCorrectionOverrides({
       }
       return overrides;
     }
+  }
+
+  // Recorrência: "não, é toda semana" ou "a cada 15 dias" troca a regra.
+  if (operation.action?.recurrence) {
+    const recurrence = lerRegraDaRepeticao(normalized);
+    if (recurrence) return { recurrence };
   }
 
   // "Quero alterar o valor para 2000": a frase que o botão Editar do card

@@ -109,6 +109,8 @@ test('sucesso: devolve a proposta com ids reais e data de referência, e o model
     confianca: 0.95,
     parcelas: null,
     recorrente: false,
+    frequencia: null,
+    intervalo: null,
     faltando: [],
     ajustes: [],
   });

@@ -8,6 +8,7 @@
 
 import { normalizeFinancialText } from '../uni-intents/index.js';
 import { formatCurrency } from '../../utils/formatters.js';
+import { MAX_RECURRENCE_INTERVAL } from '../uni-conversation/pendingFinancialPlan.js';
 
 export const ROTAS_INTERPRETACAO = Object.freeze({
   LANCAMENTO: 'lancamento',
@@ -24,12 +25,31 @@ export const ROTAS_INTERPRETACAO = Object.freeze({
 
 const INTENT_POR_TIPO = Object.freeze({ saida: 'register_expense', entrada: 'register_income' });
 
-// Recorrência numa operação só vira o card deste lançamento: quem diz "pago
-// 120 de academia todo mês" quase sempre quer lançar o mês, e um falso
-// positivo do modelo ("mensalidade do sistema") não pode bloquear o
-// registro. Parcela não: gravar o total como compra avulsa seria errado.
+// Frequência do uni-interpret → frequency da série (#222).
+const FREQUENCY_POR_FREQUENCIA = Object.freeze({
+  diaria: 'daily',
+  semanal: 'weekly',
+  mensal: 'monthly',
+  anual: 'yearly',
+});
+
+function recorrenciaDaOperacao(operacao) {
+  if (operacao?.recorrente !== true) return null;
+  const frequency = FREQUENCY_POR_FREQUENCIA[operacao.frequencia];
+  if (!frequency) return null;
+  const intervalo = Number(operacao.intervalo);
+  return {
+    frequency,
+    interval: Number.isInteger(intervalo) && intervalo >= 1 && intervalo <= MAX_RECURRENCE_INTERVAL ? intervalo : 1,
+  };
+}
+
+// Parcela e recorrência com frequência vão para o plano, que cria a compra
+// ou a série inteira. Recorrência sem frequência (ou de função anterior ao
+// campo) vira o card deste lançamento: um falso positivo do modelo
+// ("mensalidade do sistema") não pode bloquear o registro.
 function ehLancamentoSimples(operacao) {
-  return Object.hasOwn(INTENT_POR_TIPO, operacao?.tipo) && !operacao.parcelas;
+  return Object.hasOwn(INTENT_POR_TIPO, operacao?.tipo) && !operacao.parcelas && !recorrenciaDaOperacao(operacao);
 }
 
 // null quando não há interpretação utilizável: o chamador segue com as
@@ -42,8 +62,8 @@ export function escolherRotaDaInterpretacao(interpretacao) {
     case 'lancamento':
     case 'correcao':
       // Sem rascunho na tela, "correcao" é um lançamento novo. Mais de uma
-      // operação, transferência ou parcela vão para o plano, que sabe
-      // revisar várias de uma vez.
+      // operação, transferência, parcela ou recorrência vão para o plano,
+      // que sabe revisar várias de uma vez.
       if (operacoes.length === 1 && ehLancamentoSimples(operacoes[0])) {
         return ROTAS_INTERPRETACAO.LANCAMENTO;
       }
@@ -111,13 +131,16 @@ export function interpretacaoParaRascunho(interpretacao, texto) {
   return { parsed, overrides };
 }
 
+// Recorrência sem frequência vira o lançamento comum, como numa operação só:
+// um falso positivo do modelo não tira a operação do plano.
 function tipoDaOperacaoDoPlano(operacao) {
   if (operacao.tipo === 'transferencia') return 'transfer';
+  const recorrente = Boolean(recorrenciaDaOperacao(operacao));
   if (operacao.tipo === 'saida') {
     if (operacao.parcelas) return 'installment_purchase';
-    return operacao.recorrente === true ? 'recurring_expense' : 'expense';
+    return recorrente ? 'recurring_expense' : 'expense';
   }
-  return operacao.recorrente === true ? 'recurring_income' : 'income';
+  return recorrente ? 'recurring_income' : 'income';
 }
 
 // Operações da interpretação → plano que createPendingFinancialPlan recebe.
@@ -143,6 +166,7 @@ export function interpretacaoParaPlano(interpretacao) {
       destinationAccountId: operacao.contaDestino?.id ?? null,
       categoryId: operationType === 'transfer' ? null : operacao.categoria?.id ?? null,
       installments: operationType === 'installment_purchase' ? { count: operacao.parcelas } : null,
+      recurrence: recorrenciaDaOperacao(operacao),
     };
   });
   return { operations, clarificationQuestion: null };
