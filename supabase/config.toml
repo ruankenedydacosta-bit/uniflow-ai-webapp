@@ -60,6 +60,19 @@ verify_jwt = true
 [functions.google-calendar-export]
 verify_jwt = false
 
+# Importação do Google Agenda (#101). O webhook é chamado pelo Google, sem
+# JWT: quem autentica é o canal (channel_id + channel_token guardados). O
+# sync-dispatch é chamado pelo pg_cron com o mesmo segredo do export. O
+# sync-now exige sessão.
+[functions.google-calendar-webhook]
+verify_jwt = false
+
+[functions.google-calendar-sync-dispatch]
+verify_jwt = false
+
+[functions.google-calendar-sync-now]
+verify_jwt = true
+
 # Escreve a Leitura do mês da Home com o Haiku (#122). Exige sessão: a
 # função confere o usuário em /auth/v1/user e a cota diária por pessoa.
 [functions.uni-insights]

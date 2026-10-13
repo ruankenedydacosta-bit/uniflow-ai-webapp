@@ -110,6 +110,16 @@ export function createGoogleCalendarService({
       }
       return invokeFunction('google-calendar-disconnect', { workspace_id: workspaceId });
     },
+    // Traz agora os eventos dos calendários lidos. data: { sincronizado_em,
+    // calendarios: [{ external_calendar_id, inseridos, atualizados,
+    // cancelados, status: 'ok' | 'skipped' | 'erro' }] }. Erros:
+    // NOT_CONNECTED, RECONNECT_REQUIRED e GOOGLE_UNAVAILABLE.
+    sincronizarAgora({ workspaceId } = {}) {
+      if (!workspaceId) {
+        return Promise.resolve({ data: null, error: { code: 'INVALID_WORKSPACE', message: 'workspace_required' } });
+      }
+      return invokeFunction('google-calendar-sync-now', { workspace_id: workspaceId });
+    },
     // data: a conexão da pessoa neste espaço, ou null quando não há.
     async obterConexao({ workspaceId } = {}) {
       if (!supabaseClient) {
@@ -145,3 +155,4 @@ export const iniciarConexao = defaultGoogleCalendarService.iniciarConexao;
 export const confirmarConexao = defaultGoogleCalendarService.confirmarConexao;
 export const desconectar = defaultGoogleCalendarService.desconectar;
 export const obterConexao = defaultGoogleCalendarService.obterConexao;
+export const sincronizarAgora = defaultGoogleCalendarService.sincronizarAgora;
