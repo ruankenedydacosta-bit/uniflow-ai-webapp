@@ -1,5 +1,5 @@
 import { isDifferentBuild, LOADED_BUILD_ID, parseVersionManifest } from './appVersion.js';
-import { getPwaDiagnosticSnapshot, BUILD_COHERENCE } from './pwaBuildDiagnostics.js';
+import { getPwaDiagnosticSnapshot, BUILD_COHERENCE, queryServiceWorkerBuildId } from './pwaBuildDiagnostics.js';
 
 // ============================================================================
 // PWA UPDATE CONTRACT -- permanente, nunca remover.
@@ -24,12 +24,21 @@ import { getPwaDiagnosticSnapshot, BUILD_COHERENCE } from './pwaBuildDiagnostics
 //    controllerchange -> reload controlado -> reverifica os 3 build IDs
 //    no próximo checkForUpdate() (agora síncrono, ver garantia 1).
 // 5. ATUALIZA SOZINHO, NUNCA EM LOOP: disparado na abertura (antes do
-//    primeiro toque) ou ao sair de foreground -- nunca no meio de um uso,
-//    nunca com uma ação/voz em andamento (setAutoUpdateBlocked). Falha sem
-//    reload tenta de novo na próxima oportunidade. Reload que não trouxe o
-//    build novo só tenta de novo na próxima abertura do app (guarda de
-//    reload em sessionStorage), e no máximo MAX_AUTO_UPDATE_ATTEMPTS vezes
-//    por build (AUTO_RECOVERY_GUARD_KEY).
+//    primeiro toque), ao sair de foreground ou na troca de tela com o
+//    Service Worker novo já instalado (updateOnNavigation) -- nunca no meio
+//    de uma tela, nunca com uma ação/voz em andamento
+//    (setAutoUpdateBlocked). Falha sem reload tenta de novo na próxima
+//    oportunidade. Reload que não trouxe o build novo só tenta de novo
+//    depois de RELOAD_GUARD_TTL_MS (guarda de reload em sessionStorage), e
+//    no máximo MAX_AUTO_UPDATE_ATTEMPTS vezes por build
+//    (AUTO_RECOVERY_GUARD_KEY).
+// 8. INSTALA ANTES DE PRECISAR: a checagem que acha o build novo já manda o
+//    navegador baixar o Service Worker novo (preinstallUpdate). Na hora de
+//    recarregar só falta ativá-lo, o que cabe nos poucos segundos que o
+//    iOS dá a uma página que saiu de foreground.
+// 9. NUNCA RECARREGA NO SERVICE WORKER VELHO: sem worker novo esperando, o
+//    reload só acontece se o worker ativo provar (build-id-bridge) que já é
+//    o build novo. Recarregar no velho gastava a tentativa e prendia a aba.
 // 6. NUNCA DESTRÓI DADOS DO USUÁRIO: recovery só toca em cache de Service
 //    Worker comprovadamente obsoleto -- nunca sessão Supabase, IndexedDB,
 //    localStorage funcional, credenciais ou preferências.
@@ -62,6 +71,10 @@ import { getPwaDiagnosticSnapshot, BUILD_COHERENCE } from './pwaBuildDiagnostics
 // ============================================================================
 
 export const UPDATE_RELOAD_GUARD_KEY = 'uniflow.app-update.reload-guard';
+// O reload do próprio applyUpdate chega em segundos. Guarda mais velha que
+// isso é de uma tentativa que já passou: sem prazo, o F5 e a troca de tela
+// nunca mais tentavam naquela aba, e só uma aba nova trazia o build.
+export const RELOAD_GUARD_TTL_MS = 2 * 60_000;
 // PWA-UPDATE3: guarda SEPARADA da UPDATE_RELOAD_GUARD_KEY -- aquela evita
 // dois reloads dentro de UMA chamada de applyUpdate(); esta decide se vale
 // a pena DISPARAR applyUpdate() automaticamente para este build, e conta
@@ -114,6 +127,7 @@ function readReloadGuard(storage) {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed?.targetBuild !== 'string' || parsed.reloadAttempted !== true) return null;
+    if (Number.isFinite(parsed.attemptedAt) && Date.now() - parsed.attemptedAt > RELOAD_GUARD_TTL_MS) return null;
     return parsed;
   } catch {
     return null;
@@ -306,6 +320,8 @@ export function createPwaUpdateManager({
   // Primeiro toque/tecla desde a abertura: depois disso a abertura deixa
   // de ser um momento seguro para recarregar (so o background serve).
   let userInteracted = false;
+  // Build cujo Service Worker já mandamos baixar (preinstallUpdate).
+  let preinstalledBuildId = null;
 
   const publish = (patch, event, extra) => {
     state = Object.freeze({ ...state, ...patch });
@@ -381,6 +397,7 @@ export function createPwaUpdateManager({
             error: null,
           }, 'update_available');
           registerPendingBuildCheck(manifest.buildId);
+          void preinstallUpdate(manifest.buildId);
         }
       } catch (error) {
         publish({
@@ -393,6 +410,42 @@ export function createPwaUpdateManager({
       return state;
     })();
     return checkPromise;
+  }
+
+  // Garantia 8: baixa o Service Worker novo assim que o build é detectado,
+  // sem ativar nada. Uma vez por build; se já existe worker instalando ou
+  // esperando, o navegador já fez o trabalho. Falha é silenciosa: o
+  // applyUpdate chama registration.update() de novo na hora de recarregar.
+  async function preinstallUpdate(buildId) {
+    const serviceWorker = runtime.navigator?.serviceWorker;
+    if (!serviceWorker || preinstalledBuildId === buildId) return;
+    preinstalledBuildId = buildId;
+    try {
+      const registration = await withTimeout(serviceWorker.ready, activationTimeoutMs, runtime, 'SERVICE_WORKER_READY_TIMEOUT');
+      if (registration?.waiting || registration?.installing) return;
+      await registration?.update?.();
+      devDiagnostic(isDev, 'service_worker_preinstall', state, { buildId });
+    } catch (error) {
+      preinstalledBuildId = null;
+      devDiagnostic(isDev, 'service_worker_preinstall_failed', state, { buildId, reason: error?.message });
+    }
+  }
+
+  // Se o worker novo já está instalado, recarregar é rápido (só ativa) e
+  // pode acontecer na troca de tela. Sem Service Worker, o reload comum já
+  // traz o build novo.
+  async function isUpdateInstalled(targetBuild) {
+    const serviceWorker = runtime.navigator?.serviceWorker;
+    if (!serviceWorker) return true;
+    try {
+      const registration = await withTimeout(serviceWorker.ready, activationTimeoutMs, runtime, 'SERVICE_WORKER_READY_TIMEOUT');
+      if (registration?.waiting) return true;
+      // Outra aba já ativou o build novo: esta só precisa recarregar.
+      const activeBuildId = await queryServiceWorkerBuildId({ worker: registration?.active, runtime });
+      return activeBuildId === targetBuild;
+    } catch {
+      return false;
+    }
   }
 
   // PWA-UPDATE3: chamado toda vez que uma checagem confirma "ainda no
@@ -499,6 +552,15 @@ export function createPwaUpdateManager({
             throw new Error(workerResult.kind === 'timeout'
               ? 'SERVICE_WORKER_INSTALL_TIMEOUT'
               : 'SERVICE_WORKER_UPDATE_NOT_READY');
+          } else {
+            // Garantia 9: 'active' também é o worker velho quando a instalação
+            // falhou (redundant) ou o update não achou nada. Só um build
+            // provadamente diferente barra o reload; sem resposta do worker
+            // (bridge ausente), segue como antes.
+            const activeBuildId = await queryServiceWorkerBuildId({ worker: workerResult.worker, runtime });
+            if (activeBuildId && activeBuildId !== targetBuild) {
+              throw new Error('SERVICE_WORKER_STILL_OLD');
+            }
           }
 
           publish({ serviceWorkerState: 'controlling' }, 'service_worker_controlling');
@@ -518,6 +580,16 @@ export function createPwaUpdateManager({
       }
     })();
     return updatePromise;
+  }
+
+  // Troca de tela: a pessoa acabou de sair de uma tela, então recarregar não
+  // interrompe nada nela. Só com o worker novo já instalado, para o reload
+  // ser rápido; se ainda está baixando, espera a próxima troca.
+  async function updateOnNavigation() {
+    const targetBuild = autoRecoveryArmedForBuild;
+    if (!targetBuild || autoUpdateBlocked || updatePromise) return;
+    if (!await isUpdateInstalled(targetBuild)) return;
+    await maybeFireArmedAutoRecovery();
   }
 
   const handleVisibilityChange = () => {
@@ -586,6 +658,7 @@ export function createPwaUpdateManager({
     start,
     stop,
     setAutoUpdateBlocked: (blocked) => { autoUpdateBlocked = Boolean(blocked); },
+    updateOnNavigation,
     // PWA-UPDATE3: expostos so para diagnostico/teste -- nunca consumidos
     // por UI voltada ao usuario comum.
     getPendingBuildStreak: () => pendingBuildStreak,

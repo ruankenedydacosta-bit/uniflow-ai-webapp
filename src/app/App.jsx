@@ -3,6 +3,7 @@ import { BrowserRouter, matchPath, Navigate, Route, Routes, useLocation } from '
 import AppBootScreen from './AppBootScreen.jsx';
 import AnalyticsConsentBanner from '../features/analytics/AnalyticsConsentBanner.jsx';
 import Ga4RouteTracker from '../features/analytics/ga4RouteTracker.jsx';
+import { PwaNavigationUpdate } from '../features/pwa-install';
 import { AccessProvider } from './AccessContext';
 import { SessionProvider, useSession } from './SessionContext';
 import { appRoutes, publicRoutes } from './routes';
@@ -236,6 +237,8 @@ function AppContent() {
     return (
       <SimplifiedAuthenticatedLayout>
         <Ga4RouteTracker />
+        {/* Só nas telas do app: login, apresentação e checkout ficam de fora. */}
+        <PwaNavigationUpdate />
         <Routes>
           {appRoutes.filter((route) => route.simplified).map((route) => (
             <Route key={route.path} path={route.path} element={route.element} />
