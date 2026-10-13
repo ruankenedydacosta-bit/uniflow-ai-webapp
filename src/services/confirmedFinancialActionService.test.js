@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   buildConfirmedFinancialActionRpcPayload,
+  buildInstallmentPurchaseRpcPayload,
   executeConfirmedFinancialAction,
   getConfirmedAccountMode,
 } from './confirmedFinancialActionService.js';
@@ -329,4 +330,40 @@ test('roteiro atômico prepara workspaces distintos sem credencial administrativ
   assert.match(script, /update\(\{ current_workspace_id: workspaceId \}\)/);
   assert.match(script, /workspaceA === workspaceB/);
   assert.doesNotMatch(script, /SUPABASE_SERVICE_ROLE_KEY/);
+});
+
+test('compra parcelada: payload leva o total, o número de parcelas e a primeira data, sem user ou workspace (#221)', () => {
+  const action = createAction({ amount: 1000, installments: { count: 3 } });
+  const result = buildInstallmentPurchaseRpcPayload({ ...action, payload: { ...action.payload, amount: 1000 } });
+  assert.equal(result.error, null);
+  assert.deepEqual(result.data, {
+    p_client_operation_id: OPERATION_ID,
+    p_account_id: 'account-id',
+    p_category_id: 'category-id',
+    p_description: 'Mercado',
+    p_total_amount: 1000,
+    p_installments: 3,
+    p_first_date: '2026-07-12',
+  });
+});
+
+test('compra parcelada: sem conta vai com p_account_id nulo', () => {
+  const result = buildInstallmentPurchaseRpcPayload(createAction({ account: null, installments: { count: 3 } }));
+  assert.equal(result.error, null);
+  assert.equal(result.data.p_account_id, null);
+});
+
+test('compra parcelada: recusa sem parcelas, sem chave válida ou com conta a criar', () => {
+  assert.equal(buildInstallmentPurchaseRpcPayload(createAction()).error.code, 'ACTION_NOT_READY');
+  assert.equal(
+    buildInstallmentPurchaseRpcPayload(createAction({ clientOperationId: 'x', installments: { count: 3 } })).error.code,
+    'INVALID_OPERATION_ID',
+  );
+  const criar = createAction({
+    account: null,
+    accountResolution: { status: 'will_create' },
+    proposedAccount: { name: 'Inter', account_type: 'checking' },
+    installments: { count: 3 },
+  });
+  assert.equal(buildInstallmentPurchaseRpcPayload(criar).error.code, 'ACTION_NOT_READY');
 });

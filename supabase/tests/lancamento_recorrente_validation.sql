@@ -1,8 +1,8 @@
--- Validação da migration 069 (lançamento recorrente, #222).
+-- Validação da migration 071 (lançamento recorrente, #222).
 -- Roda com a migration já aplicada na mesma transação ou no banco. Tudo fica
 -- dentro de um DO que termina em exceção: nenhum dado sobra, nem com commit
 -- automático do cliente. Sucesso = a exceção final começa com 'OK_ROLLBACK'.
--- Uso: psql "$DB_URL" -f supabase/migrations/<069>.sql -f este arquivo
+-- Uso: psql "$DB_URL" -f supabase/migrations/<071>.sql -f este arquivo
 --      (ou cole os dois, nesta ordem, numa query só no SQL editor).
 
 do $teste$

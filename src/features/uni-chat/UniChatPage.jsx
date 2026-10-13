@@ -49,6 +49,7 @@ import {
   buildPlanOperationCancelledText,
   buildPlanResultText,
   buildPlanSummaryText,
+  buildInstallmentConfirmationText,
   buildPlannedConfirmationText,
   describePlanOperation,
   findPlanOperationCancelTarget,
@@ -209,7 +210,10 @@ import {
 } from './uniChatAdapter';
 import { financialCrudMock, fallbackAccountTypes } from '../../pages/financeiro/financialCrud.mock';
 import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
-import { executeConfirmedFinancialAction } from '../../services/confirmedFinancialActionService.js';
+import {
+  executeConfirmedFinancialAction,
+  executeConfirmedInstallmentPurchase,
+} from '../../services/confirmedFinancialActionService.js';
 import {
   createTransaction,
   getTransaction,
@@ -287,7 +291,7 @@ const ACTION_STATEMENT_INTENTS = new Set([
 ]);
 const TEXTO_SEM_MODELO = Object.freeze({
   varias: 'Não consegui separar esses lançamentos agora. Diga um de cada vez, com o valor e do que se trata.',
-  parcela: 'Compra parcelada ainda não é registrada pela conversa. Lance pelo Financeiro.',
+  parcela: 'Não consegui ler o parcelamento agora. Tente de novo em instantes ou lance pelo Financeiro.',
 });
 const TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO = 'Esse rascunho vale só para este lançamento. Para repetir, crie o lançamento recorrente na tela Financeiro.';
 const TEXTO_META_SEM_CRIACAO = 'Ainda não posso criar metas pela conversa com segurança. Posso consultar suas metas ou orientar você a criá-las na área de Metas.';
@@ -762,7 +766,10 @@ export default function UniChatPage({ variant = 'full' }) {
 
     resolveFinancialPlanConfirmation('updated');
 
-    const message = createAssistantResponse(action.planned ? buildPlannedConfirmationText(action) : 'Revise as informações antes de registrar.', {
+    let text = 'Revise as informações antes de registrar.';
+    if (action.installments) text = buildInstallmentConfirmationText(action);
+    else if (action.planned) text = buildPlannedConfirmationText(action);
+    const message = createAssistantResponse(text, {
       type: 'confirmation',
       confirmation: buildConfirmationFromAction(action),
       clientOperationId: action.clientOperationId,
@@ -829,9 +836,10 @@ export default function UniChatPage({ variant = 'full' }) {
     setExecutionError(null);
 
 // Uma operação por vez, pelo MESMO RPC atômico já usado pelo registro
-    // de uma única transação -- nunca em lote, nunca uma "transação
-    // fantasma" que finge cobrir várias operações. Cada operação usa seu
-    // próprio client_operation_id como chave de idempotência (o mesmo já
+    // de uma única transação -- nunca uma "transação fantasma" que finge
+    // cobrir várias operações. A compra parcelada é a exceção: vai por
+    // registrar_compra_parcelada, que grava todas as parcelas dela juntas.
+    // Cada operação usa seu próprio client_operation_id como chave de idempotência (o mesmo já
     // gerado por operação em createPendingFinancialPlan/
     // buildOperationState) -- confirmar duas vezes nunca duplica, o RPC
     // devolve o mesmo transaction_id (idempotent_replay). Se uma falhar,
@@ -846,7 +854,9 @@ export default function UniChatPage({ variant = 'full' }) {
     try {
       for (const op of persistable) {
         const result = await executeFinancialIntentAction(op.action, {
-          executeAtomicAction: executeConfirmedFinancialAction,
+          executeAtomicAction: op.action.installments
+            ? executeConfirmedInstallmentPurchase
+            : executeConfirmedFinancialAction,
         });
         if (result?.error || !result?.data) {
           workingPlan = markPlanOperationFailed(workingPlan, op.temporaryId);
@@ -859,7 +869,7 @@ export default function UniChatPage({ variant = 'full' }) {
           transactionType: op.action.transactionType,
           origin: op.action.analyticsOrigin ?? GA4_PRODUCT_ORIGINS.MANUAL,
         });
-        workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId);
+        workingPlan = markPlanOperationConfirmed(workingPlan, op.temporaryId, result.data);
         setFinancialPlan(workingPlan);
       }
 

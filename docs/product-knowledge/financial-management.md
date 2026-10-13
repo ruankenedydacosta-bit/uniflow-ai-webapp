@@ -12,7 +12,7 @@ Registrar, organizar e analisar movimentações financeiras (receitas, despesas,
 
 **Registrar uma movimentação**: abrir Financeiro → "Nova movimentação" → escolher tipo (receita, despesa, transferência ou ajuste) → preencher conta, descrição, valor, data e categoria (forma de pagamento e observações são opcionais) → salvar. Campos obrigatórios: conta, descrição, valor maior que zero e data.
 
-**Parcelamento**: ao registrar, é possível definir de 1 a 360 parcelas. O sistema cria uma movimentação real por parcela (uma por mês), todas ligadas por um mesmo grupo. Editar ou excluir permite escolher o alcance: "somente esta", "esta e as futuras" ou "todas".
+**Parcelamento**: ao registrar, é possível definir de 1 a 360 parcelas. O sistema cria uma movimentação real por parcela (uma por mês), todas ligadas por um mesmo grupo. As parcelas são gravadas juntas: se algo falhar, nenhuma é salva. Pela conversa com a Uni dá para registrar uma compra de 2 a 72 parcelas, como "comprei uma TV de 3 mil em 10 vezes". Editar ou excluir permite escolher o alcance: "somente esta", "esta e as futuras" ou "todas".
 
 **Recorrência**: em entrada ou saída, ligue "Lançamento recorrente" e escolha a frequência (diária, semanal, mensal ou anual), de quanto em quanto tempo repete e, se quiser, a data final. A data do formulário é a do primeiro lançamento.
 

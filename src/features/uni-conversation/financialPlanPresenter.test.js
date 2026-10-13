@@ -4,6 +4,7 @@ import {
   createPendingFinancialPlan,
   applyPlanOperationCorrection,
   cancelPlanOperation,
+  markPlanOperationConfirmed,
   PLAN_STATUS,
 } from './pendingFinancialPlan.js';
 import {
@@ -136,11 +137,24 @@ test('describePlanOperation descreve transferência com origem e destino', () =>
 
 test('describePlanOperation descreve operação bloqueada (capacidade pendente) com a mensagem de limite', () => {
   const plan = buildPlan([rawOperation({
-    operation_type: 'installment_purchase',
-    installments: { count: 10, installment_amount: 35, total_amount: 350 },
+    operation_type: 'recurring_expense',
+    recurrence: { frequency: 'monthly', interval: 1, day_of_month: 5 },
   })]);
   const text = describePlanOperation(plan.operations[0]);
-  assert.match(text, /parceladas automaticamente/);
+  assert.match(text, /recorrências automaticamente/);
+});
+
+test('describePlanOperation descreve a compra parcelada com o total, as parcelas e a categoria', () => {
+  const plan = buildPlan([rawOperation({
+    operation_type: 'installment_purchase',
+    amount: 3000,
+    description: 'TV',
+    installments: { count: 10 },
+  })]);
+  assert.equal(
+    describePlanOperation(plan.operations[0]),
+    '• Compra parcelada de R$ 3000,00 (TV) em 10x de R$ 300,00, em Alimentação',
+  );
 });
 
 test('buildOperationClarificationQuestion pergunta especificamente sobre destino de transferência não resolvido', () => {
@@ -208,10 +222,19 @@ test('buildPlanCancelledText e buildPlanOperationCancelledText nunca mencionam r
 });
 
 test('buildPlanResultText resume confirmados, falhos e bloqueados sem inventar sucesso', () => {
-  const plan = buildPlan([rawOperation({ operation_type: 'installment_purchase', installments: { count: 10, installment_amount: 35, total_amount: 350 } })]);
+  const plan = buildPlan([rawOperation({ operation_type: 'recurring_expense', recurrence: { frequency: 'monthly', interval: 1 } })]);
   const text = buildPlanResultText(plan);
-  assert.match(text, /parceladas automaticamente/);
+  assert.match(text, /recorrências automaticamente/);
   assert.doesNotMatch(text, /Registrei/);
+});
+
+test('buildPlanResultText conta a compra parcelada e quantas parcelas ficaram previstas', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'installment_purchase', amount: 3000, installments: { count: 10 } })]);
+  const confirmed = markPlanOperationConfirmed(plan, 'op_1');
+  assert.equal(
+    buildPlanResultText(confirmed),
+    'Registrei a compra em 10 parcelas. As 9 próximas ficaram previstas. Confirme no Financeiro quando cada uma acontecer.',
+  );
 });
 
 test('plano com operação de data futura mostra o dia previsto e avisa depois de registrar', () => {
@@ -472,4 +495,43 @@ test('BLOCO F: cancelamento de operação nunca persiste nada -- é só uma tran
   // cancelPlanOperation é puro: nunca chama rede/RPC, só recalcula o objeto do plano.
   assert.notEqual(updated, plan);
   assert.equal(typeof updated.status, 'string');
+});
+
+test('compra parcelada: "foram 12x de 250" troca o número de parcelas e o total (#221)', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'installment_purchase', amount: 3000, installments: { count: 10 } })]);
+  const [operation] = plan.operations;
+  assert.deepEqual(
+    parsePlanCorrectionOverrides({ text: 'na verdade foram 12x de 250', referenceDate: REFERENCE_DATE, accounts: ACCOUNTS, categories: CATEGORIES, operation }),
+    { installmentCount: 12, amount: 3000 },
+  );
+  assert.deepEqual(
+    parsePlanCorrectionOverrides({ text: 'foram 12 vezes', referenceDate: REFERENCE_DATE, accounts: ACCOUNTS, categories: CATEGORIES, operation }),
+    { installmentCount: 12 },
+  );
+  const corrigido = applyPlanOperationCorrection(plan, 'op_1', { installmentCount: 12 });
+  assert.equal(corrigido.operations[0].action.installments.count, 12);
+  assert.equal(corrigido.operations[0].action.installments.installmentAmount, 250);
+});
+
+test('frase do botão Editar ("Quero alterar o valor para 2000") corrige o valor da operação do plano', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'installment_purchase', amount: 3000, installments: { count: 10 } })]);
+  assert.deepEqual(
+    parsePlanCorrectionOverrides({ text: 'Quero alterar o valor para 2000', referenceDate: REFERENCE_DATE, accounts: ACCOUNTS, categories: CATEGORIES, operation: plan.operations[0] }),
+    { amount: 2000 },
+  );
+});
+
+test('categoria a criar numa compra parcelada pede outra sem falar em várias operações', () => {
+  const nova = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedCategory: { name: 'Esporte' } } });
+  assert.equal(nova, 'A categoria Esporte ainda não existe. Diga uma categoria que já existe, ou crie antes com "cria a categoria Esporte".');
+  const parecida = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedCategory: { id: 'cat-lazer', name: 'Lazer' } } });
+  assert.equal(parecida, 'Qual categoria devo usar? A mais parecida é Lazer.');
+  const conta = buildOperationClarificationQuestion({ operationType: 'installment_purchase', action: { proposedAccount: { name: 'Inter' } } });
+  assert.doesNotMatch(conta, /várias operações/);
+});
+
+test('buildPlanResultText repete quantas parcelas a RPC gravou como previstas, não a previsão do aparelho', () => {
+  const plan = buildPlan([rawOperation({ operation_type: 'installment_purchase', amount: 3000, installments: { count: 10 } })]);
+  const confirmed = markPlanOperationConfirmed(plan, 'op_1', { pending_installments: 10 });
+  assert.match(buildPlanResultText(confirmed), /Todas ficaram previstas/);
 });

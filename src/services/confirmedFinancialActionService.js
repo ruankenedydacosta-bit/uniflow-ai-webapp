@@ -21,6 +21,8 @@ const RPC_ERROR_MESSAGES = Object.freeze({
   financial_action_destination_invalid: ['DESTINATION_INVALID', 'Revise a conta de destino antes de confirmar.'],
   financial_action_type_invalid: ['TYPE_INVALID', 'O tipo de lançamento escolhido não é suportado.'],
   financial_action_adjustment_delta_invalid: ['ADJUSTMENT_DELTA_INVALID', 'Revise o valor do ajuste antes de confirmar.'],
+  financial_action_installments_invalid: ['INSTALLMENTS_INVALID', 'Revise o número de parcelas antes de confirmar.'],
+  financial_action_description_invalid: ['DESCRIPTION_INVALID', 'Revise a descrição antes de confirmar.'],
 });
 
 function createResult(data, error = null) {
@@ -90,6 +92,66 @@ export function buildConfirmedFinancialActionRpcPayload(action) {
     },
     error: null,
   };
+}
+
+// Compra parcelada confirmada pela Uni (#221): a RPC grava todas as parcelas
+// ou nenhuma. Conta nova não entra aqui: o plano só chega pronto com conta
+// existente ou sem conta.
+export function buildInstallmentPurchaseRpcPayload(action) {
+  const clientOperationId = action?.clientOperationId;
+  if (!UUID_PATTERN.test(clientOperationId ?? '')) {
+    return { data: null, error: { code: 'INVALID_OPERATION_ID', message: 'Confirmação inválida para este lançamento.' } };
+  }
+  if (action?.status !== 'ready' || !action?.payload || !Number.isInteger(action.installments?.count)) {
+    return { data: null, error: { code: 'ACTION_NOT_READY', message: 'Revise os dados antes de confirmar.' } };
+  }
+  if (!['existing', 'none'].includes(getConfirmedAccountMode(action))) {
+    return { data: null, error: { code: 'ACTION_NOT_READY', message: 'Escolha uma conta que já existe para a compra parcelada.' } };
+  }
+
+  return {
+    data: {
+      p_client_operation_id: clientOperationId,
+      p_account_id: action.account?.id ?? null,
+      p_category_id: action.category?.id ?? action.payload.category_id ?? null,
+      p_description: action.payload.description,
+      // O total já em centavos, o mesmo de que o card calculou as parcelas.
+      p_total_amount: action.amount,
+      p_installments: action.installments.count,
+      p_first_date: action.payload.transaction_date,
+    },
+    error: null,
+  };
+}
+
+export async function executeConfirmedInstallmentPurchase(action) {
+  if (!supabase) {
+    return createResult(null, {
+      code: 'SUPABASE_NOT_CONFIGURED',
+      message: 'O modo demo continua disponível sem conexão remota.',
+    });
+  }
+
+  const request = buildInstallmentPurchaseRpcPayload(action);
+  if (request.error) return createResult(null, request.error);
+
+  const { data, error } = await supabase
+    .rpc('registrar_compra_parcelada', request.data)
+    .single();
+
+  if (error || !data?.transaction_id) {
+    return createResult(null, createSafeError(error));
+  }
+
+  notifyFinancialDataChanged('confirmed-financial-action');
+  return createResult({
+    id: data.transaction_id,
+    installment_group_id: data.installment_group_id,
+    installments: data.installments,
+    pending_installments: data.pending_installments,
+    account_id: action.account?.id ?? null,
+    idempotent_replay: Boolean(data.idempotent_replay),
+  });
 }
 
 export async function executeConfirmedFinancialAction(action) {

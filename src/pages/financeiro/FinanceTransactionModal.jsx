@@ -559,7 +559,8 @@ function FinanceTransactionModal({
       return;
     }
 
-    // Criação de compra parcelada: gera N transações reais em sequência.
+    // Criação de compra parcelada: as N parcelas num insert só, todas ou
+    // nenhuma.
     if (!editingId && isInstallmentPurchase(form)) {
       let payloads;
       try {
@@ -572,22 +573,19 @@ function FinanceTransactionModal({
         return;
       }
 
-      let firstInstallment = null;
-      for (const payload of payloads) {
-        const result = await transactionState.saveTransaction(payload, null);
-        if (result.error) {
-          setBatchError(result.error);
-          return;
-        }
-        firstInstallment ??= result.data;
+      const result = await transactionState.saveTransactions(payloads);
+      if (result.error) {
+        setBatchError(result.error);
+        return;
       }
+      const firstInstallment = result.data.find((item) => item.installment_number === 1) ?? result.data[0];
       await concludeSave(onCreated && (() => onCreated(firstInstallment)));
       return;
     }
 
     // Fluxo padrão: uma única transação (criação simples, edição simples ou
-    // lançamento recorrente — a intenção de recorrência fica só na própria
-    // transação, sem gerar ocorrências futuras automaticamente).
+    // de "somente este", e lançamento recorrente no modo demonstração, que
+    // não gera os próximos).
     const result = await transactionState.saveTransaction(
       buildTransactionMutationPayload(form),
       editingId,

@@ -2,6 +2,12 @@ import { normalizeFinancialText, resolveRelativeDateExpression } from '../uni-in
 import { resolveFinancialAccount } from './accountResolution.js';
 import { buildFinancialIntentAction } from './financialIntentAction.js';
 import { createClientOperationId } from './accountProvisioning.js';
+import {
+  generateInstallmentDates,
+  MAX_INSTALLMENTS,
+  resolveInstallmentStatus,
+  splitInstallmentAmounts,
+} from '../../pages/financeiro/installmentUtils.js';
 
 // BLOCO E: "Pending Financial Plan" -- estende o padrao ja validado do
 // Bloco B (uma operacao financeira suspensa/retomada) para MULTIPLAS
@@ -10,8 +16,9 @@ import { createClientOperationId } from './accountProvisioning.js';
 // buildFinancialIntentAction (via financialIntentAction.js), a mesma forma
 // ja usada por uma unica transacao. O plano em si NUNCA e persistido no
 // banco -- vive so em memoria (estado React), ate a confirmacao final de
-// cada operacao passar pelo RPC atomico ja existente
-// (execute_confirmed_financial_action), uma operacao por vez.
+// cada operacao passar por uma RPC atomica, uma operacao por vez:
+// execute_confirmed_financial_action, ou registrar_compra_parcelada na
+// compra parcelada (#221).
 
 export const PLAN_OPERATION_STATUS = Object.freeze({
   NEEDS_CLARIFICATION: 'needs_clarification',
@@ -35,22 +42,45 @@ const OPERATION_TYPE_TO_INTENT = Object.freeze({
   expense: 'register_expense',
   income: 'register_income',
   transfer: 'register_transfer',
-  // BLOCO E -- LIMITE DE ESCOPO EXPLICITO (secao 9/11/24 da tarefa): o
-  // backend ainda nao tem RPC/tabela para persistir parcelamento nem
-  // recorrencia. Estas duas continuam sendo COMPREENDIDAS e apresentadas
-  // para confirmacao (capabilityPending=true), mas nunca convertidas em
-  // uma transacao real -- nunca "simular" 10 lancamentos ou criar uma
-  // automacao silenciosa.
-  installment_purchase: null,
+  // Compra parcelada é uma saída com o total; a RPC registrar_compra_parcelada
+  // grava as parcelas (#221).
+  installment_purchase: 'register_expense',
+  // BLOCO E -- LIMITE DE ESCOPO EXPLICITO: o backend ainda nao gera os
+  // proximos lancamentos de uma recorrencia (#222). Ela continua sendo
+  // COMPREENDIDA e apresentada (capabilityPending=true), mas nunca vira
+  // uma transacao real nem uma automacao silenciosa.
   recurring_expense: null,
   recurring_income: null,
 });
 
 const CAPABILITY_PENDING_MESSAGES = Object.freeze({
-  installment_purchase: 'Ainda não consigo registrar compras parceladas automaticamente nesta versão -- entendi o parcelamento, mas o registro precisa ser feito manualmente.',
+  installment_purchase: 'Não entendi em quantas parcelas foi a compra. Diga de novo com o número de parcelas.',
   recurring_expense: 'Ainda não consigo criar recorrências automaticamente nesta versão -- entendi a recorrência, mas cada lançamento precisa ser feito manualmente.',
   recurring_income: 'Ainda não consigo criar recorrências automaticamente nesta versão -- entendi a recorrência, mas cada lançamento precisa ser feito manualmente.',
 });
+
+// Número de parcelas: a correção ("foram 12x") vence o que o modelo leu.
+// null fora de 2 a 360, o limite da RPC.
+function contarParcelas(operation, overrides) {
+  const count = Number(overrides.installmentCount ?? operation.installments?.count);
+  return Number.isInteger(count) && count >= 2 && count <= MAX_INSTALLMENTS ? count : null;
+}
+
+// Valores e datas como a RPC grava: centavos, a última parcela absorve a
+// diferença, e o dia fica limitado ao fim do mês. futureCount é a previsão
+// de quantas nascem previstas pela data do aparelho; o texto final usa a
+// contagem que a RPC devolve, no fuso de São Paulo.
+function resumirParcelas(total, count, firstDate, referenceDate) {
+  const futureCount = typeof firstDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(firstDate)
+    ? generateInstallmentDates(firstDate, count)
+      .filter((date) => resolveInstallmentStatus(date, referenceDate) === 'pending').length
+    : null;
+  if (!(Number(total) > 0) || Math.round(Number(total) * 100) < count) {
+    return { count, installmentAmount: null, lastAmount: null, futureCount };
+  }
+  const valores = splitInstallmentAmounts(total, count);
+  return { count, installmentAmount: valores[0], lastAmount: valores[count - 1], futureCount };
+}
 
 function resolveOperationDate(operation, referenceDate) {
   // Plano montado a partir do uni-interpret já traz a data resolvida.
@@ -104,7 +134,11 @@ function buildOperationState({
     accounts, accountTypes, categories, referenceDate, workspaceType,
   });
 
-  if (!OPERATION_TYPE_TO_INTENT[operation.operationType]) {
+  const installmentCount = operation.operationType === 'installment_purchase' ? contarParcelas(operation, overrides) : null;
+  if (
+    !OPERATION_TYPE_TO_INTENT[operation.operationType]
+    || (operation.operationType === 'installment_purchase' && !installmentCount)
+  ) {
     return Object.freeze({
       temporaryId: operation.temporaryId,
       clientOperationId,
@@ -141,7 +175,7 @@ function buildOperationState({
     }
   }
 
-  const action = buildFinancialIntentAction({
+  const builtAction = buildFinancialIntentAction({
     parsed,
     accounts,
     accountTypes,
@@ -150,6 +184,9 @@ function buildOperationState({
     workspaceType,
     overrides: actionOverrides,
   });
+  const action = installmentCount
+    ? { ...builtAction, installments: resumirParcelas(builtAction.amount, installmentCount, builtAction.date, referenceDate) }
+    : builtAction;
 
   const needsDestinationClarification = operation.operationType === 'transfer'
     && destinationAccountResolution?.status !== 'resolved';
@@ -297,10 +334,12 @@ export function cancelEntirePlan(planState) {
   return Object.freeze({ ...planState, operations, status: PLAN_STATUS.CANCELLED });
 }
 
-export function markPlanOperationConfirmed(planState, temporaryId) {
+// result: o que a RPC devolveu, para a resposta repetir o que foi gravado
+// (quantas parcelas ficaram previstas) em vez da previsão do card.
+export function markPlanOperationConfirmed(planState, temporaryId, result = null) {
   const operations = planState.operations.map((op) => (
     op.temporaryId === temporaryId
-      ? Object.freeze({ ...op, status: PLAN_OPERATION_STATUS.CONFIRMED })
+      ? Object.freeze({ ...op, status: PLAN_OPERATION_STATUS.CONFIRMED, result })
       : op
   ));
   return Object.freeze({

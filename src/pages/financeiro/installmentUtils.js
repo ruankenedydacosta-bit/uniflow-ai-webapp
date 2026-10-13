@@ -49,9 +49,10 @@ export function splitInstallmentAmounts(totalAmount, count) {
 
 /**
  * Soma `monthsToAdd` meses a uma data no formato 'YYYY-MM-DD', usando UTC
- * para evitar deslocamento por fuso horário. Deixa o próprio `Date`
- * resolver overflow de dia (ex.: 31/01 + 1 mês -> 03/03 ou 28/02, padrão
- * do motor JS) — comportamento documentado, não uma correção "esperta".
+ * para evitar deslocamento por fuso horário. O dia fica limitado ao fim do
+ * mês (31/01 + 1 mês -> 28/02), como o Postgres faz na RPC
+ * registrar_compra_parcelada: sem isso, 31/01 + 1 mês virava 03/03 e a
+ * compra ficava sem parcela em fevereiro e com duas em março.
  */
 export function addMonthsToDate(dateStr, monthsToAdd) {
   const [year, month, day] = String(dateStr)
@@ -62,7 +63,8 @@ export function addMonthsToDate(dateStr, monthsToAdd) {
     throw new Error('Data invalida para calculo de parcelas.');
   }
 
-  const date = new Date(Date.UTC(year, month - 1 + monthsToAdd, day));
+  const lastDay = new Date(Date.UTC(year, month - 1 + monthsToAdd + 1, 0)).getUTCDate();
+  const date = new Date(Date.UTC(year, month - 1 + monthsToAdd, Math.min(day, lastDay)));
   return date.toISOString().slice(0, 10);
 }
 
@@ -91,9 +93,7 @@ export function resolveInstallmentStatus(installmentDate, todayDate) {
 
 /**
  * Monta os N payloads de transação para uma compra parcelada, prontos para
- * serem enviados um a um a `transactionService.createTransaction`
- * (não existe função atômica de lote no banco para este caso — decisão
- * documentada no handoff).
+ * `transactionService.createTransactions`, que grava todos num insert só.
  *
  * `baseTransaction` deve ser o payload já normalizado (o mesmo formato de
  * `buildTransactionMutationPayload`, sem `installment_number`/`installment_total`/
