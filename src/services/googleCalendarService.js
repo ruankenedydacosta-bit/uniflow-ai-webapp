@@ -9,8 +9,8 @@
 //
 // O callback do OAuth deixa a conexão pendente; confirmarConexao a ativa.
 //
-// #102 acrescenta listarCalendarios, salvarPreferencias e sincronizarAgora
-// (google-calendar-sync-now, do #101).
+// #102 acrescenta listarCalendarios e salvarPreferencias; #101,
+// sincronizarAgora (google-calendar-sync-now).
 
 import { isSupabaseConfigured, supabase, supabaseAnonKey, supabaseUrl } from './supabaseClient.js';
 
@@ -131,6 +131,16 @@ export function createGoogleCalendarService({
       }
       return invokeFunction('google-calendar-disconnect', { workspace_id: workspaceId });
     },
+    // Traz agora os eventos dos calendários lidos. data: { sincronizado_em,
+    // calendarios: [{ external_calendar_id, inseridos, atualizados,
+    // cancelados, status: 'ok' | 'skipped' | 'erro' }] }. Erros:
+    // NOT_CONNECTED, RECONNECT_REQUIRED e GOOGLE_UNAVAILABLE.
+    sincronizarAgora({ workspaceId } = {}) {
+      if (!workspaceId) {
+        return Promise.resolve({ data: null, error: { code: 'INVALID_WORKSPACE', message: 'workspace_required' } });
+      }
+      return invokeFunction('google-calendar-sync-now', { workspace_id: workspaceId });
+    },
     // data: a conexão da pessoa neste espaço, ou null quando não há.
     async obterConexao({ workspaceId } = {}) {
       if (!supabaseClient) {
@@ -213,14 +223,6 @@ export function createGoogleCalendarService({
         return { data: null, error: erroAoSalvar(null) };
       }
       return { data: resultado, error: null };
-    },
-    // #102 chama google-calendar-sync-now, do #101. Sucesso:
-    // { sincronizado_em, calendarios: [{ external_calendar_id, status, ... }] }.
-    sincronizarAgora({ workspaceId } = {}) {
-      if (!workspaceId) {
-        return Promise.resolve({ data: null, error: { code: 'INVALID_WORKSPACE', message: 'workspace_required' } });
-      }
-      return invokeFunction('google-calendar-sync-now', { workspace_id: workspaceId });
     },
   };
 }
