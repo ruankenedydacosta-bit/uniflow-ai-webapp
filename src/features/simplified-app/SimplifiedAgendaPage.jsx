@@ -17,6 +17,7 @@ import {
 } from './agendaTransactionProjection.js';
 import { useScheduledTransactionAgendaItems } from './useScheduledTransactionAgendaItems.js';
 import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { useNavegar } from './movimentoDeTelaContext.js';
 import {
   AGENDA_KIND_FILTERS,
   buildMonthGrid,
@@ -94,6 +95,9 @@ const LONG_TIME_LABELS = new Set(['Dia inteiro', 'Sem horário']);
 function SimplifiedAgendaPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  // A linha do Google Agenda abre uma subtela: com o movimento de "abrir",
+  // como o voltar de lá.
+  const navegarComMovimento = useNavegar();
   const { user, workspace } = useSession();
   const workspaceId = workspace?.id;
 
@@ -184,7 +188,7 @@ function SimplifiedAgendaPage() {
     };
   }, [workspaceId]);
   const resumoGoogle = resumoDaConexaoNaAgenda(
-    conexaoGoogle?.workspaceId === workspaceId ? conexaoGoogle : { estado: 'carregando' },
+    workspaceId && conexaoGoogle?.workspaceId === workspaceId ? conexaoGoogle : { estado: 'carregando' },
   );
 
   const groupedItems = useMemo(
@@ -316,7 +320,7 @@ function SimplifiedAgendaPage() {
         type="button"
         className={styles.googleRow}
         data-tom={resumoGoogle.tom}
-        onClick={() => navigate(SIMPLIFIED_ROUTES.AGENDA_GOOGLE)}
+        onClick={() => navegarComMovimento(SIMPLIFIED_ROUTES.AGENDA_GOOGLE)}
         aria-label={`Google Agenda, ${resumoGoogle.detalhe}`}
       >
         <IconBox size={32}><PhGoogleLogoIcon /></IconBox>

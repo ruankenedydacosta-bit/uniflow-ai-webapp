@@ -267,7 +267,8 @@ export const MENSAGEM_ERRO_AO_CARREGAR_AGENDAS = 'Não foi possível carregar as
 // Linha do Google Agenda no topo da Agenda. `estado`: 'carregando' | 'ok' |
 // 'erro' (a leitura da conexão falhou). Conexão pendente ainda não conta
 // como conectada.
-export function resumoDaConexaoNaAgenda({ conexao, estado, agora, timeZone } = {}) {
+export function resumoDaConexaoNaAgenda(entrada) {
+  const { conexao, estado, agora, timeZone } = entrada ?? {};
   if (estado === 'carregando') return { detalhe: 'Carregando…', tom: 'neutro' };
   if (estado === 'erro') return { detalhe: 'Toque para ver a conexão', tom: 'neutro' };
   if (conexao?.status === 'error') return { detalhe: 'Conecte de novo para sincronizar', tom: 'alerta' };

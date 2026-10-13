@@ -89,7 +89,7 @@ const ORIGENS = Object.freeze({
   configuracoes: Object.freeze({
     caminho: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path,
     rotulo: 'Voltar para Configurações',
-    retornoDoOAuth: undefined,
+    retornoDoOAuth: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR].path,
   }),
 });
 

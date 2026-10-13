@@ -141,7 +141,9 @@ test('Agenda abre o Google Agenda pela linha do topo, com voltar e OAuth de volt
   assert.match(SIMPLIFIED_ROUTES.AGENDA_GOOGLE, /^\/app\/[A-Za-z0-9\-_/]+$/);
 
   const agenda = await source('./SimplifiedAgendaPage.jsx');
-  assert.match(agenda, /navigate\(SIMPLIFIED_ROUTES\.AGENDA_GOOGLE\)/);
+  assert.match(agenda, /navegarComMovimento\(SIMPLIFIED_ROUTES\.AGENDA_GOOGLE\)/);
+  // Sem espaço aberto, a linha fica em "Carregando…" (nunca compara undefined com undefined).
+  assert.match(agenda, /workspaceId && conexaoGoogle\?\.workspaceId === workspaceId \? conexaoGoogle : \{ estado: 'carregando' \}/);
   assert.ok(agenda.indexOf('styles.googleRow') < agenda.indexOf('styles.calendarBlock'), 'a linha vem antes do calendário');
 
   const routes = await source('../../app/routes.jsx');
@@ -150,6 +152,7 @@ test('Agenda abre o Google Agenda pela linha do topo, com voltar e OAuth de volt
   const page = await source('./SimplifiedGoogleAgendaPage.jsx');
   assert.match(page, /iniciarConexao\(\{ workspaceId, returnPath: voltar\.retornoDoOAuth \}\)/);
   assert.match(page, /retornoDoOAuth: SIMPLIFIED_ROUTES\.AGENDA_GOOGLE/);
+  assert.match(page, /retornoDoOAuth: ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.GOOGLE_CALENDAR\]\.path/);
   assert.match(page, /rotulo: 'Voltar para a Agenda'/);
 
   const shell = await source('./SimplifiedAppShell.jsx');
@@ -160,6 +163,9 @@ test('linha da Agenda: convite sem conexão, hora do sync quando ativa e alerta 
   const agora = new Date('2026-10-13T18:00:00Z');
   const timeZone = 'America/Sao_Paulo';
   assert.deepEqual(resumoDaConexaoNaAgenda({ estado: 'carregando' }), { detalhe: 'Carregando…', tom: 'neutro' });
+  // Sem argumento ou com null não quebra a Agenda.
+  assert.equal(resumoDaConexaoNaAgenda(null).tom, 'convite');
+  assert.equal(resumoDaConexaoNaAgenda().tom, 'convite');
   assert.equal(resumoDaConexaoNaAgenda({ estado: 'erro' }).tom, 'neutro');
   assert.equal(resumoDaConexaoNaAgenda({ estado: 'ok', conexao: null }).tom, 'convite');
   // Pendente ainda não foi confirmada: continua como convite.
