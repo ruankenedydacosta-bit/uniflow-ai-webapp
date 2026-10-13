@@ -198,6 +198,7 @@ import {
   saveActiveId,
   createConversation as createLocalConversation,
   persistConversation,
+  deriveTitle,
   resolveConversationTitle,
   titleToSync,
   resolveInitialConversationState,
@@ -2601,10 +2602,7 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!activeId) return;
     const current = conversations.find((c) => c.id === activeId);
     if (!current) return;
-    const firstUser = messages.find((m) => m.from === 'user');
-    const newTitle = firstUser
-      ? (firstUser.text.length > 55 ? firstUser.text.slice(0, 55) + '\u2026' : firstUser.text)
-      : '';
+    const newTitle = deriveTitle(messages);
     if (current.messages === messages && current.title === (newTitle || '')) return;
     const updated = persistConversation(conversations, activeId, messages, mode);
     saveHistory(updated);
@@ -2620,9 +2618,12 @@ export default function UniChatPage({ variant = 'full' }) {
     if (!title) return;
     const id = current.id;
     titlesSyncedRef.current[id] = title;
+    const desfazer = () => {
+      if (titlesSyncedRef.current[id] === title) delete titlesSyncedRef.current[id];
+    };
     dataService.updateConversationTitle(id, title).then((ok) => {
-      if (!ok && titlesSyncedRef.current[id] === title) delete titlesSyncedRef.current[id];
-    });
+      if (!ok) desfazer();
+    }).catch(desfazer);
   }, [conversations, activeId]);
 
   // Hidratação (reload/login): `historyHydrated` marca o fim da fase de
