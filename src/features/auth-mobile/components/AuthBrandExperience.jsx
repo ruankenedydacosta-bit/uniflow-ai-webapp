@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { UniMark } from '../../simplified-app/SimplifiedIcons.jsx';
 import styles from '../authMobile.module.css';
 
 // IDENTIDADE AUTH V2 -- a marca deixou de ser servida por PNG.
@@ -16,6 +17,9 @@ import styles from '../authMobile.module.css';
 // Agora a marca é vetor puro: fundo realmente transparente, texto vivo (logo
 // legível, selecionável e traduzível), nitidez em qualquer densidade de tela
 // e cor que acompanha o tema -- sem nenhum recorte.
+//
+// Exceção: o símbolo da UniFlow é o UniMark, o PNG oficial já recortado e
+// com fundo transparente. O texto do lockup continua vivo.
 
 const BENEFITS = Object.freeze([
   { id: 'security', label: 'Segurança de ponta' },
@@ -56,37 +60,6 @@ function BenefitIcon({ id }) {
     <svg viewBox="0 0 48 48" aria-hidden="true">
       <path d="M19 10a8 8 0 0 0-10 8 8 8 0 0 0 2 14 8 8 0 0 0 8 7m10-29a8 8 0 0 1 10 8 8 8 0 0 1-2 14 8 8 0 0 1-8 7M24 8v32" />
       <path d="M15 18c4 0 6 3 6 6m12-6c-4 0-6 3-6 6M14 31c4 0 7-2 7-6m13 6c-4 0-7-2-7-6" />
-    </svg>
-  );
-}
-
-// Marca da UniFlow: quatro traços em U concêntricos, do roxo (externo) ao
-// verde-água (interno), com o nó de conexão no topo do traço mais interno.
-function UniflowMark({ idPrefix }) {
-  const strokeGradient = `${idPrefix}-mark-stroke`;
-
-  return (
-    <svg className={styles.uniflowMark} viewBox="0 0 132 148" aria-hidden="true">
-      <defs>
-        <linearGradient id={strokeGradient} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#8b5cf6" />
-          <stop offset=".38" stopColor="#4f46e5" />
-          <stop offset=".7" stopColor="#2563eb" />
-          <stop offset="1" stopColor="#2dd4bf" />
-        </linearGradient>
-      </defs>
-      <g
-        fill="none"
-        stroke={`url(#${strokeGradient})`}
-        strokeLinecap="round"
-        strokeWidth="9"
-      >
-        <path d="M12 16v66c0 29 21 50 50 50s50-21 50-50V30" />
-        <path d="M31 16v66c0 18 12 31 31 31s31-13 31-31V30" />
-        <path d="M50 16v66c0 8 5 13 12 13s12-5 12-13V38" />
-      </g>
-      <circle cx="112" cy="18" r="9" fill="#2dd4bf" />
-      <circle cx="74" cy="26" r="7" fill="#22d3ee" />
     </svg>
   );
 }
@@ -149,7 +122,12 @@ function AuthBrandExperience() {
         role="img"
         aria-label="UniFlow AI — Conectando você às melhores decisões financeiras."
       >
-        <UniflowMark idPrefix={idPrefix} />
+        {/* O símbolo oficial (UniMark), o mesmo do cabeçalho. Antes esta tela
+            desenhava a própria versão em SVG, com traços e gradiente que não
+            batiam com a marca. */}
+        <span className={styles.uniflowMark}>
+          <UniMark />
+        </span>
         <div className={styles.uniflowCopy}>
           <p className={styles.uniflowWordmark} aria-hidden="true">
             UNIFLOW<span>AI</span>
