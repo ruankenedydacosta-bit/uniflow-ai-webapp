@@ -13,14 +13,16 @@ const DEFAULT_QUERY_TIMEOUT_MS = 2_000;
  * Pergunta ao Service Worker ATUALMENTE em controle desta pagina qual
  * buildId ele carrega, via MessageChannel (request/response real, nao um
  * palpite). Retorna `null` quando nao ha controller, o SW nao responde a
- * tempo, ou a API nao existe no ambiente -- nunca lanca.
+ * tempo, ou a API nao existe no ambiente -- nunca lanca. Com `worker`,
+ * pergunta a esse worker (ex.: registration.active) em vez do controller.
  */
 export function queryServiceWorkerBuildId({
   serviceWorker = globalThis.navigator?.serviceWorker,
+  worker = null,
   runtime = globalThis,
   timeoutMs = DEFAULT_QUERY_TIMEOUT_MS,
 } = {}) {
-  const controller = serviceWorker?.controller;
+  const controller = worker ?? serviceWorker?.controller;
   if (!controller?.postMessage || typeof runtime.MessageChannel !== 'function') {
     return Promise.resolve(null);
   }

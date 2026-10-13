@@ -1,4 +1,5 @@
 export { default as PwaInstallExperience } from './PwaInstallExperience.jsx';
+export { default as PwaNavigationUpdate } from './PwaNavigationUpdate.jsx';
 export {
   PWA_INSTALL_ENABLED,
   PWA_INSTALL_FLAG_KEY,
