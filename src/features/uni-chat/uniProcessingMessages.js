@@ -70,7 +70,7 @@ export function resolveOperationHintFromIntent(intent) {
  * Resolve a sequência ORDENADA de mensagens humanas para um estado real do
  * pipeline. Retorna sempre um array congelado com NO MÁXIMO uma mensagem
  * (nunca há rotação) -- estados sem mensagem de processamento (idle,
- * speaking, error -- já têm sua própria UI) retornam um array
+ * error -- já têm sua própria UI) retornam um array
  * vazio.
  */
 export function getProcessingMessageSequence(state, context = {}) {

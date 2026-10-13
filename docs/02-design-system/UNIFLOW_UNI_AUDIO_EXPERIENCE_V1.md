@@ -50,7 +50,7 @@ is added in V1. Disabled voice produces silence and does not record history.
 ## Initial integrations
 
 - onboarding requests `first_app_access` after completion and currently receives intentional silence;
-- the central Uni button requests `returning_user` before navigation;
+- the central Uni button no longer plays `returning_user`: since 13/10/2026 the Uni speaks only in the realtime voice conversation;
 - Uni Instant requests one processing clip per mock operation;
 - comprehension failures request `error_understanding`;
 - mock financial confirmation requests only `confirmation_sensitive`.

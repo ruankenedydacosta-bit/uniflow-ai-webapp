@@ -1100,9 +1100,9 @@ test('preferência de movimento reduzido continua desligando a análise de voz v
 });
 
 // ============================================================================
-// HOTFIX P1.4: "Ouvir resposta" foi removido do card compacto da Home --
-// o fluxo principal ali é sempre automático (autoplay). O replay manual
-// continua existindo apenas no chat completo (MessageBubble.jsx).
+// HOTFIX P1.4: o card compacto da Home não tem "Ouvir resposta". Desde
+// 13/10/2026 nenhuma resposta é lida em voz alta fora da conversa em tempo
+// real.
 // ============================================================================
 
 test('HOTFIX P1.4: CompactResponse não tem botão "Ouvir resposta" nem showManualSpeak', async () => {
