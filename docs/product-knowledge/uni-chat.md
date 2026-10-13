@@ -8,7 +8,7 @@ Conversar em linguagem natural com a assistente Uni para tirar dúvidas e regist
 
 `/app/uni`. Para abrir a conversa, toque em **Mais** na barra inferior e depois em **Conversa com a Uni**. Na tela de voz, toque em **Conversa**.
 
-No topo da conversa ficam a Uni, o espaço ativo ("Espaço Pessoal") e dois botões: "Ver histórico" e "Nova conversa". Embaixo fica o campo "Escreva ou fale com a Uni". Com o campo vazio, o botão à direita grava sua voz. Depois que você digita, o mesmo botão envia a mensagem.
+No topo da conversa ficam a Uni, o espaço ativo ("Espaço Pessoal") e dois botões: "Ver histórico" e "Nova conversa". Embaixo fica o campo "Escreva para a Uni". Digite a mensagem e toque no botão à direita para enviar. O campo recebe só texto: para falar com a Uni, toque na Uni, no centro da barra inferior.
 
 ## Passo a passo
 

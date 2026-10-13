@@ -6,9 +6,9 @@ Falar com a Uni e ouvir respostas escolhidas pelo usuário.
 
 ## Onde encontrar
 
-Toque na Uni, no centro da barra inferior, para abrir a tela de voz. Na
-conversa (`/app/uni`), use o microfone do campo "Escreva ou fale com a Uni" e o
-botão "Ouvir" abaixo das respostas.
+Toque na Uni, no centro da barra inferior, para abrir a tela de voz. Falar com
+a Uni é só por ela: o campo da conversa (`/app/uni`) recebe apenas texto. Na
+conversa, o botão "Ouvir" fica abaixo das respostas.
 
 ## Passo a passo
 
@@ -88,12 +88,6 @@ Quando eles acabam, use o texto, que não tem limite.
 3. É possível pausar, retomar ou parar a reprodução a qualquer momento.
 4. Iniciar a reprodução de outra mensagem interrompe automaticamente a que estava tocando.
 
-**Entrada por voz**: tocar no microfone inicia uma gravação curta. Tocar
-novamente encerra e envia para transcrição. O texto reconhecido aparece na
-conversa e segue as mesmas regras da digitação. Ações financeiras de receita e
-despesa sempre exigem confirmação; consultas de saldo, resumo do mês e objetivos
-não escrevem dados.
-
 **Reaproveitamento de áudio (cache)**: se a mesma resposta (mesmo texto, mesma voz, mesmo usuário) já foi gerada antes, o aplicativo reproduz o áudio já existente em vez de gerar de novo — isso significa que ouvir a mesma resposta outra vez, mesmo depois de atualizar a página ou de sair e entrar novamente na conta, **não consome créditos adicionais de geração de voz**. O cache é privado por usuário — outro usuário nunca tem acesso ao áudio já gerado por você, mesmo com o texto idêntico.
 
 **Desativar a voz**: em Configurações → Preferências, desligar o interruptor "Permitir voz nas respostas da Uni". Com a voz desativada, o botão "Ouvir" some das respostas.
@@ -113,14 +107,13 @@ Cada usuário só ouve e reaproveita o próprio áudio em cache; nunca o de outr
 
 ## Pré-requisitos
 
-Saída de voz precisa estar habilitada nas Preferências. Entrada de voz depende
-da permissão do microfone e da Edge de transcrição configurada no servidor. Se
-um desses recursos estiver indisponível, a digitação continua funcionando.
+Saída de voz precisa estar habilitada nas Preferências. A conversa por voz
+precisa da permissão do microfone e de minutos de voz no plano. Sem eles, a
+digitação continua funcionando.
 
 ## Limitações atuais
 
 - Fora da conversa por voz em tempo real, ouvir uma resposta exige tocar em "Ouvir".
-- Gravações do microfone na conversa por texto são curtas e não são armazenadas pela aplicação.
 - Transferências e pagamentos não podem ser executados por voz nesta versão.
   Alterar ou excluir transferências, ajustes de saldo, parcelas e movimentações
   importadas também não.
