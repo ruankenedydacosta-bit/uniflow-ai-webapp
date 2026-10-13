@@ -15,8 +15,14 @@ falhas=()
 
 if ! git fetch -q origin main 2>/dev/null; then
   falhas+=("Não consegui buscar origin/main. Confira a rede e o remote.")
-elif ! git merge-tree --write-tree origin/main HEAD >/dev/null 2>&1; then
-  falhas+=("A branch conflita com origin/main. Faça rebase ou merge antes de abrir o PR.")
+else
+  # merge-tree sai com 1 no conflito e com mais que 1 em erro (git anterior ao 2.38, sem --write-tree).
+  saida=$(git merge-tree --write-tree origin/main HEAD 2>&1)
+  case $? in
+    0) ;;
+    1) falhas+=("A branch conflita com origin/main. Faça rebase ou merge antes de abrir o PR.") ;;
+    *) falhas+=("git merge-tree falhou sem dizer se há conflito:"$'\n'"$(tail -n 5 <<<"$saida")") ;;
+  esac
 fi
 
 # Só os arquivos da branch: a main ainda tem erros de lint antigos em docs/ e src/.
