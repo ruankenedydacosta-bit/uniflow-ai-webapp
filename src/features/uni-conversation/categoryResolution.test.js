@@ -2,206 +2,161 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CATEGORY_RESOLUTION_STATUS, resolveFinancialCategory } from './categoryResolution.js';
 
-// ============================================================================
-// BLOCO UNI 1A: cobertura da ordem de resolução determinística exigida --
-// 1. categoryId explícito; 2. nome real exato; 3. alias determinístico;
-// 4. aproximação textual local; 5. IA (coberta em
-// categoryResolutionAiInference.test.js); 6. sugestão; 7. criação assistida.
-// ============================================================================
+// #80: a categoria sai do uni-interpret (categoryId) ou da pessoa (nome
+// exato de uma categoria dela, chips, edição do card). Palavra solta da
+// frase nunca escolhe categoria.
 
-const PERSONAL_CATEGORIES = Object.freeze([
+const CATEGORIAS = Object.freeze([
   { id: 'cat-alimentacao', name: 'Alimentação', category_type: 'expense', is_active: true },
-  { id: 'cat-transporte', name: 'Transporte', category_type: 'expense', is_active: true },
-  { id: 'cat-moradia', name: 'Moradia', category_type: 'expense', is_active: true },
-  { id: 'cat-saude', name: 'Saúde', category_type: 'expense', is_active: true },
-  { id: 'cat-assinaturas', name: 'Assinaturas', category_type: 'expense', is_active: true },
+  { id: 'cat-educacao', name: 'Educação', category_type: 'expense', is_active: true },
+  { id: 'cat-impostos', name: 'Impostos', category_type: 'expense', is_active: true },
+  { id: 'cat-mercado', name: 'Mercado', category_type: 'expense', is_active: true },
+  { id: 'cat-supermercado', name: 'Supermercado', category_type: 'expense', is_active: true },
+  { id: 'cat-contas', name: 'Contas', category_type: 'expense', is_active: true },
+  { id: 'cat-contas-casa', name: 'Contas da casa', category_type: 'expense', is_active: true },
   { id: 'cat-salario', name: 'Salário', category_type: 'income', is_active: true },
-  { id: 'cat-reembolso', name: 'Reembolso', category_type: 'income', is_active: true },
 ]);
 
-// A categoria de negócio existe SÓ para provar que o alias nunca a escolhe
-// por coincidência de nome -- o canônico do alias "aluguel" é "Moradia",
-// nunca "Aluguel" (nome da categoria business).
-const WITH_BUSINESS_CATEGORY = Object.freeze([
-  ...PERSONAL_CATEGORIES,
-  { id: 'cat-aluguel-business', name: 'Aluguel', category_type: 'expense', is_active: true, applies_to: 'business' },
-]);
-
-test('"Gastei R$ 50 no mercado" resolve Alimentação via alias, sem pedir confirmação', () => {
+test('BUG REAL: "mensalidade escolar das crianças" não vira Impostos pelo "das"', () => {
   const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
+    categories: CATEGORIAS,
     transactionType: 'expense',
-    description: 'no mercado',
-    normalizedInput: 'gastei 50 no mercado',
-  });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-alimentacao');
-  assert.equal(result.approximate, false);
-  assert.equal(result.viaAlias, true);
-});
-
-test('"Paguei R$ 120 de gasolina pelo Nubank" resolve Transporte via alias', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
-    transactionType: 'expense',
-    description: 'gasolina',
-    normalizedInput: 'paguei 120 de gasolina pelo nubank',
-  });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-transporte');
-});
-
-test('"Registra R$ 29,90 da Netflix" resolve Assinaturas via alias', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
-    transactionType: 'expense',
-    description: 'da Netflix',
-    normalizedInput: 'registra 29 90 da netflix',
-  });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-assinaturas');
-});
-
-test('"Paguei o aluguel" resolve Moradia via alias, mesmo com categoria "Aluguel" de negócio presente', () => {
-  const result = resolveFinancialCategory({
-    categories: WITH_BUSINESS_CATEGORY,
-    transactionType: 'expense',
-    description: 'o aluguel',
-    normalizedInput: 'paguei o aluguel',
-  });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-moradia', 'nunca deveria escolher a categoria de negócio "Aluguel"');
-});
-
-test('"Gastei R$ 80 na farmácia" resolve Saúde via alias', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
-    transactionType: 'expense',
-    description: 'na farmácia',
-    normalizedInput: 'gastei 80 na farmacia',
-  });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-saude');
-});
-
-test('"Recebi R$ 2.300 de salário" resolve Salário via alias (tipo income)', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
-    transactionType: 'income',
-    description: 'de salário',
-    normalizedInput: 'recebi 2300 de salario',
-  });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-salario');
-});
-
-test('"Recebi um reembolso de R$ 90" resolve Reembolso via alias', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
-    transactionType: 'income',
-    description: 'um reembolso',
-    normalizedInput: 'recebi um reembolso de 90',
-  });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-reembolso');
-});
-
-test('categoria canônica ausente (ex.: "Paguei a conta de luz" -> Contas da casa) nunca finge existir -- propõe criação assistida', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES, // "Contas da casa" não existe neste workspace
-    transactionType: 'expense',
-    description: 'a conta de luz',
-    normalizedInput: 'paguei a conta de luz',
+    input: 'Lance 300 reais referente a mensalidade escolar das crianças',
   });
   assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.NOT_FOUND);
-  assert.equal(result.proposedCategoryName, 'Contas da casa');
-  assert.equal(result.viaAlias, true);
-  assert.equal(result.category, undefined, 'nunca deveria devolver uma categoria como se existisse');
+  assert.equal(result.category, undefined);
+  assert.equal(result.proposedCategoryName, null);
 });
 
-test('"Entrou R$ 800 de um freela" -> canônico "Renda extra" ausente -> criação assistida, nunca a categoria "Freelance" por engano', () => {
-  const withFreelance = [
-    ...PERSONAL_CATEGORIES,
-    { id: 'cat-freelance', name: 'Freelance', category_type: 'income', is_active: true },
-  ];
+test('palavra da frase não escolhe categoria, nem com o nome de uma categoria dentro', () => {
+  for (const input of ['Gastei 50 no mercado', 'paguei 120 de gasolina', 'Recebi 2300 de salário']) {
+    const result = resolveFinancialCategory({ categories: CATEGORIAS, transactionType: 'expense', input });
+    assert.equal(result.category, undefined, input);
+    assert.equal(result.proposedCategoryName, null, input);
+  }
+});
+
+test('sem categoria escolhida, as candidatas são as do tipo do lançamento', () => {
+  const result = resolveFinancialCategory({ categories: CATEGORIAS, transactionType: 'income', input: 'Recebi 100' });
+  assert.deepEqual(result.candidates.map((category) => category.id), ['cat-salario']);
+});
+
+test('categoryId do uni-interpret resolve; de outro tipo fica incompatível', () => {
+  const resolved = resolveFinancialCategory({ categories: CATEGORIAS, transactionType: 'expense', categoryId: 'cat-educacao' });
+  assert.equal(resolved.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
+  assert.equal(resolved.category.id, 'cat-educacao');
+
+  const incompatible = resolveFinancialCategory({ categories: CATEGORIAS, transactionType: 'expense', categoryId: 'cat-salario' });
+  assert.equal(incompatible.status, CATEGORY_RESOLUTION_STATUS.MISSING);
+  assert.equal(incompatible.incompatible, true);
+});
+
+test('nome pedido resolve pelo nome exato, sem acento e sem caixa', () => {
+  const result = resolveFinancialCategory({ categories: CATEGORIAS, transactionType: 'expense', requestedName: 'educacao' });
+  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
+  assert.equal(result.category.id, 'cat-educacao');
+});
+
+test('nome pedido parecido não resolve: vira proposta de criação com confirmação', () => {
+  const result = resolveFinancialCategory({ categories: CATEGORIAS, transactionType: 'expense', requestedName: 'Mercadinho' });
+  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.NOT_FOUND);
+  assert.equal(result.proposedCategoryName, 'Mercadinho');
+  assert.equal(result.category, undefined);
+});
+
+test('"na categoria Mercado" na frase escolhe Mercado, e não Supermercado', () => {
   const result = resolveFinancialCategory({
-    categories: withFreelance,
-    transactionType: 'income',
-    description: 'de um freela',
-    normalizedInput: 'entrou 800 de um freela',
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    input: 'Gastei 50 reais na categoria Mercado ontem',
+  });
+  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
+  assert.equal(result.category.id, 'cat-mercado');
+});
+
+test('"categoria é Educação." com acento e pontuação resolve', () => {
+  const result = resolveFinancialCategory({
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    input: 'Paguei 300, categoria é Educação.',
+  });
+  assert.equal(result.category?.id, 'cat-educacao');
+});
+
+test('com dois nomes possíveis depois de "categoria", vence o maior', () => {
+  const result = resolveFinancialCategory({
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    input: 'paguei 90 na categoria contas da casa',
+  });
+  assert.equal(result.category?.id, 'cat-contas-casa');
+});
+
+test('nome de categoria sem a palavra "categoria" antes não escolhe nada', () => {
+  const result = resolveFinancialCategory({
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    input: 'paguei os impostos da casa',
+  });
+  assert.equal(result.category, undefined);
+});
+
+test('categoria citada de outro tipo não serve ao lançamento', () => {
+  const result = resolveFinancialCategory({
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    input: 'gastei 40 na categoria salário',
+  });
+  assert.equal(result.category, undefined);
+});
+
+test('create_new com nome pedido vira proposta de criação; sem nome, falta o nome', () => {
+  const willCreate = resolveFinancialCategory({
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    requestedName: 'Pets',
+    decision: 'create_new',
+    workspaceType: 'business',
+  });
+  assert.equal(willCreate.status, CATEGORY_RESOLUTION_STATUS.WILL_CREATE);
+  assert.deepEqual(willCreate.proposedCategory, { name: 'Pets', category_type: 'expense', applies_to: 'business' });
+
+  const missing = resolveFinancialCategory({ categories: CATEGORIAS, transactionType: 'expense', decision: 'create_new' });
+  assert.equal(missing.status, CATEGORY_RESOLUTION_STATUS.MISSING);
+});
+
+test('nome recusado pela pessoa não volta como proposta', () => {
+  const result = resolveFinancialCategory({
+    categories: CATEGORIAS,
+    transactionType: 'expense',
+    requestedName: 'Pets',
+    excludedCategoryName: 'pets',
   });
   assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.NOT_FOUND);
-  assert.equal(result.proposedCategoryName, 'Renda extra');
+  assert.equal(result.proposedCategoryName, null);
 });
 
-test('"Comprei uma roupa por R$ 150" resolve Compras via alias quando a categoria existe', () => {
-  const withCompras = [...PERSONAL_CATEGORIES, { id: 'cat-compras', name: 'Compras', category_type: 'expense', is_active: true }];
+test('categoria inativa não é candidata nem resolve', () => {
   const result = resolveFinancialCategory({
-    categories: withCompras,
+    categories: [{ id: 'x', name: 'Viagem', category_type: 'expense', is_active: false }],
     transactionType: 'expense',
-    description: 'uma roupa',
-    normalizedInput: 'comprei uma roupa por 150',
+    requestedName: 'Viagem',
   });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-compras');
+  assert.equal(result.category, undefined);
+  assert.deepEqual(result.candidates, []);
 });
 
-test('nome real exato tem prioridade sobre o alias -- "Gastei com Transporte" nunca cede a um alias concorrente', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
+test('"categoria da Educação" e "categoria do Mercado" também valem como escolha pelo nome', () => {
+  const daEducacao = resolveFinancialCategory({
+    categories: CATEGORIAS,
     transactionType: 'expense',
-    requestedName: 'Transporte',
-    description: 'Transporte',
-    normalizedInput: 'gastei com transporte',
+    input: 'Gastei 50 na categoria da Educação',
   });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-transporte');
-  assert.equal(result.viaAlias, undefined, 'deveria resolver pelo nome exato, não pelo alias');
-});
-
-test('alias inequívoco resolve sem perguntar: "mercado" vira Alimentação', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
+  assert.equal(daEducacao.category?.id, 'cat-educacao');
+  const doMercado = resolveFinancialCategory({
+    categories: CATEGORIAS,
     transactionType: 'expense',
-    description: 'no mercado',
-    normalizedInput: 'gastei 50 no mercado',
+    input: 'lança 20 na categoria do mercado',
   });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.RESOLVED);
-  assert.equal(result.category.id, 'cat-alimentacao');
-});
-
-test('termo sem alias e sem correspondência textual continua indo para NOT_FOUND (comportamento anterior preservado)', () => {
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
-    transactionType: 'expense',
-    description: 'consultoria de marketing',
-    normalizedInput: 'paguei uma consultoria de marketing digital',
-  });
-  assert.equal(result.status, CATEGORY_RESOLUTION_STATUS.NOT_FOUND);
-});
-
-test('categoria empresarial nunca é escolhida mesmo quando presente na lista (o chamador já filtra por workspace, mas o alias nunca teria motivo de escolhê-la)', () => {
-  const result = resolveFinancialCategory({
-    categories: WITH_BUSINESS_CATEGORY,
-    transactionType: 'expense',
-    description: 'o aluguel',
-    normalizedInput: 'paguei o aluguel',
-    workspaceType: 'personal',
-  });
-  assert.equal(result.category.id, 'cat-moradia');
-  assert.notEqual(result.category.id, 'cat-aluguel-business');
-});
-
-test('preserva a descrição original -- a normalização do alias nunca reescreve description/amount fora desta função', () => {
-  // resolveFinancialCategory nunca recebe nem devolve a description bruta da
-  // transação para alteração -- ela é so um dos SINAIS de entrada usados
-  // para encontrar a categoria; o teste confirma que o retorno não contém
-  // nenhum campo de descrição reescrita.
-  const result = resolveFinancialCategory({
-    categories: PERSONAL_CATEGORIES,
-    transactionType: 'expense',
-    description: 'no mercado',
-    normalizedInput: 'gastei 50 no mercado',
-  });
-  assert.ok(!('description' in result), 'resolveFinancialCategory nunca deveria devolver/alterar a description');
+  assert.equal(doMercado.category?.id, 'cat-mercado');
 });

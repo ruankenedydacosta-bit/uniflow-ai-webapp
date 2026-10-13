@@ -1549,3 +1549,12 @@ test('folha sobe com a mola folha, o fundo escurece em 240 ms e Reduzir moviment
   assert.match(toastCss, /animation: avisoDesce var\(--uf-motion-mola-salto-duracao\) var\(--uf-motion-mola-salto\)/);
   assert.match(toastCss, /\.transactionSuccessToast \{\s*animation: avisoSurge var\(--uf-motion-reduzido\)/);
 });
+
+// #80: na Home, o rascunho esperando a categoria mostra chips; o toque passa
+// a categoria escolhida ao chat. Na tela de voz a pessoa diz o nome.
+test('Home mostra chips de categoria fora da tela de voz e ignora o toque com a Uni ocupada', async () => {
+  const home = await source('./SimplifiedHomeView.jsx');
+  assert.match(home, /!isVoicePresentation && categoryChoices\.length > 0 && typeof onChooseCategory === 'function'/);
+  assert.match(home, /function handleChooseCategory\(item\) \{\s*if \(isTyping \|\| isExecuting \|\| typeof onChooseCategory !== 'function'\) return;\s*markHomeReply\(\);\s*onChooseCategory\(item\);/);
+  assert.match(home, /categoryChoices=\{categoryChoices\}\s*onChooseCategory=\{handleChooseCategory\}/);
+});

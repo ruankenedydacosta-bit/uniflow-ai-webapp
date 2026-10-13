@@ -45,8 +45,8 @@ function grupoDoIntent(intent, frase) {
 }
 
 function modoDaCategoria(action) {
-  if (action.category && !action.categoryWasApproximate) return 'resolveu';
-  if (action.category || action.proposedCategory) return 'sugeriu';
+  if (action.category) return 'resolveu';
+  if (action.proposedCategory) return 'sugeriu';
   if (action.proposedCategoryName) return 'propos_criar';
   return 'perguntou';
 }

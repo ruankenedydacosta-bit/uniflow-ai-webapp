@@ -94,10 +94,20 @@ function correctBehindCard(conversation, stack, text) {
 // Frase que o classificador ainda lê como despesa, para exercitar a troca.
 const EXPENSE_PHRASE = 'Gastei 2500 de salário';
 
+// #80: a palavra "salário" não propõe categoria. O card de criação aparece
+// quando a categoria é pedida pelo nome ("na categoria Salário") e só existe
+// como entrada.
+function proposeSalaryCategory(conversation) {
+  const { parsed } = conversation.run((hook) => hook.interpret(EXPENSE_PHRASE));
+  const proposal = conversation.run((hook) => hook.provideInput({ categoryName: 'Salário' }));
+  return { ...proposal, parsed };
+}
+
 test('correção de tipo atrás do card: o lançamento volta como receita pronta, sem categoria para criar', () => {
   const conversation = mountConversation();
-  const proposal = conversation.run((hook) => hook.interpret(EXPENSE_PHRASE));
+  const proposal = proposeSalaryCategory(conversation);
   assert.equal(proposal.action.issues[0].code, 'category_not_found');
+  assert.equal(proposal.action.proposedCategoryName, 'Salário');
   assert.equal(proposal.action.transactionType, 'expense');
 
   const stack = openCategoryCreationCard(proposal);
@@ -121,7 +131,7 @@ test('o id de categoria do tipo antigo não sobrevive à troca de tipo', () => {
   const conversation = mountConversation();
   // Despesa que já tinha categoria de saída guardada nos overrides do hook.
   const proposal = conversation.run((hook) => hook.interpret('Gastei 80 no mercado'));
-  assert.equal(proposal.action.category.id, 'category-food');
+  assert.equal(proposal.action.issues[0].code, 'category_required');
   conversation.run((hook) => hook.provideInput({ categoryId: 'category-food' }));
 
   const draft = conversation.hook.state.action;
@@ -143,7 +153,7 @@ test('o id de categoria do tipo antigo não sobrevive à troca de tipo', () => {
 test('correção de valor atrás do card mantém a categoria proposta por quem falou', () => {
   const conversation = mountConversation();
   const proposal = conversation.run((hook) => hook.interpret('Gastei 80 no mercado'));
-  assert.equal(proposal.action.status, 'ready');
+  assert.equal(proposal.action.issues[0].code, 'category_required');
 
   // A pessoa pediu "Pets"; o card propõe Pets, que o parser não deduziria.
   const withPets = {
@@ -163,7 +173,7 @@ test('correção de valor atrás do card mantém a categoria proposta por quem f
 
 test('frase que não é correção clara deixa o card como está', () => {
   const conversation = mountConversation();
-  const proposal = conversation.run((hook) => hook.interpret(EXPENSE_PHRASE));
+  const proposal = proposeSalaryCategory(conversation);
   const stack = openCategoryCreationCard(proposal);
 
   for (const phrase of ['Hum, não sei', 'Qual categoria você usou?', 'A categoria é Receita']) {
