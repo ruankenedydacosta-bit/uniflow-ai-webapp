@@ -27,6 +27,7 @@ import {
 } from './platformAdminPresentation.js';
 import { useIsPlatformAdmin } from './useIsPlatformAdmin.js';
 import { useNavegar } from '../simplified-app/movimentoDeTelaContext.js';
+import PlatformUsageReport from './PlatformUsageReport.jsx';
 import styles from './platformAdmin.module.css';
 
 const TIER_OPTIONS = SUBSCRIPTION_TIERS.map((tier) => ({ value: tier.id, label: tier.name }));
@@ -36,6 +37,11 @@ const MONTH_OPTIONS = MANUAL_PLAN_MONTH_OPTIONS.map((months) => ({
 }));
 
 const NO_PLAN_VALUE = '';
+
+const VIEW_OPTIONS = [
+  { value: 'users', label: 'Usuários' },
+  { value: 'usage', label: 'Uso' },
+];
 
 function resolveOriginLabel(user, summary) {
   if (summary.isManual) return 'manual';
@@ -65,6 +71,7 @@ function PlatformAdminPage() {
   const [revokeTarget, setRevokeTarget] = useState(null);
   const [isRevoking, setIsRevoking] = useState(false);
   const [isConfirmingBlock, setIsConfirmingBlock] = useState(false);
+  const [view, setView] = useState(VIEW_OPTIONS[0].value);
 
   const loadUsers = useCallback(async () => {
     setIsLoadingUsers(true);
@@ -230,82 +237,90 @@ function PlatformAdminPage() {
             </div>
           ) : null}
 
-          <Input
-            type="search"
-            label="Buscar usuário"
-            placeholder="Nome ou e-mail"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            fullWidth
-          />
+          <Segmented label="Seção" options={VIEW_OPTIONS} value={view} onChange={setView} />
 
-          {isLoadingUsers && users.length === 0 ? (
-            <p className={styles.state}>Carregando usuários...</p>
-          ) : loadError ? (
-            <div className={cx(styles.banner, styles.bannerError)} role="alert">
-              <span>{resolvePlatformAdminErrorMessage(loadError)}</span>
-              <button type="button" className={styles.dismiss} onClick={loadUsers}>
-                Tentar de novo
-              </button>
-            </div>
+          {view === 'usage' ? (
+            <PlatformUsageReport totalUsers={users.length} />
           ) : (
-            <section className={groups.group} aria-label="Usuários">
-              <h2 className={groups.groupLabel}>
-                {searchTerm ? `${visibleUsers.length} de ${users.length} usuários` : `${users.length} usuários`}
-              </h2>
-              {users.length >= PLATFORM_USERS_LIST_LIMIT ? (
-                <p className={styles.hint}>
-                  A lista mostra só os {PLATFORM_USERS_LIST_LIMIT} cadastros mais recentes. Quem se cadastrou antes não aparece na busca.
-                </p>
-              ) : null}
-              {visibleUsers.length === 0 ? (
-                <p className={styles.state}>Nenhum usuário encontrado. Confira o nome ou o e-mail.</p>
-              ) : (
-                <div className={groups.list}>
-                  {visibleUsers.map((user) => {
-                    const summary = resolveUserPlanSummary(user);
-                    const isRowSaving = savingUserIds.has(user.user_id);
-                    const details = [
-                      user.full_name ? user.email : null,
-                      user.is_platform_admin ? 'Admin' : null,
-                      summary.tierName && !summary.isManual
-                        ? (user.subscription_billed ? 'Pela cobrança' : 'Sem cobrança')
-                        : null,
-                      summary.tierName && summary.tone !== 'ok' ? summary.label : null,
-                    ].filter(Boolean);
-                    return (
-                      <div key={user.user_id} className={styles.userRow}>
-                        <span className={groups.rowText}>
-                          <span className={groups.rowTitle}>{nameOf(user)}</span>
-                          {details.length > 0 ? (
-                            <span className={groups.rowSubtitle}>{details.join(' · ')}</span>
-                          ) : null}
-                          {user.is_blocked ? (
-                            <span className={cx(groups.pill, styles.pillBlocked)}>Bloqueado</span>
-                          ) : null}
-                        </span>
-                        <select
-                          className={styles.planSelect}
-                          aria-label={`Plano de ${nameOf(user)}`}
-                          title={summary.canGrant ? undefined : 'Assinatura paga pela Asaas. Altere o plano pela cobrança.'}
-                          value={summary.tierName ? user.tier_id : NO_PLAN_VALUE}
-                          onChange={(event) => handleRowPlanChange(user, event.target.value)}
-                          disabled={!summary.canGrant || isRowSaving}
-                        >
-                          <option value={NO_PLAN_VALUE} disabled={!summary.canRevoke}>Sem plano</option>
-                          {TIER_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </select>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => openUser(user)}>
-                          Ver
-                        </Button>
-                      </div>
-                    );
-                  })}
+            <>
+              <Input
+                type="search"
+                label="Buscar usuário"
+                placeholder="Nome ou e-mail"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                fullWidth
+              />
+
+              {isLoadingUsers && users.length === 0 ? (
+                <p className={styles.state}>Carregando usuários...</p>
+              ) : loadError ? (
+                <div className={cx(styles.banner, styles.bannerError)} role="alert">
+                  <span>{resolvePlatformAdminErrorMessage(loadError)}</span>
+                  <button type="button" className={styles.dismiss} onClick={loadUsers}>
+                    Tentar de novo
+                  </button>
                 </div>
+              ) : (
+                <section className={groups.group} aria-label="Usuários">
+                  <h2 className={groups.groupLabel}>
+                    {searchTerm ? `${visibleUsers.length} de ${users.length} usuários` : `${users.length} usuários`}
+                  </h2>
+                  {users.length >= PLATFORM_USERS_LIST_LIMIT ? (
+                    <p className={styles.hint}>
+                      A lista mostra só os {PLATFORM_USERS_LIST_LIMIT} cadastros mais recentes. Quem se cadastrou antes não aparece na busca.
+                    </p>
+                  ) : null}
+                  {visibleUsers.length === 0 ? (
+                    <p className={styles.state}>Nenhum usuário encontrado. Confira o nome ou o e-mail.</p>
+                  ) : (
+                    <div className={groups.list}>
+                      {visibleUsers.map((user) => {
+                        const summary = resolveUserPlanSummary(user);
+                        const isRowSaving = savingUserIds.has(user.user_id);
+                        const details = [
+                          user.full_name ? user.email : null,
+                          user.is_platform_admin ? 'Admin' : null,
+                          summary.tierName && !summary.isManual
+                            ? (user.subscription_billed ? 'Pela cobrança' : 'Sem cobrança')
+                            : null,
+                          summary.tierName && summary.tone !== 'ok' ? summary.label : null,
+                        ].filter(Boolean);
+                        return (
+                          <div key={user.user_id} className={styles.userRow}>
+                            <span className={groups.rowText}>
+                              <span className={groups.rowTitle}>{nameOf(user)}</span>
+                              {details.length > 0 ? (
+                                <span className={groups.rowSubtitle}>{details.join(' · ')}</span>
+                              ) : null}
+                              {user.is_blocked ? (
+                                <span className={cx(groups.pill, styles.pillBlocked)}>Bloqueado</span>
+                              ) : null}
+                            </span>
+                            <select
+                              className={styles.planSelect}
+                              aria-label={`Plano de ${nameOf(user)}`}
+                              title={summary.canGrant ? undefined : 'Assinatura paga pela Asaas. Altere o plano pela cobrança.'}
+                              value={summary.tierName ? user.tier_id : NO_PLAN_VALUE}
+                              onChange={(event) => handleRowPlanChange(user, event.target.value)}
+                              disabled={!summary.canGrant || isRowSaving}
+                            >
+                              <option value={NO_PLAN_VALUE} disabled={!summary.canRevoke}>Sem plano</option>
+                              {TIER_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => openUser(user)}>
+                              Ver
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
               )}
-            </section>
+            </>
           )}
         </>
       )}

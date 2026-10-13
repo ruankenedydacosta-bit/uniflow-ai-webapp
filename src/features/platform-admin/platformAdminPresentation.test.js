@@ -2,10 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   filterPlatformUsers,
+  formatUsageDuration,
   keepsManualPlanPeriod,
   PLATFORM_ADMIN_ROUTE,
+  rankByAppTime,
+  rankUniUsage,
   resolvePlatformAdminErrorMessage,
   resolveUserPlanSummary,
+  summarizeUsage,
+  USAGE_RANKING_LIMIT,
 } from './platformAdminPresentation.js';
 
 const USERS = [
@@ -100,4 +105,60 @@ test('erro do banco vira mensagem pelo hint', () => {
   assert.match(resolvePlatformAdminErrorMessage({ hint: 'admin_bloquear_admin' }), /equipe/);
   assert.match(resolvePlatformAdminErrorMessage({ message: 'falha' }), /Tente de novo/);
   assert.match(resolvePlatformAdminErrorMessage(null), /Tente de novo/);
+});
+
+function usageRow(id, fields) {
+  return { user_id: id, visits: 0, active_seconds: 0, prompts: 0, voice_seconds: 0, ...fields };
+}
+
+test('duração do uso mostra segundos, minutos ou horas', () => {
+  assert.equal(formatUsageDuration(0), '0 s');
+  assert.equal(formatUsageDuration(45), '45 s');
+  assert.equal(formatUsageDuration(779), '12 min');
+  assert.equal(formatUsageDuration(3900), '1 h 05 min');
+  assert.equal(formatUsageDuration(null), '0 s');
+});
+
+test('ranking de acessos ordena pelo tempo e deixa de fora quem só usou a Uni', () => {
+  const rows = [
+    usageRow('a', { visits: 3, active_seconds: 60 }),
+    usageRow('b', { visits: 1, active_seconds: 600 }),
+    usageRow('c', { prompts: 4 }),
+    usageRow('d', { visits: 2, active_seconds: 60 }),
+  ];
+  assert.deepEqual(rankByAppTime(rows).map((row) => row.user_id), ['b', 'a', 'd']);
+});
+
+test('top da Uni ordena pela métrica escolhida e desempata pela outra', () => {
+  const rows = [
+    usageRow('a', { prompts: 10, voice_seconds: 0 }),
+    usageRow('b', { prompts: 2, voice_seconds: 900 }),
+    usageRow('c', { prompts: 10, voice_seconds: 60 }),
+    usageRow('d', { visits: 5, active_seconds: 300 }),
+  ];
+  assert.deepEqual(rankUniUsage(rows, 'prompts').map((row) => row.user_id), ['c', 'a', 'b']);
+  assert.deepEqual(rankUniUsage(rows, 'voice').map((row) => row.user_id), ['b', 'c', 'a']);
+});
+
+test('top da Uni mostra no máximo 25 pessoas', () => {
+  const rows = Array.from({ length: 30 }, (_, index) => usageRow(String(index), { prompts: index + 1 }));
+  const ranking = rankUniUsage(rows, 'prompts');
+  assert.equal(ranking.length, USAGE_RANKING_LIMIT);
+  assert.equal(ranking[0].prompts, 30);
+});
+
+test('resumo do uso soma o período inteiro', () => {
+  const summary = summarizeUsage([
+    usageRow('a', { visits: 2, active_seconds: 600, prompts: 5, voice_seconds: 120 }),
+    usageRow('b', { prompts: 1 }),
+    usageRow('c', { visits: 1, active_seconds: 30 }),
+  ]);
+  assert.deepEqual(summary, { appUsers: 2, appSeconds: 630, uniUsers: 2, prompts: 6, voiceSeconds: 120 });
+});
+
+test('período inválido no relatório pede para escolher da lista', () => {
+  assert.equal(
+    resolvePlatformAdminErrorMessage({ hint: 'admin_periodo_relatorio_invalido' }),
+    'Escolha um dos períodos da lista.',
+  );
 });

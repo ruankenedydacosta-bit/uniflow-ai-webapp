@@ -105,6 +105,7 @@ function PrivacidadePage() {
             <li>Endereço IP, tipo de navegador e de aparelho, registrados pelos serviços que operam o app.</li>
             <li>Registros de erro sem o seu nome, e-mail ou valores.</li>
             <li>Contagem de uso da Uni, para aplicar os limites do seu plano.</li>
+            <li>Dias, número de acessos e tempo com o app aberto, sem as telas que você visitou.</li>
             <li>Estatísticas de navegação, só se você permitir o Google Analytics.</li>
           </ul>
         </section>
@@ -119,7 +120,8 @@ function PrivacidadePage() {
             </li>
             <li>
               <strong>Manter o app seguro e funcionando:</strong> prevenir fraude e abuso, aplicar os
-              limites do plano e corrigir falhas. Base legal: legítimo interesse (art. 7º, IX).
+              limites do plano, corrigir falhas e acompanhar quanto o app e a Uni são usados. Base legal:
+              legítimo interesse (art. 7º, IX).
             </li>
             <li>
               <strong>Cumprir obrigações legais:</strong> guardar registros de pagamento e atender
@@ -294,6 +296,7 @@ function PrivacidadePage() {
           <ul>
             <li>Dados da conta, registros financeiros, agenda e conversas: enquanto sua conta existir.</li>
             <li>Contagem diária de uso da Uni: até 62 dias.</li>
+            <li>Registro diário de acessos e tempo no app: até 62 dias.</li>
             <li>
               Dados de pagamento e cobrança: pelo prazo exigido pela legislação fiscal e de defesa do
               consumidor, mesmo depois da exclusão da conta.

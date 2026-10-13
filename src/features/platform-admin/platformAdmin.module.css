@@ -180,3 +180,30 @@
   justify-content: flex-end;
   gap: var(--uf-space-8);
 }
+
+/* Linha do relatório de uso: posição, nome com detalhes e o número que
+   ordena a lista. */
+.rankRow {
+  min-height: var(--uf-space-56);
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--uf-space-8);
+  padding: 10px 0;
+  color: var(--uf-app-text);
+}
+
+.rankPosition {
+  color: var(--uf-app-text-3);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rankValue {
+  font-size: 15px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

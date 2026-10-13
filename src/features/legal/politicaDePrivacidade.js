@@ -11,7 +11,7 @@ import { SUPPORT_WHATSAPP_NUMBER } from '../simplified-app/simplifiedSupportConf
 
 export const PRIVACIDADE_ROUTE = '/privacidade';
 
-export const PRIVACIDADE_ATUALIZADA_EM = '8 de outubro de 2026';
+export const PRIVACIDADE_ATUALIZADA_EM = '12 de outubro de 2026';
 
 export const CONTATO_PRIVACIDADE = Object.freeze({
   email: 'contato@uniflow.ai',
