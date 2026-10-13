@@ -34,6 +34,8 @@ import { useNumeroContado } from './useNumeroContado.js';
 import {
   buildCategorySummaries,
   describePlannedTransaction,
+  plannedQueryDateFrom,
+  selectPlannedForMonth,
   filterRecordTransactions,
   formatRelativeTransactionDate,
   getMonthRange,
@@ -821,11 +823,11 @@ function SimplifiedRecordsPage() {
     status: 'completed',
   });
   // Previstos vencidos de meses anteriores continuam esperando confirmação,
-  // então no mês atual e nos futuros a busca não tem data inicial.
+  // mas só o mês atual os carrega. Meses futuros e passados mostram só o seu.
   const todayKey = toDateKey(new Date());
   const plannedState = useTransactions({
     workspaceId: workspace?.id,
-    dateFrom: month.dateTo >= todayKey ? undefined : month.dateFrom,
+    dateFrom: plannedQueryDateFrom(month, todayKey),
     dateTo: month.dateTo,
     status: 'pending',
   });
@@ -895,25 +897,27 @@ function SimplifiedRecordsPage() {
     () => filterRecordTransactions(transactionState.transactions, filters),
     [filters, transactionState.transactions],
   );
+  const visiblePlanned = useMemo(
+    () => selectPlannedForMonth(plannedState.transactions, month, todayKey),
+    [month, plannedState.transactions, todayKey],
+  );
   const filteredPlanned = useMemo(
-    () => filterRecordTransactions(plannedState.transactions, { ...filters, sort: 'oldest', status: 'pending' }),
-    [filters, plannedState.transactions],
+    () => filterRecordTransactions(visiblePlanned, { ...filters, sort: 'oldest', status: 'pending' }),
+    [filters, visiblePlanned],
   );
   const monthPlanned = useMemo(
-    () => plannedState.transactions.filter(
-      (transaction) => transaction.transaction_date >= month.dateFrom,
-    ),
-    [month.dateFrom, plannedState.transactions],
+    () => visiblePlanned.filter((transaction) => transaction.transaction_date >= month.dateFrom),
+    [month.dateFrom, visiblePlanned],
   );
   const plannedTotals = useMemo(() => summarizePlannedTotals(monthPlanned), [monthPlanned]);
   // Resumo: os 3 primeiros por data, com os vencidos no topo.
   const summaryPlanned = useMemo(
-    () => filterRecordTransactions(plannedState.transactions, {
+    () => filterRecordTransactions(visiblePlanned, {
       ...EMPTY_FILTERS,
       sort: 'oldest',
       status: 'pending',
     }).slice(0, 3),
-    [plannedState.transactions],
+    [visiblePlanned],
   );
   // O formulário edita pelo id: precisa achar também os previstos.
   const formTransactionState = useMemo(() => ({
