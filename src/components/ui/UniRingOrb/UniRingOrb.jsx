@@ -60,7 +60,6 @@ export function UniRingOrb({
   state = UNI_RING_ORB_STATES.IDLE,
   className,
   getVoiceStream,
-  getVoiceSessionId,
 }) {
   const rootRef = useRef(null);
   const motion = resolveUniRingOrbMotion(state);
@@ -74,7 +73,6 @@ export function UniRingOrb({
 
   useVoiceIntensity({
     getStream: getVoiceStream,
-    getSessionId: getVoiceSessionId,
     active: Boolean(state === UNI_RING_ORB_STATES.LISTENING && getVoiceStream),
     onLevel: handleVoiceLevel,
     publishState: false,

@@ -50,13 +50,6 @@ const REALTIME_TEXT_FALLBACK_CODES = new Set(['VOICE_QUOTA_EXHAUSTED', 'SUBSCRIP
 // Depois que a conversa termina, o orb e o botão central abrem outra.
 const REALTIME_RESTART_HINT = 'Toque na Uni para começar uma nova conversa.';
 
-// A voz do chat (carregando ou tocando) para quando a conversa em tempo real
-// começa: a Uni da conversa não fala por cima dela.
-const INTERRUPTIBLE_VOICE_STATUSES = new Set([
-  VOICE_TTS_STATUS.LOADING,
-  VOICE_TTS_STATUS.PLAYING,
-]);
-
 // Hora do cabeçalho do card da Uni ("Uni · 21:40"), fixada na abertura da Home.
 const CLOCK_FORMATTER = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
@@ -253,9 +246,6 @@ function SimplifiedHomeView({
     (message) => message.confirmation?.status === 'pending',
   );
   const isSpeaking = voiceController.status === VOICE_TTS_STATUS.PLAYING;
-  const isVoicePlaybackInterruptible = INTERRUPTIBLE_VOICE_STATUSES.has(
-    voiceController.status,
-  );
   const interactionState = resolveSimplifiedUniState({
     isTyping,
     isExecuting,
@@ -311,7 +301,6 @@ function SimplifiedHomeView({
   // andamento, e o saldo é relido depois que ela termina (useVoiceMinutes).
   const userId = user?.id ?? null;
   const { voiceMinutes, refresh: refreshVoiceMinutes } = useVoiceMinutes({
-    enabled: true,
     userId,
     sessionStartedAt: realtime.state.startedAt,
     sessionEndedAt: realtime.state.endedAt,
@@ -369,7 +358,8 @@ function SimplifiedHomeView({
 
   // Chamado dentro do toque: o iOS só libera microfone e áudio ali.
   function beginRealtimeConversation() {
-    if (isVoicePlaybackInterruptible) voiceController.stop();
+    // Para a voz do chat (UniChatPage.handleBeforeVoiceStart): a Uni da
+    // conversa não fala por cima dela.
     onBeforeVoiceStart?.();
     setVoiceConversationPreviousIds(snapshotVoiceConversationStart(messages));
     void realtime.start({

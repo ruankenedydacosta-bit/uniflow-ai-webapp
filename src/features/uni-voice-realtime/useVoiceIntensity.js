@@ -8,11 +8,11 @@ import { recordVoicePipelineDiagnostic } from './voicePipelineDiagnostics.js';
 const SIGNAL_DETECTION_RMS_THRESHOLD = 0.01;
 const SILENT_TIMEOUT_MS = 2000;
 
-// BUG 3: animação de escuta do botão da Uni -- calcula a intensidade REAL
-// do microfone (RMS/energia) a partir do MESMO MediaStream já capturado
-// pelo motor de voz existente (useUniVoiceInput -> getActiveStream()),
+// BUG 3: animação de escuta do orb da Uni -- calcula a intensidade REAL
+// do microfone (RMS/energia) a partir do MESMO MediaStream já aberto pela
+// conversa em tempo real (useRealtimeVoiceSession -> getLocalStream()),
 // sem pedir acesso ao microfone uma segunda vez. Só entra em ação enquanto
-// `active` for true (tipicamente durante VOICE_CAPTURE_STATES.LISTENING);
+// `active` for true (orb em UNI_RING_ORB_STATES.LISTENING);
 // libera AudioContext/AnalyserNode/requestAnimationFrame sempre que
 // `active` cai ou o componente desmonta -- nunca deixa o microfone
 // "vazando" um analisador aberto.

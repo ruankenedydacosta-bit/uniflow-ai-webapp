@@ -1126,13 +1126,12 @@ test('HOTFIX P1.4: SimplifiedHomeView não repassa onSpeakMessage/voiceEnabled p
   assert.doesNotMatch(block, /onSpeakMessage=\{onSpeakMessage\}/);
 });
 
-test('a voz do chat carregando ou tocando para quando a conversa em tempo real começa', async () => {
+test('abrir a conversa em tempo real para a voz do chat antes de conectar', async () => {
   const home = await source('./SimplifiedHomeView.jsx');
-  assert.match(home, /const INTERRUPTIBLE_VOICE_STATUSES = new Set\(\[\s*VOICE_TTS_STATUS\.LOADING,\s*VOICE_TTS_STATUS\.PLAYING,\s*\]\);/);
-  assert.match(home, /const isSpeaking = voiceController\.status === VOICE_TTS_STATUS\.PLAYING;/);
-  assert.match(home, /const isVoicePlaybackInterruptible = INTERRUPTIBLE_VOICE_STATUSES\.has\(\s*voiceController\.status,\s*\);/);
   const begin = home.slice(home.indexOf('function beginRealtimeConversation() {'));
-  assert.match(begin, /^[^}]*if \(isVoicePlaybackInterruptible\) voiceController\.stop\(\);/);
+  assert.match(begin, /^[^}]*onBeforeVoiceStart\?\.\(\);[^}]*realtime\.start\(/);
+  const chat = await source('../uni-chat/UniChatPage.jsx');
+  assert.match(chat, /function handleBeforeVoiceStart\(\) \{\s*uniVoice\.stop\(\);/);
 });
 
 test('rótulos do botão central usam tipografia menor sem alterar o orb', async () => {

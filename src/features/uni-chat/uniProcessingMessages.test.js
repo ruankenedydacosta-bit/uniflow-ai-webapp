@@ -16,14 +16,6 @@ import {
 // acontecendo.
 // ============================================================================
 
-test('listening produz exatamente "Ouvindo…"', () => {
-  assert.deepEqual(getProcessingMessageSequence('listening'), ['Ouvindo…']);
-});
-
-test('transcribing produz exatamente "Reconhecendo sua voz…"', () => {
-  assert.deepEqual(getProcessingMessageSequence('transcribing'), ['Reconhecendo sua voz…']);
-});
-
 test('interpreting sem operationHint cai no genérico honesto "Entendendo seu pedido…" -- nunca rotaciona', () => {
   assert.deepEqual(getProcessingMessageSequence('interpreting'), ['Entendendo seu pedido…']);
   assert.deepEqual(getProcessingMessageSequence('interpreting', {}), ['Entendendo seu pedido…']);
@@ -81,7 +73,7 @@ test('estados que já têm UI própria (idle/speaking/success/error) não produz
 });
 
 test('sequências retornadas são congeladas (nunca mutáveis pelo chamador) e nunca têm mais de uma mensagem', () => {
-  assert.ok(Object.isFrozen(getProcessingMessageSequence('listening')));
+  assert.ok(Object.isFrozen(getProcessingMessageSequence('waiting_confirmation')));
   assert.ok(Object.isFrozen(getProcessingMessageSequence('interpreting')));
   assert.ok(Object.isFrozen(getProcessingMessageSequence('executing', { actionKind: 'income' })));
   assert.ok(getProcessingMessageSequence('interpreting').length <= 1);

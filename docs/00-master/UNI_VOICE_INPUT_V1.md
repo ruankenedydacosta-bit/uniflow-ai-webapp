@@ -1,8 +1,9 @@
 # Uni Voice Input V1
 
 > **Removido em 13/10/2026.** A gravação com envio para transcrição saiu do
-> app: `src/features/uni-voice/`, o microfone do campo do chat e a Edge
-> Function `uni-voice-transcribe` foram apagados. Falar com a Uni é só pela
+> app: `src/features/uni-voice/`, o microfone do campo do chat e a pasta da
+> Edge Function `uni-voice-transcribe` foram apagados do repositório. A função
+> publicada no Supabase sai com `supabase functions delete uni-voice-transcribe`. Falar com a Uni é só pela
 > conversa em tempo real (`src/features/uni-voice-realtime/` e a Edge Function
 > `uni-voice-realtime-session`). O texto abaixo fica como registro histórico.
 
