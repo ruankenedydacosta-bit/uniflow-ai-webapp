@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { guardarAssinatura } from '../../services/assinaturaCache.js';
 import { getSubscription } from '../../services/billingService.js';
 import { resolvePersonalPlanAccess } from './resolvePersonalPlanAccess.js';
 
@@ -48,6 +49,9 @@ export function usePersonalPlanAccessGuard({ workspaceId, enabled, revalidateWhe
       setStatus('loading');
       getSubscription({ workspaceId, localOnly: true }).then(({ data, error }) => {
         if (cancelled) return;
+        // A mesma resposta abastece as telas de Mais e Seu plano, que assim
+        // abrem já com o plano certo, sem buscar de novo.
+        if (!error) guardarAssinatura(workspaceId, data);
         // Falha de rede/backend: nunca libera acesso sem confirmação real.
         setStatus(error ? 'blocked' : resolvePersonalPlanAccess(data));
       });
@@ -66,6 +70,7 @@ export function usePersonalPlanAccessGuard({ workspaceId, enabled, revalidateWhe
       setStatus('loading');
       getSubscription({ workspaceId, localOnly: true }).then(({ data, error }) => {
         if (cancelled) return;
+        if (!error) guardarAssinatura(workspaceId, data);
         setStatus(error ? 'blocked' : resolvePersonalPlanAccess(data));
       });
     }, 0);

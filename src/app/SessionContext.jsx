@@ -19,6 +19,7 @@ import {
   updatePassword as updatePasswordService,
 } from '../services/authService';
 import { clearHomeFinancialCacheForUser } from '../features/simplified-app/homeFinancialCache.js';
+import { limparAssinaturas } from '../services/assinaturaCache.js';
 import { getProfile, updateProfile } from '../services/profileService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import {
@@ -732,6 +733,10 @@ function SessionProvider({ children }) {
         // tela antes do primeiro fetch. Nunca lança -- não bloqueia o logout.
         clearHomeFinancialCacheForUser(currentUserId);
       }
+
+      // Assinatura guardada em memória (assinaturaCache.js): o próximo
+      // usuário neste aparelho não vê o plano do anterior.
+      limparAssinaturas();
 
       const result = await signOutService();
 

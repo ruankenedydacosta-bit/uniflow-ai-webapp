@@ -71,7 +71,7 @@ test('cabeçalho tem botão voltar, título "Pagamento e assinatura" e Ajuda -- 
 // Correção (Bloco Saldo + Cobrança): esta tela lia getWorkspaceSubscriptionAny
 // (leitura direta da tabela) com seu PRÓPRIO mapeamento de status, que não
 // distinguia 'pending'/'suspended' (caíam em "Expirado") e podia divergir
-// de "Seu plano" para o MESMO workspace. Agora usa billingService.getSubscription
+// de "Seu plano" para o MESMO workspace. Agora usa useAssinatura
 // (mesma Edge Function/fonte) + subscriptionPresentation.js (mesmo
 // mapeamento) -- cobertura detalhada de cada estado vive em
 // subscriptionPresentation.test.js.
@@ -86,10 +86,12 @@ test('usa a fonte única de apresentação de assinatura (subscriptionPresentati
   assert.doesNotMatch(content, /planState = \{ status:/);
 });
 
-test('busca a assinatura via billingService.getSubscription() -- MESMA fonte de "Seu plano", nunca mais getWorkspaceSubscriptionAny (que podia divergir)', async () => {
+test('lê a assinatura via useAssinatura (billing-get-subscription) -- MESMA fonte de "Seu plano", nunca mais getWorkspaceSubscriptionAny (que podia divergir)', async () => {
   const content = await source('./SimplifiedPaymentsPage.jsx');
-  assert.match(content, /import \{ getSubscription, listPayments \} from '\.\.\/\.\.\/services\/billingService\.js';/);
-  assert.match(content, /getSubscription\(\{ workspaceId \}\)\.then/);
+  assert.match(content, /import \{ listPayments \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+  assert.match(content, /import \{ useAssinatura \} from '\.\/useAssinatura\.js';/);
+  assert.match(content, /\} = useAssinatura\(workspaceId\);/);
+  assert.doesNotMatch(content, /getSubscription\(/);
   assert.doesNotMatch(content, /workspaceService/);
 });
 
