@@ -41,6 +41,13 @@ test('CategoryCreateModal: Modal bloqueia fechamento por ESC durante mutacao', a
   assert.match(modal, /closeOnEsc=\{!isMutating\}/);
 });
 
+test('CategoryCreateModal: tipoFixo esconde Saída/Entrada e diz o tipo na descrição', async () => {
+  const modal = await source('components/CategoryCreateModal.jsx');
+  assert.match(modal, /\{isEditing \|\| tipoFixo \? null : \(\s*<Segmented/);
+  assert.match(modal, /'Dê um nome simples\. A categoria vai para as entradas\.'/);
+  assert.match(modal, /'Dê um nome simples\. A categoria vai para as saídas\.'/);
+});
+
 test('CategoryCreateModal: handleClose (usado pelo X do Modal e pelo Cancelar) retorna cedo durante mutacao', async () => {
   const modal = await source('components/CategoryCreateModal.jsx');
   assert.match(modal, /function handleClose\(\) \{\s*if \(isMutating\) return;\s*onClose\?\.\(\);\s*\}/);
@@ -125,7 +132,7 @@ test('CategoryCreateModal oferece nome, tipo e ícone e persiste a chave selecio
 test('CategoryCreateModal em edição preenche a categoria, fixa o tipo e ignora o próprio nome', async () => {
   const modal = await source('components/CategoryCreateModal.jsx');
   assert.match(modal, /setName\(category\?\.name \?\? ''\)/);
-  assert.match(modal, /isEditing \? null : \(\s*<Segmented/);
+  assert.match(modal, /\{isEditing \|\| tipoFixo \? null : \(\s*<Segmented/);
   assert.match(modal, /isEditing\s*\? \{ name: trimmed, icon \}/);
   assert.match(modal, /isDuplicateCategoryName\(categories, trimmed, categoryType, \{ excludeId: category\?\.id \}\)/);
 });

@@ -12,7 +12,9 @@ import Toggle from '../../components/ui/Toggle/index.js';
 import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { PhCaretDownIcon, PhCheckIcon, PhTrashIcon } from '../../features/simplified-app/SimplifiedIcons.jsx';
 import { celebrarSalvar, fecharFolha } from '../../features/simplified-app/movimentoDeSalvar.js';
-import { categoriasParaSeletor } from '../../features/categories/categoryUtils.js';
+import CategoryCreateModal from '../../features/categories/components/CategoryCreateModal.jsx';
+import { categoriasParaSeletor, getCategoryErrorMessage } from '../../features/categories/categoryUtils.js';
+import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
 import { cx } from '../../utils/cx';
 import { formatCurrency } from '../../utils/formatters';
 import styles from './FinanceTransactionModal.module.css';
@@ -44,6 +46,10 @@ import {
   isRecurringSeriesForm,
   localDateKey,
 } from './transactionFormUtils';
+
+// Valor da opção "+ Criar categoria" do seletor: abre a folha de categoria
+// e nunca vai para o formulário.
+const OPCAO_CRIAR_CATEGORIA = '__criar_categoria__';
 
 const SORT_OPTIONS = [
   { value: 'recent', label: 'Mais recentes' },
@@ -325,6 +331,7 @@ function FinanceTransactionModal({
   const [periodMode, setPeriodMode] = useState('all');
   // Salvou e a folha está comemorando e descendo: nada mais é aceito.
   const [concluindo, setConcluindo] = useState(false);
+  const [criandoCategoria, setCriandoCategoria] = useState(false);
   const saveButtonRef = useRef(null);
   const seriesOperationIdRef = useRef(null);
   const categoriesById = useMemo(
@@ -423,6 +430,13 @@ function FinanceTransactionModal({
   if (pendingDeleteTransaction?.metadata?.installment_group_id) pendingDeleteGroupKind = 'installments';
   else if (pendingDeleteTransaction?.metadata?.recurring_series_id) pendingDeleteGroupKind = 'series';
   const isDeleteConfirmOpen = Boolean(pendingDeleteId && pendingDeleteTransaction);
+  // Transferência não tem categoria de saída nem de entrada para criar.
+  const podeCriarCategoria = canManage
+    && form.transaction_type !== 'transfer'
+    && typeof categoryState.saveCategory === 'function';
+  // Ajuste aceita os dois tipos: a folha deixa a pessoa escolher.
+  const tipoDaNovaCategoria = form.transaction_type === 'income' ? 'income' : 'expense';
+  const folhaPorCima = isDeleteConfirmOpen || criandoCategoria;
 
   function resetForm() {
     setForm(createEmptyTransactionForm(initialType));
@@ -449,6 +463,29 @@ function FinanceTransactionModal({
     setBatchError(null);
     resetForm();
     onClose();
+  }
+
+  function handleCategoriaChange(event) {
+    if (event.target.value === OPCAO_CRIAR_CATEGORIA) {
+      categoryState.clearError?.();
+      setCriandoCategoria(true);
+      return;
+    }
+    setForm((current) => ({ ...current, category_id: event.target.value }));
+  }
+
+  function handleFecharCriarCategoria() {
+    if (categoryState.isMutating) return;
+    categoryState.clearError?.();
+    setCriandoCategoria(false);
+  }
+
+  async function handleCriarCategoria(values) {
+    const resultado = await categoryState.saveCategory(values);
+    if (resultado.error || !resultado.data) return;
+    notifyFinancialDataChanged('categorias');
+    setForm((current) => ({ ...current, category_id: resultado.data.id }));
+    setCriandoCategoria(false);
   }
 
   function handleRequestDelete(transactionId) {
@@ -708,19 +745,32 @@ function FinanceTransactionModal({
       onConfirm={() => handleDelete(pendingDeleteId)}
       onDeleteScopeChange={(event) => setDeleteScope(event.target.value)}
     />
+    <CategoryCreateModal
+      open={open && criandoCategoria}
+      onClose={handleFecharCriarCategoria}
+      defaultType={tipoDaNovaCategoria}
+      tipoFixo={form.transaction_type !== 'adjustment'}
+      categories={categoryState.categories}
+      onCreate={handleCriarCategoria}
+      isMutating={categoryState.isMutating}
+      serverError={criandoCategoria
+        ? getCategoryErrorMessage(categoryState.error, 'Não foi possível criar a categoria. Tente novamente.')
+        : ''}
+      overlayClassName={cx(styles.categoryCreateOverlay, overlayClassName)}
+    />
     <Modal
       open={open}
       onClose={handleClose}
-      closeOnOverlayClick={!transactionState.isMutating && !isDeleteConfirmOpen}
-      closeOnEsc={!transactionState.isMutating && !isDeleteConfirmOpen}
+      closeOnOverlayClick={!transactionState.isMutating && !folhaPorCima}
+      closeOnEsc={!transactionState.isMutating && !folhaPorCima}
       title={isSheet ? (editingId ? 'Editar movimentação' : 'Nova movimentação') : 'Lançamentos'}
       description={isSheet ? undefined : 'Registre entradas, saídas, transferências e ajustes deste espaço.'}
       size="xl"
       className={cx(styles.transactionDialog, className)}
       overlayClassName={cx(overlayClassName, isSheet && styles.sheetOverlay)}
       data-presentation={presentation}
-      aria-hidden={isDeleteConfirmOpen}
-      inert={isDeleteConfirmOpen}
+      aria-hidden={folhaPorCima}
+      inert={folhaPorCima}
       footer={isSheet ? null : (
         <Button variant="ghost" onClick={handleClose} disabled={transactionState.isMutating}>
           Fechar
@@ -832,9 +882,7 @@ function FinanceTransactionModal({
             id="finance-transaction-category"
             label="Categoria"
             value={form.category_id}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, category_id: event.target.value }))
-            }
+            onChange={handleCategoriaChange}
           >
             <option value="">Sem categoria</option>
             {filteredCategories.map((category) => (
@@ -842,6 +890,9 @@ function FinanceTransactionModal({
                 {category.name}
               </option>
             ))}
+            {podeCriarCategoria ? (
+              <option value={OPCAO_CRIAR_CATEGORIA}>+ Criar categoria</option>
+            ) : null}
           </SelectField>
           <Input
             id="finance-transaction-amount"

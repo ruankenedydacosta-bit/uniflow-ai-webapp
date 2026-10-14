@@ -38,6 +38,10 @@ const ROTULO_POR_ICONE = Object.fromEntries(
  *
  * Com `category`, a folha edita essa categoria: nome e ícone mudam, o tipo
  * fica fixo para não deixar lançamentos já vinculados no tipo errado.
+ *
+ * Com `tipoFixo`, a criação também esconde Saída/Entrada: a folha de nova
+ * movimentação abre esta já no tipo do lançamento, para a categoria criada
+ * caber no seletor dele.
  */
 function CategoryCreateModal({
   open,
@@ -46,6 +50,7 @@ function CategoryCreateModal({
   categories,
   onCreate,
   category = null,
+  tipoFixo = false,
   isMutating,
   serverError,
   className,
@@ -74,6 +79,14 @@ function CategoryCreateModal({
   const iconeForaDoCatalogo = ROTULO_POR_ICONE[icon] ? null : icon;
 
   const isEditing = Boolean(category);
+
+  let descricao = 'Dê um nome simples e escolha se é uma saída ou uma entrada.';
+  if (isEditing) descricao = 'Mude o nome ou o ícone. Os lançamentos desta categoria acompanham a mudança.';
+  else if (tipoFixo) {
+    descricao = defaultType === CATEGORY_TYPES.INCOME
+      ? 'Dê um nome simples. A categoria vai para as entradas.'
+      : 'Dê um nome simples. A categoria vai para as saídas.';
+  }
 
   let dicaDosIcones = 'Os mais usados. Digite o nome para ver sugestões.';
   if (mostrarTodos) dicaDosIcones = 'Role para ver todos os ícones.';
@@ -144,11 +157,7 @@ function CategoryCreateModal({
       closeOnOverlayClick={!isMutating}
       closeOnEsc={!isMutating}
       title={isEditing ? 'Editar categoria' : 'Nova categoria'}
-      description={
-        isEditing
-          ? 'Mude o nome ou o ícone. Os lançamentos desta categoria acompanham a mudança.'
-          : 'Dê um nome simples e escolha se é uma saída ou uma entrada.'
-      }
+      description={descricao}
       size="lg"
       className={cx(styles.categoryCreateDialog, className)}
       bodyClassName={styles.categoryCreateBody}
@@ -166,7 +175,7 @@ function CategoryCreateModal({
           />
         </Field>
 
-        {isEditing ? null : (
+        {isEditing || tipoFixo ? null : (
           <Segmented
             label="Tipo da categoria"
             options={TYPE_OPTIONS}

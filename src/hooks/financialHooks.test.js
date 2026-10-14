@@ -314,8 +314,30 @@ test('Modal do lancamento bloqueia ESC e overlay durante mutacao ou confirmacao 
     new URL('../pages/financeiro/FinanceTransactionModal.jsx', import.meta.url),
     'utf8',
   );
-  assert.match(source, /closeOnOverlayClick=\{!transactionState\.isMutating && !isDeleteConfirmOpen\}/);
-  assert.match(source, /closeOnEsc=\{!transactionState\.isMutating && !isDeleteConfirmOpen\}/);
+  assert.match(source, /closeOnOverlayClick=\{!transactionState\.isMutating && !folhaPorCima\}/);
+  assert.match(source, /closeOnEsc=\{!transactionState\.isMutating && !folhaPorCima\}/);
+});
+
+test('seletor de categoria do lancamento cria categoria sem sair da folha', async () => {
+  const source = await readFile(
+    new URL('../pages/financeiro/FinanceTransactionModal.jsx', import.meta.url),
+    'utf8',
+  );
+  // A opcao so abre a folha: o valor sentinela nunca vai para o formulario.
+  assert.match(source, /<option value=\{OPCAO_CRIAR_CATEGORIA\}>\+ Criar categoria<\/option>/);
+  assert.match(
+    source,
+    /if \(event\.target\.value === OPCAO_CRIAR_CATEGORIA\) \{[\s\S]*?setCriandoCategoria\(true\);\s*\n\s*return;/,
+  );
+  // Sem permissao e em transferencia a opcao nao aparece.
+  assert.match(source, /const podeCriarCategoria = canManage\s*\n\s*&& form\.transaction_type !== 'transfer'/);
+  // Criou: a categoria nova ja fica escolhida no lancamento.
+  assert.match(source, /setForm\(\(current\) => \(\{ \.\.\.current, category_id: resultado\.data\.id \}\)\);/);
+  // Saida e entrada travam o tipo, para a categoria caber no seletor filtrado.
+  assert.match(source, /tipoFixo=\{form\.transaction_type !== 'adjustment'\}/);
+  // Com a folha de categoria por cima, a da movimentacao fica inerte.
+  assert.match(source, /const folhaPorCima = isDeleteConfirmOpen \|\| criandoCategoria;/);
+  assert.match(source, /inert=\{folhaPorCima\}/);
 });
 
 test('handleSubmit retorna cedo durante mutacao (guarda explicita, nao depende so do disabled visual)', async () => {
