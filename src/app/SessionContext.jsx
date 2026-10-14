@@ -19,6 +19,7 @@ import {
   updatePassword as updatePasswordService,
 } from '../services/authService';
 import { clearHomeFinancialCacheForUser } from '../features/simplified-app/homeFinancialCache.js';
+import { clearFinancialQueryCache } from '../hooks/financialQueryCache.js';
 import { limparAssinaturas } from '../services/assinaturaCache.js';
 import { getProfile, updateProfile } from '../services/profileService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
@@ -149,7 +150,9 @@ function SessionProvider({ children }) {
         // Assinatura guardada em memória (assinaturaCache.js). Vale para o
         // botão Sair, para a sessão expirada e para o logout em outra aba:
         // o próximo usuário neste aparelho não vê o plano do anterior.
+        // O mesmo vale para o cache das telas financeiras.
         limparAssinaturas();
+        clearFinancialQueryCache();
         setAvailableWorkspaces([]);
         setWorkspaceSwitchState({ error: null, isLoading: false });
         if (isMountedRef.current) {
@@ -171,6 +174,7 @@ function SessionProvider({ children }) {
       // é do anterior.
       if (latestUserIdRef.current && latestUserIdRef.current !== nextSession.user.id) {
         limparAssinaturas();
+        clearFinancialQueryCache();
       }
       latestUserIdRef.current = nextSession.user.id;
 

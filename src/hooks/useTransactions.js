@@ -19,6 +19,13 @@ import {
   upsertRecord,
 } from './financialHookUtils.js';
 import {
+  buildFinancialCacheKey,
+  clearFinancialQueryCache,
+  isFinancialCacheFresh,
+  readFinancialCache,
+  writeFinancialCache,
+} from './financialQueryCache.js';
+import {
   trackGa4ConfirmedTransactionCreation,
 } from '../features/analytics/ga4ProductEvents.js';
 import {
@@ -35,12 +42,30 @@ export function useTransactions({
   dateFrom,
   dateTo,
 } = {}) {
+  const cacheKey = isSupabaseConfigured
+    ? buildFinancialCacheKey('transactions', { workspaceId, limit, status, dateFrom, dateTo })
+    : null;
+  const cached = readFinancialCache(cacheKey);
   const [transactions, setTransactions] = useState(() =>
-    cloneRecords(fallbackTransactions),
+    cached?.data ?? cloneRecords(fallbackTransactions),
   );
-  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured && !cached);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
+  // Troca de período ou de espaço: no mesmo render, a lista passa para o
+  // dado guardado do período novo ou entra em carregando. Sem isso, a tela
+  // mostraria por um instante a lista do período anterior como pronta.
+  const [renderedKey, setRenderedKey] = useState(cacheKey);
+  if (renderedKey !== cacheKey) {
+    setRenderedKey(cacheKey);
+    if (cached) {
+      setTransactions(cached.data);
+      setError(null);
+      setIsLoading(false);
+    } else if (cacheKey) {
+      setIsLoading(true);
+    }
+  }
   const requestIdRef = useRef(0);
   // Trava sincrona: isMutating (estado do React) so reflete no proximo
   // render, entao duas chamadas no mesmo ciclo veriam isMutating === false
@@ -74,7 +99,8 @@ export function useTransactions({
       return null;
     }
 
-    setIsLoading(true);
+    // Com dado guardado na tela, a leitura roda por trás, sem carregando.
+    if (!readFinancialCache(cacheKey)) setIsLoading(true);
     // dateFrom/dateTo pedem o periodo COMPLETO (paginado por
     // listTransactionsForPeriod), nao "as N mais recentes" -- usado por
     // Relatorios, que precisa agregar um intervalo de datas inteiro sem
@@ -89,14 +115,17 @@ export function useTransactions({
       return null;
     }
 
+    if (!result.error) writeFinancialCache(cacheKey, result.data ?? []);
     setTransactions(result.data ?? []);
     setError(result.error);
     setIsLoading(false);
     return result;
-  }, [fallbackTransactions, limit, status, dateFrom, dateTo, workspaceId]);
+  }, [cacheKey, fallbackTransactions, limit, status, dateFrom, dateTo, workspaceId]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
+      // Leitura de menos de 1 minuto: fica o que já está na tela.
+      if (isFinancialCacheFresh(readFinancialCache(cacheKey))) return;
       refresh();
     }, 0);
 
@@ -104,7 +133,7 @@ export function useTransactions({
       requestIdRef.current += 1;
       window.clearTimeout(timeoutId);
     };
-  }, [refresh]);
+  }, [cacheKey, refresh]);
 
   /**
    * Centraliza saveTransaction/removeTransaction: trava sincrona via
@@ -135,8 +164,10 @@ export function useTransactions({
 
       if (result.error) {
         setError(result.error);
-      } else if (result.data) {
-        applyLocalUpdate(result.data);
+      } else {
+        // Lançamento muda saldo, mês e categoria: nenhuma leitura guardada vale mais.
+        clearFinancialQueryCache();
+        if (result.data) applyLocalUpdate(result.data);
       }
 
       return result;

@@ -15,6 +15,13 @@ import {
   removeRecord,
   upsertRecord,
 } from './financialHookUtils.js';
+import {
+  buildFinancialCacheKey,
+  clearFinancialQueryCache,
+  isFinancialCacheFresh,
+  readFinancialCache,
+  writeFinancialCache,
+} from './financialQueryCache.js';
 
 // Padrão estável: um `[]` novo a cada render trocaria a identidade do
 // refresh, e o efeito abaixo buscaria as contas em loop.
@@ -25,13 +32,33 @@ export function useAccounts({
   fallbackAccounts = SEM_REGISTROS,
   fallbackAccountTypes = SEM_REGISTROS,
 } = {}) {
-  const [accounts, setAccounts] = useState(() => cloneRecords(fallbackAccounts));
-  const [accountTypes, setAccountTypes] = useState(() =>
-    cloneRecords(fallbackAccountTypes),
+  const cacheKey = isSupabaseConfigured
+    ? buildFinancialCacheKey('accounts', { workspaceId })
+    : null;
+  const cached = readFinancialCache(cacheKey);
+  const [accounts, setAccounts] = useState(() =>
+    cached?.data.accounts ?? cloneRecords(fallbackAccounts),
   );
-  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [accountTypes, setAccountTypes] = useState(() =>
+    cached?.data.accountTypes ?? cloneRecords(fallbackAccountTypes),
+  );
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured && !cached);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
+  // Troca de espaço: no mesmo render, passa para o dado guardado do espaço
+  // novo ou entra em carregando, sem mostrar as contas do anterior.
+  const [renderedKey, setRenderedKey] = useState(cacheKey);
+  if (renderedKey !== cacheKey) {
+    setRenderedKey(cacheKey);
+    if (cached) {
+      setAccounts(cached.data.accounts);
+      setAccountTypes(cached.data.accountTypes);
+      setError(null);
+      setIsLoading(false);
+    } else if (cacheKey) {
+      setIsLoading(true);
+    }
+  }
   const requestIdRef = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -53,7 +80,8 @@ export function useAccounts({
       return null;
     }
 
-    setIsLoading(true);
+    // Com dado guardado na tela, a leitura roda por trás, sem carregando.
+    if (!readFinancialCache(cacheKey)) setIsLoading(true);
     const [accountsResult, typesResult] = await Promise.all([
       listAccounts(workspaceId, { activeOnly: false }),
       listAccountTypes(),
@@ -64,15 +92,23 @@ export function useAccounts({
     }
 
     const nextError = accountsResult.error ?? typesResult.error;
+    if (!nextError) {
+      writeFinancialCache(cacheKey, {
+        accounts: accountsResult.data ?? [],
+        accountTypes: typesResult.data ?? [],
+      });
+    }
     setAccounts(accountsResult.data ?? []);
     setAccountTypes(typesResult.data ?? []);
     setError(nextError);
     setIsLoading(false);
     return { accountsResult, typesResult };
-  }, [fallbackAccounts, fallbackAccountTypes, workspaceId]);
+  }, [cacheKey, fallbackAccounts, fallbackAccountTypes, workspaceId]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
+      // Leitura de menos de 1 minuto: fica o que já está na tela.
+      if (isFinancialCacheFresh(readFinancialCache(cacheKey))) return;
       refresh();
     }, 0);
 
@@ -80,7 +116,7 @@ export function useAccounts({
       requestIdRef.current += 1;
       window.clearTimeout(timeoutId);
     };
-  }, [refresh]);
+  }, [cacheKey, refresh]);
 
   const saveAccount = useCallback(
     async (values, accountId = null) => {
@@ -100,6 +136,7 @@ export function useAccounts({
       if (result.error) {
         setError(result.error);
       } else if (result.data) {
+        clearFinancialQueryCache();
         setAccounts((current) => upsertRecord(current, result.data));
       }
 
@@ -125,6 +162,7 @@ export function useAccounts({
       if (result.error) {
         setError(result.error);
       } else if (result.data) {
+        clearFinancialQueryCache();
         setAccounts((current) => upsertRecord(current, result.data));
       }
 
@@ -145,6 +183,7 @@ export function useAccounts({
       if (result.error) {
         setError(result.error);
       } else {
+        clearFinancialQueryCache();
         setAccounts((current) => removeRecord(current, accountId));
       }
 
