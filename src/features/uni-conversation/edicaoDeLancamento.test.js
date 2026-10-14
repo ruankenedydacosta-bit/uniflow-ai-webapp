@@ -214,6 +214,19 @@ test('escolhe pela posição dita com o verbo do pedido ou em frase mais longa',
   // Duas posições, ou uma fora da lista, não escolhem.
   assert.equal(escolherCandidato('o primeiro e o segundo', lista, contexto), null);
   assert.equal(escolherCandidato('excluir o lançamento número 3 da lista', lista, contexto), null);
+  // O último e o 2 são o mesmo item numa lista de dois.
+  assert.equal(escolherCandidato('o último lançamento, o lançamento 2 da lista', lista, contexto), mercadoSemanaPassada);
+  // Correção no meio da frase pergunta de novo.
+  assert.equal(escolherCandidato('o segundo, não, o primeiro', lista, contexto), null);
+  // "Um" depois de "lançamento" é artigo, não a posição 1.
+  assert.notEqual(escolherCandidato('o lançamento um pouco mais caro, de 85', lista, contexto), mercadoOntem);
+  assert.equal(escolherCandidato('apaga o de 85', lista, contexto), mercadoSemanaPassada);
+});
+
+test('valor com centavos não é lido como posição', () => {
+  const cafe = lancamento({ id: 'c1', description: 'Café', amount: 2.5, transaction_date: '2026-10-07' });
+  const cafeBarato = lancamento({ id: 'c2', description: 'Café', amount: 1.5, transaction_date: '2026-10-07' });
+  assert.notEqual(escolherCandidato('o 2,50', [cafe, cafeBarato], contexto), cafeBarato);
 });
 
 test('"qualquer um" escolhe só quando os itens da lista são iguais', () => {
@@ -221,6 +234,9 @@ test('"qualquer um" escolhe só quando os itens da lista são iguais', () => {
   assert.equal(escolherCandidato('Qualquer um desses', [mercadoOntem, repetido], contexto), mercadoOntem);
   assert.equal(escolherCandidato('pode apagar qualquer um', [mercadoOntem, repetido], contexto), mercadoOntem);
   assert.equal(escolherCandidato('qualquer um', [mercadoOntem, mercadoSemanaPassada], contexto), null);
+  // Despesa e receita com o mesmo nome e valor não são o mesmo lançamento.
+  const receita = lancamento({ ...mercadoOntem, id: 't1r', transaction_type: 'income' });
+  assert.equal(escolherCandidato('qualquer um', [mercadoOntem, receita], contexto), null);
 });
 
 test('monta a alteração só com o que muda', () => {

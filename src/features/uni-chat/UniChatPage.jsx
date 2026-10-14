@@ -2329,9 +2329,8 @@ export default function UniChatPage({ variant = 'full' }) {
       encerrarExclusao(null);
       return false;
     }
-    // "apaga o segundo" escolhe como "o segundo".
-    const escolha = texto.replace(/^\s*(?:pode\s+)?(?:exclui|exclua|apaga|apague|remove|remova|tira|tire)\s+/i, '');
-    const escolhido = escolherCandidato(escolha, exclusao.candidatos, contexto);
+    // "apaga o segundo" escolhe como "o segundo": escolherCandidato tira o verbo.
+    const escolhido = escolherCandidato(texto, exclusao.candidatos, contexto);
     if (escolhido) {
       syncMessageToSupabase(userMsg);
       encerrarExclusao(null);
