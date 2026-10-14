@@ -153,9 +153,8 @@ function tokenizeWords(input) {
   }));
 }
 
-function findWrittenMoney(input) {
-  const tokens = tokenizeWords(input);
-  const currencyIndex = tokens.findIndex((token) => CURRENCY_WORDS.has(token.value));
+// Número por extenso logo antes da moeda ("quatro mil reais").
+function readWrittenIntegerBefore(tokens, currencyIndex) {
   if (currencyIndex < 1) return null;
 
   let amountStart = currencyIndex - 1;
@@ -170,7 +169,15 @@ function findWrittenMoney(input) {
     .slice(amountStart, currencyIndex)
     .map((token) => token.value);
   const integer = parsePortugueseInteger(amountTokens);
-  if (!integer) return null;
+  return integer ? { integer, amountStart } : null;
+}
+
+function findWrittenMoney(input) {
+  const tokens = tokenizeWords(input);
+  const currencyIndex = tokens.findIndex((token) => CURRENCY_WORDS.has(token.value));
+  const written = readWrittenIntegerBefore(tokens, currencyIndex);
+  if (!written) return null;
+  const { integer, amountStart } = written;
 
   const precedingWord = tokens[amountStart - 1]?.value;
   const precedingText = input.slice(0, tokens[amountStart].start);
@@ -201,6 +208,17 @@ function findWrittenMoney(input) {
     end,
     start: tokens[amountStart].start,
   };
+}
+
+// Quantos valores por extenso com moeda a frase tem ("quarenta reais de
+// táxi e vinte e cinco reais de lanche" = 2). Algarismo não entra: quem
+// chama conta "4 mil reais" à parte e tira o trecho antes.
+export function countWrittenMoneyMentions(input) {
+  if (typeof input !== 'string') return 0;
+  const tokens = tokenizeWords(input);
+  return tokens.filter((token, index) => (
+    CURRENCY_WORDS.has(token.value) && readWrittenIntegerBefore(tokens, index) !== null
+  )).length;
 }
 
 // BUG REAL: "Caiu quinhentos." / "Recebi um Pix de mil." -- número por
@@ -272,6 +290,18 @@ function findNumberBeforePreposition(input) {
   return null;
 }
 
+// BUG REAL (voz, 14/10/2026): "duas parcelas de quatro mil reais, dia 20
+// de novembro e dia 20 do 12" virou R$ 20 -- o primeiro algarismo da frase
+// era o dia. Algarismo de data ("dia 20", "20/11", "20 de novembro", "dia 20
+// do 12") nunca é valor: os dígitos viram espaço, sem mudar os offsets, antes
+// de procurar o valor. O mês em número só conta até 12 e sem moeda depois
+// ("dia 10 de 50 reais" segue com valor 50).
+const DATE_DIGITS_RE = /\bdia\s+\d{1,2}(?:\s*\/\s*\d{1,2}(?:\/\d{2,4})?|\s+d[eo]\s+(?:0?[1-9]|1[0-2])(?!\s*(?:reais|real|mil|k)\b)(?!\d|[.,]\d))?(?!\d|[.,]\d)|\b\d{1,2}\s*\/\s*\d{1,2}(?:\/\d{2,4})?(?!\d|[.,]\d)|\b\d{1,2}\s+de\s+(?:janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\b/giu;
+
+function maskDateDigits(input) {
+  return input.replace(DATE_DIGITS_RE, (span) => span.replace(/\d/g, ' '));
+}
+
 function hasAmbiguousAmount(input) {
   const normalized = normalizeFinancialText(input);
   const numberTerm = '(?:\\d+(?:[.,]\\d+)?|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa|cem|cento|mil)';
@@ -285,7 +315,7 @@ export function extractAmount(input) {
   // ("reunião daqui 10 dias", "me lembra em 2 horas") -- nunca vira valor.
   if (AGENDA_INTENT_SET.has(classifyIntent(input).intent)) return null;
 
-  const match = input.match(MONEY_PATTERN);
+  const match = maskDateDigits(input).match(MONEY_PATTERN);
   if (!match) {
     return findWrittenMoney(input)?.amount
       ?? findTrailingWrittenNumber(input)?.amount
@@ -408,7 +438,7 @@ function extractDescription(input, intent, account, destinationAccount = null) {
   // Os spans nunca se sobrepõem (algarismo, "X reais" e número por extenso
   // no fim são mutuamente exclusivos).
   const cuts = [];
-  const moneyMatch = cleanInput.match(MONEY_PATTERN);
+  const moneyMatch = maskDateDigits(cleanInput).match(MONEY_PATTERN);
   if (moneyMatch) cuts.push([moneyMatch.index, moneyMatch.index + moneyMatch[0].length]);
   const writtenMoney = findWrittenMoney(cleanInput);
   if (writtenMoney) cuts.push([writtenMoney.start, writtenMoney.end]);

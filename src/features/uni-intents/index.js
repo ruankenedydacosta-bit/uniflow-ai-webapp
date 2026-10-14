@@ -6,6 +6,7 @@ export {
   stripLeadingConversationalPrefix,
 } from './intentClassifier.js';
 export {
+  countWrittenMoneyMentions,
   extractAccount,
   extractAmount,
   extractDate,

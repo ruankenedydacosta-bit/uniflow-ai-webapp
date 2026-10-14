@@ -1,4 +1,4 @@
-import { extractAmount } from '../uni-intents/index.js';
+import { countWrittenMoneyMentions, extractAmount, normalizeFinancialText } from '../uni-intents/index.js';
 import { classifyIntent, AGENDA_INTENT_SET } from '../uni-intents/intentClassifier.js';
 
 // CAMADA 0: frases de agenda/lembrete ("tenho uma reunião daqui 10 dias",
@@ -29,11 +29,15 @@ export function isAgendaExpression(text) {
 // sem card, "confirmar" depois virava consulta). "coloca/bota/poe" sao a
 // mesma familia de verbo coloquial de lancamento, so no imperativo.
 const FINANCIAL_VERB_RE = /\b(gastei|gasto|paguei|pago|recebi|recebo|comprei|compro|transferi|transfiro|ganhei|ganho|investi|invisto|abasteci|coloquei|botei|coloca|bota|poe|entrou|caiu|entraram|cairam|lancei|lance|lan[çc]a|registrei|registra|registro|anotei|anota)\b/i;
-const MONEY_MENTION_RE = /r\$\s*\d+(?:[.,]\d+)?|\b\d+(?:[.,]\d+)?\s*reais\b/gi;
+// BUG REAL (voz, 14/10/2026): pela voz o valor chega por extenso ("quatro
+// mil reais") e "4 mil reais" não batia aqui. Os dois contam; o trecho em
+// algarismo sai antes de contar por extenso, senão "mil reais" contaria duas
+// vezes.
+const MONEY_MENTION_RE = /r\$\s*\d+(?:[.,]\d+)?(?:\s*mil\b)?|\b\d+(?:[.,]\d+)?\s*(?:mil\s+)?reais\b/gi;
 export function countMoneyMentions(text) {
   if (typeof text !== 'string') return 0;
-  const matches = text.match(MONEY_MENTION_RE);
-  return matches ? matches.length : 0;
+  const matches = text.match(MONEY_MENTION_RE) ?? [];
+  return matches.length + countWrittenMoneyMentions(text.replace(MONEY_MENTION_RE, ' '));
 }
 
 // BUG REAL: MONEY_MENTION_RE só reconhece valores em algarismo ("50",
@@ -138,13 +142,16 @@ export function looksLikeUnclassifiedFinancialStatement(text) {
 // operações nem entende parcela. Devolve o motivo para a Uni
 // pedir de outro jeito em vez de abrir um card errado; null quando a frase
 // cabe numa operação só.
-const PARCELAMENTO_RE = /\b\d+\s*x\b|em\s+\d+\s+vezes|parcelad[oa]|\b\d+\s+parcelas\b/i;
+// A quantidade também vem por extenso pela voz ("faltam duas parcelas").
+// "a parcela do carro" (uma só) segue para as regras.
+const QUANTIDADE = '(?:\\d+|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta)';
+const PARCELAMENTO_RE = new RegExp(`\\b\\d+\\s*x\\b|em\\s+${QUANTIDADE}\\s+vezes|parcelad[oa]|\\b${QUANTIDADE}\\s+parcelas\\b`);
 
 export function motivoParaNaoLerSemModelo(text) {
   if (typeof text !== 'string' || !text.trim() || isAgendaExpression(text)) return null;
   // Sem valor, é pergunta ("quanto parcelei?"): segue para as regras.
   if (!hasAnyAmountMention(text)) return null;
-  if (PARCELAMENTO_RE.test(text)) return 'parcela';
+  if (PARCELAMENTO_RE.test(normalizeFinancialText(text))) return 'parcela';
   if (countMoneyMentions(text) >= 2) return 'varias';
   return null;
 }

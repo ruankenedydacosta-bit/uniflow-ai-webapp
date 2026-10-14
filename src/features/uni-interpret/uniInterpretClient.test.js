@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -7,7 +8,9 @@ import {
   interpretacaoParaOverrides,
   montarHistoricoParaInterpretacao,
   montarRascunhoParaInterpretacao,
+  UNI_INTERPRET_TIMEOUT_MS,
 } from './uniInterpretClient.js';
+import { REALTIME_TOOL_TIMEOUT_MS } from '../uni-voice-realtime/realtimeToolBridge.js';
 
 const WORKSPACE = '3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90';
 
@@ -211,4 +214,14 @@ test('resposta ao rascunho: categoria "nova" que já existe com outro acento usa
     correcaoDoRascunho({ intent: 'correcao', operacoes: [{ ...OPERACAO_IMPOSTOS, novaCategoria: 'alimentacao' }] }, RASCUNHO_IMPOSTOS, { categorias }),
     { overrides: { amount: 5500, date: '2026-10-15', categoryId: 'cat-ali' }, novaCategoria: null },
   );
+});
+
+// O cliente não pode desistir antes da própria Edge Function: a resposta
+// certa chegava depois e as regras já tinham lançado o valor errado.
+test('tempo limite fica entre o da Edge Function e o da voz', () => {
+  const fonte = readFileSync(new URL('../../../supabase/functions/uni-interpret/index.ts', import.meta.url), 'utf8');
+  const tempoDaFuncao = Number(fonte.match(/const TEMPO_LIMITE_MS = (\d+);/)?.[1]);
+  assert.ok(tempoDaFuncao > 0);
+  assert.ok(UNI_INTERPRET_TIMEOUT_MS > tempoDaFuncao);
+  assert.ok(UNI_INTERPRET_TIMEOUT_MS < REALTIME_TOOL_TIMEOUT_MS);
 });
