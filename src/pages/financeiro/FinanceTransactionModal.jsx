@@ -13,8 +13,11 @@ import { UniRingOrb } from '../../components/ui/UniRingOrb/index.js';
 import { PhCaretDownIcon, PhCheckIcon, PhTrashIcon } from '../../features/simplified-app/SimplifiedIcons.jsx';
 import { celebrarSalvar, fecharFolha } from '../../features/simplified-app/movimentoDeSalvar.js';
 import CategoryCreateModal from '../../features/categories/components/CategoryCreateModal.jsx';
-import { categoriasParaSeletor, getCategoryErrorMessage } from '../../features/categories/categoryUtils.js';
-import { notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
+import {
+  categoriasParaSeletor,
+  getCategoryErrorMessage,
+  isDuplicateCategoryName,
+} from '../../features/categories/categoryUtils.js';
 import { cx } from '../../utils/cx';
 import { formatCurrency } from '../../utils/formatters';
 import styles from './FinanceTransactionModal.module.css';
@@ -332,6 +335,7 @@ function FinanceTransactionModal({
   // Salvou e a folha está comemorando e descendo: nada mais é aceito.
   const [concluindo, setConcluindo] = useState(false);
   const [criandoCategoria, setCriandoCategoria] = useState(false);
+  const [erroCategoria, setErroCategoria] = useState(null);
   const saveButtonRef = useRef(null);
   const seriesOperationIdRef = useRef(null);
   const categoriesById = useMemo(
@@ -433,7 +437,8 @@ function FinanceTransactionModal({
   // Transferência não tem categoria de saída nem de entrada para criar.
   const podeCriarCategoria = canManage
     && form.transaction_type !== 'transfer'
-    && typeof categoryState.saveCategory === 'function';
+    && typeof categoryState.saveCategory === 'function'
+    && typeof categoryState.reexibirCategoria === 'function';
   // Ajuste aceita os dois tipos: a folha deixa a pessoa escolher.
   const tipoDaNovaCategoria = form.transaction_type === 'income' ? 'income' : 'expense';
   const folhaPorCima = isDeleteConfirmOpen || criandoCategoria;
@@ -447,6 +452,8 @@ function FinanceTransactionModal({
     setEditScope('only');
     setDuplicateNotice(false);
     setBatchError(null);
+    setCriandoCategoria(false);
+    setErroCategoria(null);
   }
 
   function handleClose() {
@@ -467,7 +474,7 @@ function FinanceTransactionModal({
 
   function handleCategoriaChange(event) {
     if (event.target.value === OPCAO_CRIAR_CATEGORIA) {
-      categoryState.clearError?.();
+      setErroCategoria(null);
       setCriandoCategoria(true);
       return;
     }
@@ -476,15 +483,27 @@ function FinanceTransactionModal({
 
   function handleFecharCriarCategoria() {
     if (categoryState.isMutating) return;
-    categoryState.clearError?.();
+    setErroCategoria(null);
     setCriandoCategoria(false);
   }
 
+  // O saveCategory já põe a categoria nova no estado: avisar as outras telas
+  // aqui recarregaria tudo (e, no /financeiro, o aviso volta para ele mesmo).
+  // Nome de categoria oculta não pode ser criado de novo (índice único por
+  // nome e tipo): a oculta volta a aparecer e fica escolhida.
   async function handleCriarCategoria(values) {
-    const resultado = await categoryState.saveCategory(values);
-    if (resultado.error || !resultado.data) return;
-    notifyFinancialDataChanged('categorias');
-    setForm((current) => ({ ...current, category_id: resultado.data.id }));
+    const oculta = (categoryState.categoriasOcultas ?? []).find((category) =>
+      isDuplicateCategoryName([category], values.name, values.category_type));
+    const resultado = oculta
+      ? await categoryState.reexibirCategoria(oculta.id)
+      : await categoryState.saveCategory(values);
+    if (resultado.error) {
+      setErroCategoria(resultado.error);
+      return;
+    }
+    const categoriaId = oculta?.id ?? resultado.data?.id;
+    if (!categoriaId) return;
+    setForm((current) => ({ ...current, category_id: categoriaId }));
     setCriandoCategoria(false);
   }
 
@@ -750,12 +769,13 @@ function FinanceTransactionModal({
       onClose={handleFecharCriarCategoria}
       defaultType={tipoDaNovaCategoria}
       tipoFixo={form.transaction_type !== 'adjustment'}
-      categories={categoryState.categories}
+      categories={categoryState.categoriasVisiveis}
       onCreate={handleCriarCategoria}
       isMutating={categoryState.isMutating}
-      serverError={criandoCategoria
-        ? getCategoryErrorMessage(categoryState.error, 'Não foi possível criar a categoria. Tente novamente.')
+      serverError={erroCategoria
+        ? getCategoryErrorMessage(erroCategoria, 'Não foi possível criar a categoria. Tente novamente.')
         : ''}
+      className={className}
       overlayClassName={cx(styles.categoryCreateOverlay, overlayClassName)}
     />
     <Modal

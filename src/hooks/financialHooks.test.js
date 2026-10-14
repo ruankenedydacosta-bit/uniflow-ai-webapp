@@ -332,7 +332,13 @@ test('seletor de categoria do lancamento cria categoria sem sair da folha', asyn
   // Sem permissao e em transferencia a opcao nao aparece.
   assert.match(source, /const podeCriarCategoria = canManage\s*\n\s*&& form\.transaction_type !== 'transfer'/);
   // Criou: a categoria nova ja fica escolhida no lancamento.
-  assert.match(source, /setForm\(\(current\) => \(\{ \.\.\.current, category_id: resultado\.data\.id \}\)\);/);
+  assert.match(source, /const categoriaId = oculta\?\.id \?\? resultado\.data\?\.id;/);
+  assert.match(source, /setForm\(\(current\) => \(\{ \.\.\.current, category_id: categoriaId \}\)\);/);
+  // Nome de categoria oculta (indice unico por nome e tipo): reexibe a oculta.
+  assert.match(source, /\? await categoryState\.reexibirCategoria\(oculta\.id\)\s*\n\s*: await categoryState\.saveCategory\(values\);/);
+  assert.match(source, /categories=\{categoryState\.categoriasVisiveis\}/);
+  // Sem aviso global: no \/financeiro ele volta para o proprio listener.
+  assert.doesNotMatch(source, /notifyFinancialDataChanged/);
   // Saida e entrada travam o tipo, para a categoria caber no seletor filtrado.
   assert.match(source, /tipoFixo=\{form\.transaction_type !== 'adjustment'\}/);
   // Com a folha de categoria por cima, a da movimentacao fica inerte.
