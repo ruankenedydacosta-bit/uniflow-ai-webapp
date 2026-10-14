@@ -12,7 +12,7 @@ import {
 import { CASOS } from './evalCases.js';
 import { avaliarCaso, INTENTS_DE_LANCAMENTO, resumirAvaliacao } from './evalScoring.js';
 
-const INTENTS_VALIDOS = new Set([...INTENTS_DE_LANCAMENTO, 'saldo', 'meta', 'consulta', 'agenda', 'categoria', 'exclusao', 'edicao', 'conversa']);
+const INTENTS_VALIDOS = new Set([...INTENTS_DE_LANCAMENTO, 'saldo', 'meta', 'consulta', 'agenda', 'categoria', 'exclusao', 'edicao', 'recorrencia', 'conversa']);
 
 test('cada caso tem id único e intent conhecido', () => {
   const ids = CASOS.map((caso) => caso.id);

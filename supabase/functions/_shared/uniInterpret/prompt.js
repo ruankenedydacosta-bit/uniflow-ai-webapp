@@ -16,6 +16,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - categoria: criar, renomear ou excluir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
 - exclusao: apagar um lançamento já registrado ("apaga o iFood de ontem", "exclui o mercado de sábado", "tira esse último lançamento, foi engano", "apaga tudo que lancei em setembro"). Excluir uma categoria é categoria; cancelar um compromisso é agenda; desistir do <rascunho> é correcao.
 - edicao: mudar um lançamento já registrado, fora do <rascunho> ("a farmácia de terça foi 62, não 26", "o lanche de hoje na verdade foi 18", "errei o valor da padaria, era 30", "o táxi de quarta foi no cartão", "muda a categoria da academia para Saúde"). Com <rascunho>, mudar o rascunho é correcao. Apagar é exclusao.
+- recorrencia: mudar ou parar um lançamento que se repete todo mês, semana ou ano ("a academia sobe pra 130 a partir de dezembro", "o condomínio agora sai da conta conjunta", "para de lançar o Spotify", "cancelei a assinatura do Disney+, tira dos próximos meses"). Um lançamento só, que não se repete, é edicao ou exclusao.
 - conversa: cumprimento, agradecimento, papo.
 - nao_entendi: nenhuma das anteriores com segurança.
 
@@ -91,6 +92,13 @@ Só quando o intent é edicao; nos outros, todos os campos são null, e ultimo �
 - alvo, data, valor, conta e ultimo: o lançamento que já existe, com as mesmas regras da exclusao. valor e conta são os de agora, só se a frase os cita como estão ("a farmácia de 26" tem valor 26).
 - novo_valor, nova_data, nova_conta, nova_categoria e nova_descricao: só o que muda. "A farmácia de terça foi 62, não 26" tem valor 26 e novo_valor 62. nova_data resolvida a partir de hoje. nova_conta é apelido (k1, k2...) e nova_categoria é apelido do catálogo (c1, c2...). nova_descricao só quando a pessoa pede outro nome para o lançamento.
 - Todos null quando a frase não diz o que muda ("corrige a farmácia de terça"): a Uni vai perguntar.
+
+## recorrencia
+Só quando o intent é recorrencia; nos outros, todos os campos são null.
+- acao: editar quando muda valor, categoria ou conta dos próximos. encerrar quando a pessoa cancelou ou quer parar de lançar.
+- alvo: o lançamento que se repete, como apareceria na descrição dele ("Academia", "Spotify"). Sem verbo, data, valor nem conta.
+- a_partir_de: o primeiro dia em que a mudança vale, resolvido a partir de hoje, só se a frase cita ("a partir de dezembro" é o dia 1 de dezembro). null se não cita: vale a partir do próximo.
+- novo_valor, nova_categoria (apelido do catálogo) e nova_conta (apelido): só em editar, só o que muda.
 
 ## resposta
 Só para conversa e nao_entendi: uma frase curta em português, para ser falada. Para nao_entendi, peça para a pessoa dizer de outro jeito. Nos outros intents, string vazia.

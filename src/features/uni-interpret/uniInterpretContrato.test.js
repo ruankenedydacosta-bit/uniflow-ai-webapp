@@ -67,7 +67,7 @@ test('apelidos seguem a ordem por tipo e nome, independente da ordem recebida', 
 });
 
 test('schema é estrito: todo campo obrigatório e nenhum extra', () => {
-  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao, ESQUEMA.properties.edicao];
+  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao, ESQUEMA.properties.edicao, ESQUEMA.properties.recorrencia];
   for (const objeto of objetos) {
     assert.equal(objeto.additionalProperties, false);
     assert.deepEqual([...objeto.required].sort(), Object.keys(objeto.properties).sort());
@@ -656,6 +656,23 @@ test('edicao: critérios da busca e mudança resolvida para ids do espaço', () 
   );
   // Bloco ausente devolve o intent sem mudança: o app pergunta o que mudar.
   assert.deepEqual(validarInterpretacao({ intent: 'edicao', operacoes: [], resposta: '' }, CONTEXTO).edicao.mudancas, {});
+});
+
+// Recorrência pela conversa (#263).
+test('recorrencia: ação da lista, mudança só em editar e sem mudança vira nao_entendi', () => {
+  const pedido = (recorrencia) => ({ intent: 'recorrencia', operacoes: [], resposta: '', recorrencia });
+  const vazio = { acao: null, alvo: null, a_partir_de: null, novo_valor: null, nova_categoria: null, nova_conta: null };
+  const editar = validarInterpretacao(pedido({ ...vazio, acao: 'editar', alvo: ' Academia ', a_partir_de: '2026-12-01', novo_valor: 130, nova_categoria: C.ali, nova_conta: 'k9' }), CONTEXTO);
+  assert.equal(editar.intent, 'recorrencia');
+  assert.deepEqual(
+    { ...editar.recorrencia, novaCategoria: editar.recorrencia.novaCategoria?.id },
+    { acao: 'editar', alvo: 'Academia', aPartirDe: '2026-12-01', novoValor: 130, novaCategoria: 'cat-ali', novaConta: null },
+  );
+  const encerrar = validarInterpretacao(pedido({ ...vazio, acao: 'encerrar', alvo: 'Spotify', novo_valor: 50 }), CONTEXTO).recorrencia;
+  assert.equal(encerrar.acao, 'encerrar');
+  assert.equal(encerrar.novoValor, null, 'encerrar não leva mudança');
+  assert.equal(validarInterpretacao(pedido({ ...vazio, acao: 'editar', alvo: 'Academia' }), CONTEXTO).intent, 'nao_entendi');
+  assert.equal(validarInterpretacao(pedido({ ...vazio, acao: 'pausar', alvo: 'Academia' }), CONTEXTO).intent, 'nao_entendi');
 });
 
 // #190: lista de lançamentos e catálogo de categorias.

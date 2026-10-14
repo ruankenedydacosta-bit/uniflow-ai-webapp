@@ -20,6 +20,7 @@ export const ROTAS_INTERPRETACAO = Object.freeze({
   CATEGORIA: 'categoria',
   EXCLUSAO: 'exclusao',
   EDICAO: 'edicao',
+  RECORRENCIA: 'recorrencia',
   CONVERSA: 'conversa',
   NAO_ENTENDI: 'nao_entendi',
 });
@@ -85,6 +86,8 @@ export function escolherRotaDaInterpretacao(interpretacao) {
     // Função antiga sem o bloco edicao: as regras tentam, como antes.
     case 'edicao':
       return interpretacao.edicao ? ROTAS_INTERPRETACAO.EDICAO : null;
+    case 'recorrencia':
+      return interpretacao.recorrencia?.acao ? ROTAS_INTERPRETACAO.RECORRENCIA : null;
     case 'conversa':
       return ROTAS_INTERPRETACAO.CONVERSA;
     case 'nao_entendi':

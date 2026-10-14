@@ -13,7 +13,7 @@
 // saldo não leva operação: o app público não ajusta saldo pela conversa, só
 // responde (#80). meta leva o pedido de meta (#192).
 export const INTENTS = Object.freeze([
-  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'edicao', 'conversa', 'nao_entendi',
+  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'edicao', 'recorrencia', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // Consulta que o app responde com os parâmetros (#80). 'lancamentos' lista
@@ -30,6 +30,11 @@ export const ACOES_META = Object.freeze(['criar', 'editar', 'excluir', 'consulta
 // O que fazer com um compromisso (#191). Cancelar muda o status; excluir
 // apaga. Fora de criar, o app localiza o compromisso pelo alvo.
 export const ACOES_AGENDA = Object.freeze(['criar', 'editar', 'cancelar', 'concluir', 'excluir', 'consultar']);
+
+// Lançamento que se repete (#263): mudar o valor, a categoria ou a conta dos
+// próximos, ou parar de gerar. Encerrar apaga os previstos a partir do
+// próximo; os já realizados ficam.
+export const ACOES_RECORRENCIA = Object.freeze(['editar', 'encerrar']);
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -202,12 +207,26 @@ const ESQUEMA_EDICAO = {
   },
 };
 
+const ESQUEMA_RECORRENCIA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['acao', 'alvo', 'a_partir_de', 'novo_valor', 'nova_categoria', 'nova_conta'],
+  properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_RECORRENCIA, null] },
+    alvo: { ...TEXTO_OU_NULO, description: 'o lançamento que se repete, como a pessoa o chama, ex.: Netflix' },
+    a_partir_de: { ...TEXTO_OU_NULO, description: 'primeiro dia em que a mudança vale, AAAA-MM-DD' },
+    novo_valor: { type: ['number', 'null'], description: 'valor novo, em reais' },
+    nova_categoria: { ...TEXTO_OU_NULO, description: 'apelido da categoria nova, ex.: c3' },
+    nova_conta: { ...TEXTO_OU_NULO, description: 'apelido da conta nova, ex.: k2' },
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao', 'edicao'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao', 'edicao', 'recorrencia'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
@@ -218,6 +237,7 @@ export const ESQUEMA = Object.freeze({
     meta: ESQUEMA_META,
     exclusao: ESQUEMA_EXCLUSAO,
     edicao: ESQUEMA_EDICAO,
+    recorrencia: ESQUEMA_RECORRENCIA,
   },
 });
 
@@ -524,6 +544,28 @@ function validarEdicao(bruta, contexto) {
   };
 }
 
+// Ação fora da lista vira null e o app responde que não entendeu. Editar sem
+// nada para mudar também. a_partir_de fica até um ano à frente.
+function validarRecorrencia(bruta, { categoriasPorApelido, contasPorApelido, dataReferencia }) {
+  const acao = ACOES_RECORRENCIA.includes(bruta?.acao) ? bruta.acao : null;
+  const aPartirDe = dataValida(bruta?.a_partir_de) && distanciaEmDias(bruta.a_partir_de, dataReferencia) <= 366
+    ? bruta.a_partir_de
+    : null;
+  const editar = acao === 'editar';
+  const novoValor = editar ? valorPositivo(bruta?.novo_valor) : null;
+  const novaCategoria = editar ? categoriasPorApelido.get(bruta?.nova_categoria) ?? null : null;
+  const novaConta = editar ? contasPorApelido.get(bruta?.nova_conta) ?? null : null;
+  const semMudanca = editar && !novoValor && !novaCategoria && !novaConta;
+  return {
+    acao: semMudanca ? null : acao,
+    alvo: textoLimpo(bruta?.alvo, MAX_ALVO_EXCLUSAO) || null,
+    aPartirDe,
+    novoValor,
+    novaCategoria,
+    novaConta,
+  };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -560,6 +602,12 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], meta
   }
   if (intent === 'edicao') {
     return { intent, operacoes: [], resposta, edicao: validarEdicao(bruta?.edicao, contexto) };
+  }
+  if (intent === 'recorrencia') {
+    const recorrencia = validarRecorrencia(bruta?.recorrencia, contexto);
+    return recorrencia.acao
+      ? { intent, operacoes: [], resposta, recorrencia }
+      : { intent: 'nao_entendi', operacoes: [], resposta };
   }
   if (intent !== 'lancamento' && intent !== 'correcao') {
     return { intent, operacoes: [], resposta };

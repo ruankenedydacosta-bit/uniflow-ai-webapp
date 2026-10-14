@@ -226,6 +226,7 @@ import {
   listTransactionsForPeriod,
   updateTransaction,
 } from '../../services/transactionService.js';
+import { localizarSerie, montarPedidoDeRecorrencia } from '../uni-conversation/pedidoDeRecorrencia.js';
 import {
   acharPrevisto,
   janelaDosPrevistos,
@@ -260,6 +261,7 @@ const EDICAO_TTL_MS = 15 * 60 * 1000;
 // "corrige pra 50" vale para o lançamento confirmado há até 30 minutos.
 const ULTIMO_CONFIRMADO_TTL_MS = 30 * 60 * 1000;
 const TEXTO_EDICAO_VENCIDA = 'Essa alteração expirou e nada foi salvo. Peça de novo se ainda quiser alterar.';
+const TEXTO_ACAO_VENCIDA = 'Esse pedido expirou e nada foi salvo. Peça de novo se ainda quiser.';
 const TEXTO_EDICAO_SEM_MUDANCA = 'O que você quer mudar nesse lançamento: valor, data, conta, categoria ou descrição? Diga junto o lançamento, por exemplo: "o mercado de ontem foi 50".';
 const TEXTO_EDICAO_SEM_ALVO = 'Diga qual lançamento quer alterar, com o nome e o dia ou o valor. Por exemplo: "o mercado de ontem foi 50, não 40".';
 const TEXTO_CATEGORIA_VENCIDA = 'Esse pedido de categoria expirou e nada foi salvo. Peça de novo se ainda quiser.';
@@ -1073,6 +1075,7 @@ export default function UniChatPage({ variant = 'full' }) {
     encerrarExclusao('expired');
     encerrarPedidoDeCategoria('expired');
     encerrarPedidoDeMeta('expired');
+    encerrarAcaoPendente('expired');
   }
 
   // Edição de lançamento já salvo pedida em conversa ("corrige o mercado de
@@ -1639,6 +1642,176 @@ export default function UniChatPage({ variant = 'full' }) {
     categoriaPendenteRef.current = null;
     setExecutionError(null);
     createAssistantResponse(withFollowUpQuestion('Tudo bem. Não mudei nenhuma categoria.'));
+  }
+
+  // Ação de um passo esperando o Confirmar do card: recorrência (#263),
+  // orçamento (#264) e conta (#266). Mesma pendência paralela do pedido de
+  // categoria, com o mesmo prazo. `executar` grava pelo service da tela e
+  // devolve { error }.
+  const acaoPendenteRef = useRef(null);
+
+  function acaoPendenteAtiva(pendente = acaoPendenteRef.current) {
+    return Boolean(
+      pendente
+      && Date.now() - pendente.criadaEm <= EDICAO_TTL_MS
+      && pendente.conversationId === activeIdRef.current
+      && pendente.workspaceId === effectiveWorkspace?.id,
+    );
+  }
+
+  function encerrarAcaoPendente(status) {
+    const pendente = acaoPendenteRef.current;
+    if (!pendente) return;
+    if (status && pendente.messageId) {
+      setMessages((current) => current.map((message) => (
+        message.id === pendente.messageId && message.confirmation?.status === 'pending'
+          ? { ...message, confirmation: { ...message.confirmation, status } }
+          : message
+      )));
+    }
+    acaoPendenteRef.current = null;
+  }
+
+  // pronto: { texto, card, executar, textoFeito, textoDoErro, textoCancelado }.
+  function oferecerAcao(pronto) {
+    encerrarAcaoPendente('expired');
+    const message = createAssistantResponse(pronto.texto, {
+      type: 'confirmation',
+      confirmation: pronto.card,
+      deduplicateNarration: false,
+    });
+    acaoPendenteRef.current = {
+      ...pronto,
+      messageId: message?.id ?? null,
+      workspaceId: effectiveWorkspace?.id,
+      conversationId: activeIdRef.current,
+      criadaEm: Date.now(),
+    };
+  }
+
+  // Frase nova com uma ação guardada. true quando ela já foi respondida aqui.
+  function tratarAcaoPendente(texto, userMsg) {
+    const pendente = acaoPendenteRef.current;
+    if (!pendente) return false;
+    const resposta = classifyPendingActionReply(texto);
+    if (!acaoPendenteAtiva(pendente)) {
+      encerrarAcaoPendente('expired');
+      if (resposta === 'input') return false;
+      syncMessageToSupabase(userMsg);
+      createAssistantResponse(TEXTO_ACAO_VENCIDA, { deduplicateNarration: false });
+      return true;
+    }
+    if (resposta === 'confirm') {
+      syncMessageToSupabase(userMsg);
+      void confirmarAcaoPendente(pendente.messageId);
+      return true;
+    }
+    if (resposta === 'cancel') {
+      syncMessageToSupabase(userMsg);
+      cancelarAcaoPendente(pendente.messageId);
+      return true;
+    }
+    encerrarAcaoPendente('expired');
+    return false;
+  }
+
+  async function confirmarAcaoPendente(id) {
+    const pendente = acaoPendenteRef.current;
+    if (!acaoPendenteAtiva(pendente) || confirmingRef.current) return;
+    const messageId = id ?? pendente.messageId;
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    setExecutionError(null);
+    try {
+      const resultado = await pendente.executar();
+      if (resultado?.error) {
+        reportConfirmationError(messageId, pendente.textoDoErro);
+        return;
+      }
+      // Gravou: a ação acaba mesmo que a pessoa tenha trocado de conversa,
+      // senão um "sim" depois gravaria de novo.
+      acaoPendenteRef.current = null;
+      setMessages((current) => current.map((message) => (
+        message.id === messageId
+          ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
+          : message
+      )));
+      notifyFinancialDataChanged('uni-chat');
+      if (activeIdRef.current !== pendente.conversationId) return;
+      createAssistantResponse(withFollowUpQuestion(pendente.textoFeito));
+    } catch {
+      reportConfirmationError(messageId, 'Ocorreu um erro inesperado. Tente novamente.');
+    } finally {
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
+  }
+
+  function cancelarAcaoPendente(id) {
+    const pendente = acaoPendenteRef.current;
+    if (!pendente) return;
+    setMessages((current) => current.map((message) => (
+      message.id === (id ?? pendente.messageId)
+        ? { ...message, confirmation: { ...message.confirmation, status: 'canceled' } }
+        : message
+    )));
+    acaoPendenteRef.current = null;
+    setExecutionError(null);
+    createAssistantResponse(withFollowUpQuestion(pendente.textoCancelado ?? 'Tudo bem. Não mudei nada.'));
+  }
+
+  // Recorrência pelo uni-interpret (#263): acha a série entre os previstos
+  // e mostra o card. A RPC da tela muda ou apaga "este e os próximos".
+  async function iniciarPedidoDeRecorrencia(pedido, turnToken) {
+    const conversationId = activeIdRef.current;
+    const referenceDate = getLocalIsoDate();
+    setIsTyping(true);
+    const lidos = await listTransactions(effectiveWorkspace?.id, { status: 'pending', dateFrom: referenceDate, limit: 100 })
+      .catch(() => null);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
+    setIsTyping(false);
+    if (!lidos || lidos.error) {
+      createAssistantResponse('Não consegui ler seus lançamentos agora. Tente de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    const achado = localizarSerie(pedido.alvo, lidos.data ?? [], {
+      categories: categoryState.categories,
+      aPartirDe: pedido.aPartirDe,
+      referenceDate,
+    });
+    if (achado.tipo === 'nenhum') {
+      createAssistantResponse(
+        pedido.alvo
+          ? `Não achei um lançamento que se repete com o nome ${pedido.alvo} e previstos daqui para a frente. Confira o nome na tela Financeiro.`
+          : 'Diga qual lançamento que se repete você quer mudar. Por exemplo: "a academia sobe pra 130".',
+        { deduplicateNarration: false },
+      );
+      return;
+    }
+    if (achado.tipo === 'varios') {
+      createAssistantResponse(
+        `Achei mais de um lançamento que se repete com esse nome: ${[...new Set(achado.nomes)].join(', ')}. Diga o nome completo de qual deles.`,
+        { deduplicateNarration: false },
+      );
+      return;
+    }
+    const pronto = montarPedidoDeRecorrencia(pedido, achado.serie, {
+      accounts: accountState.accounts,
+      categories: categoryState.categories,
+    });
+    if (pronto.erro) {
+      createAssistantResponse(pronto.erro, { deduplicateNarration: false });
+      return;
+    }
+    const { chamada } = pronto;
+    oferecerAcao({
+      ...pronto,
+      executar: () => (chamada.rpc === 'excluir'
+        ? transactionsState.removeSeriesTransactions(chamada.transacaoId, chamada.escopo)
+        : transactionsState.saveSeriesTransactions(chamada.transacaoId, chamada.escopo, chamada.alteracoes)),
+      textoDoErro: 'Não consegui mudar a série. Tente de novo ou use a tela Financeiro.',
+      textoCancelado: 'Tudo bem. A série continua como estava.',
+    });
   }
 
   // Pedido de meta (criar, alterar, excluir) esperando o Confirmar do card
@@ -4064,6 +4237,9 @@ export default function UniChatPage({ variant = 'full' }) {
         setIsTyping(false);
         await iniciarExclusao(interpretacao.exclusao, turnToken);
         return true;
+      case ROTAS_INTERPRETACAO.RECORRENCIA:
+        await iniciarPedidoDeRecorrencia(interpretacao.recorrencia, turnToken);
+        return true;
       case ROTAS_INTERPRETACAO.EDICAO:
         setIsTyping(false);
         iniciarEdicaoDoModelo(interpretacao.edicao, turnToken);
@@ -4180,6 +4356,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // andamento, "corrige…" continua sendo deles.
     if (!hasPendingFinancialConversation && !hasPendingAgendaConversation) {
       if (tratarPedidoDeCategoriaPendente(functionalText, userMsg)) return;
+      if (tratarAcaoPendente(functionalText, userMsg)) return;
       if (tratarPedidoDeMetaPendente(functionalText, userMsg)) return;
       if (edicaoPendenteRef.current && !edicaoAtiva()) {
         const vencida = edicaoPendenteRef.current;
@@ -4200,6 +4377,7 @@ export default function UniChatPage({ variant = 'full' }) {
       if (exclusaoPendenteRef.current) encerrarExclusao('expired');
       encerrarPedidoDeCategoria('expired');
       encerrarPedidoDeMeta('expired');
+      encerrarAcaoPendente('expired');
     }
     if (hasAgendaConversation) {
       syncMessageToSupabase(userMsg);
@@ -4462,6 +4640,15 @@ export default function UniChatPage({ variant = 'full' }) {
       } else {
         encerrarExclusao('expired');
         reportConfirmationError(id, TEXTO_EXCLUSAO_VENCIDA);
+      }
+      return;
+    }
+    if (acaoPendenteRef.current?.messageId === id) {
+      if (acaoPendenteAtiva()) {
+        await confirmarAcaoPendente(id);
+      } else {
+        encerrarAcaoPendente('expired');
+        reportConfirmationError(id, TEXTO_ACAO_VENCIDA);
       }
       return;
     }
@@ -4830,6 +5017,10 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     if (exclusaoPendenteRef.current?.messageId === id) {
       cancelarExclusao(id);
+      return;
+    }
+    if (acaoPendenteRef.current?.messageId === id) {
+      cancelarAcaoPendente(id);
       return;
     }
     if (

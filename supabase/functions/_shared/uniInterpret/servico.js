@@ -100,6 +100,13 @@ function serializar(validada) {
         novaCategoria: paraCliente(validada.edicao.novaCategoria),
       },
     } : {}),
+    ...(validada.recorrencia ? {
+      recorrencia: {
+        ...validada.recorrencia,
+        novaCategoria: paraCliente(validada.recorrencia.novaCategoria),
+        novaConta: paraCliente(validada.recorrencia.novaConta),
+      },
+    } : {}),
     ...(consulta ? {
       consulta: {
         tipo: consulta.tipo,

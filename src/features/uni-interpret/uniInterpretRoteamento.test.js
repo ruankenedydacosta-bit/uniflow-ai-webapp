@@ -374,6 +374,14 @@ test('edição de lançamento salvo vai para a rota própria; sem o bloco (funç
   assert.equal(escolherRotaDaInterpretacao({ intent: 'edicao', operacoes: [], resposta: '' }), null);
 });
 
+test('pedido sobre lançamento que se repete vai para a rota própria (#263)', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'recorrencia', operacoes: [], resposta: '', recorrencia: { acao: 'encerrar', alvo: 'Spotify' } }),
+    ROTAS_INTERPRETACAO.RECORRENCIA,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'recorrencia', operacoes: [], resposta: '' }), null);
+});
+
 test('recorrência com frequência vai para o plano e vira série registrável (#222)', () => {
   const interpretacao = {
     intent: 'lancamento',

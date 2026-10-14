@@ -19,7 +19,9 @@
 //   precisa ter. Em exclusao (#189), acao 'excluir_lancamento' com as
 //   palavras que o alvo precisa ter e, quando importa, data, valor, ultimo e
 //   lote. Em edicao (#261), acao 'editar_lancamento' com os mesmos critérios
-//   e o que muda: novoValor, novaData, novaConta e novaCategoria.
+//   e o que muda: novoValor, novaData, novaConta e novaCategoria. Em
+//   recorrencia (#263), a ação (editar, encerrar), as palavras do alvo, data
+//   (a_partir_de) e o que muda.
 //   Em meta (#192), a ação (criar, editar, excluir, consultar, aportar,
 //   retirar) e, quando importa, nome, alvo (uma das metas de
 //   metasDaAvaliacao), valor, data, conta (#161) e soNaMeta.
@@ -1074,6 +1076,23 @@ export const CASOS = [
     reservado: true,
     frase: 'muda a categoria do iFood de ontem para Lazer',
     esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['ifood'], data: '2026-10-01', novaCategoria: 'Lazer' } },
+  },
+  // Lançamento que se repete (#263): mudar os próximos ou encerrar.
+  {
+    id: 'recorrencia-aluguel-sobe',
+    frase: 'o aluguel sobe pra 1.800 a partir de novembro',
+    esperado: { intent: 'recorrencia', pedido: { acao: 'editar', palavras: ['aluguel'], data: '2026-11-01', novoValor: 1800 } },
+  },
+  {
+    id: 'recorrencia-netflix-cancelei',
+    frase: 'cancelei a Netflix, tira dos próximos meses',
+    esperado: { intent: 'recorrencia', pedido: { acao: 'encerrar', palavras: ['netflix'] } },
+  },
+  {
+    id: 'recorrencia-spotify-parar',
+    reservado: true,
+    frase: 'para de lançar o Spotify todo mês',
+    esperado: { intent: 'recorrencia', pedido: { acao: 'encerrar', palavras: ['spotify'] } },
   },
   {
     id: 'categoria-nova-com-valor',
