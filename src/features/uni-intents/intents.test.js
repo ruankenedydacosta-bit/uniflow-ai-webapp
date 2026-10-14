@@ -578,5 +578,19 @@ test('BUG REAL: algarismo de data nunca vira valor', () => {
   // Mês em número só até 12 e sem moeda depois.
   assert.equal(extractAmount('paguei a conta do dia 10 de 50 reais'), 50);
   assert.equal(extractAmount('paguei a conta do dia 10 de 5 reais'), 5);
+  assert.equal(extractAmount('paguei a conta do dia 10 de 5 contos'), 5);
+  // O ano depois da data também não é valor.
+  assert.equal(extractAmount('recebi dia 20 de novembro de 2026 quatro mil reais'), 4000);
+  assert.equal(extractAmount('vai entrar dia 20 do 12 de 2026 no valor de quatro mil reais'), 4000);
+  assert.equal(extractAmount('recebi 15 de abril de 2025 mil reais'), 1000);
+  assert.equal(extractAmount('recebi 20 / 11 / 2026 300 reais'), 300);
   assert.equal(parseFinancialText('Paguei dia 5 o aluguel de 1.200').entities.description, 'Dia 5 o aluguel');
+});
+
+test('algarismo solto perde para valor por extenso com moeda', () => {
+  assert.equal(extractAmount('recebi às 10h quatro mil reais'), 4000);
+  assert.equal(extractAmount('comprei 2 pizzas de trinta reais'), 30);
+  // Com R$ ou unidade, o algarismo continua valendo.
+  assert.equal(extractAmount('gastei R$ 50 e mais uns dez reais'), 50);
+  assert.equal(extractAmount('gastei 50 reais e mais uns dez reais'), 50);
 });

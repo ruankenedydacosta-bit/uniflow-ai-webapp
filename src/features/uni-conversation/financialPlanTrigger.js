@@ -1,4 +1,4 @@
-import { countWrittenMoneyMentions, extractAmount, normalizeFinancialText } from '../uni-intents/index.js';
+import { NUMBER_WORD_TERM, countWrittenMoneyMentions, extractAmount, normalizeFinancialText } from '../uni-intents/index.js';
 import { classifyIntent, AGENDA_INTENT_SET } from '../uni-intents/intentClassifier.js';
 
 // CAMADA 0: frases de agenda/lembrete ("tenho uma reunião daqui 10 dias",
@@ -142,9 +142,10 @@ export function looksLikeUnclassifiedFinancialStatement(text) {
 // operações nem entende parcela. Devolve o motivo para a Uni
 // pedir de outro jeito em vez de abrir um card errado; null quando a frase
 // cabe numa operação só.
-// A quantidade também vem por extenso pela voz ("faltam duas parcelas").
-// "a parcela do carro" (uma só) segue para as regras.
-const QUANTIDADE = '(?:\\d+|duas|dois|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta)';
+// A quantidade também vem por extenso pela voz ("faltam duas parcelas",
+// "em vinte e quatro vezes"). "a parcela do carro" (uma só) segue para as
+// regras.
+const QUANTIDADE = `(?:\\d+|(?:${NUMBER_WORD_TERM}\\s+(?:e\\s+)?)*${NUMBER_WORD_TERM})`;
 const PARCELAMENTO_RE = new RegExp(`\\b\\d+\\s*x\\b|em\\s+${QUANTIDADE}\\s+vezes|parcelad[oa]|\\b${QUANTIDADE}\\s+parcelas\\b`);
 
 export function motivoParaNaoLerSemModelo(text) {

@@ -140,6 +140,8 @@ test('motivoParaNaoLerSemModelo: parcela e valor por extenso', () => {
   assert.equal(motivoParaNaoLerSemModelo(FRASE_DAS_PARCELAS), 'parcela');
   assert.equal(motivoParaNaoLerSemModelo('comprei uma TV de dois mil reais em dez vezes'), 'parcela');
   assert.equal(motivoParaNaoLerSemModelo('faltam três parcelas de 500 reais'), 'parcela');
+  assert.equal(motivoParaNaoLerSemModelo('comprei um carro de cinquenta mil reais em vinte e quatro vezes'), 'parcela');
+  assert.equal(motivoParaNaoLerSemModelo('fui duas vezes ao mercado e gastei 50 reais'), null);
   assert.equal(motivoParaNaoLerSemModelo('paguei quarenta reais de táxi e vinte e cinco reais de lanche'), 'varias');
   // Uma parcela só é um lançamento comum.
   assert.equal(motivoParaNaoLerSemModelo('paguei a parcela do carro, novecentos reais'), null);
@@ -151,4 +153,6 @@ test('countMoneyMentions conta valor por extenso e "4 mil reais" uma vez só', (
   assert.equal(countMoneyMentions('recebi 4 mil reais'), 1);
   assert.equal(countMoneyMentions('R$ 4 mil de entrada e mais cinquenta reais'), 2);
   assert.equal(countMoneyMentions('quantos reais eu gastei?'), 0);
+  // Valor ambíguo não conta.
+  assert.equal(countMoneyMentions('paguei dois ou três reais'), 0);
 });
