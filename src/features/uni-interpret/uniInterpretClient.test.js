@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -7,7 +8,10 @@ import {
   interpretacaoParaOverrides,
   montarHistoricoParaInterpretacao,
   montarRascunhoParaInterpretacao,
+  UNI_INTERPRET_TIMEOUT_MS,
 } from './uniInterpretClient.js';
+import { REALTIME_TOOL_TIMEOUT_MS } from '../uni-voice-realtime/realtimeToolBridge.js';
+import { PHRASE_STRUCTURED_FACT_TIMEOUT_MS } from '../uni-llm/phraseStructuredFact.js';
 
 const WORKSPACE = '3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90';
 
@@ -211,4 +215,20 @@ test('resposta ao rascunho: categoria "nova" que já existe com outro acento usa
     correcaoDoRascunho({ intent: 'correcao', operacoes: [{ ...OPERACAO_IMPOSTOS, novaCategoria: 'alimentacao' }] }, RASCUNHO_IMPOSTOS, { categorias }),
     { overrides: { amount: 5500, date: '2026-10-15', categoryId: 'cat-ali' }, novaCategoria: null },
   );
+});
+
+// O cliente não pode desistir antes da própria Edge Function: a resposta
+// certa chegava depois e as regras já tinham lançado o valor errado. E a voz
+// não pode desistir antes do turno do chat terminar, senão manda repetir um
+// lançamento que ainda vai ser gravado.
+test('tempo limite fica acima do da Edge Function e cabe no turno de voz', () => {
+  const fonte = readFileSync(new URL('../../../supabase/functions/uni-interpret/index.ts', import.meta.url), 'utf8');
+  const tempoDaFuncao = Number(fonte.match(/const TEMPO_LIMITE_MS = (\d+);/)?.[1]);
+  assert.ok(tempoDaFuncao > 0);
+  // Partida a frio, autenticação e catálogo ficam fora do teto da função.
+  assert.ok(UNI_INTERPRET_TIMEOUT_MS >= tempoDaFuncao + 3000);
+  // Espera mínima do chat (UNI_THINK_MIN_MS, 0,6 s) e checagem de repetido
+  // no banco: 2 s de folga para os dois.
+  const turnoDoChat = UNI_INTERPRET_TIMEOUT_MS + PHRASE_STRUCTURED_FACT_TIMEOUT_MS + 2000;
+  assert.ok(turnoDoChat < REALTIME_TOOL_TIMEOUT_MS);
 });

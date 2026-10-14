@@ -29,7 +29,11 @@ export const REALTIME_DRAFT_REPLIES = Object.freeze({
 export const NAME_PRONUNCIATION_MAX_LENGTH = 60;
 
 // Tempo máximo esperando o chat responder antes de a Uni avisar a pessoa.
-export const REALTIME_TOOL_TIMEOUT_MS = 20000;
+// Cobre o turno inteiro do chat: espera mínima (0,6 s), uni-interpret (até
+// UNI_INTERPRET_TIMEOUT_MS), checagem de repetido e redação da resposta (até
+// PHRASE_STRUCTURED_FACT_TIMEOUT_MS). Se a voz desiste antes, ela manda tentar
+// de novo enquanto o chat ainda lança, e a pessoa lança duas vezes.
+export const REALTIME_TOOL_TIMEOUT_MS = 30000;
 
 export function parseRealtimeToolArguments(raw) {
   if (typeof raw !== 'string' || !raw.trim()) return null;

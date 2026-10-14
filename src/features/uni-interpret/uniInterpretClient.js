@@ -10,9 +10,14 @@ import { normalizeSearchText } from '../../utils/searchText.js';
 
 export const UNI_INTERPRET_FUNCTION_NAME = 'uni-interpret';
 
-// A interpretação fica no meio do lançamento falado: esperar mais que isso
-// pesa mais que o ganho de acerto. Mesmo teto da inferência de categoria.
-export const UNI_INTERPRET_TIMEOUT_MS = 8000;
+// Acima do teto da chamada ao modelo na Edge Function (TEMPO_LIMITE_MS, 15 s,
+// em supabase/functions/uni-interpret), com folga para partida a frio,
+// autenticação e leitura do catálogo, que ficam fora desse teto. O turno de
+// voz espera por isto (REALTIME_TOOL_TIMEOUT_MS). BUG REAL (14/10/2026): com
+// 8 s, uma frase longa com duas parcelas foi lida certo pelo modelo em 9,4 s,
+// o app já tinha desistido e as regras lançaram R$ 20 (o "dia 20") em vez de
+// duas entradas de R$ 4.000.
+export const UNI_INTERPRET_TIMEOUT_MS = 18000;
 
 const MAX_HISTORICO = 6;
 

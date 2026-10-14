@@ -130,3 +130,29 @@ test('motivoParaNaoLerSemModelo: várias operações e parcela com valor', () =>
   assert.equal(motivoParaNaoLerSemModelo('quanto falta pagar do que comprei parcelado?'), null);
   assert.equal(motivoParaNaoLerSemModelo(''), null);
 });
+
+// BUG REAL (voz, 14/10/2026): o uni-interpret passou do tempo e esta frase
+// caiu nas regras, que lançaram uma entrada de R$ 20 (o "dia 20"). Pela
+// voz, quantidade e valor chegam por extenso.
+const FRASE_DAS_PARCELAS = 'Uni, eu quero que você lance um valor de receita referente ao desenvolvimento de um projeto para a INSEJEC. Faltam umas duas parcelas no valor de quatro mil reais cada. Quatro do cinco para o dia 20 de novembro e cinco do cinco para a parcela do dia 20 do 12, no valor de quatro mil reais cada uma dessas parcelas. Lança isso pra mim, por favor.';
+
+test('motivoParaNaoLerSemModelo: parcela e valor por extenso', () => {
+  assert.equal(motivoParaNaoLerSemModelo(FRASE_DAS_PARCELAS), 'parcela');
+  assert.equal(motivoParaNaoLerSemModelo('comprei uma TV de dois mil reais em dez vezes'), 'parcela');
+  assert.equal(motivoParaNaoLerSemModelo('faltam três parcelas de 500 reais'), 'parcela');
+  assert.equal(motivoParaNaoLerSemModelo('comprei um carro de cinquenta mil reais em vinte e quatro vezes'), 'parcela');
+  assert.equal(motivoParaNaoLerSemModelo('fui duas vezes ao mercado e gastei 50 reais'), null);
+  assert.equal(motivoParaNaoLerSemModelo('paguei quarenta reais de táxi e vinte e cinco reais de lanche'), 'varias');
+  // Uma parcela só é um lançamento comum.
+  assert.equal(motivoParaNaoLerSemModelo('paguei a parcela do carro, novecentos reais'), null);
+  assert.equal(motivoParaNaoLerSemModelo('recebi quatro mil reais do projeto'), null);
+});
+
+test('countMoneyMentions conta valor por extenso e "4 mil reais" uma vez só', () => {
+  assert.equal(countMoneyMentions('recebi quatro mil reais'), 1);
+  assert.equal(countMoneyMentions('recebi 4 mil reais'), 1);
+  assert.equal(countMoneyMentions('R$ 4 mil de entrada e mais cinquenta reais'), 2);
+  assert.equal(countMoneyMentions('quantos reais eu gastei?'), 0);
+  // Valor ambíguo não conta.
+  assert.equal(countMoneyMentions('paguei dois ou três reais'), 0);
+});

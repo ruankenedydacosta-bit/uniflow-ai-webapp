@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   createConversationContext,
+  extractAmount,
   parseFinancialConversation,
   parseFinancialText,
 } from './index.js';
@@ -562,4 +563,34 @@ test('BUG REAL: pedido falado de entrada vira receita; pergunta e pedido sem val
   assert.equal(parseFinancialText('Como eu registro uma despesa?').intent, 'question');
   assert.equal(parseFinancialText('Quero registrar').intent, 'question');
   assert.equal(parseFinancialText('Adicionar a conta Nubank com 500 reais de saldo').intent, 'question');
+});
+
+// BUG REAL (voz, 14/10/2026): "dia 20 de novembro" virou R$ 20 numa frase
+// com o valor por extenso ("quatro mil reais").
+test('BUG REAL: algarismo de data nunca vira valor', () => {
+  assert.equal(extractAmount('recebi dia 20 de novembro quatro mil reais'), 4000);
+  assert.equal(extractAmount('recebi 20 de novembro 300 reais'), 300);
+  assert.equal(extractAmount('dia 20/11 gastei 50'), 50);
+  assert.equal(extractAmount('vai entrar dia 20 do 12, no valor de quatro mil reais'), 4000);
+  assert.equal(extractAmount('paguei dia 5 o aluguel de 1.200'), 1200);
+  assert.equal(extractAmount('paguei 30 no dia 10 do 12'), 30);
+  assert.equal(extractAmount('quanto gastei dia 20?'), null);
+  // Mês em número só até 12 e sem moeda depois.
+  assert.equal(extractAmount('paguei a conta do dia 10 de 50 reais'), 50);
+  assert.equal(extractAmount('paguei a conta do dia 10 de 5 reais'), 5);
+  assert.equal(extractAmount('paguei a conta do dia 10 de 5 contos'), 5);
+  // O ano depois da data também não é valor.
+  assert.equal(extractAmount('recebi dia 20 de novembro de 2026 quatro mil reais'), 4000);
+  assert.equal(extractAmount('vai entrar dia 20 do 12 de 2026 no valor de quatro mil reais'), 4000);
+  assert.equal(extractAmount('recebi 15 de abril de 2025 mil reais'), 1000);
+  assert.equal(extractAmount('recebi 20 / 11 / 2026 300 reais'), 300);
+  assert.equal(parseFinancialText('Paguei dia 5 o aluguel de 1.200').entities.description, 'Dia 5 o aluguel');
+});
+
+test('algarismo solto perde para valor por extenso com moeda', () => {
+  assert.equal(extractAmount('recebi às 10h quatro mil reais'), 4000);
+  assert.equal(extractAmount('comprei 2 pizzas de trinta reais'), 30);
+  // Com R$ ou unidade, o algarismo continua valendo.
+  assert.equal(extractAmount('gastei R$ 50 e mais uns dez reais'), 50);
+  assert.equal(extractAmount('gastei 50 reais e mais uns dez reais'), 50);
 });
