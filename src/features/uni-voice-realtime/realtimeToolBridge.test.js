@@ -6,6 +6,7 @@ import {
   buildRealtimeToolErrorOutput,
   NAME_PRONUNCIATION_MAX_LENGTH,
   readRealtimeNamePronunciation,
+  AVISO_LANCAMENTO_REPETIDO,
   buildRealtimeToolOutput,
   buildScreenActionInstructions,
   findUniReplyAfter,
@@ -89,6 +90,18 @@ test('saída da ferramenta diz se há rascunho esperando confirmação', () => {
     { resposta: 'Lançado.', aguardando_confirmacao: false },
   );
   assert.deepEqual(JSON.parse(buildRealtimeToolErrorOutput('demorou')), { erro: 'demorou' });
+});
+
+test('rascunho igual a um lançamento já registrado vai com o aviso para perguntar de novo', () => {
+  const card = { status: 'pending', lancamentoRepetido: true };
+  assert.deepEqual(
+    JSON.parse(buildRealtimeToolOutput({ text: 'Parece que esse lançamento já existe.', confirmation: card })),
+    { resposta: 'Parece que esse lançamento já existe.', aguardando_confirmacao: true, aviso: AVISO_LANCAMENTO_REPETIDO },
+  );
+  assert.equal(
+    JSON.parse(buildRealtimeToolOutput({ text: 'Lançado.', confirmation: { ...card, status: 'confirmed' } })).aviso,
+    undefined,
+  );
 });
 
 test('a sessão criada no servidor declara a mesma ferramenta', () => {
@@ -176,10 +189,22 @@ test('toque no card: a resposta do chat depois do toque vira fala da Uni', () =>
     { id: 'a2', from: 'uni', text: 'Pronto. Quer que eu faça mais alguma coisa?' },
   ];
   const outcome = resolveScreenActionOutcome(after, turn);
-  assert.deepEqual(outcome, { text: 'Pronto. Quer que eu faça mais alguma coisa?', awaitingConfirmation: false });
+  assert.deepEqual(outcome, { text: 'Pronto. Quer que eu faça mais alguma coisa?', awaitingConfirmation: false, repeated: false });
   const instructions = buildScreenActionInstructions(REALTIME_SCREEN_ACTIONS.CONFIRM, outcome);
   assert.match(instructions, /tocou em Confirmar/);
   assert.match(instructions, /Quer que eu faça mais alguma coisa\?/);
+});
+
+test('toque em Confirmar com lançamento repetido: a Uni conta o aviso e pergunta de novo', () => {
+  const before = [{ id: 'c1', from: 'uni', text: 'Confere?', confirmation: { status: 'pending' } }];
+  const turn = snapshotScreenActionTurn(before);
+  const after = [
+    { ...before[0], confirmation: { status: 'updated' } },
+    { id: 'c2', from: 'uni', text: 'Parece que esse lançamento já existe.', confirmation: { status: 'pending', lancamentoRepetido: true } },
+  ];
+  const instructions = buildScreenActionInstructions(REALTIME_SCREEN_ACTIONS.CONFIRM, resolveScreenActionOutcome(after, turn));
+  assert.ok(instructions.includes(AVISO_LANCAMENTO_REPETIDO));
+  assert.doesNotMatch(instructions, /pergunte se pode confirmar/);
 });
 
 test('toque no card com erro: a Uni conta o aviso do card', () => {

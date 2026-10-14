@@ -97,10 +97,16 @@ export function buildEndConversationOutput() {
   });
 }
 
+// Rascunho igual a um lançamento já registrado: a instrução de sempre ("diga
+// o valor, o que é e a conta") faria a IA ler o rascunho e pular o aviso.
+export const AVISO_LANCAMENTO_REPETIDO = 'A Uni achou um lançamento igual já registrado. Diga à pessoa que parece que esse lançamento já existe, com os dados que vieram na resposta, e pergunte se quer lançar de novo. Só confirme se ela disser que sim.';
+
 export function buildRealtimeToolOutput(reply) {
+  const aguardando = reply.confirmation?.status === 'pending';
   return JSON.stringify({
     resposta: reply.text.trim(),
-    aguardando_confirmacao: reply.confirmation?.status === 'pending',
+    aguardando_confirmacao: aguardando,
+    ...(aguardando && reply.confirmation.lancamentoRepetido ? { aviso: AVISO_LANCAMENTO_REPETIDO } : {}),
   });
 }
 
@@ -216,6 +222,7 @@ export function resolveScreenActionOutcome(messages, turn) {
     return {
       text: replies.map((message) => message.text.trim()).join(' '),
       awaitingConfirmation: replies.at(-1).confirmation?.status === 'pending',
+      repeated: replies.at(-1).confirmation?.lancamentoRepetido === true,
     };
   }
   if (!turn.confirmationId) return null;
@@ -238,7 +245,9 @@ export function buildScreenActionInstructions(action, outcome) {
     outcome.isError ? `Deu errado. O app avisou: "${text}".` : `O app respondeu: "${text}".`,
     'Diga o essencial a ela agora, em uma frase, sem ler palavra por palavra e sem oferecer ajuda extra.',
   ];
-  if (outcome.awaitingConfirmation) {
+  if (outcome.awaitingConfirmation && outcome.repeated) {
+    parts.push(AVISO_LANCAMENTO_REPETIDO);
+  } else if (outcome.awaitingConfirmation) {
     parts.push('O rascunho continua esperando confirmação: pergunte se pode confirmar.');
   }
   parts.push('Não chame ferramentas para isso.');

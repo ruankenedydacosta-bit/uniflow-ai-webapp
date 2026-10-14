@@ -242,6 +242,13 @@ import {
   podeSerConfirmacaoDePrevisto,
 } from '../uni-conversation/confirmacaoDePrevisto.js';
 import {
+  acharLancamentoRepetido,
+  assinaturaDoRascunho,
+  deveProcurarRepetido,
+  linhaDoRepetido,
+  textoDoRepetido,
+} from '../uni-conversation/lancamentoRepetido.js';
+import {
   analisarAlvo,
   cardDaAlteracao,
   escolherCandidato,
@@ -278,6 +285,9 @@ const TEXTO_EXCLUSAO_VENCIDA = 'Esse pedido de exclusão expirou e nada foi apag
 // Depois que o prazo de desfazer passa, "desfazer" ainda recebe o aviso por
 // este tempo; depois disso a palavra volta a ser frase comum.
 const DESFAZER_AVISO_VENCIDO_MS = 5 * 60 * 1000;
+// A busca do lançamento repetido segura o card e o Confirmar. Rede que não
+// responde nesse tempo deixa o lançamento seguir sem o aviso.
+const BUSCA_DO_REPETIDO_MS = 3000;
 const ALLOWED_CHAT_WRITE_INTENTS = Object.freeze([
   'register_income',
   'register_expense',
@@ -1093,6 +1103,9 @@ export default function UniChatPage({ variant = 'full' }) {
   // Categoria do primeiro rascunho de cada lançamento (#79), por
   // clientOperationId: na confirmação, categoria diferente desta é troca.
   const categoriaInicialPorOperacaoRef = useRef(new Map());
+  // Rascunho já verificado (sem repetido, ou com o aviso dado), pela
+  // assinatura, por clientOperationId: o Confirmar seguinte grava sem buscar.
+  const repetidoVerificadoPorOperacaoRef = useRef(new Map());
 
   function setEdicaoPendente(next) {
     edicaoPendenteRef.current = next;
@@ -1372,6 +1385,33 @@ export default function UniChatPage({ variant = 'full' }) {
       criadaEm: Date.now(),
     });
     return true;
+  }
+
+  function marcarRepetidoVerificado(action) {
+    const verificados = repetidoVerificadoPorOperacaoRef.current;
+    verificados.set(action.clientOperationId, assinaturaDoRascunho(action));
+    // Rascunho cancelado ou trocado não volta: guarda só os mais recentes.
+    if (verificados.size > 20) verificados.delete(verificados.keys().next().value);
+  }
+
+  // Lançamento já registrado igual ao rascunho, ainda não avisado; null
+  // quando não há. Leitura que falha ou demora não impede o lançamento: o
+  // aviso é só uma ajuda.
+  async function procurarLancamentoRepetido(action) {
+    const workspaceId = effectiveWorkspace?.id;
+    if (!workspaceId || !deveProcurarRepetido(action)) return null;
+    if (repetidoVerificadoPorOperacaoRef.current.get(action.clientOperationId) === assinaturaDoRascunho(action)) {
+      return null;
+    }
+    const data = action.payload.transaction_date;
+    const lidos = await Promise.race([
+      listTransactionsForPeriod(workspaceId, { dateFrom: data, dateTo: data }).catch(() => null),
+      new Promise((resolve) => { setTimeout(() => resolve(null), BUSCA_DO_REPETIDO_MS); }),
+    ]);
+    if (!lidos || lidos.error) return null;
+    const repetido = acharLancamentoRepetido(action, lidos.data);
+    if (!repetido) marcarRepetidoVerificado(action);
+    return repetido;
   }
 
   // Resposta com a edição pendente. false quando a frase é outro assunto:
@@ -3456,7 +3496,9 @@ export default function UniChatPage({ variant = 'full' }) {
     return stack;
   }
 
-  function publishConversationResult(result) {
+  // `repetido`: lançamento já registrado igual ao rascunho. O card sai com o
+  // aviso no lugar do texto de sempre, e o Confirmar dele grava.
+  function publishConversationResult(result, { repetido = null } = {}) {
     syncFinancialParentSnapshot(result);
     const operacaoId = result?.action?.clientOperationId;
     const categoriasIniciais = categoriaInicialPorOperacaoRef.current;
@@ -3485,7 +3527,15 @@ export default function UniChatPage({ variant = 'full' }) {
     if (result?.action?.status === 'ready') {
       setPendingAction(result.action);
       const confirmation = buildConfirmationFromAction(result.action);
-      createAssistantResponse(result.response.text, {
+      let texto = result.response.text;
+      if (repetido && operacaoId) {
+        const contexto = { accounts: accountState.accounts };
+        confirmation.rows = [...confirmation.rows, linhaDoRepetido(repetido, contexto)];
+        confirmation.lancamentoRepetido = true;
+        texto = textoDoRepetido(repetido, contexto);
+        marcarRepetidoVerificado(result.action);
+      }
+      createAssistantResponse(texto, {
         type: 'confirmation',
         confirmation,
         clientOperationId: result.action.clientOperationId,
@@ -4286,7 +4336,14 @@ export default function UniChatPage({ variant = 'full' }) {
           setIsTyping(false);
           return false;
         }
-        if (await tentarLancarDireto(interpretacao, result.action, turnToken)) {
+        // Igual a um lançamento já registrado, o rascunho nunca vai direto:
+        // sai o card com o aviso.
+        const repetido = await procurarLancamentoRepetido(result.action);
+        if (uniTurnTokenRef.current !== turnToken) {
+          financialConversation.reset();
+          return true;
+        }
+        if (!repetido && await tentarLancarDireto(interpretacao, result.action, turnToken)) {
           setIsTyping(false);
           return true;
         }
@@ -4296,7 +4353,7 @@ export default function UniChatPage({ variant = 'full' }) {
           return true;
         }
         setIsTyping(false);
-        publishConversationResult(phrased);
+        publishConversationResult(phrased, { repetido });
         if (interpretacao.operacoes[0]?.recorrente === true) {
           createAssistantResponse(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO, { deduplicateNarration: false });
         }
@@ -4996,6 +5053,30 @@ export default function UniChatPage({ variant = 'full' }) {
       }
 
       const acaoConfirmada = financialConversation.state.action;
+      // Rascunho que chegou ao Confirmar sem o aviso de repetido (regras,
+      // correção, retomada depois de criar conta ou categoria): o primeiro
+      // Confirmar troca o card por um com o aviso, e o segundo grava.
+      const repetido = await procurarLancamentoRepetido(acaoConfirmada);
+      if (activeIdRef.current !== currentConversationId || !confirmingRef.current) {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+        return;
+      }
+      if (repetido) {
+        setMessages((prev) => prev.map((message) => (
+          message.id === id
+            ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
+            : message
+        )));
+        // O texto do rascunho segue guardado; na tela sai o aviso.
+        publishConversationResult({
+          action: acaoConfirmada,
+          response: { text: financialConversation.state.response ?? '' },
+        }, { repetido });
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+        return;
+      }
       const outcome = await financialConversation.confirm();
 
       // Guard: se a conversa mudou durante a execução, abortar.

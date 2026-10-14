@@ -1833,7 +1833,7 @@ test('#80: sem o modelo, várias operações ou parcela pedem outro jeito em vez
 test('#80: recorrência numa operação só abre o card do mês e avisa que a repetição não é automática', async () => {
   const page = await source('UniChatPage.jsx');
   const { body } = extractFunctionBody(page, 'async function rotearPeloModelo(text, turn) {');
-  assert.match(body, /publishConversationResult\(phrased\);\s*if \(interpretacao\.operacoes\[0\]\?\.recorrente === true\) \{\s*createAssistantResponse\(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO/);
+  assert.match(body, /publishConversationResult\(phrased, \{ repetido \}\);\s*if \(interpretacao\.operacoes\[0\]\?\.recorrente === true\) \{\s*createAssistantResponse\(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO/);
 });
 
 // BUG REAL EM PRODUÇÃO (voz, 11/10/2026): com a Uni perguntando o valor, a
@@ -1908,7 +1908,7 @@ test('memória de categoria (#79): confirmar o card grava a descrição com a ca
   assert.ok(confirmar.indexOf('lembrarCategoriaConfirmada(') < confirmar.indexOf('transactionsState.refresh()'));
 
   // A categoria do primeiro card de cada lançamento é a base da troca.
-  const publicar = page.slice(page.indexOf('function publishConversationResult(result) {'), page.indexOf('function publishAccountCreationConfirmation('));
+  const publicar = page.slice(page.indexOf('function publishConversationResult(result, { repetido = null } = {}) {'), page.indexOf('function publishAccountCreationConfirmation('));
   assert.match(publicar, /if \(operacaoId && !categoriasIniciais\.has\(operacaoId\)\) \{/);
   const lembrar = page.slice(page.indexOf('function lembrarCategoriaConfirmada('), page.indexOf('async function handleConfirmAction(id) {'));
   assert.match(lembrar, /trocou: Boolean\(categoriaInicial && categoriaId && categoriaInicial !== categoriaId\)/);
@@ -1916,10 +1916,35 @@ test('memória de categoria (#79): confirmar o card grava a descrição com a ca
   assert.match(lembrar, /void registrarConfirmacaoNaMemoria\(/);
 });
 
+// Lançamento repetido: igual a um já registrado no mesmo dia (tipo, valor,
+// categoria ou descrição), a Uni avisa e o Confirmar seguinte grava.
+test('lançamento repetido: nunca vai direto, e o card sai com o aviso antes de gravar', async () => {
+  const page = await source('./UniChatPage.jsx');
+  const rota = page.slice(page.indexOf('case ROTAS_INTERPRETACAO.LANCAMENTO: {'), page.indexOf('case ROTAS_INTERPRETACAO.PLANO:'));
+  assert.ok(rota.indexOf('await procurarLancamentoRepetido(result.action)') < rota.indexOf('tentarLancarDireto('));
+  assert.match(rota, /if \(!repetido && await tentarLancarDireto\(interpretacao, result\.action, turnToken\)\)/);
+
+  // Toda porta do Confirmar (botão, texto, voz) passa pela busca antes de gravar.
+  const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
+  assert.ok(confirmar.indexOf('await procurarLancamentoRepetido(acaoConfirmada)')
+    < confirmar.indexOf('const outcome = await financialConversation.confirm();'));
+  // O texto do rascunho guardado na pilha não é apagado pelo aviso.
+  assert.match(confirmar, /response: \{ text: financialConversation\.state\.response \?\? '' \},\s*\}, \{ repetido \}\);/);
+
+  // O aviso dado vale para o rascunho: o segundo Confirmar grava sem buscar.
+  // Rede que não responde não segura o Confirmar.
+  const procurar = page.slice(page.indexOf('async function procurarLancamentoRepetido(action) {'));
+  assert.match(procurar, /repetidoVerificadoPorOperacaoRef\.current\.get\(action\.clientOperationId\) === assinaturaDoRascunho\(action\)\) \{\s*return null;/);
+  assert.match(procurar, /Promise\.race\(\[[\s\S]*setTimeout\(\(\) => resolve\(null\), BUSCA_DO_REPETIDO_MS\)/);
+  const publicar = page.slice(page.indexOf('function publishConversationResult(result, { repetido = null } = {}) {'), page.indexOf('function publishAccountCreationConfirmation('));
+  assert.match(publicar, /marcarRepetidoVerificado\(result\.action\);/);
+  assert.match(publicar, /confirmation\.lancamentoRepetido = true;/);
+});
+
 test('lançar direto (#81): tenta antes do card, pela RPC do card, e o Desfazer apaga e zera a memória', async () => {
   const page = await source('./UniChatPage.jsx');
   const rota = page.slice(page.indexOf('case ROTAS_INTERPRETACAO.LANCAMENTO: {'), page.indexOf('case ROTAS_INTERPRETACAO.PLANO:'));
-  assert.ok(rota.indexOf('await tentarLancarDireto(interpretacao, result.action, turnToken)') < rota.indexOf('publishConversationResult(phrased)'));
+  assert.ok(rota.indexOf('await tentarLancarDireto(interpretacao, result.action, turnToken)') < rota.indexOf('publishConversationResult(phrased, { repetido })'));
 
   const tentar = page.slice(page.indexOf('async function tentarLancarDireto('), page.indexOf('function handleDesfazerExclusao('));
   assert.ok(tentar.indexOf('memoriaPermiteLancarDireto(') < tentar.indexOf('executeFinancialIntentAction(action'));
