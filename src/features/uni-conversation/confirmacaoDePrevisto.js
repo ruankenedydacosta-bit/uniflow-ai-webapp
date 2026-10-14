@@ -13,6 +13,12 @@ const DIAS_DEPOIS = 10;
 
 // Frase de quem ainda vai pagar não confirma nada: "vou pagar o aluguel".
 const FALA_DE_FUTURO = /\b(?:vou|vai|vamos|irei|ira|preciso|precisa|tenho\s+que|tem\s+que|devo|vence|vencer)\b/;
+// Só quem conta que pagou ou recebeu confirma um previsto: "já paguei o
+// aluguel", "o salário caiu". "Uber 25" e "gastei 30 no mercado" registram
+// um gasto novo e não esperam a busca.
+const FALA_DE_PAGAMENTO = /\b(?:ja|paguei|pago|paga|quitei|quitado|recebi|recebido|caiu|entrou|depositaram|depositou)\b/;
+// Valor dito até 20% longe do previsto ainda é o mesmo (reajuste, juros).
+const TOLERANCIA_DO_VALOR = 0.2;
 
 const TIPO_DA_OPERACAO = Object.freeze({ saida: 'expense', entrada: 'income' });
 
@@ -37,7 +43,9 @@ export function podeSerConfirmacaoDePrevisto(operacao, texto, referenceDate) {
   if (!operacao || !TIPO_DA_OPERACAO[operacao.tipo]) return false;
   if (operacao.parcelas || operacao.recorrente) return false;
   if (operacao.data && operacao.data > referenceDate) return false;
-  if (FALA_DE_FUTURO.test(normalizeSearchText(texto ?? ''))) return false;
+  const frase = normalizeSearchText(texto ?? '');
+  if (FALA_DE_FUTURO.test(frase)) return false;
+  if (Number(operacao.valor) > 0 && !FALA_DE_PAGAMENTO.test(frase)) return false;
   return Boolean(analisarAlvo(operacao.descricao ?? '').palavras?.length);
 }
 
@@ -51,6 +59,8 @@ export function acharPrevisto(operacao, previstos, { referenceDate, categories =
     .filter((transacao) => transacao?.status === 'pending' && transacao.transaction_type === tipo)
     .filter((transacao) => transacao.transaction_date >= dateFrom && transacao.transaction_date <= dateTo)
     .filter((transacao) => bateComPalavras(transacao, palavras, categories))
+    .filter((transacao) => !(Number(operacao?.valor) > 0)
+      || Math.abs(Number(operacao.valor) - Number(transacao.amount)) <= Number(transacao.amount) * TOLERANCIA_DO_VALOR)
     .sort((a, b) => distancia(a.transaction_date, referenceDate) - distancia(b.transaction_date, referenceDate));
   if (!achados.length) return { tipo: 'nenhum' };
   if (achados.length === 1) return { tipo: 'unico', transacao: achados[0] };

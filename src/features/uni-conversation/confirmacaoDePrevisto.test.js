@@ -82,3 +82,11 @@ test('parcela prevista pode ser confirmada; lançamento já realizado não', () 
     'Esse lançamento já está realizado.',
   );
 });
+
+test('com valor, só fala de pagamento busca o previsto; valor longe do previsto não confirma', () => {
+  assert.equal(podeSerConfirmacaoDePrevisto(saida({ valor: 30, descricao: 'Mercado' }), 'gastei 30 no mercado', HOJE), false);
+  assert.equal(podeSerConfirmacaoDePrevisto(saida({ valor: 25, descricao: 'Uber' }), 'Uber 25', HOJE), false);
+  assert.equal(podeSerConfirmacaoDePrevisto(saida({ valor: 1550 }), 'paguei 1.550 do aluguel', HOJE), true);
+  assert.equal(acharPrevisto(saida({ valor: 1550 }), [previsto()], { referenceDate: HOJE }).tipo, 'unico');
+  assert.equal(acharPrevisto(saida({ valor: 300 }), [previsto()], { referenceDate: HOJE }).tipo, 'nenhum');
+});

@@ -41,15 +41,18 @@ function montarOcultarOuReexibir(pedido, { lista, ocultas, papel }) {
   const ocultar = pedido.acao === ACOES_DE_CATEGORIA.OCULTAR;
   const idsOcultos = new Set(ocultas);
   const nomeDito = normalizeSearchText(nomeDeCategoria(pedido.nome));
-  const candidatas = lista.filter((item) => idsOcultos.has(item?.id) !== ocultar);
+  // Pelo nome, vale primeiro a do estado que muda; a do outro estado dá a
+  // resposta "já está oculta" ou "já aparece".
+  const peloNome = nomeDito ? lista.filter((item) => normalizeSearchText(item?.name ?? '') === nomeDito) : [];
   const categoria = (pedido.alvo?.id ? lista.find((item) => item?.id === pedido.alvo.id) : null)
-    ?? (nomeDito ? candidatas.find((item) => normalizeSearchText(item?.name ?? '') === nomeDito) : null)
+    ?? peloNome.find((item) => idsOcultos.has(item?.id) !== ocultar)
+    ?? peloNome[0]
     ?? null;
   if (!categoria) {
     return {
       erro: ocultar
         ? 'Não encontrei essa categoria. Diga o nome como aparece em Categorias.'
-        : 'Não encontrei essa categoria entre as ocultas. Diga o nome como aparece em Categorias, no grupo Ocultas.',
+        : 'Não encontrei essa categoria. Diga o nome como aparece em Categorias, no grupo Ocultas.',
     };
   }
   if (papel.canUpdate !== true) return { erro: 'Você não tem permissão para mudar categorias neste espaço.' };

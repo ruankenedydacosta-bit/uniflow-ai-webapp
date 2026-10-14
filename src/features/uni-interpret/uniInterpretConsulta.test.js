@@ -264,17 +264,34 @@ test('comparação diz os dois totais e a diferença', () => {
   assert.match(igual.replace(/\u00a0/g, ' '), /^No mês passado você gastou R\$ 100,00 com Alimentação; em agosto, R\$ 100,00\. Ficou igual\.$/);
 });
 
-test('a pagar: sem período, os próximos 7 dias, da saída mais próxima à mais distante', () => {
-  assert.deepEqual(periodoDaConsulta({ tipo: 'a_pagar' }, '2026-10-14'), { inicio: '2026-10-14', fim: '2026-10-21' });
+test('a pagar: com período, da saída mais próxima à mais distante', () => {
   const previstas = [
     { transaction_type: 'expense', description: 'Internet', amount: 120, transaction_date: '2026-10-20' },
     { transaction_type: 'expense', description: 'Aluguel', amount: 1500, transaction_date: '2026-10-15' },
     { transaction_type: 'income', description: 'Salário', amount: 5000, transaction_date: '2026-10-16' },
   ];
-  const resposta = responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: previstas, dataReferencia: '2026-10-14' });
+  const consulta = { tipo: 'a_pagar', inicio: '2026-10-14', fim: '2026-10-21' };
+  const resposta = responderConsulta({ consulta, transacoes: previstas, dataReferencia: '2026-10-14' });
   assert.equal(
     resposta.replace(/\u00a0/g, ' '),
     'De 14/10 a 21/10, você tem 2 saídas previstas, que somam R$ 1.620,00: 15/10, Aluguel, R$ 1.500,00; 20/10, Internet, R$ 120,00.',
   );
-  assert.equal(responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: [], dataReferencia: '2026-10-14' }), 'De 14/10 a 21/10, você não tem saídas previstas.');
+  assert.equal(responderConsulta({ consulta, transacoes: [], dataReferencia: '2026-10-14' }), 'De 14/10 a 21/10, você não tem saídas previstas.');
+});
+
+test('a pagar sem período: próximos 7 dias e as atrasadas à parte', () => {
+  assert.deepEqual(periodoDaConsulta({ tipo: 'a_pagar' }, '2026-10-14'), { inicio: '2026-08-30', fim: '2026-10-21' });
+  const previstas = [
+    { transaction_type: 'expense', description: 'Aluguel', amount: 1500, transaction_date: '2026-10-15' },
+    { transaction_type: 'expense', description: 'Luz', amount: 200, transaction_date: '2026-10-10' },
+  ];
+  const resposta = responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: previstas, dataReferencia: '2026-10-14' });
+  assert.equal(
+    resposta.replace(/\u00a0/g, ' '),
+    'Nos próximos 7 dias, você tem 1 saída prevista, que soma R$ 1.500,00: 15/10, Aluguel, R$ 1.500,00. Atrasadas: 1 saída, que soma R$ 200,00: 10/10, Luz, R$ 200,00.',
+  );
+  assert.equal(
+    responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: [previstas[0]], dataReferencia: '2026-10-14' }).replace(/\u00a0/g, ' '),
+    'Nos próximos 7 dias, você tem 1 saída prevista, que soma R$ 1.500,00: 15/10, Aluguel, R$ 1.500,00.',
+  );
 });

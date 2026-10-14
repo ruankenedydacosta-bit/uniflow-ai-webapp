@@ -1317,6 +1317,13 @@ export default function UniChatPage({ variant = 'full' }) {
       return;
     }
     const resultado = localizarLancamento(alvo, transactionsState.transactions, { categories: categoryState.categories });
+    // "Esse último Uber foi 30": o último confirmado vale se bater com a pista,
+    // como na exclusão.
+    const ultimoId = edicao.ultimo ? ultimoConfirmadoValido()?.id ?? null : null;
+    if (ultimoId && resultado.tipo === 'varios' && resultado.candidatos.some((candidato) => candidato.id === ultimoId)) {
+      void prepararAlteracao(ultimoId, mudancas, turnToken);
+      return;
+    }
     if (resultado.tipo === 'nenhum') {
       if (alvo.data) {
         void buscarAlvoNoDia(alvo, mudancas, turnToken);
@@ -1336,12 +1343,14 @@ export default function UniChatPage({ variant = 'full' }) {
   // parecido e a frase segue como lançamento.
   async function tentarConfirmarPrevisto(operacao, texto, turnToken) {
     const referenceDate = getLocalIsoDate();
-    // Sem conseguir ler o papel, quem decide é a RLS, como no pedido de categoria.
-    const podeAlterar = Boolean(workspaceRole.error) || workspaceRole.canUpdate === true;
-    if (!podeAlterar || !podeSerConfirmacaoDePrevisto(operacao, texto, referenceDate)) return false;
+    // Só quem certamente não pode alterar pula a busca. Com o papel ainda
+    // carregando ou ilegível, quem decide é a RLS no Confirmar: pular
+    // abriria um lançamento novo e duplicaria o previsto.
+    const naoPodeAlterar = !workspaceRole.isLoading && !workspaceRole.error && workspaceRole.canUpdate !== true;
+    if (naoPodeAlterar || !podeSerConfirmacaoDePrevisto(operacao, texto, referenceDate)) return false;
     const conversationId = activeIdRef.current;
     const { dateFrom, dateTo } = janelaDosPrevistos(referenceDate);
-    const lidos = await listTransactions(effectiveWorkspace?.id, { status: 'pending', dateFrom, dateTo, limit: 100 })
+    const lidos = await listTransactionsForPeriod(effectiveWorkspace?.id, { status: 'pending', dateFrom, dateTo })
       .catch(() => null);
     if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return true;
     const resultado = acharPrevisto(operacao, lidos?.data ?? [], { referenceDate, categories: categoryState.categories });
@@ -1779,8 +1788,13 @@ export default function UniChatPage({ variant = 'full' }) {
     const conversationId = activeIdRef.current;
     const referenceDate = getLocalIsoDate();
     setIsTyping(true);
-    const lidos = await listTransactions(effectiveWorkspace?.id, { status: 'pending', dateFrom: referenceDate, limit: 100 })
-      .catch(() => null);
+    // Todas as páginas, em ordem de data: a série gera 3 meses à frente e a
+    // mudança pode valer até um ano depois.
+    const lidos = await listTransactionsForPeriod(effectiveWorkspace?.id, {
+      status: 'pending',
+      dateFrom: referenceDate,
+      dateTo: `${Number(referenceDate.slice(0, 4)) + 1}${referenceDate.slice(4)}`,
+    }).catch(() => null);
     if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
     setIsTyping(false);
     if (!lidos || lidos.error) {
@@ -1801,9 +1815,16 @@ export default function UniChatPage({ variant = 'full' }) {
       );
       return;
     }
+    if (achado.tipo === 'homonimas') {
+      createAssistantResponse(
+        `Achei ${achado.quantas} lançamentos que se repetem chamados ${achado.nome}. Mude o certo pela tela Financeiro, que mostra cada um.`,
+        { deduplicateNarration: false },
+      );
+      return;
+    }
     if (achado.tipo === 'varios') {
       createAssistantResponse(
-        `Achei mais de um lançamento que se repete com esse nome: ${[...new Set(achado.nomes)].join(', ')}. Diga o nome completo de qual deles.`,
+        `Achei mais de um lançamento que se repete com esse nome: ${achado.nomes.join(', ')}. Diga o nome completo de qual deles.`,
         { deduplicateNarration: false },
       );
       return;
@@ -1830,6 +1851,10 @@ export default function UniChatPage({ variant = 'full' }) {
   // Teto de gasto por categoria pelo uni-interpret (#264). Consultar lê o
   // gasto realizado do mês; definir e remover passam pelo card.
   async function iniciarPedidoDeOrcamento(pedido, turnToken) {
+    if (pedido.acao !== 'consultar' && workspaceRole.isLoading) {
+      createAssistantResponse('Ainda estou carregando as permissões deste espaço. Peça de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
     if (!pedido.acao) {
       createAssistantResponse(TEXTO_ORCAMENTO_INCOMPLETO, { deduplicateNarration: false });
       return;

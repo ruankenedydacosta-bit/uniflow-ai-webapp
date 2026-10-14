@@ -121,6 +121,8 @@ test('mostrar de novo: acha a oculta pelo nome dito', () => {
   assert.equal(pedido.categoria.id, 'cat-bicos');
   assert.equal(pedido.card.title, 'Mostrar categoria');
   assert.equal(textoDoPedidoFeito(pedido), 'Categoria Bicos de volta nas escolhas.');
-  assert.match(montarPedidoDeCategoria({ acao: 'reexibir', nome: 'Carro' }, contexto).erro, /entre as ocultas/);
+  assert.match(montarPedidoDeCategoria({ acao: 'reexibir', nome: 'Carro' }, contexto).erro, /Carro já aparece nas escolhas/);
+  assert.match(montarPedidoDeCategoria({ acao: 'ocultar', alvo: null, nome: 'Bicos' }, contexto).erro, /Bicos já está oculta/);
+  assert.match(montarPedidoDeCategoria({ acao: 'reexibir', nome: 'Viagem' }, contexto).erro, /Não encontrei essa categoria/);
   assert.equal(respostaAoPedidoDeCategoria('pode mostrar', pedido), 'confirm');
 });

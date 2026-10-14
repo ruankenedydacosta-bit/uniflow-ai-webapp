@@ -15,7 +15,8 @@ function serieDe(transacao) {
 
 // previstos: lançamentos pendentes já lidos. A série é achada pelas palavras
 // do alvo; a mudança começa no primeiro previsto a partir de aPartirDe.
-// { tipo: 'nenhum' } | { tipo: 'varios', nomes } | { tipo: 'unico', serie }
+// { tipo: 'nenhum' } | { tipo: 'varios', nomes } | { tipo: 'homonimas', nome,
+// quantas } | { tipo: 'unico', serie }
 // com serie = { id, primeiro, quantos }.
 export function localizarSerie(alvo, previstos, { categories = [], aPartirDe = null, referenceDate } = {}) {
   const { palavras = [] } = analisarAlvo(alvo ?? '');
@@ -36,7 +37,11 @@ export function localizarSerie(alvo, previstos, { categories = [], aPartirDe = n
     })
     .filter((serie) => serie.primeiro);
   if (!series.length) return { tipo: 'nenhum' };
-  if (series.length > 1) return { tipo: 'varios', nomes: series.map((serie) => serie.primeiro.description) };
+  if (series.length > 1) {
+    const nomes = [...new Set(series.map((serie) => serie.primeiro.description))];
+    // Mesmo nome em todas: o nome não distingue, e a tela mostra cada uma.
+    return nomes.length === 1 ? { tipo: 'homonimas', nome: nomes[0], quantas: series.length } : { tipo: 'varios', nomes };
+  }
   return { tipo: 'unico', serie: series[0] };
 }
 

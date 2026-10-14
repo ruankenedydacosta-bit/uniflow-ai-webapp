@@ -15,8 +15,10 @@ const TIPOS_RESPONDIVEIS = new Set([
 ]);
 // Quantas categorias o maior gasto cita depois da primeira.
 const MAX_CATEGORIAS_SEGUINTES = 2;
-// Sem período, "o que tenho pra pagar" olha os próximos 7 dias.
+// Sem período, "o que tenho pra pagar" olha os próximos 7 dias e as
+// atrasadas de até 45 dias, que ainda estão por pagar.
 const DIAS_A_PAGAR = 7;
+const DIAS_DE_ATRASO = 45;
 const TRANSACTION_TYPE_POR_TIPO = Object.freeze({
   saidas: 'expense', entradas: 'income', comparacao: 'expense', a_pagar: 'expense',
 });
@@ -53,7 +55,9 @@ export function consultaRespondivel(consulta) {
 // 7 dias.
 export function periodoDaConsulta(consulta, dataReferencia) {
   if (consulta?.inicio && consulta?.fim) return { inicio: consulta.inicio, fim: consulta.fim };
-  if (consulta?.tipo === 'a_pagar') return { inicio: dataReferencia, fim: deslocarDias(dataReferencia, DIAS_A_PAGAR) };
+  if (consulta?.tipo === 'a_pagar') {
+    return { inicio: deslocarDias(dataReferencia, -DIAS_DE_ATRASO), fim: deslocarDias(dataReferencia, DIAS_A_PAGAR) };
+  }
   const [ano, mes] = dataReferencia.split('-').map(Number);
   const prefixo = dataReferencia.slice(0, 7);
   return { inicio: `${prefixo}-01`, fim: `${prefixo}-${String(ultimoDiaDoMes(ano, mes)).padStart(2, '0')}` };
@@ -255,8 +259,17 @@ function responderComparacao({ atual, anterior, quando, quandoAnterior, filtro }
 }
 
 // Saídas previstas, da mais próxima à mais distante. A voz lê a resposta
-// inteira; o resto fica em Registros.
-function responderAPagar({ previstas, quando, filtro, contas }) {
+// inteira; o resto fica em Registros. Sem período na pergunta, as
+// atrasadas vêm à parte, depois das próximas.
+function responderAPagar({ previstas, quando, filtro, contas, atrasadas = null }) {
+  if (atrasadas) {
+    const proximas = responderAPagar({ previstas, quando: 'Nos próximos 7 dias', filtro, contas });
+    if (atrasadas.length === 0) return proximas;
+    const ordenadas = [...atrasadas].sort((a, b) => String(a.transaction_date).localeCompare(String(b.transaction_date)));
+    const contasPorId = new Map((Array.isArray(contas) ? contas : []).map((conta) => [conta.id, conta]));
+    const linhas = ordenadas.slice(0, MAX_LANCAMENTOS_LISTADOS).map((transacao) => linhaDoLancamento(transacao, contasPorId));
+    return `${proximas} Atrasadas: ${contagem(atrasadas.length, 'saída', 'saídas')}, que ${atrasadas.length === 1 ? 'soma' : 'somam'} ${formatCurrency(somar(atrasadas))}: ${linhas.join('; ')}.`;
+  }
   if (previstas.length === 0) return `${quando}, você não tem saídas previstas${filtro}.`;
   const contasPorId = new Map((Array.isArray(contas) ? contas : []).map((conta) => [conta.id, conta]));
   const ordenadas = [...previstas].sort((a, b) => String(a.transaction_date).localeCompare(String(b.transaction_date)));
@@ -316,7 +329,17 @@ export function responderConsulta({
   const filtro = `${doQue}${naConta}`;
 
   if (consulta.tipo === 'lancamentos') return responderLancamentos({ encontradas, quando, filtro, contas });
-  if (consulta.tipo === 'a_pagar') return responderAPagar({ previstas: encontradas, quando, filtro, contas });
+  if (consulta.tipo === 'a_pagar') {
+    if (consulta.inicio) return responderAPagar({ previstas: encontradas, quando, filtro, contas });
+    const atraso = (transacao) => String(transacao.transaction_date) < dataReferencia;
+    return responderAPagar({
+      previstas: encontradas.filter((transacao) => !atraso(transacao)),
+      atrasadas: encontradas.filter(atraso),
+      quando,
+      filtro,
+      contas,
+    });
+  }
   if (consulta.tipo === 'comparacao') {
     const anterior = filtrar(Array.isArray(transacoesAnteriores) ? transacoesAnteriores : [], {
       transactionType: 'expense', categoria: consulta.categoria, conta: consulta.conta, termo: consulta.termo,

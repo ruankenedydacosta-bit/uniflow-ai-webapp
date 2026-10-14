@@ -52,6 +52,8 @@ test('lançamento avulso não é série; nome que não bate não acha nada', () 
   assert.equal(localizarSerie('', LISTA, { referenceDate: HOJE }).tipo, 'nenhum');
   const duas = [...LISTA, previsto('b1', '2026-11-07', { description: 'Academia da Ana', metadata: { recurring_series_id: 'serie-ana' } })];
   assert.equal(localizarSerie('Academia', duas, { referenceDate: HOJE }).tipo, 'varios');
+  const homonimas = [...LISTA, previsto('c1', '2026-11-08', { account_id: 'conta-it', metadata: { recurring_series_id: 'serie-academia-2' } })];
+  assert.deepEqual(localizarSerie('Academia', homonimas, { referenceDate: HOJE }), { tipo: 'homonimas', nome: 'Academia', quantas: 2 });
 });
 
 test('encerrar apaga este e os próximos pela RPC da tela', () => {
