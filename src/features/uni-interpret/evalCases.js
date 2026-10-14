@@ -933,6 +933,29 @@ export const CASOS = [
       consulta: { tipo: 'lancamentos', inicio: '2026-09-01', fim: '2026-09-30' },
     },
   },
+  // O que está previsto para entrar e sair, num período que pode ser futuro.
+  {
+    id: 'consulta-previsao-mes-que-vem',
+    frase: 'quanto tá previsto de entrada e saída pro mês que vem?',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'previsao', inicio: '2026-11-01', fim: '2026-11-30' },
+    },
+  },
+  {
+    id: 'consulta-previsao-dezembro',
+    reservado: true,
+    frase: 'qual a previsão pra dezembro',
+    esperado: {
+      intent: 'consulta',
+      consulta: { tipo: 'previsao', inicio: '2026-12-01', fim: '2026-12-31' },
+    },
+  },
+  {
+    id: 'consulta-previsao-sem-periodo',
+    frase: 'como que tão minhas previsões?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'previsao' } },
+  },
   {
     id: 'consulta-categorias',
     frase: 'quais categorias eu tenho?',
@@ -1466,7 +1489,7 @@ export const CASOS = [
   {
     id: 'consulta-mes-que-vem',
     frase: 'quanto eu vou gastar mês que vem?',
-    esperado: { intent: 'consulta', consulta: { tipo: 'outra' } },
+    esperado: { intent: 'consulta', consulta: { tipo: 'saidas', inicio: '2026-11-01', fim: '2026-11-30' } },
   },
   {
     id: 'consulta-ultima-compra',

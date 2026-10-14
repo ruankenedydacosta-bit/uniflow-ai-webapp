@@ -3513,9 +3513,11 @@ test('consulta da semana que vem vai de segunda a domingo seguintes', async () =
 });
 
 test('consulta sem período mantém o compromisso de dia inteiro de hoje', async () => {
+  // Dia inteiro é gravado à meia-noite local (toStartIso). Meia-noite UTC
+  // cairia no dia anterior em quem roda os testes fora de UTC.
   const { flow } = makeHarness([
-    { ...ITEM_DE_CONSULTA, id: 'boleto', title: 'Pagar boleto', is_all_day: true, starts_at: '2026-08-08T00:00:00.000Z' },
-  ], { now: () => new Date('2026-08-08T15:00:00.000Z') });
+    { ...ITEM_DE_CONSULTA, id: 'boleto', title: 'Pagar boleto', is_all_day: true, starts_at: new Date(2026, 7, 8).toISOString() },
+  ], { now: () => new Date(2026, 7, 8, 12) });
   const result = await turn(flow, 'Quais meus compromissos?');
   assert.match(result.text, /Pagar boleto/);
 });
