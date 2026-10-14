@@ -135,6 +135,7 @@ import {
   memoriaDaConsulta,
   periodoDaConsulta,
   responderConsulta,
+  statusDaConsulta,
 } from '../uni-interpret/uniInterpretConsulta.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
@@ -3873,7 +3874,7 @@ export default function UniChatPage({ variant = 'full' }) {
       const { data, error } = await listTransactionsForPeriod(effectiveWorkspace.id, {
         dateFrom: periodo.inicio,
         dateTo: periodo.fim,
-        status: 'completed',
+        status: statusDaConsulta(consulta, dataReferencia),
       });
       if (error) return null;
       return responderConsulta({ consulta, transacoes: data, dataReferencia, ...catalogo });

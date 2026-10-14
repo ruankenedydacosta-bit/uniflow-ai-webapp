@@ -17,10 +17,12 @@ export const INTENTS = Object.freeze([
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // Consulta que o app responde com os parâmetros (#80). 'lancamentos' lista
-// os itens em vez de somar e 'categorias' lista o catálogo (#190). 'outra'
-// (meta, contas a pagar, maior gasto, comparação...) segue para as regras de
-// consulta.
-export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'lancamentos', 'categorias', 'outra']);
+// os itens em vez de somar e 'categorias' lista o catálogo (#190).
+// 'previsao' soma as entradas e saídas previstas do período. Período futuro
+// vale em saidas, entradas, resumo e lancamentos também: o app lê os
+// previstos. 'outra' (meta, contas a pagar, maior gasto, comparação...)
+// segue para as regras de consulta.
+export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'previsao', 'lancamentos', 'categorias', 'outra']);
 // Criar, renomear ou excluir uma categoria pela conversa. O app confere
 // permissão, nome repetido e categoria padrão antes de mostrar o card.
 export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
@@ -312,8 +314,9 @@ export const MAX_DIAS_CONSULTA = 731;
 
 // Período da consulta. Os dois null valem o mês atual; "desde agosto" chega
 // sem fim e vai até hoje. Qualquer outro período que não dá para respeitar
-// (só o fim, data impossível, invertido, futuro, longo demais) devolve o
-// motivo, e a consulta vai para as regras em vez de responder outro período.
+// (só o fim, data impossível, invertido, longo demais) devolve o motivo, e a
+// consulta vai para as regras em vez de responder outro período. Período
+// futuro vale: o app responde com os lançamentos previstos.
 function validarPeriodo(bruta, dataReferencia) {
   const temInicio = bruta?.inicio !== null && bruta?.inicio !== undefined;
   const temFim = bruta?.fim !== null && bruta?.fim !== undefined;
@@ -322,7 +325,6 @@ function validarPeriodo(bruta, dataReferencia) {
   const inicio = dataValida(bruta.inicio) ? bruta.inicio : null;
   const fim = temFim ? (dataValida(bruta.fim) ? bruta.fim : null) : (inicio ? dataReferencia : null);
   if (!inicio || !fim || inicio > fim) return { inicio: inicio ?? null, fim: fim ?? null, problema: 'periodo_invalido' };
-  if (inicio > dataReferencia) return { inicio, fim, problema: 'periodo_futuro' };
   if (distanciaEmDias(inicio, fim) > MAX_DIAS_CONSULTA) return { inicio, fim, problema: 'periodo_longo' };
   return { inicio, fim, problema: null };
 }
@@ -354,8 +356,10 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   if (bruta?.conta && !conta) ajustes.push('conta_descartada');
 
   const termo = textoLimpo(bruta?.termo, MAX_TERMO) || null;
-  // O resumo soma tudo do período: não filtra por categoria nem por termo.
+  // O resumo e a previsão somam tudo do período: não filtram por categoria
+  // nem por termo.
   if (tipo === 'resumo' && termo) ajustes.push('termo_no_resumo');
+  if (tipo === 'previsao' && termo) ajustes.push('termo_na_previsao');
 
   if (ajustes.length > 0) tipo = 'outra';
 
