@@ -16,7 +16,7 @@
 // esperado.pedido: em categoria, a ação (criar, renomear, excluir, ocultar,
 //   reexibir) e,
 //   quando importa, o nome e o alvo, sem acento e caixa. Em agenda (#191), a
-//   ação (editar, cancelar, concluir, excluir) e as palavras que o alvo
+//   ação (editar, cancelar, concluir, excluir, consultar) e as palavras que o alvo
 //   precisa ter. Em exclusao (#189), acao 'excluir_lancamento' com as
 //   palavras que o alvo precisa ter e, quando importa, data, valor, ultimo e
 //   lote. Em edicao (#261), acao 'editar_lancamento' com os mesmos critérios
@@ -1171,6 +1171,24 @@ export const CASOS = [
   },
   // Ação sobre um compromisso já marcado (#191): a régua confere a ação e as
   // palavras do alvo; data e hora seguem com o parser da agenda.
+  // Consulta da agenda (#259, #269): o modelo diz que é consulta e, quando a
+  // pergunta cita um compromisso, qual.
+  {
+    id: 'agenda-consultar-depois-de-amanha',
+    frase: 'quais compromissos eu tenho depois de amanhã?',
+    esperado: { intent: 'agenda', pedido: { acao: 'consultar' } },
+  },
+  {
+    id: 'agenda-consultar-livre',
+    frase: 'to livre na segunda de manhã?',
+    esperado: { intent: 'agenda', pedido: { acao: 'consultar' } },
+  },
+  {
+    id: 'agenda-consultar-almoco-carla',
+    reservado: true,
+    frase: 'a que horas é o almoço com a Carla?',
+    esperado: { intent: 'agenda', pedido: { acao: 'consultar', alvo: ['almoco', 'carla'] } },
+  },
   {
     id: 'agenda-cancelar-dentista',
     frase: 'Cancela a consulta no dentista de quinta',
