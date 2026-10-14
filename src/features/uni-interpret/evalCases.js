@@ -13,7 +13,8 @@
 //   pede pelo nome uma categoria que não está no catálogo.
 // esperado.data: ISO; ausente quando a frase não fala de data (vale hoje).
 // esperado.titulo: em agenda, palavras que o título precisa ter (#142).
-// esperado.pedido: em categoria, a ação (criar, renomear, excluir) e,
+// esperado.pedido: em categoria, a ação (criar, renomear, excluir, ocultar,
+//   reexibir) e,
 //   quando importa, o nome e o alvo, sem acento e caixa. Em agenda (#191), a
 //   ação (editar, cancelar, concluir, excluir) e as palavras que o alvo
 //   precisa ter. Em exclusao (#189), acao 'excluir_lancamento' com as
@@ -1150,6 +1151,18 @@ export const CASOS = [
     reservado: true,
     frase: 'muda o nome da conta Nubank para Nubank PJ',
     esperado: { intent: 'conta', pedido: { acao: 'renomear', alvo: 'Nubank', nome: 'Nubank PJ' } },
+  },
+  // Ocultar e reexibir categoria (#267).
+  {
+    id: 'categoria-ocultar-dividas',
+    frase: 'esconde a categoria Dívidas, não uso',
+    esperado: { intent: 'categoria', pedido: { acao: 'ocultar', alvo: 'Dívidas' } },
+  },
+  {
+    id: 'categoria-reexibir-pets',
+    reservado: true,
+    frase: 'volta a mostrar a categoria Pets',
+    esperado: { intent: 'categoria', pedido: { acao: 'reexibir', nome: 'Pets' } },
   },
   {
     id: 'categoria-nova-com-valor',

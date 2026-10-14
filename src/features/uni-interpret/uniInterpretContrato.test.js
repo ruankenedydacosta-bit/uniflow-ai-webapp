@@ -708,6 +708,14 @@ test('conta: ação da lista, alvo pelo apelido e tipo só em criar', () => {
   assert.equal(pedido({ acao: 'excluir', alvo: K.cc, nome: null, tipo: null }).intent, 'nao_entendi');
 });
 
+// Ocultar e reexibir categoria (#267).
+test('categoria: ocultar pelo apelido sem nome; reexibir pelo nome dito', () => {
+  const pedido = (categoria) => validarInterpretacao({ intent: 'categoria', operacoes: [], resposta: '', categoria }, CONTEXTO).categoria;
+  const ocultar = pedido({ acao: 'ocultar', tipo: null, alvo: C.edu, nome: 'Educação' });
+  assert.deepEqual({ ...ocultar, alvo: ocultar.alvo.id }, { acao: 'ocultar', tipo: 'saida', alvo: 'cat-edu', nome: null });
+  assert.deepEqual(pedido({ acao: 'reexibir', tipo: null, alvo: null, nome: 'Presentes' }), { acao: 'reexibir', tipo: null, alvo: null, nome: 'Presentes' });
+});
+
 // #190: lista de lançamentos e catálogo de categorias.
 test('consulta lancamentos: aceita categoria de qualquer tipo e mantém os filtros', () => {
   const { tipo, categoria, conta, termo, ajustes } = validarInterpretacao(

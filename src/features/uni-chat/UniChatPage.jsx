@@ -1536,6 +1536,7 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     const pronto = montarPedidoDeCategoria(pedidoDoModelo, {
       categorias: categoryState.categories,
+      ocultas: (categoryState.categoriasOcultas ?? []).map((categoria) => categoria.id),
       // Sem conseguir ler o papel, quem decide é a regra do banco (RLS): o
       // card aparece e um erro de permissão volta no Confirmar.
       papel: workspaceRole.error ? { canUpdate: true, canDelete: true } : workspaceRole,
@@ -1610,6 +1611,10 @@ export default function UniChatPage({ variant = 'full' }) {
         resultado = await categoryState.saveCategory({ name: pronto.nome, category_type: pronto.categoryType });
       } else if (pronto.acao === 'renomear') {
         resultado = await categoryState.saveCategory({ name: pronto.nome }, pronto.categoria.id);
+      } else if (pronto.acao === 'ocultar') {
+        resultado = await categoryState.ocultarCategoria(pronto.categoria.id);
+      } else if (pronto.acao === 'reexibir') {
+        resultado = await categoryState.reexibirCategoria(pronto.categoria.id);
       } else {
         resultado = await categoryState.removeCategory(pronto.categoria.id);
       }

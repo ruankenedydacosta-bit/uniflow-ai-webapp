@@ -27,7 +27,10 @@ export const TIPOS_CONSULTA = Object.freeze([
 ]);
 // Criar, renomear ou excluir uma categoria pela conversa. O app confere
 // permissão, nome repetido e categoria padrão antes de mostrar o card.
-export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
+// Ocultar e reexibir (#267): a categoria some das escolhas e volta, como na
+// tela. Reexibir não tem apelido (a oculta não vai ao prompt): o app acha
+// pelo nome dito.
+export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir', 'ocultar', 'reexibir']);
 // Pedido de meta pela conversa (#192). Aportar e retirar (#161) registram
 // dinheiro guardado ou tirado de uma meta, com as regras da #158.
 export const ACOES_META = Object.freeze(['criar', 'editar', 'excluir', 'consultar', 'aportar', 'retirar']);
@@ -493,7 +496,7 @@ function validarCategoria(bruta, { categoriasPorApelido }) {
   const nome = textoLimpo(bruta?.nome, MAX_NOVA_CATEGORIA) || null;
   const tipoPorAlvo = { expense: 'saida', income: 'entrada' }[alvo?.category_type] ?? null;
   const tipo = acao === 'criar' ? (bruta?.tipo === 'entrada' ? 'entrada' : 'saida') : tipoPorAlvo;
-  return { acao, tipo, alvo, nome: acao === 'excluir' ? null : nome };
+  return { acao, tipo, alvo, nome: acao === 'excluir' || (acao === 'ocultar' && alvo) ? null : nome };
 }
 
 function valorPositivo(bruto) {

@@ -13,7 +13,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - consulta: pergunta sobre os dados dele (gastos, entradas, quais lançamentos ou categorias tem). Pergunta sobre uma meta é o intent meta, não consulta.
 - agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento). Dinheiro que ainda vai sair ou entrar, sem pedido de lembrete, é lancamento com data futura ("o condomínio de 650 vence dia 8", "recebo 2 mil do cliente quinta"). Vale também para remarcar, cancelar, concluir ou excluir um compromisso já marcado ("passa o dentista pra quinta", "desmarca o almoço com a Carla", "já fiz a reunião", "apaga o lembrete da vacina") e para perguntar o que há na agenda ("o que tenho amanhã?", "tenho reunião hoje?", "estou livre sexta?", "que horas é o dentista?").
 - correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. A exceção é a resposta sobre um aporte ou uma retirada de meta: veja a seção meta. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
-- categoria: criar, renomear ou excluir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
+- categoria: criar, renomear, excluir, ocultar ou reexibir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas", "esconde a categoria Presentes", "volta a mostrar Educação"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
 - exclusao: apagar um lançamento já registrado ("apaga o iFood de ontem", "exclui o mercado de sábado", "tira esse último lançamento, foi engano", "apaga tudo que lancei em setembro"). Excluir uma categoria é categoria; cancelar um compromisso é agenda; desistir do <rascunho> é correcao.
 - edicao: mudar um lançamento já registrado, fora do <rascunho> ("a farmácia de terça foi 62, não 26", "o lanche de hoje na verdade foi 18", "errei o valor da padaria, era 30", "o táxi de quarta foi no cartão", "muda a categoria da academia para Saúde"). Com <rascunho>, mudar o rascunho é correcao. Apagar é exclusao.
 - recorrencia: mudar ou parar um lançamento que se repete todo mês, semana ou ano ("a academia sobe pra 130 a partir de dezembro", "o condomínio agora sai da conta conjunta", "para de lançar o Spotify", "cancelei a assinatura do Disney+, tira dos próximos meses"). Um lançamento só, que não se repete, é edicao ou exclusao.
@@ -63,9 +63,9 @@ Só quando o intent é agenda; nos outros, todos os campos são null. Em agenda,
 
 ## categoria
 Só quando o intent é categoria; nos outros, todos os campos são null.
-- acao: criar, renomear ou excluir.
-- nome: em criar, o nome da categoria nova; em renomear, o nome novo. Com acentos e inicial maiúscula, sem aspas e sem a finalidade ("para vincular essa despesa"). null em excluir.
-- alvo: em renomear e excluir, o apelido da categoria do catálogo que muda ou sai. null se ela não estiver no catálogo. null em criar.
+- acao: criar, renomear, excluir, ocultar (esconder das escolhas sem apagar) ou reexibir (voltar a mostrar uma categoria escondida, que não está no catálogo).
+- nome: em criar, o nome da categoria nova; em renomear, o nome novo; em reexibir, a categoria como a pessoa chamou. Com acentos e inicial maiúscula, sem aspas e sem a finalidade ("para vincular essa despesa"). null em excluir e ocultar.
+- alvo: em renomear, excluir e ocultar, o apelido da categoria do catálogo que muda ou sai. null se ela não estiver no catálogo. null em criar e reexibir.
 - tipo: em criar, entrada quando a pessoa fala de receita, entrada ou ganho; senão saida.
 
 ## meta
