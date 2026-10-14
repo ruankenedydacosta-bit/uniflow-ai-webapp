@@ -29,26 +29,6 @@ const PUBLIC_FINANCIAL_SUMMARY_PATTERNS = Object.freeze([
   /\bquanto\s+entrou\b[\s\S]*\bquanto\s+saiu\b/u,
 ]);
 
-const FORBIDDEN_PUBLIC_BALANCE_NARRATIVE_PATTERNS = Object.freeze([
-  /\bsaldo\s+atual\b/u,
-  /\bseu\s+saldo\b/u,
-  /\bsaldo\s+total\b/u,
-  /\bresultado\s+(?:positivo|negativo)\b/u,
-  /\b(?:voce|voces)\s+(?:esta|estao)\b[\s\S]*\b(?:no\s+positivo|no\s+negativo)\b/u,
-  /\bpatrimonio\s+disponivel\b/u,
-  /\bvalor\s+restante\b/u,
-  /\bavailable\s+balance\b/u,
-  /\bremaining\s+balance\b/u,
-  /\b(?:sobrou|sobraram|restou|restaram|ficou|ficaram)\b[\s\S]{0,20}r\$\s*[\d.,]+/u,
-  /\bvoce\s+(?:tem|possui)\s+r\$\s*[\d.,]+/u,
-  /\bvoce\s+esta\s+com\s+r\$\s*[\d.,]+/u,
-  /\b(?:diferenca|valor\s+liquido|fluxo\s+liquido)\b[\s\S]{0,30}r\$\s*[\d.,]+/u,
-  /\bpatrimonio\b[\s\S]{0,30}r\$\s*[\d.,]+/u,
-  /\b(?:dinheiro|valor)\s+(?:disponivel|restante)\b[\s\S]{0,20}r\$\s*[\d.,]+/u,
-  /\bsaldo\b[\s\S]{0,30}r\$\s*[\d.,]+/u,
-  /\bresultado(?:\s+do\s+mes)?\b[\s\S]{0,30}r\$\s*[\d.,]+/u,
-]);
-
 const RETIRED_PUBLIC_BALANCE_INTENTS = new Set([
   'check_balance',
   'set_balance',
@@ -78,23 +58,6 @@ export function isPublicFinancialSummaryRequest(text) {
   const normalized = normalizeFinancialText(text);
   if (!normalized) return false;
   return PUBLIC_FINANCIAL_SUMMARY_PATTERNS.some((pattern) => pattern.test(normalized));
-}
-
-export function containsForbiddenPublicBalanceNarrative(text) {
-  const normalized = normalizeFinancialText(text);
-  if (!normalized) return false;
-  return FORBIDDEN_PUBLIC_BALANCE_NARRATIVE_PATTERNS.some((pattern) => pattern.test(normalized));
-}
-
-function isPublicFinancialRequest(text) {
-  const normalized = normalizeFinancialText(text);
-  if (!normalized) return false;
-  if (/\b(?:agenda|agende|agendar|marca|marcar|reuniao|compromisso|consulta)\b/u.test(normalized)) {
-    return false;
-  }
-  return isRetiredPublicBalanceRequest(text)
-    || isPublicFinancialSummaryRequest(text)
-    || /\b(?:dinheiro|financas|financeiro|entrada|entradas|saida|saidas|receita|receitas|despesa|despesas|gasto|gastos|saldo|conta|contas)\b/u.test(normalized);
 }
 
 function currentMonthRange(snapshot) {
@@ -198,19 +161,4 @@ export function formatPublicMovementSummaryResponse({
       expenseCount,
     },
   };
-}
-
-/**
- * Barreira final contra regressões em narradores legados/LLM. Só substitui
- * texto quando a pergunta é financeira e a saída contém uma narrativa de
- * saldo proibida; código e cálculos internos permanecem intactos.
- */
-export function enforcePublicFinancialResponsePolicy({ text, requestText, snapshot } = {}) {
-  if (!containsForbiddenPublicBalanceNarrative(text)) return text;
-  if (!isPublicFinancialRequest(requestText)) return text;
-  return buildPublicMovementSummaryResponse({
-    snapshot,
-    text: requestText,
-    includeRetirementIntro: isRetiredPublicBalanceRequest(requestText),
-  }).text;
 }
