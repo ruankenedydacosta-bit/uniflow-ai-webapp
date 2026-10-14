@@ -279,6 +279,13 @@ function palavraBate(texto, palavra) {
   return palavra.length > 3 && palavra.endsWith('s') && texto.includes(palavra.slice(0, -1));
 }
 
+// Todas as palavras aparecem na descrição ou na categoria do lançamento.
+export function bateComPalavras(transacao, palavras, categories = []) {
+  if (!palavras?.length) return false;
+  const texto = textoPesquisavel(transacao, categoriasIndexadas(categories));
+  return palavras.every((palavra) => palavraBate(texto, palavra));
+}
+
 function bateComAlvo(transacao, alvo, categoriasPorId) {
   if (alvo.data && transacao.transaction_date !== alvo.data) return false;
   if (alvo.valor && Math.abs(Number(transacao.amount) - alvo.valor) >= 0.005) return false;
@@ -374,10 +381,22 @@ function nomeDe(lista, id) {
 
 // Alteração pronta para o card e para o update. { erro } quando a mudança
 // não pode ser aplicada a este lançamento.
+// Confirmar um previsto (#262) só muda situação, data e valor, como o "Marcar
+// como pago" da tela: parcela pode, porque nada passa para as outras.
+function motivoDeBloqueioDaConfirmacao(transacao) {
+  if (!transacao || transacao.status === 'canceled') return 'Esse lançamento foi cancelado e não pode ser confirmado.';
+  if (transacao.status !== 'pending') return 'Esse lançamento já está realizado.';
+  if (transacao.transaction_type === 'adjustment') return 'Ajustes de saldo só podem ser alterados na tela Financeiro.';
+  if (transacao.source_type === 'import' || transacao.source_type === 'open_finance') {
+    return 'Esse lançamento veio de uma importação e só pode ser alterado na tela Financeiro.';
+  }
+  return null;
+}
+
 export function montarAlteracao(transacao, mudancas, { accounts = [], categories = [], referenceDate } = {}) {
-  const bloqueio = motivoDeBloqueio(transacao);
-  if (bloqueio) return { erro: bloqueio };
   const pedidas = mudancas ?? {};
+  const bloqueio = pedidas.confirmar ? motivoDeBloqueioDaConfirmacao(transacao) : motivoDeBloqueio(transacao);
+  if (bloqueio) return { erro: bloqueio };
   const alteracoes = {};
   const campos = [];
 
@@ -399,6 +418,10 @@ export function montarAlteracao(transacao, mudancas, { accounts = [], categories
       alteracoes.status = 'pending';
       campos.push({ campo: 'status', antes: 'completed', depois: 'pending' });
     }
+  }
+  if (pedidas.confirmar) {
+    alteracoes.status = 'completed';
+    campos.push({ campo: 'status', antes: 'pending', depois: 'completed' });
   }
   if (pedidas.accountId !== undefined && pedidas.accountId !== transacao.account_id) {
     const conta = (Array.isArray(accounts) ? accounts : []).find((item) => item?.id === pedidas.accountId);
@@ -501,9 +524,19 @@ export function linhasDaAlteracao(transacao, campos, { accounts = [] } = {}) {
 
 // Card de confirmação da alteração. Sem "Editar": o ajuste é falado ("não,
 // pra 60") e refaz o card.
+function confirmaPrevisto(campos) {
+  return campos.some(({ campo, depois }) => campo === 'status' && depois === 'completed');
+}
+
+function verboDaConfirmacao(transacao) {
+  if (transacao.transaction_type === 'income') return 'recebido';
+  if (transacao.transaction_type === 'transfer') return 'realizado';
+  return 'pago';
+}
+
 export function cardDaAlteracao(transacao, campos, contexto = {}) {
   return {
-    title: 'Alterar lançamento',
+    title: confirmaPrevisto(campos) ? 'Confirmar previsto' : 'Alterar lançamento',
     status: 'pending',
     actionKind: ACTION_KIND_EDICAO,
     editable: false,
@@ -514,6 +547,13 @@ export function cardDaAlteracao(transacao, campos, contexto = {}) {
 // O que a Uni diz junto do card. É este texto que a conversa por voz fala.
 export function textoDaAlteracao(transacao, campos) {
   const nome = transacao.description || 'esse lançamento';
+  if (confirmaPrevisto(campos)) {
+    const data = campos.find(({ campo }) => campo === 'date')?.depois ?? transacao.transaction_date;
+    const valor = campos.find(({ campo }) => campo === 'amount')?.depois;
+    const comValor = valor === undefined ? '' : `, com valor ${formatarValor(valor)}`;
+    return `${nome}, de ${formatarValor(transacao.amount)}, estava previsto para ${formatarData(transacao.transaction_date)}. `
+      + `Vou marcar como ${verboDaConfirmacao(transacao)} em ${formatarData(data)}${comValor}. Posso confirmar?`;
+  }
   const mudancas = campos.map(({ campo, antes, depois }) => {
     const rotulo = ROTULOS_DOS_CAMPOS[campo].toLowerCase();
     return `${rotulo} de ${formatarCampo(campo, antes)} para ${formatarCampo(campo, depois)}`;
@@ -535,6 +575,7 @@ export function textoDaEscolha(candidatos, total, { accounts = [], verbo = 'alte
 
 export function textoDaAlteracaoFeita(transacao, campos) {
   const nome = transacao.description || 'o lançamento';
+  if (confirmaPrevisto(campos)) return `Pronto, marquei ${nome} como ${verboDaConfirmacao(transacao)}.`;
   const mudancas = campos.map(({ campo, depois }) => `${ROTULOS_DOS_CAMPOS[campo].toLowerCase()} ${formatarCampo(campo, depois)}`);
   const lista = mudancas.length > 1
     ? `${mudancas.slice(0, -1).join(', ')} e ${mudancas.at(-1)}`

@@ -227,6 +227,12 @@ import {
   updateTransaction,
 } from '../../services/transactionService.js';
 import {
+  acharPrevisto,
+  janelaDosPrevistos,
+  mudancasDaConfirmacao,
+  podeSerConfirmacaoDePrevisto,
+} from '../uni-conversation/confirmacaoDePrevisto.js';
+import {
   analisarAlvo,
   cardDaAlteracao,
   escolherCandidato,
@@ -1312,6 +1318,43 @@ export default function UniChatPage({ variant = 'full' }) {
       return;
     }
     publicarResultadoDaBusca(resultado, mudancas, turnToken);
+  }
+
+  // "Já paguei o aluguel" com o aluguel previsto (#262): oferece confirmar o
+  // previsto em vez de abrir um lançamento novo. false quando não há previsto
+  // parecido e a frase segue como lançamento.
+  async function tentarConfirmarPrevisto(operacao, texto, turnToken) {
+    const referenceDate = getLocalIsoDate();
+    // Sem conseguir ler o papel, quem decide é a RLS, como no pedido de categoria.
+    const podeAlterar = Boolean(workspaceRole.error) || workspaceRole.canUpdate === true;
+    if (!podeAlterar || !podeSerConfirmacaoDePrevisto(operacao, texto, referenceDate)) return false;
+    const conversationId = activeIdRef.current;
+    const { dateFrom, dateTo } = janelaDosPrevistos(referenceDate);
+    const lidos = await listTransactions(effectiveWorkspace?.id, { status: 'pending', dateFrom, dateTo, limit: 100 })
+      .catch(() => null);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return true;
+    const resultado = acharPrevisto(operacao, lidos?.data ?? [], { referenceDate, categories: categoryState.categories });
+    if (resultado.tipo === 'nenhum') return false;
+    setIsTyping(false);
+    const mudancas = mudancasDaConfirmacao(operacao, referenceDate);
+    if (resultado.tipo === 'unico') {
+      void prepararAlteracao(resultado.transacao.id, mudancas, turnToken);
+      return true;
+    }
+    createAssistantResponse(
+      textoDaEscolha(resultado.candidatos, resultado.total, { ...contextoDaEdicao(), verbo: 'confirmar' }),
+      { deduplicateNarration: false },
+    );
+    setEdicaoPendente({
+      etapa: 'escolher',
+      candidatos: resultado.candidatos,
+      mudancas,
+      messageId: null,
+      workspaceId: effectiveWorkspace?.id,
+      conversationId,
+      criadaEm: Date.now(),
+    });
+    return true;
   }
 
   // Resposta com a edição pendente. false quando a frase é outro assunto:
@@ -3948,6 +3991,7 @@ export default function UniChatPage({ variant = 'full' }) {
 
     switch (rota) {
       case ROTAS_INTERPRETACAO.LANCAMENTO: {
+        if (await tentarConfirmarPrevisto(interpretacao.operacoes[0], text, turnToken)) return true;
         const { parsed, overrides } = interpretacaoParaRascunho(interpretacao, text);
         const result = financialConversation.startFromParsed(parsed, overrides);
         if (!result.handled) {
