@@ -3433,3 +3433,119 @@ test('alvo do modelo prefere o item com todas as palavras antes de abrir para qu
   });
   assert.match(result.text, /Quer mesmo cancelar Reunião contador/);
 });
+
+// Consulta da agenda pela conversa: sem período, só o que ainda vai acontecer.
+const ITEM_DE_CONSULTA = Object.freeze({ workspace_id: IDENTITY.workspaceId, has_explicit_time: true });
+
+test('consulta sem período lista só compromissos de hoje em diante', async () => {
+  const { flow } = makeHarness([
+    { ...ITEM_DE_CONSULTA, id: 'antigo', title: 'Dentista antigo', starts_at: '2026-08-01T10:00:00.000Z' },
+    { ...ITEM_DE_CONSULTA, id: 'futuro', title: 'Reunião com o João', starts_at: '2026-08-10T10:00:00.000Z' },
+  ], { now: () => new Date('2026-08-08T12:00:00.000Z') });
+  const result = await turn(flow, 'Qual é a minha agenda?');
+  assert.match(result.text, /Reunião com o João/);
+  assert.doesNotMatch(result.text, /Dentista antigo/);
+});
+
+test('consulta sem período e sem compromisso futuro diz que não há nada marcado', async () => {
+  const { flow } = makeHarness([
+    { ...ITEM_DE_CONSULTA, id: 'antigo', title: 'Dentista antigo', starts_at: '2026-08-01T10:00:00.000Z' },
+  ], { now: () => new Date('2026-08-08T12:00:00.000Z') });
+  const result = await turn(flow, 'Quais meus compromissos?');
+  assert.equal(result.text, 'Você não tem compromissos marcados de hoje em diante.');
+});
+
+test('consultar do modelo filtra pelo compromisso citado', async () => {
+  const { flow } = makeHarness([
+    { ...ITEM_DE_CONSULTA, id: 'dentista', title: 'Dentista', starts_at: '2026-08-10T10:00:00.000Z' },
+    { ...ITEM_DE_CONSULTA, id: 'joao', title: 'Reunião com o João', starts_at: '2026-08-11T15:00:00.000Z' },
+  ], { now: () => new Date('2026-08-08T12:00:00.000Z') });
+  const result = await flow.handle({
+    text: 'Que horas é a reunião com o João?',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'consultar', alvo: 'Reunião com o João', titulo: null },
+  });
+  assert.match(result.text, /Reunião com o João/);
+  assert.doesNotMatch(result.text, /Dentista/);
+
+  const semAchar = await flow.handle({
+    text: 'Que horas é o almoço com a Carla?',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'consultar', alvo: 'Almoço com a Carla', titulo: null },
+  });
+  assert.equal(semAchar.text, 'Não achei Almoço com a Carla na sua agenda de hoje em diante.');
+});
+
+test('consulta longa lista os dez primeiros e aponta o resto na Agenda', async () => {
+  const seed = Array.from({ length: 12 }, (_, index) => ({
+    ...ITEM_DE_CONSULTA,
+    id: `item-${index}`,
+    title: `Compromisso ${index + 1}`,
+    starts_at: `2026-08-${String(10 + index).padStart(2, '0')}T10:00:00.000Z`,
+  }));
+  const { flow } = makeHarness(seed, { now: () => new Date('2026-08-08T12:00:00.000Z') });
+  const result = await turn(flow, 'Próximos compromissos');
+  assert.match(result.text, /Compromisso 10,/);
+  assert.doesNotMatch(result.text, /Compromisso 11,/);
+  assert.match(result.text, /Os demais estão na Agenda\.$/);
+});
+
+test('pergunta "tenho reunião hoje?" consulta e não cria compromisso', async () => {
+  const { flow, calls } = makeHarness([
+    { ...ITEM_DE_CONSULTA, id: 'hoje', title: 'Reunião de equipe', starts_at: '2026-08-08T15:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'Tenho reunião hoje?');
+  assert.match(result.text, /Reunião de equipe/);
+  assert.equal(calls.some((call) => call.operation === 'create'), false);
+});
+
+test('consulta da semana que vem vai de segunda a domingo seguintes', async () => {
+  const { flow } = makeHarness([
+    { ...ITEM_DE_CONSULTA, id: 'domingo', title: 'Almoço de domingo', starts_at: '2026-08-09T15:00:00.000Z' },
+    { ...ITEM_DE_CONSULTA, id: 'quarta', title: 'Dentista', starts_at: '2026-08-12T15:00:00.000Z' },
+    { ...ITEM_DE_CONSULTA, id: 'segunda-seguinte', title: 'Reunião mensal', starts_at: '2026-08-17T15:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'O que tenho semana que vem?');
+  assert.match(result.text, /Dentista/);
+  assert.doesNotMatch(result.text, /Almoço de domingo|Reunião mensal/);
+});
+
+test('consulta sem período mantém o compromisso de dia inteiro de hoje', async () => {
+  const { flow } = makeHarness([
+    { ...ITEM_DE_CONSULTA, id: 'boleto', title: 'Pagar boleto', is_all_day: true, starts_at: '2026-08-08T00:00:00.000Z' },
+  ], { now: () => new Date('2026-08-08T15:00:00.000Z') });
+  const result = await turn(flow, 'Quais meus compromissos?');
+  assert.match(result.text, /Pagar boleto/);
+});
+
+test('consultar não responde com compromisso que só divide uma palavra com o alvo', async () => {
+  const { flow } = makeHarness([
+    { ...ITEM_DE_CONSULTA, id: 'equipe', title: 'Reunião de equipe', starts_at: '2026-08-10T10:00:00.000Z' },
+  ]);
+  const result = await flow.handle({
+    text: 'Que horas é a reunião com o João?',
+    identity: IDENTITY,
+    referenceDate: REFERENCE_DATE,
+    interpretado: { acao: 'consultar', alvo: 'Reunião com o João', titulo: null },
+  });
+  assert.equal(result.text, 'Não achei Reunião com o João na sua agenda de hoje em diante.');
+});
+
+test('consulta com dia citado vence o período da semana', async () => {
+  const { flow } = makeHarness([
+    { ...ITEM_DE_CONSULTA, id: 'segunda', title: 'Dentista', starts_at: '2026-08-10T15:00:00.000Z' },
+    { ...ITEM_DE_CONSULTA, id: 'sexta', title: 'Reunião mensal', starts_at: '2026-08-14T15:00:00.000Z' },
+  ]);
+  const result = await turn(flow, 'O que tenho na sexta da semana que vem?');
+  assert.match(result.text, /Reunião mensal/);
+  assert.doesNotMatch(result.text, /Dentista/);
+});
+
+test('consulta sem alvo pede ao banco só um item além do que lista', async () => {
+  const { flow, calls } = makeHarness([]);
+  await turn(flow, 'Próximos compromissos');
+  const list = calls.find((call) => call.operation === 'list');
+  assert.equal(list.filters.limit, 11);
+});

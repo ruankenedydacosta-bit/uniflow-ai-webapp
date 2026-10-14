@@ -38,6 +38,29 @@ export const AGENDA_INTENTS = Object.freeze([
 
 export const AGENDA_INTENT_SET = new Set(AGENDA_INTENTS);
 
+// Pergunta sobre a agenda ("tenho reunião hoje?", "estou livre sexta?",
+// "que horas é o dentista?", "qual é meu lembrete de amanhã?").
+const AGENDA_QUESTION_PATTERNS = Object.freeze([
+  /\b(?:estou|esto|to|tou|fico)\s+livre\b/,
+  /\b(?:quais|qual)\s+(?:sao\s+|e\s+)?(?:os\s+|as\s+|o\s+)?(?:meus?\s+|minhas\s+)?(?:compromissos?|eventos?|reunioes|lembretes?)\b/,
+  /\btenho\s+(?:algo|alguma\s+coisa|algum\s+compromisso|compromisso|reuniao|consulta|evento)\s+(?:marcad[oa]|agendad[oa])\b/,
+  /^(?:eu\s+)?tenho\s+(?:alguma?\s+|uma?\s+)?(?:algo|coisa|compromissos?|reuni(?:ao|oes)|consultas?|eventos?)\b[^?]*\?$/,
+  /\bque\s+horas?\s+(?:e|eh|era|sera|vai\s+ser|comeca|fica)\s+(?:a|o|as|os|minha|meu)\s+\w/,
+  /\b(?:o\s+que|que)\s+(?:eu\s+)?tenho\b[^.!?]*\b(?:hoje|amanha|semana|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2}|marcad[oa]|agendad[oa]|na\s+agenda)\b/,
+  /\bo\s+que\s+(?:tem|ha)\s+na\s+(?:minha\s+)?agenda\b/,
+]);
+
+// Pedido de marcar ou de lembrar dentro da pergunta ("tenho reunião amanhã,
+// pode marcar?", "me lembra que horas é o dentista?") é criação, e pergunta
+// sobre dinheiro ("o que tenho de gasto hoje?") é do financeiro.
+const AGENDA_CREATE_VERB = /\b(?:marca|marcar|marque|agendar|agende|anota|anotar|anote|bota|botar|coloca|colocar|coloque|lembra|lembrar|lembre|avisa|avisar|avise)\b/;
+const FINANCIAL_WORD = /\b(?:gastos?|gastei|saldo|dinheiro|reais|receitas?|despesas?|pagar|receber)\b/;
+
+function isAgendaQuestion(text) {
+  if (AGENDA_CREATE_VERB.test(text) || FINANCIAL_WORD.test(text)) return false;
+  return AGENDA_QUESTION_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 // CAMADA 0 -- heurística de Agenda (não é IA): determina a intenção de
 // agenda/lembrete se houver evidência semântica explícita. Roda SEMPRE
 // antes das regras financeiras, para evitar falso-positivo financeiro.
@@ -60,6 +83,13 @@ function detectAgendaIntent(normalizedText) {
   // usuário nunca muda; a normalização é auxiliar e descartada em seguida.
   const text = stripColloquialLead(normalizedText);
   const has = (patterns) => patterns.some((pattern) => pattern.test(text));
+
+  // 0. Pergunta sobre a agenda. Vem antes do lembrete e da criação: "qual é
+  //    meu lembrete de amanhã?" consulta, e "tenho reunião hoje" sem
+  //    interrogação marca; com ela, consulta.
+  if (isAgendaQuestion(text)) {
+    return { intent: 'agenda_query', confidence: 0.9, signals: ['agenda_query_question'] };
+  }
 
   // 1. Lembrete ("me lembra de...", "preciso que você me lembre", "cria um
   //    lembrete...", e pt-BR coloquial "me avisa", "me dá um toque",

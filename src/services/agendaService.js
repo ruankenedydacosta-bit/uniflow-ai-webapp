@@ -180,7 +180,7 @@ export async function resolveIdempotentAgendaCreation({
 
 export async function listAgendaItems(
   workspaceId,
-  { startsFrom, startsTo, status, itemType, clientId } = {},
+  { startsFrom, startsTo, status, itemType, clientId, limit } = {},
 ) {
   if (!supabase) {
     return createUnavailableResult([]);
@@ -214,6 +214,10 @@ export async function listAgendaItems(
 
   if (clientId) {
     query = query.eq('client_id', clientId);
+  }
+
+  if (limit) {
+    query = query.limit(limit);
   }
 
   const { data, error } = await query;

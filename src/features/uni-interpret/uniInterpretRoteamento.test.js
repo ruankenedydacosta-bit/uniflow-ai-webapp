@@ -318,6 +318,11 @@ test('agenda: ação sobre compromisso existente leva ação, alvo e, só em edi
     { acao: 'editar', alvo: 'Reunião', titulo: 'Reunião com o João' },
   );
   assert.deepEqual(
+    interpretacaoParaAgenda(agenda({ acao: 'consultar', alvo: null, titulo: null, valor: null })),
+    { acao: 'consultar', alvo: null, titulo: null },
+    'consulta sem compromisso citado também vai ao fluxo da agenda',
+  );
+  assert.deepEqual(
     interpretacaoParaAgenda(agenda({ acao: 'excluir', alvo: null, titulo: 'Dentista', valor: 50 })),
     { acao: 'excluir', alvo: null, titulo: null },
     'fora de editar, o título do modelo não vale e o valor não entra',

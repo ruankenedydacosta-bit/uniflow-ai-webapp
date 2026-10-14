@@ -172,9 +172,10 @@ export function interpretacaoParaPlano(interpretacao) {
   return { operations, clarificationQuestion: null };
 }
 
-// Ações sobre um compromisso que já existe (#191). Criar segue o caminho do
-// título; função anterior ao campo não manda acao e cai no mesmo caminho.
-const ACOES_SOBRE_COMPROMISSO = new Set(['editar', 'cancelar', 'concluir', 'excluir']);
+// Ações sobre um compromisso que já existe (#191), mais a consulta da agenda,
+// que pode ou não citar um compromisso. Criar segue o caminho do título;
+// função anterior ao campo não manda acao e cai no mesmo caminho.
+const ACOES_SOBRE_COMPROMISSO = new Set(['editar', 'cancelar', 'concluir', 'excluir', 'consultar']);
 
 function textoOuNulo(valor) {
   const texto = typeof valor === 'string' ? valor.trim() : '';

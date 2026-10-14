@@ -147,6 +147,18 @@ const AGENDA_CASES = [
     input: 'Não tem horário definido para essa reunião ainda',
     intent: 'agenda_no_time',
   },
+  { label: 'pergunta sim ou não sobre reunião', input: 'Tenho reunião hoje?', intent: 'agenda_query' },
+  { label: 'pergunta com compromisso na sexta', input: 'Eu tenho um compromisso na sexta?', intent: 'agenda_query' },
+  { label: 'algo marcado amanhã', input: 'Tenho algo marcado amanhã?', intent: 'agenda_query' },
+  { label: 'livre na sexta', input: 'Estou livre sexta?', intent: 'agenda_query' },
+  { label: 'quais meus compromissos', input: 'Quais meus compromissos?', intent: 'agenda_query' },
+  { label: 'que horas é a reunião', input: 'Que horas é a reunião com o João?', intent: 'agenda_query' },
+  { label: 'o que tenho na quinta', input: 'O que tenho na quinta?', intent: 'agenda_query' },
+  { label: 'pergunta sobre um lembrete', input: 'Qual é meu lembrete de amanhã?', intent: 'agenda_query' },
+  { label: 'que horas é o lembrete', input: 'Que horas é o lembrete da vacina?', intent: 'agenda_query' },
+  { label: 'pedido de lembrar continua lembrete', input: 'Me lembra que horas é o dentista amanhã', intent: 'agenda_reminder_create' },
+  { label: 'reunião com horário sem interrogação marca', input: 'Tenho reunião hoje às 15h', intent: 'agenda_schedule_create' },
+  { label: 'pergunta com pedido de marcar continua criação', input: 'Tenho reunião amanhã, pode marcar?', intent: 'agenda_schedule_create' },
   {
     label: 'conflito entre lembrete futuro e operação financeira',
     input: 'Amanhã tenho que pagar 300 reais',
@@ -283,4 +295,9 @@ test('prefixo conversacional é removido sem perder o restante semântico', () =
     stripLeadingConversationalPrefix('Fala, Uni. Boa noite. Agenda uma reunião amanhã.'),
     'Agenda uma reunião amanhã.',
   );
+});
+
+test('AGENDA: pergunta sobre gasto do dia não vira consulta de agenda pela pergunta', () => {
+  const result = classifyIntent('O que eu tenho de gasto hoje?');
+  assert.notEqual(result.signals?.[0], 'agenda_query_question');
 });
