@@ -14,9 +14,9 @@
 // - Não entra (naoEntra): convite recusado e evento que não é compromisso
 //   (local de trabalho, ausência, foco, aniversário). Item que veio do Google
 //   e passou a ser um desses é cancelado.
-// - Privado e confidencial entram como qualquer outro (#272): todo espaço é
-//   pessoal. A privacidade num espaço com mais de uma pessoa fica com o plano
-//   família (#273), pela RLS, e não com a importação.
+// - Privado e confidencial entram como qualquer outro (#272): o produto é
+//   pessoal e o espaço tem um membro só. Num espaço com mais gente, o privado
+//   fica visível a todos até o plano família (#273) restringir pela RLS.
 // - Apagado no Google: o item vira 'cancelled'. Nada é apagado. Item
 //   cancelado no app não é reaberto por uma edição no Google.
 // - Mesmo etag do vínculo: foi o próprio app que gravou, só marca como visto.

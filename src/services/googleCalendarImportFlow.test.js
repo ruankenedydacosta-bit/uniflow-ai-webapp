@@ -30,6 +30,7 @@ function criarAmbiente() {
       {
         id: 'cal-1', connection_id: 'conn-1', external_calendar_id: PRIMARIO, is_read: true, is_primary: true,
         access_role: 'owner', sync_token: 'token-1', last_full_sync_at: new Date().toISOString(),
+        privados_importados_em: '2026-10-01T00:00:00.000Z',
         channel_id: CANAL, channel_resource_id: 'res-1', channel_token: 'tok-canal',
         channel_expires_at: new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString(), sync_lock_until: null,
       },
@@ -317,6 +318,43 @@ test('syncToken vencido (410): refaz o sync completo da janela e varre', async (
   assert.ok(ambiente.db.calendars[0].last_full_sync_at);
   assert.ok(ambiente.db.rpc.some((r) => r.nome === 'google_calendar_import_varrer'));
   assert.equal(ambiente.db.items.length, 1);
+});
+
+test('calendário lido antes do #272: um completo traz só o privado antigo e não se repete', async () => {
+  const ambiente = criarAmbiente();
+  const calendario = ambiente.db.calendars[0];
+  const ultimoCompleto = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  calendario.last_full_sync_at = ultimoCompleto;
+  calendario.sync_window_end = new Date(Date.now() + 364 * 24 * 3600 * 1000).toISOString();
+  calendario.privados_importados_em = null;
+  const antigo = new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString();
+  const pedidos = [];
+  ambiente.google.eventos[PRIMARIO] = (query) => {
+    pedidos.push(query);
+    return {
+      corpo: {
+        items: [
+          { ...eventoNovo, id: 'privado', etag: '"p"', summary: 'Entrevista', visibility: 'private', updated: antigo },
+          // Público antigo sem vínculo: item que a pessoa excluiu no app.
+          { ...eventoNovo, id: 'publico', etag: '"q"', summary: 'Excluído no app', updated: antigo },
+        ],
+        nextSyncToken: 'token-completo',
+      },
+    };
+  };
+  instalarFetch(ambiente);
+  await avisar(ambiente, {});
+
+  // Token válido e completo recente: o completo veio da coluna nula.
+  assert.equal(pedidos.length, 1);
+  assert.ok(pedidos[0].timeMin && !pedidos[0].syncToken);
+  assert.deepEqual(ambiente.db.items.map((item) => item.title), ['Entrevista']);
+  assert.ok(calendario.privados_importados_em);
+  assert.notEqual(calendario.last_full_sync_at, ultimoCompleto);
+
+  // Com a coluna preenchida, o próximo sync volta ao incremental.
+  await avisar(ambiente, {});
+  assert.equal(pedidos[1].syncToken, 'token-completo');
 });
 
 test('sync-now: sem conexão 404, conexão com erro 409', async () => {

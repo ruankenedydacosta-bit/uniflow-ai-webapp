@@ -246,7 +246,7 @@ export async function sincronizarCalendario({
         last_full_sync_at: agoraIso,
         sync_window_start: janela.inicio,
         sync_window_end: janela.fim,
-        privados_importados_em: calendario.privados_importados_em ?? agoraIso,
+        ...(calendario.privados_importados_em === null ? { privados_importados_em: agoraIso } : {}),
       } : {}),
     },
     prefer: 'return=minimal',
