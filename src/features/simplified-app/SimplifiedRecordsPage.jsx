@@ -12,7 +12,6 @@ import organizar from '../categories/organizar.module.css';
 import { useAccounts, useCategories, useCategoryBudgets, useFinancialBalances, useTransactions, useWorkspaceRole } from '../../hooks/index.js';
 import FinanceTransactionModal from '../../pages/financeiro/FinanceTransactionModal.jsx';
 import { FINANCIAL_DATA_CHANGED_EVENT, notifyFinancialDataChanged } from '../../services/financialDataEvents.js';
-import { isSupabaseConfigured } from '../../services/supabaseClient.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { entrarEmSequencia } from '../../utils/movimento.js';
 import CategoryBudgetModal from './CategoryBudgetModal.jsx';
@@ -954,18 +953,12 @@ function SimplifiedRecordsPage() {
     || workspaceRole.isLoading;
   // Esqueleto só na primeira carga de cada mês (#146). Recarga depois de
   // salvar, excluir ou de um aviso da Uni mantém o conteúdo na tela, e os
-  // números contam do valor antigo ao novo. O mês só conta como carregado
-  // depois de a recarga dele começar: logo após a troca, isLoading ainda é
-  // o do mês anterior.
+  // números contam do valor antigo ao novo. Mês já lido no último minuto
+  // vem do cache e nem passa pelo esqueleto. useTransactions troca o dado
+  // ou entra em carregando no mesmo render da troca de mês, então
+  // isLoading já é o do mês novo aqui.
   const [loadedMonthKey, setLoadedMonthKey] = useState(null);
-  const loadingMonthKeyRef = useRef(null);
-  useEffect(() => {
-    if (isLoading) {
-      loadingMonthKeyRef.current = month.dateFrom;
-      return;
-    }
-    if (loadingMonthKeyRef.current === month.dateFrom || !isSupabaseConfigured) setLoadedMonthKey(month.dateFrom);
-  }, [isLoading, month.dateFrom]);
+  if (!isLoading && loadedMonthKey !== month.dateFrom) setLoadedMonthKey(month.dateFrom);
   const showLoading = loadedMonthKey !== month.dateFrom;
   // Com uma folha aberta, Entradas e Saídas param no valor de antes e contam
   // até o novo quando ela fecha. Depois do esqueleto, contam a partir de zero.

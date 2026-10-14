@@ -1182,7 +1182,7 @@ test('carregamento: esqueleto com brilho de 1,3 s, conteúdo do mês entra em se
   // O esqueleto do Financeiro sai e o conteúdo do mês entra em sequência.
   // Esqueleto só na primeira carga do mês: recarga mantém o conteúdo e os números contam do antigo ao novo.
   assert.match(records, /const showLoading = loadedMonthKey !== month\.dateFrom;/);
-  assert.match(records, /if \(isLoading\) \{\s*loadingMonthKeyRef\.current = month\.dateFrom;/);
+  assert.match(records, /if \(!isLoading && loadedMonthKey !== month\.dateFrom\) setLoadedMonthKey\(month\.dateFrom\);/);
   assert.match(records, /\{showLoading \? \(/);
   assert.match(records, /if \(!leftLoading \|\| holdSummary \|\| !monthSectionRef\.current\) return;\s*entrarEmSequencia\(/);
   assert.match(records, /<section ref=\{monthSectionRef\} className=\{styles\.monthSection\}/);

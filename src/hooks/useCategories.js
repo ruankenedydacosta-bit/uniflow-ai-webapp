@@ -22,6 +22,13 @@ import {
   removeRecord,
   upsertRecord,
 } from './financialHookUtils.js';
+import {
+  buildFinancialCacheKey,
+  isFinancialCacheFresh,
+  readFinancialCache,
+  updateFinancialCacheData,
+  writeFinancialCache,
+} from './financialQueryCache.js';
 
 const EMPTY_ARRAY = [];
 
@@ -30,15 +37,26 @@ export function useCategories({
   fallbackCategories = EMPTY_ARRAY,
   context = null,
 } = {}) {
+  const cacheKey = isSupabaseConfigured
+    ? buildFinancialCacheKey('categories', { workspaceId, context })
+    : null;
   const [categories, setCategories] = useState(() =>
-    cloneRecords(fallbackCategories),
+    readFinancialCache(cacheKey)?.data.categories ?? cloneRecords(fallbackCategories),
   );
   // Ids das categorias ocultas (#184), guardados com o espaço de onde vieram.
   // Ao trocar de espaço, os ids do anterior deixam de valer na hora, antes
   // da nova leitura: as categorias padrão têm o mesmo id em todo espaço.
   // No modo demo ficam só em memória.
-  const [ocultosDoEspaco, setOcultosDoEspaco] = useState({ workspaceId: null, ids: EMPTY_ARRAY });
-  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [ocultosDoEspaco, setOcultosDoEspaco] = useState(() => {
+    const cached = readFinancialCache(cacheKey);
+    return cached
+      ? { workspaceId, ids: cached.data.idsOcultos }
+      : { workspaceId: null, ids: EMPTY_ARRAY };
+  });
+  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && !readFinancialCache(cacheKey));
+  // Chave do cache a que `categories` pertence agora. Null enquanto a lista
+  // vem do fallback ou de uma leitura com erro.
+  const cachedKeyRef = useRef(readFinancialCache(cacheKey) ? cacheKey : null);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
   const requestIdRef = useRef(0);
@@ -47,6 +65,7 @@ export function useCategories({
     const requestId = ++requestIdRef.current;
 
     if (!isSupabaseConfigured) {
+      cachedKeyRef.current = null;
       setCategories(cloneRecords(fallbackCategories));
       setError(null);
       setIsLoading(false);
@@ -54,13 +73,23 @@ export function useCategories({
     }
 
     if (!workspaceId) {
+      cachedKeyRef.current = null;
       setCategories([]);
       setError({ code: 'WORKSPACE_REQUIRED', message: 'Workspace financeiro ausente.' });
       setIsLoading(false);
       return null;
     }
 
-    setIsLoading(true);
+    // Com dado guardado, a leitura roda por trás, sem tela de carregando.
+    const cached = readFinancialCache(cacheKey);
+    if (cached) {
+      cachedKeyRef.current = cacheKey;
+      setCategories(cached.data.categories);
+      setOcultosDoEspaco({ workspaceId, ids: cached.data.idsOcultos });
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     const [result, ocultas] = await Promise.all([
       listCategories(workspaceId, { context }),
       listarCategoriasOcultas(workspaceId),
@@ -70,20 +99,37 @@ export function useCategories({
       return null;
     }
 
-    setCategories(result.data ?? []);
     // Falha ao ler as ocultas não esconde a lista inteira: a categoria
     // volta a aparecer até a próxima leitura.
-    setOcultosDoEspaco({
-      workspaceId,
-      ids: ocultas.error ? EMPTY_ARRAY : ocultas.data ?? EMPTY_ARRAY,
-    });
+    const idsOcultosLidos = ocultas.error ? EMPTY_ARRAY : ocultas.data ?? EMPTY_ARRAY;
+    if (result.error) {
+      cachedKeyRef.current = null;
+    } else {
+      writeFinancialCache(cacheKey, {
+        categories: result.data ?? [],
+        idsOcultos: idsOcultosLidos,
+      });
+      cachedKeyRef.current = cacheKey;
+    }
+    setCategories(result.data ?? []);
+    setOcultosDoEspaco({ workspaceId, ids: idsOcultosLidos });
     setError(result.error);
     setIsLoading(false);
     return result;
-  }, [context, fallbackCategories, workspaceId]);
+  }, [cacheKey, context, fallbackCategories, workspaceId]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
+      // Leitura de menos de 1 minuto: mostra o guardado e não busca de novo.
+      const cached = readFinancialCache(cacheKey);
+      if (isFinancialCacheFresh(cached)) {
+        cachedKeyRef.current = cacheKey;
+        setCategories(cached.data.categories);
+        setOcultosDoEspaco({ workspaceId, ids: cached.data.idsOcultos });
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
       refresh();
     }, 0);
 
@@ -91,7 +137,16 @@ export function useCategories({
       requestIdRef.current += 1;
       window.clearTimeout(timeoutId);
     };
-  }, [refresh]);
+  }, [cacheKey, refresh, workspaceId]);
+
+  // Gravação feita aqui (criar, editar, excluir, ocultar) também vale para a
+  // próxima vez que a tela abrir.
+  useEffect(() => {
+    updateFinancialCacheData(cachedKeyRef.current, {
+      categories,
+      idsOcultos: ocultosDoEspaco.ids,
+    });
+  }, [categories, ocultosDoEspaco]);
 
   const saveCategory = useCallback(
     async (values, categoryId = null) => {

@@ -19,6 +19,7 @@ import {
   updatePassword as updatePasswordService,
 } from '../services/authService';
 import { clearHomeFinancialCacheForUser } from '../features/simplified-app/homeFinancialCache.js';
+import { clearFinancialQueryCache } from '../hooks/financialQueryCache.js';
 import { limparAssinaturas } from '../services/assinaturaCache.js';
 import { getProfile, updateProfile } from '../services/profileService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
@@ -742,6 +743,8 @@ function SessionProvider({ children }) {
         // tela antes do primeiro fetch. Nunca lança -- não bloqueia o logout.
         clearHomeFinancialCacheForUser(currentUserId);
       }
+      // Mesmo motivo para o cache em memória das telas financeiras.
+      clearFinancialQueryCache();
 
       const result = await signOutService();
 

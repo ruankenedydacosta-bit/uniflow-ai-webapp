@@ -19,6 +19,13 @@ import {
   upsertRecord,
 } from './financialHookUtils.js';
 import {
+  buildFinancialCacheKey,
+  isFinancialCacheFresh,
+  readFinancialCache,
+  updateFinancialCacheData,
+  writeFinancialCache,
+} from './financialQueryCache.js';
+import {
   trackGa4ConfirmedTransactionCreation,
 } from '../features/analytics/ga4ProductEvents.js';
 import {
@@ -35,12 +42,34 @@ export function useTransactions({
   dateFrom,
   dateTo,
 } = {}) {
+  const cacheKey = isSupabaseConfigured
+    ? buildFinancialCacheKey('transactions', { workspaceId, limit, status, dateFrom, dateTo })
+    : null;
   const [transactions, setTransactions] = useState(() =>
-    cloneRecords(fallbackTransactions),
+    readFinancialCache(cacheKey)?.data ?? cloneRecords(fallbackTransactions),
   );
-  const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
+  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && !readFinancialCache(cacheKey));
+  // Chave do cache a que `transactions` pertence agora. Null enquanto a
+  // lista vem do fallback ou de uma leitura com erro.
+  const [dataKey, setDataKey] = useState(() => (readFinancialCache(cacheKey) ? cacheKey : null));
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
+  // Troca de período ou de espaço: no mesmo render, a lista passa para o
+  // dado guardado do período novo ou entra em carregando. Sem isso, a tela
+  // mostraria por um instante a lista do período anterior como pronta.
+  const [renderedKey, setRenderedKey] = useState(cacheKey);
+  if (renderedKey !== cacheKey) {
+    setRenderedKey(cacheKey);
+    const cached = readFinancialCache(cacheKey);
+    if (cached) {
+      setDataKey(cacheKey);
+      setTransactions(cached.data);
+      setError(null);
+      setIsLoading(false);
+    } else if (cacheKey) {
+      setIsLoading(true);
+    }
+  }
   const requestIdRef = useRef(0);
   // Trava sincrona: isMutating (estado do React) so reflete no proximo
   // render, entao duas chamadas no mesmo ciclo veriam isMutating === false
@@ -61,6 +90,7 @@ export function useTransactions({
     const requestId = ++requestIdRef.current;
 
     if (!isSupabaseConfigured) {
+      setDataKey(null);
       setTransactions(cloneRecords(fallbackTransactions));
       setError(null);
       setIsLoading(false);
@@ -68,13 +98,22 @@ export function useTransactions({
     }
 
     if (!workspaceId) {
+      setDataKey(null);
       setTransactions([]);
       setError({ code: 'WORKSPACE_REQUIRED', message: 'Workspace financeiro ausente.' });
       setIsLoading(false);
       return null;
     }
 
-    setIsLoading(true);
+    // Com dado guardado, a leitura roda por trás, sem tela de carregando.
+    const cached = readFinancialCache(cacheKey);
+    if (cached) {
+      setDataKey(cacheKey);
+      setTransactions(cached.data);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     // dateFrom/dateTo pedem o periodo COMPLETO (paginado por
     // listTransactionsForPeriod), nao "as N mais recentes" -- usado por
     // Relatorios, que precisa agregar um intervalo de datas inteiro sem
@@ -89,14 +128,29 @@ export function useTransactions({
       return null;
     }
 
+    if (result.error) {
+      setDataKey(null);
+    } else {
+      writeFinancialCache(cacheKey, result.data ?? []);
+      setDataKey(cacheKey);
+    }
     setTransactions(result.data ?? []);
     setError(result.error);
     setIsLoading(false);
     return result;
-  }, [fallbackTransactions, limit, status, dateFrom, dateTo, workspaceId]);
+  }, [cacheKey, fallbackTransactions, limit, status, dateFrom, dateTo, workspaceId]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
+      // Leitura de menos de 1 minuto: mostra o guardado e não busca de novo.
+      const cached = readFinancialCache(cacheKey);
+      if (isFinancialCacheFresh(cached)) {
+        setDataKey(cacheKey);
+        setTransactions(cached.data);
+        setError(null);
+        setIsLoading(false);
+        return;
+      }
       refresh();
     }, 0);
 
@@ -104,7 +158,13 @@ export function useTransactions({
       requestIdRef.current += 1;
       window.clearTimeout(timeoutId);
     };
-  }, [refresh]);
+  }, [cacheKey, refresh]);
+
+  // Gravação feita aqui (upsert/remoção local) também vale para a próxima
+  // vez que a tela abrir.
+  useEffect(() => {
+    updateFinancialCacheData(dataKey, transactions);
+  }, [dataKey, transactions]);
 
   /**
    * Centraliza saveTransaction/removeTransaction: trava sincrona via
