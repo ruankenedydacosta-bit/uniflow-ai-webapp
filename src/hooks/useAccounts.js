@@ -17,9 +17,9 @@ import {
 } from './financialHookUtils.js';
 import {
   buildFinancialCacheKey,
+  clearFinancialQueryCache,
   isFinancialCacheFresh,
   readFinancialCache,
-  updateFinancialCacheData,
   writeFinancialCache,
 } from './financialQueryCache.js';
 
@@ -35,25 +35,36 @@ export function useAccounts({
   const cacheKey = isSupabaseConfigured
     ? buildFinancialCacheKey('accounts', { workspaceId })
     : null;
+  const cached = readFinancialCache(cacheKey);
   const [accounts, setAccounts] = useState(() =>
-    readFinancialCache(cacheKey)?.data.accounts ?? cloneRecords(fallbackAccounts),
+    cached?.data.accounts ?? cloneRecords(fallbackAccounts),
   );
   const [accountTypes, setAccountTypes] = useState(() =>
-    readFinancialCache(cacheKey)?.data.accountTypes ?? cloneRecords(fallbackAccountTypes),
+    cached?.data.accountTypes ?? cloneRecords(fallbackAccountTypes),
   );
-  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && !readFinancialCache(cacheKey));
-  // Chave do cache a que `accounts` pertence agora. Null enquanto a lista
-  // vem do fallback ou de uma leitura com erro.
-  const cachedKeyRef = useRef(readFinancialCache(cacheKey) ? cacheKey : null);
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured && !cached);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState(null);
+  // Troca de espaço: no mesmo render, passa para o dado guardado do espaço
+  // novo ou entra em carregando, sem mostrar as contas do anterior.
+  const [renderedKey, setRenderedKey] = useState(cacheKey);
+  if (renderedKey !== cacheKey) {
+    setRenderedKey(cacheKey);
+    if (cached) {
+      setAccounts(cached.data.accounts);
+      setAccountTypes(cached.data.accountTypes);
+      setError(null);
+      setIsLoading(false);
+    } else if (cacheKey) {
+      setIsLoading(true);
+    }
+  }
   const requestIdRef = useRef(0);
 
   const refresh = useCallback(async () => {
     const requestId = ++requestIdRef.current;
 
     if (!isSupabaseConfigured) {
-      cachedKeyRef.current = null;
       setAccounts(cloneRecords(fallbackAccounts));
       setAccountTypes(cloneRecords(fallbackAccountTypes));
       setError(null);
@@ -62,7 +73,6 @@ export function useAccounts({
     }
 
     if (!workspaceId) {
-      cachedKeyRef.current = null;
       setAccounts([]);
       setAccountTypes([]);
       setError({ code: 'WORKSPACE_REQUIRED', message: 'Workspace financeiro ausente.' });
@@ -70,16 +80,8 @@ export function useAccounts({
       return null;
     }
 
-    // Com dado guardado, a leitura roda por trás, sem tela de carregando.
-    const cached = readFinancialCache(cacheKey);
-    if (cached) {
-      cachedKeyRef.current = cacheKey;
-      setAccounts(cached.data.accounts);
-      setAccountTypes(cached.data.accountTypes);
-      setIsLoading(false);
-    } else {
-      setIsLoading(true);
-    }
+    // Com dado guardado na tela, a leitura roda por trás, sem carregando.
+    if (!readFinancialCache(cacheKey)) setIsLoading(true);
     const [accountsResult, typesResult] = await Promise.all([
       listAccounts(workspaceId, { activeOnly: false }),
       listAccountTypes(),
@@ -90,14 +92,11 @@ export function useAccounts({
     }
 
     const nextError = accountsResult.error ?? typesResult.error;
-    if (nextError) {
-      cachedKeyRef.current = null;
-    } else {
+    if (!nextError) {
       writeFinancialCache(cacheKey, {
         accounts: accountsResult.data ?? [],
         accountTypes: typesResult.data ?? [],
       });
-      cachedKeyRef.current = cacheKey;
     }
     setAccounts(accountsResult.data ?? []);
     setAccountTypes(typesResult.data ?? []);
@@ -108,16 +107,8 @@ export function useAccounts({
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      // Leitura de menos de 1 minuto: mostra o guardado e não busca de novo.
-      const cached = readFinancialCache(cacheKey);
-      if (isFinancialCacheFresh(cached)) {
-        cachedKeyRef.current = cacheKey;
-        setAccounts(cached.data.accounts);
-        setAccountTypes(cached.data.accountTypes);
-        setError(null);
-        setIsLoading(false);
-        return;
-      }
+      // Leitura de menos de 1 minuto: fica o que já está na tela.
+      if (isFinancialCacheFresh(readFinancialCache(cacheKey))) return;
       refresh();
     }, 0);
 
@@ -126,12 +117,6 @@ export function useAccounts({
       window.clearTimeout(timeoutId);
     };
   }, [cacheKey, refresh]);
-
-  // Gravação feita aqui (criar, editar, arquivar, excluir) também vale para
-  // a próxima vez que a tela abrir.
-  useEffect(() => {
-    updateFinancialCacheData(cachedKeyRef.current, { accounts, accountTypes });
-  }, [accounts, accountTypes]);
 
   const saveAccount = useCallback(
     async (values, accountId = null) => {
@@ -151,6 +136,7 @@ export function useAccounts({
       if (result.error) {
         setError(result.error);
       } else if (result.data) {
+        clearFinancialQueryCache();
         setAccounts((current) => upsertRecord(current, result.data));
       }
 
@@ -176,6 +162,7 @@ export function useAccounts({
       if (result.error) {
         setError(result.error);
       } else if (result.data) {
+        clearFinancialQueryCache();
         setAccounts((current) => upsertRecord(current, result.data));
       }
 
@@ -196,6 +183,7 @@ export function useAccounts({
       if (result.error) {
         setError(result.error);
       } else {
+        clearFinancialQueryCache();
         setAccounts((current) => removeRecord(current, accountId));
       }
 

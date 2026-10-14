@@ -150,7 +150,9 @@ function SessionProvider({ children }) {
         // Assinatura guardada em memória (assinaturaCache.js). Vale para o
         // botão Sair, para a sessão expirada e para o logout em outra aba:
         // o próximo usuário neste aparelho não vê o plano do anterior.
+        // O mesmo vale para o cache das telas financeiras.
         limparAssinaturas();
+        clearFinancialQueryCache();
         setAvailableWorkspaces([]);
         setWorkspaceSwitchState({ error: null, isLoading: false });
         if (isMountedRef.current) {
@@ -172,6 +174,7 @@ function SessionProvider({ children }) {
       // é do anterior.
       if (latestUserIdRef.current && latestUserIdRef.current !== nextSession.user.id) {
         limparAssinaturas();
+        clearFinancialQueryCache();
       }
       latestUserIdRef.current = nextSession.user.id;
 
@@ -743,8 +746,6 @@ function SessionProvider({ children }) {
         // tela antes do primeiro fetch. Nunca lança -- não bloqueia o logout.
         clearHomeFinancialCacheForUser(currentUserId);
       }
-      // Mesmo motivo para o cache em memória das telas financeiras.
-      clearFinancialQueryCache();
 
       const result = await signOutService();
 

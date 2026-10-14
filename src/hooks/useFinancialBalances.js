@@ -15,14 +15,25 @@ export function useFinancialBalances({ workspaceId } = {}) {
   const cacheKey = isSupabaseConfigured
     ? buildFinancialCacheKey('balances', { workspaceId })
     : null;
-  const [accountBalances, setAccountBalances] = useState(() =>
-    readFinancialCache(cacheKey)?.data.accountBalances ?? [],
-  );
-  const [workspaceBalance, setWorkspaceBalance] = useState(() =>
-    readFinancialCache(cacheKey)?.data.workspaceBalance ?? null,
-  );
-  const [isLoading, setIsLoading] = useState(() => isSupabaseConfigured && !readFinancialCache(cacheKey));
+  const cached = readFinancialCache(cacheKey);
+  const [accountBalances, setAccountBalances] = useState(() => cached?.data.accountBalances ?? []);
+  const [workspaceBalance, setWorkspaceBalance] = useState(() => cached?.data.workspaceBalance ?? null);
+  const [isLoading, setIsLoading] = useState(isSupabaseConfigured && !cached);
   const [error, setError] = useState(null);
+  // Troca de espaço: no mesmo render, passa para o saldo guardado do espaço
+  // novo ou entra em carregando, sem mostrar o saldo do anterior.
+  const [renderedKey, setRenderedKey] = useState(cacheKey);
+  if (renderedKey !== cacheKey) {
+    setRenderedKey(cacheKey);
+    if (cached) {
+      setAccountBalances(cached.data.accountBalances);
+      setWorkspaceBalance(cached.data.workspaceBalance);
+      setError(null);
+      setIsLoading(false);
+    } else if (cacheKey) {
+      setIsLoading(true);
+    }
+  }
   const requestIdRef = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -44,15 +55,8 @@ export function useFinancialBalances({ workspaceId } = {}) {
       return null;
     }
 
-    // Com dado guardado, a leitura roda por trás, sem tela de carregando.
-    const cached = readFinancialCache(cacheKey);
-    if (cached) {
-      setAccountBalances(cached.data.accountBalances);
-      setWorkspaceBalance(cached.data.workspaceBalance);
-      setIsLoading(false);
-    } else {
-      setIsLoading(true);
-    }
+    // Com dado guardado na tela, a leitura roda por trás, sem carregando.
+    if (!readFinancialCache(cacheKey)) setIsLoading(true);
     const [accountsResult, workspaceResult] = await Promise.all([
       listDerivedAccountBalances(),
       getDerivedWorkspaceBalance(),
@@ -75,15 +79,8 @@ export function useFinancialBalances({ workspaceId } = {}) {
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      // Leitura de menos de 1 minuto: mostra o guardado e não busca de novo.
-      const cached = readFinancialCache(cacheKey);
-      if (isFinancialCacheFresh(cached)) {
-        setAccountBalances(cached.data.accountBalances);
-        setWorkspaceBalance(cached.data.workspaceBalance);
-        setError(null);
-        setIsLoading(false);
-        return;
-      }
+      // Leitura de menos de 1 minuto: fica o que já está na tela.
+      if (isFinancialCacheFresh(readFinancialCache(cacheKey))) return;
       refresh();
     }, 0);
 
