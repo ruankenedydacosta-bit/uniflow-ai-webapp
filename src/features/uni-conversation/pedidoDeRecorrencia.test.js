@@ -75,7 +75,7 @@ test('editar manda o modelo inteiro com o que muda, como o formulário da tela',
     escopo: 'forward',
     alteracoes: { account_id: 'conta-it', category_id: 'cat-lazer', description: 'Academia', amount: 130, payment_method: null, notes: null },
   });
-  assert.match(pronto.texto.replace(/ /g, ' '), /valor de R\$ 120,00 para R\$ 130,00 e categoria de Saúde para Lazer e conta de Nubank para Itaú/);
+  assert.match(pronto.texto.replace(/\u00a0/g, ' '), /valor de R\$ 120,00 para R\$ 130,00 e categoria de Saúde para Lazer e conta de Nubank para Itaú/);
 });
 
 test('editar recusa categoria de outro tipo e pedido que não muda nada', () => {
