@@ -13,7 +13,7 @@
 // saldo não leva operação: o app público não ajusta saldo pela conversa, só
 // responde (#80). meta leva o pedido de meta (#192).
 export const INTENTS = Object.freeze([
-  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'conversa', 'nao_entendi',
+  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'edicao', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // Consulta que o app responde com os parâmetros (#80). 'lancamentos' lista
@@ -181,12 +181,33 @@ const ESQUEMA_EXCLUSAO = {
   },
 };
 
+// Alterar um lançamento já registrado (#261). Os critérios da busca são os da
+// exclusão; os campos novo_* e nova_* dizem o que muda. Fora do intent edicao,
+// todos são null ou false.
+const ESQUEMA_EDICAO = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['alvo', 'data', 'valor', 'conta', 'ultimo', 'novo_valor', 'nova_data', 'nova_conta', 'nova_categoria', 'nova_descricao'],
+  properties: {
+    alvo: { ...TEXTO_OU_NULO, description: 'o que é o lançamento, sem data, valor nem conta, ex.: mercado' },
+    data: { ...TEXTO_OU_NULO, description: 'dia do lançamento, AAAA-MM-DD' },
+    valor: { type: ['number', 'null'], description: 'valor atual do lançamento, em reais' },
+    conta: { ...TEXTO_OU_NULO, description: 'apelido da conta atual, ex.: k1' },
+    ultimo: { type: 'boolean', description: 'a pessoa se refere ao último lançamento que fez' },
+    novo_valor: { type: ['number', 'null'], description: 'valor certo, em reais' },
+    nova_data: { ...TEXTO_OU_NULO, description: 'dia certo, AAAA-MM-DD' },
+    nova_conta: { ...TEXTO_OU_NULO, description: 'apelido da conta certa, ex.: k2' },
+    nova_categoria: { ...TEXTO_OU_NULO, description: 'apelido da categoria certa, ex.: c3' },
+    nova_descricao: TEXTO_OU_NULO,
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao', 'edicao'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
@@ -196,6 +217,7 @@ export const ESQUEMA = Object.freeze({
     categoria: ESQUEMA_CATEGORIA,
     meta: ESQUEMA_META,
     exclusao: ESQUEMA_EXCLUSAO,
+    edicao: ESQUEMA_EDICAO,
   },
 });
 
@@ -477,6 +499,31 @@ function validarExclusao(bruta, { contasPorApelido, dataReferencia }) {
   };
 }
 
+// Os critérios saem como na exclusão. A mudança sai com as chaves que o fluxo
+// de edição do app usa (amount, date, accountId, categoryId, description);
+// apelido inventado e data impossível saem. Sem mudança, o app pergunta o que
+// mudar.
+function validarEdicao(bruta, contexto) {
+  const { categoriasPorApelido, contasPorApelido, dataReferencia } = contexto;
+  const { alvo, data, valor, conta: contaAtual, ultimo } = validarExclusao(bruta, contexto);
+  const mudancas = {};
+  const novoValor = valorPositivo(bruta?.novo_valor);
+  if (novoValor) mudancas.amount = novoValor;
+  if (dataValida(bruta?.nova_data) && distanciaEmDias(bruta.nova_data, dataReferencia) <= 366) mudancas.date = bruta.nova_data;
+  const conta = contasPorApelido.get(bruta?.nova_conta);
+  if (conta) mudancas.accountId = conta.id;
+  const categoria = categoriasPorApelido.get(bruta?.nova_categoria);
+  if (categoria) mudancas.categoryId = categoria.id;
+  const descricao = textoLimpo(bruta?.nova_descricao, MAX_DESCRICAO);
+  if (descricao) mudancas.description = descricao;
+  return {
+    alvo, data, valor, conta: contaAtual, ultimo, mudancas,
+    // Registros por extenso, para o card e a avaliação dizerem o nome.
+    novaConta: conta ?? null,
+    novaCategoria: categoria ?? null,
+  };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -510,6 +557,9 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], meta
   }
   if (intent === 'exclusao') {
     return { intent, operacoes: [], resposta, exclusao: validarExclusao(bruta?.exclusao, contexto) };
+  }
+  if (intent === 'edicao') {
+    return { intent, operacoes: [], resposta, edicao: validarEdicao(bruta?.edicao, contexto) };
   }
   if (intent !== 'lancamento' && intent !== 'correcao') {
     return { intent, operacoes: [], resposta };

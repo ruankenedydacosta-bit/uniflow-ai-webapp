@@ -81,7 +81,7 @@ function avaliarTitulo(palavras, titulo) {
 // compara em centavos; data, ultimo, lote e soNaMeta batem exatos.
 function avaliarPedido(esperado, obtido) {
   if (!obtido || obtido.acao !== esperado.acao) return false;
-  const textoIgual = ['nome', 'alvo', 'conta'].every((campo) => {
+  const textoIgual = ['nome', 'alvo', 'conta', 'novaConta', 'novaCategoria'].every((campo) => {
     if (esperado[campo] === undefined) return true;
     const texto = normalizeSearchText(obtido[campo] ?? '');
     if (Array.isArray(esperado[campo])) {
@@ -93,9 +93,10 @@ function avaliarPedido(esperado, obtido) {
     || esperado.palavras.every((palavra) => normalizeSearchText(obtido.alvo ?? '').includes(normalizeSearchText(palavra)));
   const valor = esperado.valor === undefined
     || (esperado.valor === null ? (obtido.valor ?? null) === null : mesmoValor(esperado.valor, obtido.valor));
-  const exatos = ['data', 'ultimo', 'lote', 'soNaMeta'].every((campo) => esperado[campo] === undefined
+  const novoValor = esperado.novoValor === undefined || mesmoValor(esperado.novoValor, obtido.novoValor);
+  const exatos = ['data', 'ultimo', 'lote', 'soNaMeta', 'novaData'].every((campo) => esperado[campo] === undefined
     || (obtido[campo] ?? null) === esperado[campo]);
-  return textoIgual && palavras && valor && exatos;
+  return textoIgual && palavras && valor && novoValor && exatos;
 }
 
 // Devolve um veredito por campo: true (acertou), false (errou) ou null
@@ -158,6 +159,7 @@ const INTENT_DO_INTERPRETADOR = {
   agenda: 'agenda',
   categoria: 'categoria',
   exclusao: 'exclusao',
+  edicao: 'edicao',
   conversa: 'conversa',
   correcao: 'correcao',
   nao_entendi: 'nao_entendeu',
@@ -176,6 +178,21 @@ function pedidoDaInterpretacao(validada) {
   if (validada.exclusao) {
     const { alvo, data, valor, conta, ultimo, lote } = validada.exclusao;
     return { acao: 'excluir_lancamento', alvo, data, valor, conta: conta?.name ?? null, ultimo, lote };
+  }
+  if (validada.edicao) {
+    const { alvo, data, valor, conta, ultimo, mudancas, novaConta, novaCategoria } = validada.edicao;
+    return {
+      acao: 'editar_lancamento',
+      alvo,
+      data,
+      valor,
+      conta: conta?.name ?? null,
+      ultimo,
+      novoValor: mudancas.amount ?? null,
+      novaData: mudancas.date ?? null,
+      novaConta: novaConta?.name ?? null,
+      novaCategoria: novaCategoria?.name ?? null,
+    };
   }
   // Criar segue a régua do título; o pedido é só sobre item existente (#191).
   if (validada.agenda?.acao && validada.agenda.acao !== 'criar') {

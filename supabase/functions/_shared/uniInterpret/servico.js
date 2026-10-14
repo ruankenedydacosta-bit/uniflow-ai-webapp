@@ -92,6 +92,14 @@ function serializar(validada) {
     ...(validada.exclusao ? {
       exclusao: { ...validada.exclusao, conta: paraCliente(validada.exclusao.conta) },
     } : {}),
+    ...(validada.edicao ? {
+      edicao: {
+        ...validada.edicao,
+        conta: paraCliente(validada.edicao.conta),
+        novaConta: paraCliente(validada.edicao.novaConta),
+        novaCategoria: paraCliente(validada.edicao.novaCategoria),
+      },
+    } : {}),
     ...(consulta ? {
       consulta: {
         tipo: consulta.tipo,

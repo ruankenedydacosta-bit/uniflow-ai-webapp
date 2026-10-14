@@ -19,6 +19,7 @@ export const ROTAS_INTERPRETACAO = Object.freeze({
   AGENDA: 'agenda',
   CATEGORIA: 'categoria',
   EXCLUSAO: 'exclusao',
+  EDICAO: 'edicao',
   CONVERSA: 'conversa',
   NAO_ENTENDI: 'nao_entendi',
 });
@@ -81,6 +82,9 @@ export function escolherRotaDaInterpretacao(interpretacao) {
     // Função antiga sem o bloco exclusao: as regras tentam, como antes.
     case 'exclusao':
       return interpretacao.exclusao ? ROTAS_INTERPRETACAO.EXCLUSAO : null;
+    // Função antiga sem o bloco edicao: as regras tentam, como antes.
+    case 'edicao':
+      return interpretacao.edicao ? ROTAS_INTERPRETACAO.EDICAO : null;
     case 'conversa':
       return ROTAS_INTERPRETACAO.CONVERSA;
     case 'nao_entendi':

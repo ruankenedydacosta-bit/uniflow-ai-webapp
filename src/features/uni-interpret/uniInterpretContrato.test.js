@@ -67,7 +67,7 @@ test('apelidos seguem a ordem por tipo e nome, independente da ordem recebida', 
 });
 
 test('schema é estrito: todo campo obrigatório e nenhum extra', () => {
-  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao];
+  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao, ESQUEMA.properties.edicao];
   for (const objeto of objetos) {
     assert.equal(objeto.additionalProperties, false);
     assert.deepEqual([...objeto.required].sort(), Object.keys(objeto.properties).sort());
@@ -625,6 +625,37 @@ test('exclusao: alvo limpo, data perto da referência, valor positivo e conta pe
     alvo: null, data: null, valor: null, conta: null, ultimo: false, lote: false,
   });
   assert.equal(validarInterpretacao(lancamento(operacao()), CONTEXTO).exclusao, undefined);
+});
+
+// Alterar lançamento salvo pela conversa (#261): critérios como na exclusão e
+// a mudança nas chaves do fluxo de edição do app.
+test('edicao: critérios da busca e mudança resolvida para ids do espaço', () => {
+  const pedido = (edicao) => ({ intent: 'edicao', operacoes: [], resposta: '', edicao });
+  const vazio = { alvo: null, data: null, valor: null, conta: null, ultimo: false, novo_valor: null, nova_data: null, nova_conta: null, nova_categoria: null, nova_descricao: null };
+  const validada = validarInterpretacao(pedido({
+    ...vazio, alvo: ' Mercado ', data: '2026-10-01', valor: 40, novo_valor: 50.004, nova_conta: K.pp, nova_categoria: C.ali, nova_descricao: ' Feira ',
+  }), CONTEXTO);
+  assert.equal(validada.intent, 'edicao');
+  const { novaConta, novaCategoria, ...resto } = validada.edicao;
+  assert.deepEqual(resto, {
+    alvo: 'Mercado', data: '2026-10-01', valor: 40, conta: null, ultimo: false,
+    mudancas: { amount: 50, accountId: 'conta-pp', categoryId: 'cat-ali', description: 'Feira' },
+  });
+  assert.equal(novaConta.name, 'Poupança');
+  assert.equal(novaCategoria.name, 'Alimentação');
+
+  // Apelido inventado, data longe demais e valor zero não viram mudança.
+  const limpa = validarInterpretacao(pedido({
+    ...vazio, ultimo: true, novo_valor: 0, nova_data: '2024-01-01', nova_conta: 'k9', nova_categoria: 'c99',
+  }), CONTEXTO).edicao;
+  assert.deepEqual(limpa.mudancas, {});
+  assert.equal(limpa.ultimo, true);
+  assert.deepEqual(
+    validarInterpretacao(pedido({ ...vazio, nova_data: '2026-10-05' }), CONTEXTO).edicao.mudancas,
+    { date: '2026-10-05' },
+  );
+  // Bloco ausente devolve o intent sem mudança: o app pergunta o que mudar.
+  assert.deepEqual(validarInterpretacao({ intent: 'edicao', operacoes: [], resposta: '' }, CONTEXTO).edicao.mudancas, {});
 });
 
 // #190: lista de lançamentos e catálogo de categorias.

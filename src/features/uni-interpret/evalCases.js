@@ -18,7 +18,8 @@
 //   ação (editar, cancelar, concluir, excluir) e as palavras que o alvo
 //   precisa ter. Em exclusao (#189), acao 'excluir_lancamento' com as
 //   palavras que o alvo precisa ter e, quando importa, data, valor, ultimo e
-//   lote.
+//   lote. Em edicao (#261), acao 'editar_lancamento' com os mesmos critérios
+//   e o que muda: novoValor, novaData, novaConta e novaCategoria.
 //   Em meta (#192), a ação (criar, editar, excluir, consultar, aportar,
 //   retirar) e, quando importa, nome, alvo (uma das metas de
 //   metasDaAvaliacao), valor, data, conta (#161) e soNaMeta.
@@ -1045,6 +1046,34 @@ export const CASOS = [
     reservado: true,
     frase: 'apaga todos os gastos de setembro',
     esperado: { intent: 'exclusao', pedido: { acao: 'excluir_lancamento', lote: true } },
+  },
+  // Alteração de lançamento já salvo (#261): o modelo diz qual e o que muda.
+  {
+    id: 'edicao-mercado-valor',
+    frase: 'o mercado de ontem foi 50, não 40',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['mercado'], data: '2026-10-01', valor: 40, novoValor: 50 } },
+  },
+  {
+    id: 'edicao-almoco-na-verdade',
+    frase: 'o almoço de ontem na verdade foi 35',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['almoco'], data: '2026-10-01', novoValor: 35 } },
+  },
+  {
+    id: 'edicao-posto-errei',
+    frase: 'errei o valor do posto, era 200',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['posto'], novoValor: 200 } },
+  },
+  {
+    id: 'edicao-uber-conta',
+    contas: true,
+    frase: 'o Uber de segunda foi no Nubank',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['uber'], data: '2026-09-28', novaConta: 'Nubank' } },
+  },
+  {
+    id: 'edicao-ifood-categoria',
+    reservado: true,
+    frase: 'muda a categoria do iFood de ontem para Lazer',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['ifood'], data: '2026-10-01', novaCategoria: 'Lazer' } },
   },
   {
     id: 'categoria-nova-com-valor',

@@ -366,6 +366,14 @@ test('exclusão de lançamento vai para a rota própria; sem o bloco (função a
   assert.equal(escolherRotaDaInterpretacao({ intent: 'exclusao', operacoes: [], resposta: '' }), null);
 });
 
+test('edição de lançamento salvo vai para a rota própria; sem o bloco (função antiga), as regras seguem', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'edicao', operacoes: [], resposta: '', edicao: { alvo: 'Mercado', mudancas: { amount: 50 } } }),
+    ROTAS_INTERPRETACAO.EDICAO,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'edicao', operacoes: [], resposta: '' }), null);
+});
+
 test('recorrência com frequência vai para o plano e vira série registrável (#222)', () => {
   const interpretacao = {
     intent: 'lancamento',

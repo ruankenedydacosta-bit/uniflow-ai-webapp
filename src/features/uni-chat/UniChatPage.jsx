@@ -254,6 +254,8 @@ const EDICAO_TTL_MS = 15 * 60 * 1000;
 // "corrige pra 50" vale para o lançamento confirmado há até 30 minutos.
 const ULTIMO_CONFIRMADO_TTL_MS = 30 * 60 * 1000;
 const TEXTO_EDICAO_VENCIDA = 'Essa alteração expirou e nada foi salvo. Peça de novo se ainda quiser alterar.';
+const TEXTO_EDICAO_SEM_MUDANCA = 'O que você quer mudar nesse lançamento: valor, data, conta, categoria ou descrição? Diga junto o lançamento, por exemplo: "o mercado de ontem foi 50".';
+const TEXTO_EDICAO_SEM_ALVO = 'Diga qual lançamento quer alterar, com o nome e o dia ou o valor. Por exemplo: "o mercado de ontem foi 50, não 40".';
 const TEXTO_CATEGORIA_VENCIDA = 'Esse pedido de categoria expirou e nada foi salvo. Peça de novo se ainda quiser.';
 const TEXTO_META_VENCIDA = 'Esse pedido de meta expirou e nada foi salvo. Peça de novo se ainda quiser.';
 const TEXTO_EXCLUSAO_VENCIDA = 'Esse pedido de exclusão expirou e nada foi apagado. Peça de novo se ainda quiser excluir.';
@@ -1272,6 +1274,44 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     publicarResultadoDaBusca(resultado, pedido.mudancas, turnToken);
     return true;
+  }
+
+  // Pedido de edição vindo do uni-interpret (#261): mesmos critérios de busca
+  // da exclusão e a mudança já resolvida para ids do espaço.
+  function iniciarEdicaoDoModelo(edicao, turnToken) {
+    const contexto = contextoDaEdicao();
+    const mudancas = edicao.mudancas ?? {};
+    if (!Object.keys(mudancas).length) {
+      createAssistantResponse(TEXTO_EDICAO_SEM_MUDANCA, { deduplicateNarration: false });
+      return;
+    }
+    const alvo = alvoDaExclusao(edicao, contexto);
+    if (edicao.ultimo && !alvo.criterios) {
+      const transacaoId = ultimoConfirmadoValido()?.id ?? ultimoLancamentoCriado()?.id ?? null;
+      if (!transacaoId) {
+        createAssistantResponse('Não achei um lançamento recente para alterar. Diga qual é, com o nome e o dia ou o valor.', { deduplicateNarration: false });
+        return;
+      }
+      void prepararAlteracao(transacaoId, mudancas, turnToken);
+      return;
+    }
+    if (!alvo.criterios) {
+      createAssistantResponse(TEXTO_EDICAO_SEM_ALVO, { deduplicateNarration: false });
+      return;
+    }
+    const resultado = localizarLancamento(alvo, transactionsState.transactions, { categories: categoryState.categories });
+    if (resultado.tipo === 'nenhum') {
+      if (alvo.data) {
+        void buscarAlvoNoDia(alvo, mudancas, turnToken);
+      } else {
+        createAssistantResponse(
+          'Não encontrei esse lançamento entre os mais recentes. Diga também o dia ou o valor dele.',
+          { deduplicateNarration: false },
+        );
+      }
+      return;
+    }
+    publicarResultadoDaBusca(resultado, mudancas, turnToken);
   }
 
   // Resposta com a edição pendente. false quando a frase é outro assunto:
@@ -3979,6 +4019,10 @@ export default function UniChatPage({ variant = 'full' }) {
       case ROTAS_INTERPRETACAO.EXCLUSAO:
         setIsTyping(false);
         await iniciarExclusao(interpretacao.exclusao, turnToken);
+        return true;
+      case ROTAS_INTERPRETACAO.EDICAO:
+        setIsTyping(false);
+        iniciarEdicaoDoModelo(interpretacao.edicao, turnToken);
         return true;
       case ROTAS_INTERPRETACAO.CONVERSA:
         setIsTyping(false);
