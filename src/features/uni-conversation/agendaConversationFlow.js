@@ -50,6 +50,7 @@ const ACAO_INTERPRETADA = Object.freeze({
   cancelar: { intent: 'agenda_cancel', action: 'cancel' },
   concluir: { intent: 'agenda_complete', action: 'complete' },
   excluir: { intent: 'agenda_cancel', action: 'delete' },
+  consultar: { intent: 'agenda_query', action: 'query' },
 });
 
 // Resposta à pergunta "Quer mesmo cancelar X?". Por voz chega "sim, cancela",
@@ -70,6 +71,9 @@ function respostaAoCancelamento(text) {
   if (classifyPendingActionReply(text) === 'confirm') return 'confirma';
   return 'outra';
 }
+
+// Quantos compromissos a resposta de uma consulta lista; os demais ficam na Agenda.
+const MAX_QUERY_ITEMS = 10;
 
 const PENDING_TYPES = Object.freeze({
   CREATE: 'agenda_create',
@@ -1475,9 +1479,26 @@ function dateBounds(date) {
   return { startsFrom: start.toISOString(), startsTo: end.toISOString() };
 }
 
+const DIA_CITADO = /\b(?:hoje|amanha|domingo|segunda|terca|quarta|quinta|sexta|sabado|dia\s+\d{1,2})\b/;
+
 function queryBounds(text, referenceDate) {
   const normalized = normalizeFinancialText(text);
-  if (/\b(?:esta|essa)\s+semana\b/.test(normalized)) {
+  // Dia citado vence o período: "a sexta da semana que vem" é só a sexta.
+  if (DIA_CITADO.test(normalized)) {
+    const date = resolveAgendaDate(text, referenceDate);
+    if (date) return dateBounds(date);
+  }
+  if (/\b(?:semana\s+que\s+vem|proxima\s+semana)\b/.test(normalized)) {
+    // De segunda a domingo da semana seguinte.
+    const start = parseIsoDate(referenceDate);
+    start.setDate(start.getDate() + ((8 - start.getDay()) % 7 || 7));
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    const bounds = dateBounds(localIsoDate(start));
+    bounds.startsTo = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999).toISOString();
+    return bounds;
+  }
+  if (/\b(?:esta|essa|desta|dessa|nesta|nessa|da|na)\s+semana\b(?!\s+passada)/.test(normalized)) {
     const start = parseIsoDate(referenceDate);
     const end = new Date(start);
     end.setDate(end.getDate() + (7 - end.getDay()) % 7);
@@ -1515,12 +1536,14 @@ function palavrasDistintivas(subject) {
 // dentista"), não o título salvo ("Dentista"). Primeiro valem os itens com
 // todas as palavras do alvo; sem nenhum, qualquer palavra distintiva basta,
 // e mais de um candidato cai na desambiguação.
-function filtrarPeloAlvo(items, subject) {
+// estrito: sem o recurso de qualquer palavra, para quem responde com o item
+// achado em vez de oferecer opções.
+function filtrarPeloAlvo(items, subject, { estrito = false } = {}) {
   const palavras = palavrasDistintivas(subject);
   if (palavras.length === 0) return items.filter((item) => matchesTitle(item, subject));
   const texto = (item) => normalizeIdentity(`${item.title ?? ''} ${item.description ?? ''}`);
   const todas = items.filter((item) => palavras.every((palavra) => texto(item).includes(palavra)));
-  if (todas.length > 0) return todas;
+  if (todas.length > 0 || estrito) return todas;
   return items.filter((item) => palavras.some((palavra) => texto(item).includes(palavra)));
 }
 
@@ -2175,14 +2198,41 @@ export function createAgendaConversationFlow({
     }
 
     if (classification.intent === 'agenda_query') {
-      const bounds = queryBounds(agendaText, referenceDate);
+      // Sem período na frase, de hoje em diante: o passado não concluído e o
+      // importado do Google (30 dias para trás) não entram, e o compromisso
+      // de dia inteiro de hoje (salvo à meia-noite) continua.
+      const periodBounds = queryBounds(agendaText, referenceDate);
+      const bounds = periodBounds ?? { startsFrom: dateBounds(referenceDate).startsFrom };
       const result = await services.listAgendaItems(identity.workspaceId, {
-        ...(bounds ?? {}),
+        ...bounds,
         status: 'scheduled',
+        // Com alvo, o filtro roda aqui e precisa da lista inteira do período.
+        ...(alvoInterpretado ? {} : { limit: MAX_QUERY_ITEMS + 1 }),
       });
       if (result.error) return { handled: true, text: serviceErrorText(result.error) };
-      if (!result.data?.length) return { handled: true, text: 'Você não tem compromissos nesse período.' };
-      return { handled: true, text: `Você tem: ${result.data.map(formatDateTime).join('; ')}.` };
+      // Na consulta, só vale o compromisso com todas as palavras do alvo: a
+      // "Reunião de equipe" não responde "que horas é a reunião com o João?".
+      const items = alvoInterpretado
+        ? filtrarPeloAlvo(result.data ?? [], alvoInterpretado, { estrito: true })
+        : result.data ?? [];
+      const periodo = periodBounds ? 'nesse período' : 'de hoje em diante';
+      if (!items.length) {
+        return {
+          handled: true,
+          text: alvoInterpretado
+            ? `Não achei ${alvoInterpretado} na sua agenda ${periodo}.`
+            : periodBounds
+              ? 'Você não tem compromissos nesse período.'
+              : 'Você não tem compromissos marcados de hoje em diante.',
+        };
+      }
+      const listed = items.slice(0, MAX_QUERY_ITEMS).map(formatDateTime).join('; ');
+      return {
+        handled: true,
+        text: items.length > MAX_QUERY_ITEMS
+          ? `Você tem: ${listed}. Os demais estão na Agenda.`
+          : `Você tem: ${listed}.`,
+      };
     }
 
     const normalizedText = normalizeFinancialText(agendaText);

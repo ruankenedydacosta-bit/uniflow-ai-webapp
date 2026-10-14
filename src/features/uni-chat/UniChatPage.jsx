@@ -3800,7 +3800,7 @@ export default function UniChatPage({ variant = 'full' }) {
   }
 
   function runAgendaTurn(turn) {
-    const { functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot, interpretado } = turn;
+    const { functionalText, agendaIdentity, agendaRequest, messageSource, historySnapshot, interpretado, viaModelo = false } = turn;
     setIsTyping(true);
     void agendaConversationRef.current.handle({
       text: functionalText,
@@ -3819,6 +3819,18 @@ export default function UniChatPage({ variant = 'full' }) {
       }
       if (result.handled && result.text) {
         createAssistantResponse(result.text, { deduplicateNarration: false });
+        return;
+      }
+      // O modelo mandou para a agenda, mas o fluxo não reconheceu o pedido:
+      // as regras gerais respondem em vez de a Uni ficar calada, com a mesma
+      // trava de runRuleBasedFlow para frase que o parser leria pela metade.
+      if (!result.handled && viaModelo) {
+        const motivo = motivoParaNaoLerSemModelo(functionalText);
+        if (motivo) {
+          createAssistantResponse(TEXTO_SEM_MODELO[motivo]);
+          return;
+        }
+        runDeterministicFinancialFlow(functionalText, historySnapshot, true);
       }
     }).catch(() => {
       if (!isAgendaRequestCurrent(agendaRequest)) return;
@@ -3958,7 +3970,7 @@ export default function UniChatPage({ variant = 'full' }) {
       }
       case ROTAS_INTERPRETACAO.AGENDA:
         setIsTyping(false);
-        runAgendaTurn({ ...agendaTurn, interpretado: interpretacaoParaAgenda(interpretacao) });
+        runAgendaTurn({ ...agendaTurn, interpretado: interpretacaoParaAgenda(interpretacao), viaModelo: true });
         return true;
       case ROTAS_INTERPRETACAO.CATEGORIA:
         setIsTyping(false);

@@ -29,7 +29,7 @@ export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
 export const ACOES_META = Object.freeze(['criar', 'editar', 'excluir', 'consultar', 'aportar', 'retirar']);
 // O que fazer com um compromisso (#191). Cancelar muda o status; excluir
 // apaga. Fora de criar, o app localiza o compromisso pelo alvo.
-export const ACOES_AGENDA = Object.freeze(['criar', 'editar', 'cancelar', 'concluir', 'excluir']);
+export const ACOES_AGENDA = Object.freeze(['criar', 'editar', 'cancelar', 'concluir', 'excluir', 'consultar']);
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -128,7 +128,7 @@ const ESQUEMA_AGENDA = {
   required: ['acao', 'alvo', 'titulo', 'valor'],
   properties: {
     acao: { type: ['string', 'null'], enum: [...ACOES_AGENDA, null] },
-    alvo: { ...TEXTO_OU_NULO, description: 'compromisso já marcado que muda, sai ou foi feito, como a pessoa o chamou' },
+    alvo: { ...TEXTO_OU_NULO, description: 'compromisso já marcado que muda, sai, foi feito ou é consultado, como a pessoa o chamou' },
     titulo: TEXTO_OU_NULO,
     valor: { type: ['number', 'null'] },
   },

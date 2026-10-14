@@ -254,6 +254,9 @@ test('agenda: ação da lista e alvo limpo; ação inventada vira null e criar n
   assert.deepEqual(agenda({ acao: 'criar', alvo: 'Dentista', titulo: 'Dentista', valor: null }), {
     acao: 'criar', alvo: null, titulo: 'Dentista', valor: null,
   });
+  assert.deepEqual(agenda({ acao: 'consultar', alvo: 'Reunião com o João', titulo: 'Reunião', valor: null }), {
+    acao: 'consultar', alvo: 'Reunião com o João', titulo: null, valor: null,
+  });
   assert.deepEqual(agenda({ acao: 'apagar', alvo: 'Dentista', titulo: null, valor: null }), {
     acao: null, alvo: null, titulo: null, valor: null,
   });
