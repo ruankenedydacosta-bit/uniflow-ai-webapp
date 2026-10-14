@@ -13,25 +13,55 @@
 // saldo não leva operação: o app público não ajusta saldo pela conversa, só
 // responde (#80). meta leva o pedido de meta (#192).
 export const INTENTS = Object.freeze([
-  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'conversa', 'nao_entendi',
+  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'edicao', 'recorrencia', 'orcamento', 'conta', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // Consulta que o app responde com os parâmetros (#80). 'lancamentos' lista
 // os itens em vez de somar e 'categorias' lista o catálogo (#190).
 // 'previsao' soma as entradas e saídas previstas do período. Período futuro
 // vale em saidas, entradas, resumo e lancamentos também: o app lê os
-// previstos. 'outra' (meta, contas a pagar, maior gasto, comparação...)
-// segue para as regras de consulta.
-export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'previsao', 'lancamentos', 'categorias', 'outra']);
+// previstos. Em #265, maior_gasto (onde mais gastou), comparacao (gasto do
+// período contra o anterior) e a_pagar (saídas previstas) também saem com
+// parâmetros. 'outra' (meta, última movimentação...) segue para as regras de
+// consulta.
+export const TIPOS_CONSULTA = Object.freeze([
+  'saidas', 'entradas', 'resumo', 'previsao', 'lancamentos', 'categorias', 'maior_gasto', 'comparacao', 'a_pagar', 'outra',
+]);
 // Criar, renomear ou excluir uma categoria pela conversa. O app confere
 // permissão, nome repetido e categoria padrão antes de mostrar o card.
-export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
+// Ocultar e reexibir (#267): a categoria some das escolhas e volta, como na
+// tela. Reexibir não tem apelido (a oculta não vai ao prompt): o app acha
+// pelo nome dito.
+export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir', 'ocultar', 'reexibir']);
 // Pedido de meta pela conversa (#192). Aportar e retirar (#161) registram
 // dinheiro guardado ou tirado de uma meta, com as regras da #158.
 export const ACOES_META = Object.freeze(['criar', 'editar', 'excluir', 'consultar', 'aportar', 'retirar']);
 // O que fazer com um compromisso (#191). Cancelar muda o status; excluir
 // apaga. Fora de criar, o app localiza o compromisso pelo alvo.
 export const ACOES_AGENDA = Object.freeze(['criar', 'editar', 'cancelar', 'concluir', 'excluir', 'consultar']);
+
+// Lançamento que se repete (#263): mudar o valor, a categoria ou a conta dos
+// próximos, ou parar de gerar. Encerrar apaga os previstos a partir do
+// próximo; os já realizados ficam.
+export const ACOES_RECORRENCIA = Object.freeze(['editar', 'encerrar']);
+
+// Teto mensal de gasto por categoria (#264), o mesmo da tela Registros.
+export const ACOES_ORCAMENTO = Object.freeze(['definir', 'remover', 'consultar']);
+
+// Contas pela conversa (#266). Excluir conta e ajustar saldo ficam na tela.
+export const ACOES_CONTA = Object.freeze(['criar', 'renomear', 'arquivar', 'reativar']);
+// Tipo dito pela pessoa → accounts.account_type. Cartão de crédito tem
+// fechamento e vencimento: o app manda para a tela.
+export const ACCOUNT_TYPE_POR_TIPO_DE_CONTA = Object.freeze({
+  corrente: 'checking',
+  poupanca: 'savings',
+  dinheiro: 'cash',
+  investimento: 'investment',
+  carteira_digital: 'digital_wallet',
+  cartao: 'credit_card',
+  outra: 'other',
+});
+export const MAX_NOME_CONTA = 60;
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -183,12 +213,70 @@ const ESQUEMA_EXCLUSAO = {
   },
 };
 
+// Alterar um lançamento já registrado (#261). Os critérios da busca são os da
+// exclusão; os campos novo_* e nova_* dizem o que muda. Fora do intent edicao,
+// todos são null ou false.
+const ESQUEMA_EDICAO = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['alvo', 'data', 'valor', 'conta', 'ultimo', 'novo_valor', 'nova_data', 'nova_conta', 'nova_categoria', 'nova_descricao'],
+  properties: {
+    alvo: { ...TEXTO_OU_NULO, description: 'o que é o lançamento, sem data, valor nem conta, ex.: mercado' },
+    data: { ...TEXTO_OU_NULO, description: 'dia do lançamento, AAAA-MM-DD' },
+    valor: { type: ['number', 'null'], description: 'valor atual do lançamento, em reais' },
+    conta: { ...TEXTO_OU_NULO, description: 'apelido da conta atual, ex.: k1' },
+    ultimo: { type: 'boolean', description: 'a pessoa se refere ao último lançamento que fez' },
+    novo_valor: { type: ['number', 'null'], description: 'valor certo, em reais' },
+    nova_data: { ...TEXTO_OU_NULO, description: 'dia certo, AAAA-MM-DD' },
+    nova_conta: { ...TEXTO_OU_NULO, description: 'apelido da conta certa, ex.: k2' },
+    nova_categoria: { ...TEXTO_OU_NULO, description: 'apelido da categoria certa, ex.: c3' },
+    nova_descricao: TEXTO_OU_NULO,
+  },
+};
+
+const ESQUEMA_RECORRENCIA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['acao', 'alvo', 'a_partir_de', 'novo_valor', 'nova_categoria', 'nova_conta'],
+  properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_RECORRENCIA, null] },
+    alvo: { ...TEXTO_OU_NULO, description: 'o lançamento que se repete, como a pessoa o chama, ex.: Netflix' },
+    a_partir_de: { ...TEXTO_OU_NULO, description: 'primeiro dia em que a mudança vale, AAAA-MM-DD' },
+    novo_valor: { type: ['number', 'null'], description: 'valor novo, em reais' },
+    nova_categoria: { ...TEXTO_OU_NULO, description: 'apelido da categoria nova, ex.: c3' },
+    nova_conta: { ...TEXTO_OU_NULO, description: 'apelido da conta nova, ex.: k2' },
+  },
+};
+
+const ESQUEMA_ORCAMENTO = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['acao', 'categoria', 'valor'],
+  properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_ORCAMENTO, null] },
+    categoria: { ...TEXTO_OU_NULO, description: 'apelido da categoria de saída, ex.: c3' },
+    valor: { type: ['number', 'null'], description: 'teto mensal, em reais' },
+  },
+};
+
+const ESQUEMA_CONTA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['acao', 'alvo', 'nome', 'tipo'],
+  properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_CONTA, null] },
+    alvo: { ...TEXTO_OU_NULO, description: 'apelido da conta que muda, ex.: k1' },
+    nome: TEXTO_OU_NULO,
+    tipo: { type: ['string', 'null'], enum: [...Object.keys(ACCOUNT_TYPE_POR_TIPO_DE_CONTA), null] },
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao', 'edicao', 'recorrencia', 'orcamento', 'conta'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
@@ -198,6 +286,10 @@ export const ESQUEMA = Object.freeze({
     categoria: ESQUEMA_CATEGORIA,
     meta: ESQUEMA_META,
     exclusao: ESQUEMA_EXCLUSAO,
+    edicao: ESQUEMA_EDICAO,
+    recorrencia: ESQUEMA_RECORRENCIA,
+    orcamento: ESQUEMA_ORCAMENTO,
+    conta: ESQUEMA_CONTA,
   },
 });
 
@@ -307,7 +399,9 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   };
 }
 
-const CATEGORY_TYPE_POR_TIPO_CONSULTA = Object.freeze({ saidas: 'expense', entradas: 'income' });
+const CATEGORY_TYPE_POR_TIPO_CONSULTA = Object.freeze({
+  saidas: 'expense', entradas: 'income', maior_gasto: 'expense', comparacao: 'expense', a_pagar: 'expense',
+});
 // Mais que isso é histórico inteiro: as regras respondem sem baixar anos de
 // movimentações para uma soma.
 export const MAX_DIAS_CONSULTA = 731;
@@ -357,8 +451,9 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
 
   const termo = textoLimpo(bruta?.termo, MAX_TERMO) || null;
   // O resumo e a previsão somam tudo do período: não filtram por categoria
-  // nem por termo.
-  if (tipo === 'resumo' && termo) ajustes.push('termo_no_resumo');
+  // nem por termo. Maior gasto agrupa por categoria: termo junto não tem
+  // resposta.
+  if ((tipo === 'resumo' || tipo === 'maior_gasto') && termo) ajustes.push('termo_no_resumo');
   if (tipo === 'previsao' && termo) ajustes.push('termo_na_previsao');
 
   if (ajustes.length > 0) tipo = 'outra';
@@ -404,7 +499,7 @@ function validarCategoria(bruta, { categoriasPorApelido }) {
   const nome = textoLimpo(bruta?.nome, MAX_NOVA_CATEGORIA) || null;
   const tipoPorAlvo = { expense: 'saida', income: 'entrada' }[alvo?.category_type] ?? null;
   const tipo = acao === 'criar' ? (bruta?.tipo === 'entrada' ? 'entrada' : 'saida') : tipoPorAlvo;
-  return { acao, tipo, alvo, nome: acao === 'excluir' ? null : nome };
+  return { acao, tipo, alvo, nome: acao === 'excluir' || (acao === 'ocultar' && alvo) ? null : nome };
 }
 
 function valorPositivo(bruto) {
@@ -481,6 +576,77 @@ function validarExclusao(bruta, { contasPorApelido, dataReferencia }) {
   };
 }
 
+// Os critérios saem como na exclusão. A mudança sai com as chaves que o fluxo
+// de edição do app usa (amount, date, accountId, categoryId, description);
+// apelido inventado e data impossível saem. Sem mudança, o app pergunta o que
+// mudar.
+function validarEdicao(bruta, contexto) {
+  const { categoriasPorApelido, contasPorApelido, dataReferencia } = contexto;
+  const { alvo, data, valor, conta: contaAtual, ultimo } = validarExclusao(bruta, contexto);
+  const mudancas = {};
+  const novoValor = valorPositivo(bruta?.novo_valor);
+  if (novoValor) mudancas.amount = novoValor;
+  if (dataValida(bruta?.nova_data) && distanciaEmDias(bruta.nova_data, dataReferencia) <= 366) mudancas.date = bruta.nova_data;
+  const conta = contasPorApelido.get(bruta?.nova_conta);
+  if (conta) mudancas.accountId = conta.id;
+  const categoria = categoriasPorApelido.get(bruta?.nova_categoria);
+  if (categoria) mudancas.categoryId = categoria.id;
+  const descricao = textoLimpo(bruta?.nova_descricao, MAX_DESCRICAO);
+  if (descricao) mudancas.description = descricao;
+  return {
+    alvo, data, valor, conta: contaAtual, ultimo, mudancas,
+    // Registros por extenso, para o card e a avaliação dizerem o nome.
+    novaConta: conta ?? null,
+    novaCategoria: categoria ?? null,
+  };
+}
+
+// Ação fora da lista vira null e o app responde que não entendeu. Editar sem
+// nada para mudar também. a_partir_de fica até um ano à frente.
+function validarRecorrencia(bruta, { categoriasPorApelido, contasPorApelido, dataReferencia }) {
+  const acao = ACOES_RECORRENCIA.includes(bruta?.acao) ? bruta.acao : null;
+  const aPartirDe = dataValida(bruta?.a_partir_de) && distanciaEmDias(bruta.a_partir_de, dataReferencia) <= 366
+    ? bruta.a_partir_de
+    : null;
+  const editar = acao === 'editar';
+  const novoValor = editar ? valorPositivo(bruta?.novo_valor) : null;
+  const novaCategoria = editar ? categoriasPorApelido.get(bruta?.nova_categoria) ?? null : null;
+  const novaConta = editar ? contasPorApelido.get(bruta?.nova_conta) ?? null : null;
+  const semMudanca = editar && !novoValor && !novaCategoria && !novaConta;
+  return {
+    acao: semMudanca ? null : acao,
+    alvo: textoLimpo(bruta?.alvo, MAX_ALVO_EXCLUSAO) || null,
+    aPartirDe,
+    novoValor,
+    novaCategoria,
+    novaConta,
+  };
+}
+
+// Teto só existe para categoria de saída. Definir sem valor ou sem
+// categoria, e remover sem categoria, viram ação null: o app pergunta.
+// Consultar sem categoria lê todos os tetos.
+function validarOrcamento(bruta, { categoriasPorApelido }) {
+  const acao = ACOES_ORCAMENTO.includes(bruta?.acao) ? bruta.acao : null;
+  const encontrada = categoriasPorApelido.get(bruta?.categoria) ?? null;
+  const categoria = encontrada?.category_type === 'expense' ? encontrada : null;
+  const valor = acao === 'definir' ? valorPositivo(bruta?.valor) : null;
+  const incompleto = (acao === 'definir' && (!categoria || !valor)) || (acao === 'remover' && !categoria);
+  return { acao: incompleto ? null : acao, categoria, valor, incompleto };
+}
+
+// Apelido inventado vira alvo null; o app tenta achar a conta pelo nome.
+// Tipo só vale em criar.
+function validarConta(bruta, { contasPorApelido }) {
+  const acao = ACOES_CONTA.includes(bruta?.acao) ? bruta.acao : null;
+  return {
+    acao,
+    alvo: acao && acao !== 'criar' ? contasPorApelido.get(bruta?.alvo) ?? null : null,
+    nome: textoLimpo(bruta?.nome, MAX_NOME_CONTA) || null,
+    accountType: acao === 'criar' ? ACCOUNT_TYPE_POR_TIPO_DE_CONTA[bruta?.tipo] ?? null : null,
+  };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -514,6 +680,24 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], meta
   }
   if (intent === 'exclusao') {
     return { intent, operacoes: [], resposta, exclusao: validarExclusao(bruta?.exclusao, contexto) };
+  }
+  if (intent === 'edicao') {
+    return { intent, operacoes: [], resposta, edicao: validarEdicao(bruta?.edicao, contexto) };
+  }
+  if (intent === 'recorrencia') {
+    const recorrencia = validarRecorrencia(bruta?.recorrencia, contexto);
+    return recorrencia.acao
+      ? { intent, operacoes: [], resposta, recorrencia }
+      : { intent: 'nao_entendi', operacoes: [], resposta };
+  }
+  if (intent === 'orcamento') {
+    return { intent, operacoes: [], resposta, orcamento: validarOrcamento(bruta?.orcamento, contexto) };
+  }
+  if (intent === 'conta') {
+    const conta = validarConta(bruta?.conta, contexto);
+    return conta.acao
+      ? { intent, operacoes: [], resposta, conta }
+      : { intent: 'nao_entendi', operacoes: [], resposta };
   }
   if (intent !== 'lancamento' && intent !== 'correcao') {
     return { intent, operacoes: [], resposta };

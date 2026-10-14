@@ -1800,11 +1800,14 @@ test('#80: consulta com parâmetros soma o período inteiro no banco; outra perg
   assert.match(consulta, /setIsTyping\(false\);\s*runDeterministicFinancialFlow\(text, historySnapshot, true\);\s*return true;\s*\}\s*$/);
 
   // O chat só carrega as movimentações recentes: a soma vem do período
-  // inteiro, das concluídas (ou das previstas, na previsão), e falha de
-  // busca devolve null.
+  // inteiro, das concluídas (ou das previstas, na previsão e em contas a
+  // pagar, #265), e falha de busca devolve null. A comparação lê também o
+  // período anterior, já realizado.
   const { body: busca } = extractFunctionBody(page, 'async function responderConsultaDoModelo(consulta, dataDaFuncao) {');
-  assert.match(busca, /listTransactionsForPeriod\(effectiveWorkspace\.id, \{\s*dateFrom: periodo\.inicio,\s*dateTo: periodo\.fim,\s*status: statusDaConsulta\(consulta, dataReferencia\),\s*\}\)/);
-  assert.match(busca, /if \(error\) return null;/);
+  assert.match(busca, /listTransactionsForPeriod\(effectiveWorkspace\.id, \{\s*dateFrom: inicio,\s*dateTo: fim,\s*status,\s*\}\)/);
+  assert.match(busca, /ler\(periodo, statusDaConsulta\(consulta, dataReferencia\)\)/);
+  assert.match(busca, /ler\(periodoAnterior\(periodo, dataReferencia\), 'completed'\)/);
+  assert.match(busca, /if \(atual\.error \|\| anterior\.error\) return null;/);
   assert.match(busca, /catch \{\s*return null;\s*\}/);
 });
 

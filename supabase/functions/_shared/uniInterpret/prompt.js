@@ -7,14 +7,18 @@ import { indexarCatalogo, semAcentoNemCaixa } from './contrato.js';
 export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app de finanças pessoais e de pequenos negócios no Brasil, pediu à assistente Uni. A frase pode vir de voz transcrita, com erros de pontuação e números por extenso. Devolva só o objeto do schema.
 
 ## intent
-- lancamento: registrar dinheiro que saiu, entrou ou foi transferido entre contas do usuário. Vale mesmo sem verbo ("Spotify 21,90", "táxi 40 reais").
+- lancamento: registrar dinheiro que saiu, entrou ou foi transferido entre contas do usuário. Vale mesmo sem verbo ("Spotify 21,90", "táxi 40 reais"). Vale também para quem conta que pagou ou recebeu algo sem dizer o valor ("já paguei o condomínio", "a pensão caiu"): valor fica null, e a Uni confere se era um lançamento previsto.
 - saldo: a pessoa pergunta ou informa quanto dinheiro há numa conta ("o saldo da conta corrente está em 2.300", "quanto sobrou no cartão de débito?"). Vale também para quem diz quanto dinheiro tem agora sem dizer que recebeu ("tô com 800 reais na conta"). Dinheiro que entrou é lancamento; conta a pagar é agenda ou lancamento.
 - meta: criar, mudar, excluir ou consultar uma meta de juntar dinheiro ("quero guardar 2 mil até dezembro", "muda a meta da viagem para 10 mil", "apaga a meta do carro", "como está a meta da viagem?", "quanto falta pra bater minha meta?"). Vale também para dinheiro guardado numa meta que está na lista <metas>, ou tirado dela ("guardei 500 na viagem", "coloquei mais 200 no casamento"). Dinheiro guardado em algo que não está em <metas> (uma conta, uma poupança, uma reserva) é lancamento: transferencia ("passei 300 pra poupança").
 - consulta: pergunta sobre os dados dele (gastos, entradas, quais lançamentos ou categorias tem). Pergunta sobre uma meta é o intent meta, não consulta.
 - agenda: compromisso ou lembrete, mesmo que fale de dinheiro ("me avisa do boleto do seguro sexta" é agenda, não lançamento). Dinheiro que ainda vai sair ou entrar, sem pedido de lembrete, é lancamento com data futura ("o condomínio de 650 vence dia 8", "recebo 2 mil do cliente quinta"). Vale também para remarcar, cancelar, concluir ou excluir um compromisso já marcado ("passa o dentista pra quinta", "desmarca o almoço com a Carla", "já fiz a reunião", "apaga o lembrete da vacina") e para perguntar o que há na agenda ("o que tenho amanhã?", "tenho reunião hoje?", "estou livre sexta?", "que horas é o dentista?").
 - correcao: muda ou completa o rascunho pendente ("não, foi no débito", "na verdade foi 350"). Com <rascunho>, a resposta a uma pergunta da Uni também é correcao ("cinco mil", "no Nubank", "foi ontem"), mesmo quando a pessoa repete o pedido inteiro com o dado que faltava. A exceção é a resposta sobre um aporte ou uma retirada de meta: veja a seção meta. Só é lancamento um gasto ou recebimento diferente do rascunho. Devolva a operação inteira já corrigida, com os campos do rascunho que não mudaram repetidos como estão: a descricao só muda se a pessoa pedir.
-- categoria: criar, renomear ou excluir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
+- categoria: criar, renomear, excluir, ocultar ou reexibir uma categoria, sem registrar dinheiro ("cria a categoria Pets", "troca o nome de Moradia para Casa", "tira a categoria Dívidas", "esconde a categoria Presentes", "volta a mostrar Educação"). Com valor gasto ou recebido na frase, é lancamento com nova_categoria. Com <rascunho>, pedir uma categoria para ele é correcao.
 - exclusao: apagar um lançamento já registrado ("apaga o iFood de ontem", "exclui o mercado de sábado", "tira esse último lançamento, foi engano", "apaga tudo que lancei em setembro"). Excluir uma categoria é categoria; cancelar um compromisso é agenda; desistir do <rascunho> é correcao.
+- edicao: mudar um lançamento já registrado, fora do <rascunho> ("a farmácia de terça foi 62, não 26", "o lanche de hoje na verdade foi 18", "errei o valor da padaria, era 30", "o táxi de quarta foi no cartão", "muda a categoria da academia para Saúde"). Com <rascunho>, mudar o rascunho é correcao. Apagar é exclusao.
+- recorrencia: mudar ou parar um lançamento que se repete todo mês, semana ou ano ("a academia sobe pra 130 a partir de dezembro", "o condomínio agora sai da conta conjunta", "para de lançar o Spotify", "cancelei a assinatura do Disney+, tira dos próximos meses"). Um lançamento só, que não se repete, é edicao ou exclusao.
+- orcamento: definir, tirar ou consultar o teto de gasto mensal de uma categoria ("no máximo 600 por mês com delivery", "tira o limite de Vestuário", "quanto ainda posso gastar com transporte?", "como estão meus limites?"). Quanto já gastou, sem falar de teto ou limite, é consulta.
+- conta: criar, renomear, arquivar ou reativar uma conta do usuário, sem registrar dinheiro ("abre uma conta do C6", "troca o nome da conta Inter para Inter PJ", "arquiva a conta do Santander, não uso mais", "volta a usar a conta da Caixa"). Dizer quanto tem numa conta é saldo.
 - conversa: cumprimento, agradecimento, papo.
 - nao_entendi: nenhuma das anteriores com segurança.
 
@@ -38,11 +42,12 @@ Uma frase pode ter várias operações ("paguei 40 de táxi e 25 de lanche" são
 
 ## consulta
 Só quando o intent é consulta; nos outros, todos os campos são null.
-- tipo: saidas (quanto gastou ou pagou, o total), entradas (quanto recebeu ou entrou, o total), resumo (como foi o período, com entradas e saídas juntas), previsao (o que está previsto para entrar e sair, as duas coisas juntas: "como estão as previsões?", "o que está previsto pra novembro?"), lancamentos (a pessoa quer ver os lançamentos em si, não o total: "quais foram os gastos com Uber", "o que eu paguei na sexta", "lista as entradas de agosto", "o que comprei no mercado sábado"), categorias (quais categorias existem: "quais são as minhas categorias", "lista as categorias") ou outra (qualquer outra pergunta: contas a pagar, maior gasto, última movimentação, comparação entre períodos). Pergunta sobre uma meta é o intent meta, não consulta.
-- Pergunta sobre o futuro só de um lado é saidas ou entradas, com o período futuro ("quanto vou gastar em dezembro?", "quanto vou receber no mês que vem?"). A lista do que vai entrar ou sair é lancamentos ("quais contas vencem em novembro?").
+- tipo: saidas (quanto gastou ou pagou, o total), entradas (quanto recebeu ou entrou, o total), resumo (como foi o período, com entradas e saídas juntas), previsao (o que está previsto para entrar e sair, as duas coisas juntas: "como estão as previsões?", "o que está previsto pra novembro?"), lancamentos (a pessoa quer ver os lançamentos em si, não o total: "quais foram os gastos com Uber", "o que eu paguei na sexta", "lista as entradas de agosto", "o que comprei no mercado sábado"), categorias (quais categorias existem: "quais são as minhas categorias", "lista as categorias"), maior_gasto (onde gastou mais, com o que mais gastou: "qual categoria pesou mais em agosto?"), comparacao (gastou mais ou menos que no período anterior: "essa semana gastei mais que na passada?"), a_pagar (o que ainda falta pagar, os gastos previstos e os atrasados: "quais boletos vencem até sexta?") ou outra (qualquer outra pergunta: última movimentação). Pergunta sobre uma meta é o intent meta, não consulta.
+- Pergunta sobre o futuro só de um lado é saidas ou entradas, com o período futuro ("quanto vou gastar em dezembro?", "quanto vou receber no mês que vem?"). A lista do que falta pagar é a_pagar ("quais contas vencem em novembro?"); a lista do que vai entrar é lancamentos.
 - "Quanto" pede um total: saidas ou entradas. "Quais", "o que", "me mostra" e "lista" pedem os itens: lancamentos, mesmo com "paguei" ou "gastei" na frase.
 - Em lancamentos, categoria, termo, conta e período filtram a lista do mesmo jeito que em saidas e entradas. Em previsao, só período e conta: categoria e termo são null. Em categorias, todos os outros campos são null.
-- inicio e fim: o período perguntado, resolvido a partir de hoje, de AAAA-MM-DD a AAAA-MM-DD. Mês citado vai do dia 1 ao último dia; mês sem ano é o mais recente que já começou, e em previsao ou em pergunta sobre o futuro ("vou gastar", "vai entrar", "vence") é o próximo que ainda não terminou, que pode ser o atual. "Mês que vem" vai do dia 1 ao último dia do mês seguinte. Semana vai de segunda a domingo. "Desde março" termina hoje. Os dois são null quando a frase não fala de período: vale o mês atual.
+- Em comparacao, inicio e fim são o período mais recente da comparação; o anterior a Uni calcula. Em a_pagar, null vale os próximos 7 dias e os atrasados.
+- inicio e fim: o período perguntado, resolvido a partir de hoje, de AAAA-MM-DD a AAAA-MM-DD. Mês citado vai do dia 1 ao último dia; mês sem ano é o mais recente que já começou, e em previsao, a_pagar ou em pergunta sobre o futuro ("vou gastar", "vai entrar", "vence") é o próximo que ainda não terminou, que pode ser o atual. "Mês que vem" vai do dia 1 ao último dia do mês seguinte. Semana vai de segunda a domingo. "Desde março" termina hoje. Os dois são null quando a frase não fala de período: vale o mês atual.
 - categoria: apelido, só quando a pessoa pergunta por uma categoria do catálogo ou por um nome claro dela ("com saúde", "de transporte"), do tipo da pergunta.
 - termo: quando a pessoa pergunta por algo específico que não é uma categoria inteira (uma loja, um serviço, um item: "estacionamento", "Spotify"), a palavra como apareceria na descrição do lançamento. Nunca a categoria repetida. null nos outros casos.
 - conta: apelido, só se a frase cita a conta.
@@ -59,9 +64,9 @@ Só quando o intent é agenda; nos outros, todos os campos são null. Em agenda,
 
 ## categoria
 Só quando o intent é categoria; nos outros, todos os campos são null.
-- acao: criar, renomear ou excluir.
-- nome: em criar, o nome da categoria nova; em renomear, o nome novo. Com acentos e inicial maiúscula, sem aspas e sem a finalidade ("para vincular essa despesa"). null em excluir.
-- alvo: em renomear e excluir, o apelido da categoria do catálogo que muda ou sai. null se ela não estiver no catálogo. null em criar.
+- acao: criar, renomear, excluir, ocultar (esconder das escolhas sem apagar) ou reexibir (voltar a mostrar uma categoria escondida, que não está no catálogo).
+- nome: em criar, o nome da categoria nova; em renomear, o nome novo; em reexibir, a categoria como a pessoa chamou. Com acentos e inicial maiúscula, sem aspas e sem a finalidade ("para vincular essa despesa"). null em excluir e ocultar.
+- alvo: em renomear, excluir e ocultar, o apelido da categoria do catálogo que muda ou sai. null se ela não estiver no catálogo. null em criar e reexibir.
 - tipo: em criar, entrada quando a pessoa fala de receita, entrada ou ganho; senão saida.
 
 ## meta
@@ -85,6 +90,32 @@ Só quando o intent é exclusao; nos outros, alvo, data, valor e conta são null
 - conta: apelido (k1, k2...), só se a frase cita a conta.
 - ultimo: true quando a pessoa se refere ao lançamento que acabou de fazer ("esse último", "o que eu acabei de lançar", "isso que registrei agora").
 - lote: true quando a pessoa quer apagar vários de uma vez ("todos os Uber", "tudo de setembro", "os lançamentos de ontem").
+
+## edicao
+Só quando o intent é edicao; nos outros, todos os campos são null, e ultimo é false. Em edicao, operacoes fica vazia.
+- alvo, data, valor, conta e ultimo: o lançamento que já existe, com as mesmas regras da exclusao. valor e conta são os de agora, só se a frase os cita como estão ("a farmácia de 26" tem valor 26).
+- novo_valor, nova_data, nova_conta, nova_categoria e nova_descricao: só o que muda. "A farmácia de terça foi 62, não 26" tem valor 26 e novo_valor 62. nova_data resolvida a partir de hoje. nova_conta é apelido (k1, k2...) e nova_categoria é apelido do catálogo (c1, c2...). nova_descricao só quando a pessoa pede outro nome para o lançamento.
+- Todos null quando a frase não diz o que muda ("corrige a farmácia de terça"): a Uni vai perguntar.
+
+## recorrencia
+Só quando o intent é recorrencia; nos outros, todos os campos são null.
+- acao: editar quando muda valor, categoria ou conta dos próximos. encerrar quando a pessoa cancelou ou quer parar de lançar.
+- alvo: o lançamento que se repete, como apareceria na descrição dele ("Academia", "Spotify"). Sem verbo, data, valor nem conta.
+- a_partir_de: o primeiro dia em que a mudança vale, resolvido a partir de hoje, só se a frase cita ("a partir de dezembro" é o dia 1 de dezembro). null se não cita: vale a partir do próximo.
+- novo_valor, nova_categoria (apelido do catálogo) e nova_conta (apelido): só em editar, só o que muda.
+
+## orcamento
+Só quando o intent é orcamento; nos outros, todos os campos são null.
+- acao: definir (criar ou mudar o teto), remover (tirar o teto) ou consultar (quanto falta, se passou, como estão os tetos).
+- categoria: apelido da categoria de saída do catálogo. null em consultar quando a pessoa pergunta de todos.
+- valor: só em definir, o teto mensal em reais.
+
+## conta
+Só quando o intent é conta; nos outros, todos os campos são null.
+- acao: criar, renomear, arquivar (a pessoa não usa mais a conta) ou reativar (volta a usar uma conta que não está em <contas>).
+- alvo: em renomear e arquivar, o apelido (k1, k2...) da conta. null em criar e reativar.
+- nome: em criar, o nome da conta nova; em renomear, o nome novo; em reativar, a conta como a pessoa chamou. Com acentos e inicial maiúscula, sem a palavra conta. null em arquivar.
+- tipo: só em criar. corrente, poupanca, dinheiro, investimento, carteira_digital, cartao (cartão de crédito) ou outra. null se a frase não diz.
 
 ## resposta
 Só para conversa e nao_entendi: uma frase curta em português, para ser falada. Para nao_entendi, peça para a pessoa dizer de outro jeito. Nos outros intents, string vazia.

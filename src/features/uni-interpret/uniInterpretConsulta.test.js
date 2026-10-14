@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   consultaRespondivel,
   memoriaDaConsulta,
+  periodoAnterior,
   periodoDaConsulta,
   responderConsulta,
   rotuloDoPeriodo,
@@ -292,4 +293,87 @@ test('lancamentos: no mesmo dia, o registrado por último vem primeiro', () => {
 
 test('tipo que não é respondido aqui devolve null, em vez de somar tudo como entrada', () => {
   assert.equal(responderConsulta({ consulta: consulta({ tipo: 'outra' }), transacoes: TRANSACOES, dataReferencia: HOJE }), null);
+});
+
+// #265: maior gasto, comparação e contas a pagar.
+test('período anterior: mês inteiro, mês em andamento e semana', () => {
+  assert.deepEqual(periodoAnterior({ inicio: '2026-09-01', fim: '2026-09-30' }, '2026-10-14'), { inicio: '2026-08-01', fim: '2026-08-31' });
+  assert.deepEqual(periodoAnterior({ inicio: '2026-10-01', fim: '2026-10-31' }, '2026-10-14'), { inicio: '2026-09-01', fim: '2026-09-14' });
+  assert.deepEqual(periodoAnterior({ inicio: '2026-03-01', fim: '2026-03-31' }, '2026-03-31'), { inicio: '2026-02-01', fim: '2026-02-28' });
+  assert.deepEqual(periodoAnterior({ inicio: '2026-10-12', fim: '2026-10-18' }, '2026-10-14'), { inicio: '2026-10-05', fim: '2026-10-07' });
+});
+
+test('maior gasto agrupa as saídas por categoria e cita as duas seguintes', () => {
+  const categorias = [
+    { id: 'c-ali', name: 'Alimentação' }, { id: 'c-tra', name: 'Transporte' }, { id: 'c-laz', name: 'Lazer' }, { id: 'c-sau', name: 'Saúde' },
+  ];
+  const saida = (category_id, amount) => ({ transaction_type: 'expense', category_id, amount });
+  const transacoes = [saida('c-ali', 600), saida('c-ali', 200), saida('c-tra', 400), saida('c-laz', 300), saida('c-sau', 100),
+    { transaction_type: 'income', category_id: 'c-sal', amount: 5000 }];
+  const resposta = responderConsulta({ consulta: { tipo: 'maior_gasto', inicio: '2026-09-01', fim: '2026-09-30' }, transacoes, dataReferencia: '2026-10-14', categorias });
+  assert.equal(
+    resposta.replace(/\u00a0/g, ' '),
+    'No mês passado, onde você mais gastou foi Alimentação: R$ 800,00, 50% das saídas. Depois vêm Transporte, R$ 400,00 e Lazer, R$ 300,00.',
+  );
+  assert.equal(responderConsulta({ consulta: { tipo: 'maior_gasto' }, transacoes: [], dataReferencia: '2026-10-14' }), 'Neste mês, não encontrei saídas.');
+});
+
+test('comparação diz os dois totais e a diferença', () => {
+  const saida = (amount, category_id = 'c-ali') => ({ transaction_type: 'expense', category_id, amount });
+  const resposta = responderConsulta({
+    consulta: { tipo: 'comparacao', inicio: '2026-10-01', fim: '2026-10-31' },
+    transacoes: [saida(1000), saida(500)],
+    transacoesAnteriores: [saida(1200)],
+    dataReferencia: '2026-10-14',
+  });
+  assert.equal(
+    resposta.replace(/\u00a0/g, ' '),
+    'Neste mês você gastou R$ 1.500,00; de 01/09 a 14/09, R$ 1.200,00. São R$ 300,00 a mais, 25%.',
+  );
+  const igual = responderConsulta({
+    consulta: { tipo: 'comparacao', inicio: '2026-09-01', fim: '2026-09-30', categoria: { id: 'c-ali', name: 'Alimentação' } },
+    transacoes: [saida(100), saida(50, 'c-out')],
+    transacoesAnteriores: [saida(100)],
+    dataReferencia: '2026-10-14',
+  });
+  assert.match(igual.replace(/\u00a0/g, ' '), /^No mês passado você gastou R\$ 100,00 com Alimentação; em agosto, R\$ 100,00\. Ficou igual\.$/);
+});
+
+test('a pagar: com período, da saída mais próxima à mais distante', () => {
+  const previstas = [
+    { transaction_type: 'expense', description: 'Internet', amount: 120, transaction_date: '2026-10-20' },
+    { transaction_type: 'expense', description: 'Aluguel', amount: 1500, transaction_date: '2026-10-15' },
+    { transaction_type: 'income', description: 'Salário', amount: 5000, transaction_date: '2026-10-16' },
+  ];
+  const consulta = { tipo: 'a_pagar', inicio: '2026-10-14', fim: '2026-10-21' };
+  const resposta = responderConsulta({ consulta, transacoes: previstas, dataReferencia: '2026-10-14' });
+  assert.equal(
+    resposta.replace(/\u00a0/g, ' '),
+    'De 14/10 a 21/10, você tem 2 saídas previstas, que somam R$ 1.620,00: 15/10, Aluguel, R$ 1.500,00; 20/10, Internet, R$ 120,00.',
+  );
+  assert.equal(responderConsulta({ consulta, transacoes: [], dataReferencia: '2026-10-14' }), 'De 14/10 a 21/10, você não tem saídas previstas.');
+});
+
+test('a pagar sem período: próximos 7 dias e as atrasadas à parte', () => {
+  assert.deepEqual(periodoDaConsulta({ tipo: 'a_pagar' }, '2026-10-14'), { inicio: '2026-08-30', fim: '2026-10-21' });
+  const previstas = [
+    { transaction_type: 'expense', description: 'Aluguel', amount: 1500, transaction_date: '2026-10-15' },
+    { transaction_type: 'expense', description: 'Luz', amount: 200, transaction_date: '2026-10-10' },
+  ];
+  const resposta = responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: previstas, dataReferencia: '2026-10-14' });
+  assert.equal(
+    resposta.replace(/\u00a0/g, ' '),
+    'Nos próximos 7 dias, você tem 1 saída prevista, que soma R$ 1.500,00: 15/10, Aluguel, R$ 1.500,00. Atrasadas: 1 saída, que soma R$ 200,00: 10/10, Luz, R$ 200,00.',
+  );
+  assert.equal(
+    responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: [previstas[0]], dataReferencia: '2026-10-14' }).replace(/\u00a0/g, ' '),
+    'Nos próximos 7 dias, você tem 1 saída prevista, que soma R$ 1.500,00: 15/10, Aluguel, R$ 1.500,00.',
+  );
+});
+
+test('contas a pagar leem os previstos; maior gasto e comparação, os realizados', () => {
+  assert.equal(statusDaConsulta({ tipo: 'a_pagar' }, '2026-10-14'), 'pending');
+  assert.equal(statusDaConsulta({ tipo: 'a_pagar', inicio: '2026-10-05', fim: '2026-10-11' }, '2026-10-14'), 'pending');
+  assert.equal(statusDaConsulta({ tipo: 'maior_gasto', inicio: '2026-09-01', fim: '2026-09-30' }, '2026-10-14'), 'completed');
+  assert.equal(statusDaConsulta({ tipo: 'comparacao' }, '2026-10-14'), 'completed');
 });

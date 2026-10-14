@@ -67,7 +67,7 @@ test('apelidos seguem a ordem por tipo e nome, independente da ordem recebida', 
 });
 
 test('schema é estrito: todo campo obrigatório e nenhum extra', () => {
-  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao];
+  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao, ESQUEMA.properties.edicao, ESQUEMA.properties.recorrencia, ESQUEMA.properties.orcamento, ESQUEMA.properties.conta];
   for (const objeto of objetos) {
     assert.equal(objeto.additionalProperties, false);
     assert.deepEqual([...objeto.required].sort(), Object.keys(objeto.properties).sort());
@@ -366,10 +366,20 @@ test('consulta: período futuro vale em todo tipo; a previsão não filtra por c
 });
 
 test('consulta: tipo fora do contrato ou consulta ausente vira outra', () => {
-  assert.equal(validarInterpretacao(consulta({ tipo: 'maior_gasto' }), CONTEXTO).consulta.tipo, 'outra');
+  assert.equal(validarInterpretacao(consulta({ tipo: 'ultima_compra' }), CONTEXTO).consulta.tipo, 'outra');
   const semConsulta = validarInterpretacao({ intent: 'consulta', operacoes: [], resposta: '' }, CONTEXTO);
   assert.equal(semConsulta.consulta.tipo, 'outra');
   assert.equal(semConsulta.consulta.inicio, null);
+});
+
+test('consulta #265: a_pagar aceita período futuro; maior_gasto não filtra por termo', () => {
+  const futuro = validarInterpretacao(consulta({ tipo: 'a_pagar', inicio: '2026-10-05', fim: '2026-10-11' }), CONTEXTO).consulta;
+  assert.deepEqual({ tipo: futuro.tipo, inicio: futuro.inicio, fim: futuro.fim }, { tipo: 'a_pagar', inicio: '2026-10-05', fim: '2026-10-11' });
+  assert.equal(validarInterpretacao(consulta({ tipo: 'saidas', inicio: '2026-10-05', fim: '2026-10-11' }), CONTEXTO).consulta.tipo, 'saidas', 'período futuro vale desde a #271');
+  assert.equal(validarInterpretacao(consulta({ tipo: 'maior_gasto', termo: 'Uber' }), CONTEXTO).consulta.tipo, 'outra');
+  const comparacao = validarInterpretacao(consulta({ tipo: 'comparacao', categoria: C.ali }), CONTEXTO).consulta;
+  assert.deepEqual({ tipo: comparacao.tipo, categoria: comparacao.categoria?.id }, { tipo: 'comparacao', categoria: 'cat-ali' });
+  assert.equal(validarInterpretacao(consulta({ tipo: 'comparacao', categoria: C.sal }), CONTEXTO).consulta.tipo, 'outra');
 });
 
 test('consulta só sai no intent consulta', () => {
@@ -645,6 +655,85 @@ test('exclusao: alvo limpo, data perto da referência, valor positivo e conta pe
     alvo: null, data: null, valor: null, conta: null, ultimo: false, lote: false,
   });
   assert.equal(validarInterpretacao(lancamento(operacao()), CONTEXTO).exclusao, undefined);
+});
+
+// Alterar lançamento salvo pela conversa (#261): critérios como na exclusão e
+// a mudança nas chaves do fluxo de edição do app.
+test('edicao: critérios da busca e mudança resolvida para ids do espaço', () => {
+  const pedido = (edicao) => ({ intent: 'edicao', operacoes: [], resposta: '', edicao });
+  const vazio = { alvo: null, data: null, valor: null, conta: null, ultimo: false, novo_valor: null, nova_data: null, nova_conta: null, nova_categoria: null, nova_descricao: null };
+  const validada = validarInterpretacao(pedido({
+    ...vazio, alvo: ' Mercado ', data: '2026-10-01', valor: 40, novo_valor: 50.004, nova_conta: K.pp, nova_categoria: C.ali, nova_descricao: ' Feira ',
+  }), CONTEXTO);
+  assert.equal(validada.intent, 'edicao');
+  const { novaConta, novaCategoria, ...resto } = validada.edicao;
+  assert.deepEqual(resto, {
+    alvo: 'Mercado', data: '2026-10-01', valor: 40, conta: null, ultimo: false,
+    mudancas: { amount: 50, accountId: 'conta-pp', categoryId: 'cat-ali', description: 'Feira' },
+  });
+  assert.equal(novaConta.name, 'Poupança');
+  assert.equal(novaCategoria.name, 'Alimentação');
+
+  // Apelido inventado, data longe demais e valor zero não viram mudança.
+  const limpa = validarInterpretacao(pedido({
+    ...vazio, ultimo: true, novo_valor: 0, nova_data: '2024-01-01', nova_conta: 'k9', nova_categoria: 'c99',
+  }), CONTEXTO).edicao;
+  assert.deepEqual(limpa.mudancas, {});
+  assert.equal(limpa.ultimo, true);
+  assert.deepEqual(
+    validarInterpretacao(pedido({ ...vazio, nova_data: '2026-10-05' }), CONTEXTO).edicao.mudancas,
+    { date: '2026-10-05' },
+  );
+  // Bloco ausente devolve o intent sem mudança: o app pergunta o que mudar.
+  assert.deepEqual(validarInterpretacao({ intent: 'edicao', operacoes: [], resposta: '' }, CONTEXTO).edicao.mudancas, {});
+});
+
+// Recorrência pela conversa (#263).
+test('recorrencia: ação da lista, mudança só em editar e sem mudança vira nao_entendi', () => {
+  const pedido = (recorrencia) => ({ intent: 'recorrencia', operacoes: [], resposta: '', recorrencia });
+  const vazio = { acao: null, alvo: null, a_partir_de: null, novo_valor: null, nova_categoria: null, nova_conta: null };
+  const editar = validarInterpretacao(pedido({ ...vazio, acao: 'editar', alvo: ' Academia ', a_partir_de: '2026-12-01', novo_valor: 130, nova_categoria: C.ali, nova_conta: 'k9' }), CONTEXTO);
+  assert.equal(editar.intent, 'recorrencia');
+  assert.deepEqual(
+    { ...editar.recorrencia, novaCategoria: editar.recorrencia.novaCategoria?.id },
+    { acao: 'editar', alvo: 'Academia', aPartirDe: '2026-12-01', novoValor: 130, novaCategoria: 'cat-ali', novaConta: null },
+  );
+  const encerrar = validarInterpretacao(pedido({ ...vazio, acao: 'encerrar', alvo: 'Spotify', novo_valor: 50 }), CONTEXTO).recorrencia;
+  assert.equal(encerrar.acao, 'encerrar');
+  assert.equal(encerrar.novoValor, null, 'encerrar não leva mudança');
+  assert.equal(validarInterpretacao(pedido({ ...vazio, acao: 'editar', alvo: 'Academia' }), CONTEXTO).intent, 'nao_entendi');
+  assert.equal(validarInterpretacao(pedido({ ...vazio, acao: 'pausar', alvo: 'Academia' }), CONTEXTO).intent, 'nao_entendi');
+});
+
+// Teto de gasto por categoria (#264).
+test('orcamento: só categoria de saída; definir pede valor, remover pede categoria', () => {
+  const pedido = (orcamento) => validarInterpretacao({ intent: 'orcamento', operacoes: [], resposta: '', orcamento }, CONTEXTO).orcamento;
+  const definir = pedido({ acao: 'definir', categoria: C.ali, valor: 600.004 });
+  assert.deepEqual({ ...definir, categoria: definir.categoria.id }, { acao: 'definir', categoria: 'cat-ali', valor: 600, incompleto: false });
+  assert.equal(pedido({ acao: 'definir', categoria: C.sal, valor: 600 }).acao, null, 'categoria de entrada não tem teto');
+  assert.equal(pedido({ acao: 'definir', categoria: C.ali, valor: null }).incompleto, true);
+  assert.equal(pedido({ acao: 'remover', categoria: null, valor: null }).acao, null);
+  const consultar = pedido({ acao: 'consultar', categoria: null, valor: 50 });
+  assert.deepEqual(consultar, { acao: 'consultar', categoria: null, valor: null, incompleto: false });
+});
+
+// Contas pela conversa (#266).
+test('conta: ação da lista, alvo pelo apelido e tipo só em criar', () => {
+  const pedido = (conta) => validarInterpretacao({ intent: 'conta', operacoes: [], resposta: '', conta }, CONTEXTO);
+  const criar = pedido({ acao: 'criar', alvo: K.cc, nome: ' Inter ', tipo: 'poupanca' }).conta;
+  assert.deepEqual(criar, { acao: 'criar', alvo: null, nome: 'Inter', accountType: 'savings' });
+  const arquivar = pedido({ acao: 'arquivar', alvo: K.pp, nome: null, tipo: 'corrente' }).conta;
+  assert.deepEqual({ ...arquivar, alvo: arquivar.alvo.id }, { acao: 'arquivar', alvo: 'conta-pp', nome: null, accountType: null });
+  assert.equal(pedido({ acao: 'renomear', alvo: 'k9', nome: 'X', tipo: null }).conta.alvo, null);
+  assert.equal(pedido({ acao: 'excluir', alvo: K.cc, nome: null, tipo: null }).intent, 'nao_entendi');
+});
+
+// Ocultar e reexibir categoria (#267).
+test('categoria: ocultar pelo apelido sem nome; reexibir pelo nome dito', () => {
+  const pedido = (categoria) => validarInterpretacao({ intent: 'categoria', operacoes: [], resposta: '', categoria }, CONTEXTO).categoria;
+  const ocultar = pedido({ acao: 'ocultar', tipo: null, alvo: C.edu, nome: 'Educação' });
+  assert.deepEqual({ ...ocultar, alvo: ocultar.alvo.id }, { acao: 'ocultar', tipo: 'saida', alvo: 'cat-edu', nome: null });
+  assert.deepEqual(pedido({ acao: 'reexibir', tipo: null, alvo: null, nome: 'Presentes' }), { acao: 'reexibir', tipo: null, alvo: null, nome: 'Presentes' });
 });
 
 // #190: lista de lançamentos e catálogo de categorias.

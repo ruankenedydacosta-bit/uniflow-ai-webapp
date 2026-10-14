@@ -366,6 +366,38 @@ test('exclusão de lançamento vai para a rota própria; sem o bloco (função a
   assert.equal(escolherRotaDaInterpretacao({ intent: 'exclusao', operacoes: [], resposta: '' }), null);
 });
 
+test('edição de lançamento salvo vai para a rota própria; sem o bloco (função antiga), as regras seguem', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'edicao', operacoes: [], resposta: '', edicao: { alvo: 'Mercado', mudancas: { amount: 50 } } }),
+    ROTAS_INTERPRETACAO.EDICAO,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'edicao', operacoes: [], resposta: '' }), null);
+});
+
+test('pedido sobre lançamento que se repete vai para a rota própria (#263)', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'recorrencia', operacoes: [], resposta: '', recorrencia: { acao: 'encerrar', alvo: 'Spotify' } }),
+    ROTAS_INTERPRETACAO.RECORRENCIA,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'recorrencia', operacoes: [], resposta: '' }), null);
+});
+
+test('pedido de teto de gasto vai para a rota própria (#264)', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'orcamento', operacoes: [], resposta: '', orcamento: { acao: 'consultar', categoria: null, valor: null } }),
+    ROTAS_INTERPRETACAO.ORCAMENTO,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'orcamento', operacoes: [], resposta: '' }), null);
+});
+
+test('pedido de conta vai para a rota própria (#266)', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'conta', operacoes: [], resposta: '', conta: { acao: 'criar', alvo: null, nome: 'Inter', accountType: null } }),
+    ROTAS_INTERPRETACAO.CONTA,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'conta', operacoes: [], resposta: '' }), null);
+});
+
 test('recorrência com frequência vai para o plano e vira série registrável (#222)', () => {
   const interpretacao = {
     intent: 'lancamento',

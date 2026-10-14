@@ -92,6 +92,27 @@ function serializar(validada) {
     ...(validada.exclusao ? {
       exclusao: { ...validada.exclusao, conta: paraCliente(validada.exclusao.conta) },
     } : {}),
+    ...(validada.edicao ? {
+      edicao: {
+        ...validada.edicao,
+        conta: paraCliente(validada.edicao.conta),
+        novaConta: paraCliente(validada.edicao.novaConta),
+        novaCategoria: paraCliente(validada.edicao.novaCategoria),
+      },
+    } : {}),
+    ...(validada.recorrencia ? {
+      recorrencia: {
+        ...validada.recorrencia,
+        novaCategoria: paraCliente(validada.recorrencia.novaCategoria),
+        novaConta: paraCliente(validada.recorrencia.novaConta),
+      },
+    } : {}),
+    ...(validada.orcamento ? {
+      orcamento: { ...validada.orcamento, categoria: paraCliente(validada.orcamento.categoria) },
+    } : {}),
+    ...(validada.conta ? {
+      conta: { ...validada.conta, alvo: paraCliente(validada.conta.alvo) },
+    } : {}),
     ...(consulta ? {
       consulta: {
         tipo: consulta.tipo,

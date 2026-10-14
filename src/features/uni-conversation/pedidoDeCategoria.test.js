@@ -79,8 +79,8 @@ test('excluir: card com a categoria; padrão do app, inexistente ou sem permiss�
 });
 
 test('ação desconhecida pede para dizer de novo', () => {
-  assert.match(montarPedidoDeCategoria({ acao: 'mover' }, DONO).erro, /criar, renomear ou excluir/);
-  assert.match(montarPedidoDeCategoria(null, DONO).erro, /criar, renomear ou excluir/);
+  assert.match(montarPedidoDeCategoria({ acao: 'mover' }, DONO).erro, /criar, renomear, excluir, ocultar ou mostrar/);
+  assert.match(montarPedidoDeCategoria(null, DONO).erro, /criar, renomear, excluir, ocultar ou mostrar/);
 });
 
 test('resposta ao card: o verbo da própria ação confirma; outro verbo ou outro nome não', () => {
@@ -99,4 +99,30 @@ test('resposta ao card: o verbo da própria ação confirma; outro verbo ou outr
   const criar = montarPedidoDeCategoria({ acao: 'criar', tipo: 'saida', nome: 'Impostos' }, DONO);
   assert.equal(respostaAoPedidoDeCategoria('pode criar', criar), 'confirm');
   assert.equal(respostaAoPedidoDeCategoria('cria impostos', criar), 'confirm');
+});
+
+// #267: ocultar e mostrar de novo, como na tela Categorias.
+test('ocultar: categoria pelo apelido, padrão pode, genérica não, oculta de novo não', () => {
+  const comPadrao = [...CATEGORIAS, { id: 'cat-lazer', name: 'Lazer', category_type: 'expense', is_system: true, workspace_id: null }];
+  const contexto = { ...DONO, categorias: comPadrao, ocultas: ['cat-bicos'] };
+  const pedido = montarPedidoDeCategoria({ acao: 'ocultar', alvo: { id: 'cat-lazer' }, nome: null }, contexto);
+  assert.equal(pedido.categoria.id, 'cat-lazer');
+  assert.equal(pedido.card.title, 'Ocultar categoria');
+  assert.match(pedido.texto, /^Vou ocultar a categoria Lazer\. Ela sai das escolhas e das sugestões/);
+  assert.match(textoDoPedidoFeito(pedido), /diga "mostra a categoria Lazer"/);
+  assert.match(montarPedidoDeCategoria({ acao: 'ocultar', alvo: { id: 'cat-outras' } }, contexto).erro, /genérica do app/);
+  assert.match(montarPedidoDeCategoria({ acao: 'ocultar', alvo: { id: 'cat-bicos' } }, contexto).erro, /já está oculta/);
+  assert.match(montarPedidoDeCategoria({ acao: 'ocultar', alvo: { id: 'cat-carro' } }, { ...contexto, papel: {} }).erro, /permissão/);
+});
+
+test('mostrar de novo: acha a oculta pelo nome dito', () => {
+  const contexto = { ...DONO, ocultas: ['cat-bicos'] };
+  const pedido = montarPedidoDeCategoria({ acao: 'reexibir', alvo: null, nome: 'bicos' }, contexto);
+  assert.equal(pedido.categoria.id, 'cat-bicos');
+  assert.equal(pedido.card.title, 'Mostrar categoria');
+  assert.equal(textoDoPedidoFeito(pedido), 'Categoria Bicos de volta nas escolhas.');
+  assert.match(montarPedidoDeCategoria({ acao: 'reexibir', nome: 'Carro' }, contexto).erro, /Carro já aparece nas escolhas/);
+  assert.match(montarPedidoDeCategoria({ acao: 'ocultar', alvo: null, nome: 'Bicos' }, contexto).erro, /Bicos já está oculta/);
+  assert.match(montarPedidoDeCategoria({ acao: 'reexibir', nome: 'Viagem' }, contexto).erro, /Não encontrei essa categoria/);
+  assert.equal(respostaAoPedidoDeCategoria('pode mostrar', pedido), 'confirm');
 });

@@ -132,6 +132,7 @@ import {
 } from '../uni-interpret/uniInterpretRoteamento.js';
 import {
   consultaRespondivel,
+  periodoAnterior,
   memoriaDaConsulta,
   periodoDaConsulta,
   responderConsulta,
@@ -226,6 +227,20 @@ import {
   listTransactionsForPeriod,
   updateTransaction,
 } from '../../services/transactionService.js';
+import { localizarSerie, montarPedidoDeRecorrencia } from '../uni-conversation/pedidoDeRecorrencia.js';
+import {
+  montarPedidoDeOrcamento,
+  respostaDaConsultaDeOrcamento,
+  TEXTO_ORCAMENTO_INCOMPLETO,
+} from '../uni-conversation/pedidoDeOrcamento.js';
+import { deleteCategoryBudget, listCategoryBudgets, saveCategoryBudget } from '../../services/categoryBudgetService.js';
+import { montarPedidoDeConta } from '../uni-conversation/pedidoDeConta.js';
+import {
+  acharPrevisto,
+  janelaDosPrevistos,
+  mudancasDaConfirmacao,
+  podeSerConfirmacaoDePrevisto,
+} from '../uni-conversation/confirmacaoDePrevisto.js';
 import {
   analisarAlvo,
   cardDaAlteracao,
@@ -254,6 +269,9 @@ const EDICAO_TTL_MS = 15 * 60 * 1000;
 // "corrige pra 50" vale para o lançamento confirmado há até 30 minutos.
 const ULTIMO_CONFIRMADO_TTL_MS = 30 * 60 * 1000;
 const TEXTO_EDICAO_VENCIDA = 'Essa alteração expirou e nada foi salvo. Peça de novo se ainda quiser alterar.';
+const TEXTO_ACAO_VENCIDA = 'Esse pedido expirou e nada foi salvo. Peça de novo se ainda quiser.';
+const TEXTO_EDICAO_SEM_MUDANCA = 'O que você quer mudar nesse lançamento: valor, data, conta, categoria ou descrição? Diga junto o lançamento, por exemplo: "o mercado de ontem foi 50".';
+const TEXTO_EDICAO_SEM_ALVO = 'Diga qual lançamento quer alterar, com o nome e o dia ou o valor. Por exemplo: "o mercado de ontem foi 50, não 40".';
 const TEXTO_CATEGORIA_VENCIDA = 'Esse pedido de categoria expirou e nada foi salvo. Peça de novo se ainda quiser.';
 const TEXTO_META_VENCIDA = 'Esse pedido de meta expirou e nada foi salvo. Peça de novo se ainda quiser.';
 const TEXTO_EXCLUSAO_VENCIDA = 'Esse pedido de exclusão expirou e nada foi apagado. Peça de novo se ainda quiser excluir.';
@@ -1062,6 +1080,7 @@ export default function UniChatPage({ variant = 'full' }) {
     encerrarExclusao('expired');
     encerrarPedidoDeCategoria('expired');
     encerrarPedidoDeMeta('expired');
+    encerrarAcaoPendente('expired');
   }
 
   // Edição de lançamento já salvo pedida em conversa ("corrige o mercado de
@@ -1271,6 +1290,90 @@ export default function UniChatPage({ variant = 'full' }) {
     return true;
   }
 
+  // Pedido de edição vindo do uni-interpret (#261): mesmos critérios de busca
+  // da exclusão e a mudança já resolvida para ids do espaço.
+  function iniciarEdicaoDoModelo(edicao, turnToken) {
+    const contexto = contextoDaEdicao();
+    const mudancas = edicao.mudancas ?? {};
+    if (!Object.keys(mudancas).length) {
+      createAssistantResponse(TEXTO_EDICAO_SEM_MUDANCA, { deduplicateNarration: false });
+      return;
+    }
+    const alvo = alvoDaExclusao(edicao, contexto);
+    if (edicao.ultimo && !alvo.criterios) {
+      const transacaoId = ultimoConfirmadoValido()?.id ?? ultimoLancamentoCriado()?.id ?? null;
+      if (!transacaoId) {
+        createAssistantResponse('Não achei um lançamento recente para alterar. Diga qual é, com o nome e o dia ou o valor.', { deduplicateNarration: false });
+        return;
+      }
+      void prepararAlteracao(transacaoId, mudancas, turnToken);
+      return;
+    }
+    if (!alvo.criterios) {
+      createAssistantResponse(TEXTO_EDICAO_SEM_ALVO, { deduplicateNarration: false });
+      return;
+    }
+    const resultado = localizarLancamento(alvo, transactionsState.transactions, { categories: categoryState.categories });
+    // "Esse último Uber foi 30": o último confirmado vale se bater com a pista,
+    // como na exclusão.
+    const ultimoId = edicao.ultimo ? ultimoConfirmadoValido()?.id ?? null : null;
+    if (ultimoId && resultado.tipo === 'varios' && resultado.candidatos.some((candidato) => candidato.id === ultimoId)) {
+      void prepararAlteracao(ultimoId, mudancas, turnToken);
+      return;
+    }
+    if (resultado.tipo === 'nenhum') {
+      if (alvo.data) {
+        void buscarAlvoNoDia(alvo, mudancas, turnToken);
+      } else {
+        createAssistantResponse(
+          'Não encontrei esse lançamento entre os mais recentes. Diga também o dia ou o valor dele.',
+          { deduplicateNarration: false },
+        );
+      }
+      return;
+    }
+    publicarResultadoDaBusca(resultado, mudancas, turnToken);
+  }
+
+  // "Já paguei o aluguel" com o aluguel previsto (#262): oferece confirmar o
+  // previsto em vez de abrir um lançamento novo. false quando não há previsto
+  // parecido e a frase segue como lançamento.
+  async function tentarConfirmarPrevisto(operacao, texto, turnToken) {
+    const referenceDate = getLocalIsoDate();
+    // Só quem certamente não pode alterar pula a busca. Com o papel ainda
+    // carregando ou ilegível, quem decide é a RLS no Confirmar: pular
+    // abriria um lançamento novo e duplicaria o previsto.
+    const naoPodeAlterar = !workspaceRole.isLoading && !workspaceRole.error && workspaceRole.canUpdate !== true;
+    if (naoPodeAlterar || !podeSerConfirmacaoDePrevisto(operacao, texto, referenceDate)) return false;
+    const conversationId = activeIdRef.current;
+    const { dateFrom, dateTo } = janelaDosPrevistos(referenceDate);
+    const lidos = await listTransactionsForPeriod(effectiveWorkspace?.id, { status: 'pending', dateFrom, dateTo })
+      .catch(() => null);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return true;
+    const resultado = acharPrevisto(operacao, lidos?.data ?? [], { referenceDate, categories: categoryState.categories });
+    if (resultado.tipo === 'nenhum') return false;
+    setIsTyping(false);
+    const mudancas = mudancasDaConfirmacao(operacao, referenceDate);
+    if (resultado.tipo === 'unico') {
+      void prepararAlteracao(resultado.transacao.id, mudancas, turnToken);
+      return true;
+    }
+    createAssistantResponse(
+      textoDaEscolha(resultado.candidatos, resultado.total, { ...contextoDaEdicao(), verbo: 'confirmar' }),
+      { deduplicateNarration: false },
+    );
+    setEdicaoPendente({
+      etapa: 'escolher',
+      candidatos: resultado.candidatos,
+      mudancas,
+      messageId: null,
+      workspaceId: effectiveWorkspace?.id,
+      conversationId,
+      criadaEm: Date.now(),
+    });
+    return true;
+  }
+
   // Resposta com a edição pendente. false quando a frase é outro assunto:
   // a edição é descartada e a frase segue o caminho de sempre.
   function tratarRespostaDaEdicao(texto, userMsg, turnToken) {
@@ -1439,6 +1542,7 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     const pronto = montarPedidoDeCategoria(pedidoDoModelo, {
       categorias: categoryState.categories,
+      ocultas: (categoryState.categoriasOcultas ?? []).map((categoria) => categoria.id),
       // Sem conseguir ler o papel, quem decide é a regra do banco (RLS): o
       // card aparece e um erro de permissão volta no Confirmar.
       papel: workspaceRole.error ? { canUpdate: true, canDelete: true } : workspaceRole,
@@ -1513,6 +1617,10 @@ export default function UniChatPage({ variant = 'full' }) {
         resultado = await categoryState.saveCategory({ name: pronto.nome, category_type: pronto.categoryType });
       } else if (pronto.acao === 'renomear') {
         resultado = await categoryState.saveCategory({ name: pronto.nome }, pronto.categoria.id);
+      } else if (pronto.acao === 'ocultar') {
+        resultado = await categoryState.ocultarCategoria(pronto.categoria.id);
+      } else if (pronto.acao === 'reexibir') {
+        resultado = await categoryState.reexibirCategoria(pronto.categoria.id);
       } else {
         resultado = await categoryState.removeCategory(pronto.categoria.id);
       }
@@ -1553,6 +1661,269 @@ export default function UniChatPage({ variant = 'full' }) {
     categoriaPendenteRef.current = null;
     setExecutionError(null);
     createAssistantResponse(withFollowUpQuestion('Tudo bem. Não mudei nenhuma categoria.'));
+  }
+
+  // Ação de um passo esperando o Confirmar do card: recorrência (#263),
+  // orçamento (#264) e conta (#266). Mesma pendência paralela do pedido de
+  // categoria, com o mesmo prazo. `executar` grava pelo service da tela e
+  // devolve { error }.
+  const acaoPendenteRef = useRef(null);
+
+  function acaoPendenteAtiva(pendente = acaoPendenteRef.current) {
+    return Boolean(
+      pendente
+      && Date.now() - pendente.criadaEm <= EDICAO_TTL_MS
+      && pendente.conversationId === activeIdRef.current
+      && pendente.workspaceId === effectiveWorkspace?.id,
+    );
+  }
+
+  function encerrarAcaoPendente(status) {
+    const pendente = acaoPendenteRef.current;
+    if (!pendente) return;
+    if (status && pendente.messageId) {
+      setMessages((current) => current.map((message) => (
+        message.id === pendente.messageId && message.confirmation?.status === 'pending'
+          ? { ...message, confirmation: { ...message.confirmation, status } }
+          : message
+      )));
+    }
+    acaoPendenteRef.current = null;
+  }
+
+  // pronto: { texto, card, executar, textoFeito, textoDoErro, textoCancelado }.
+  function oferecerAcao(pronto) {
+    encerrarAcaoPendente('expired');
+    const message = createAssistantResponse(pronto.texto, {
+      type: 'confirmation',
+      confirmation: pronto.card,
+      deduplicateNarration: false,
+    });
+    acaoPendenteRef.current = {
+      ...pronto,
+      messageId: message?.id ?? null,
+      workspaceId: effectiveWorkspace?.id,
+      conversationId: activeIdRef.current,
+      criadaEm: Date.now(),
+    };
+  }
+
+  // Frase nova com uma ação guardada. true quando ela já foi respondida aqui.
+  function tratarAcaoPendente(texto, userMsg) {
+    const pendente = acaoPendenteRef.current;
+    if (!pendente) return false;
+    const resposta = classifyPendingActionReply(texto);
+    if (!acaoPendenteAtiva(pendente)) {
+      encerrarAcaoPendente('expired');
+      if (resposta === 'input') return false;
+      syncMessageToSupabase(userMsg);
+      createAssistantResponse(TEXTO_ACAO_VENCIDA, { deduplicateNarration: false });
+      return true;
+    }
+    if (resposta === 'confirm') {
+      syncMessageToSupabase(userMsg);
+      void confirmarAcaoPendente(pendente.messageId);
+      return true;
+    }
+    if (resposta === 'cancel') {
+      syncMessageToSupabase(userMsg);
+      cancelarAcaoPendente(pendente.messageId);
+      return true;
+    }
+    encerrarAcaoPendente('expired');
+    return false;
+  }
+
+  async function confirmarAcaoPendente(id) {
+    const pendente = acaoPendenteRef.current;
+    if (!acaoPendenteAtiva(pendente) || confirmingRef.current) return;
+    const messageId = id ?? pendente.messageId;
+    confirmingRef.current = true;
+    setIsExecutingAction(true);
+    setExecutionError(null);
+    try {
+      const resultado = await pendente.executar();
+      if (resultado?.error) {
+        reportConfirmationError(messageId, pendente.textoDoErro);
+        return;
+      }
+      // Gravou: a ação acaba mesmo que a pessoa tenha trocado de conversa,
+      // senão um "sim" depois gravaria de novo.
+      acaoPendenteRef.current = null;
+      setMessages((current) => current.map((message) => (
+        message.id === messageId
+          ? { ...message, confirmation: { ...message.confirmation, status: 'confirmed' } }
+          : message
+      )));
+      notifyFinancialDataChanged('uni-chat');
+      if (activeIdRef.current !== pendente.conversationId) return;
+      createAssistantResponse(withFollowUpQuestion(pendente.textoFeito));
+    } catch {
+      reportConfirmationError(messageId, 'Ocorreu um erro inesperado. Tente novamente.');
+    } finally {
+      setIsExecutingAction(false);
+      confirmingRef.current = false;
+    }
+  }
+
+  function cancelarAcaoPendente(id) {
+    const pendente = acaoPendenteRef.current;
+    if (!pendente) return;
+    setMessages((current) => current.map((message) => (
+      message.id === (id ?? pendente.messageId)
+        ? { ...message, confirmation: { ...message.confirmation, status: 'canceled' } }
+        : message
+    )));
+    acaoPendenteRef.current = null;
+    setExecutionError(null);
+    createAssistantResponse(withFollowUpQuestion(pendente.textoCancelado ?? 'Tudo bem. Não mudei nada.'));
+  }
+
+  // Recorrência pelo uni-interpret (#263): acha a série entre os previstos
+  // e mostra o card. A RPC da tela muda ou apaga "este e os próximos".
+  async function iniciarPedidoDeRecorrencia(pedido, turnToken) {
+    const conversationId = activeIdRef.current;
+    const referenceDate = getLocalIsoDate();
+    setIsTyping(true);
+    // Todas as páginas, em ordem de data: a série gera 3 meses à frente e a
+    // mudança pode valer até um ano depois.
+    const lidos = await listTransactionsForPeriod(effectiveWorkspace?.id, {
+      status: 'pending',
+      dateFrom: referenceDate,
+      dateTo: `${Number(referenceDate.slice(0, 4)) + 1}${referenceDate.slice(4)}`,
+    }).catch(() => null);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
+    setIsTyping(false);
+    if (!lidos || lidos.error) {
+      createAssistantResponse('Não consegui ler seus lançamentos agora. Tente de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    const achado = localizarSerie(pedido.alvo, lidos.data ?? [], {
+      categories: categoryState.categories,
+      aPartirDe: pedido.aPartirDe,
+      referenceDate,
+    });
+    if (achado.tipo === 'nenhum') {
+      createAssistantResponse(
+        pedido.alvo
+          ? `Não achei um lançamento que se repete com o nome ${pedido.alvo} e previstos daqui para a frente. Confira o nome na tela Financeiro.`
+          : 'Diga qual lançamento que se repete você quer mudar. Por exemplo: "a academia sobe pra 130".',
+        { deduplicateNarration: false },
+      );
+      return;
+    }
+    if (achado.tipo === 'homonimas') {
+      createAssistantResponse(
+        `Achei ${achado.quantas} lançamentos que se repetem chamados ${achado.nome}. Mude o certo pela tela Financeiro, que mostra cada um.`,
+        { deduplicateNarration: false },
+      );
+      return;
+    }
+    if (achado.tipo === 'varios') {
+      createAssistantResponse(
+        `Achei mais de um lançamento que se repete com esse nome: ${achado.nomes.join(', ')}. Diga o nome completo de qual deles.`,
+        { deduplicateNarration: false },
+      );
+      return;
+    }
+    const pronto = montarPedidoDeRecorrencia(pedido, achado.serie, {
+      accounts: accountState.accounts,
+      categories: categoryState.categories,
+    });
+    if (pronto.erro) {
+      createAssistantResponse(pronto.erro, { deduplicateNarration: false });
+      return;
+    }
+    const { chamada } = pronto;
+    oferecerAcao({
+      ...pronto,
+      executar: () => (chamada.rpc === 'excluir'
+        ? transactionsState.removeSeriesTransactions(chamada.transacaoId, chamada.escopo)
+        : transactionsState.saveSeriesTransactions(chamada.transacaoId, chamada.escopo, chamada.alteracoes)),
+      textoDoErro: 'Não consegui mudar a série. Tente de novo ou use a tela Financeiro.',
+      textoCancelado: 'Tudo bem. A série continua como estava.',
+    });
+  }
+
+  // Teto de gasto por categoria pelo uni-interpret (#264). Consultar lê o
+  // gasto realizado do mês; definir e remover passam pelo card.
+  async function iniciarPedidoDeOrcamento(pedido, turnToken) {
+    if (pedido.acao !== 'consultar' && workspaceRole.isLoading) {
+      createAssistantResponse('Ainda estou carregando as permissões deste espaço. Peça de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    if (!pedido.acao) {
+      createAssistantResponse(TEXTO_ORCAMENTO_INCOMPLETO, { deduplicateNarration: false });
+      return;
+    }
+    const workspaceId = effectiveWorkspace?.id;
+    const conversationId = activeIdRef.current;
+    setIsTyping(true);
+    const hoje = getLocalIsoDate();
+    const [orcamentos, doMes] = await Promise.all([
+      listCategoryBudgets(workspaceId).catch(() => null),
+      pedido.acao === 'consultar'
+        ? listTransactionsForPeriod(workspaceId, { dateFrom: `${hoje.slice(0, 7)}-01`, dateTo: hoje, status: 'completed' }).catch(() => null)
+        : Promise.resolve({ data: [] }),
+    ]);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
+    setIsTyping(false);
+    if (!orcamentos || orcamentos.error || !doMes || doMes.error) {
+      createAssistantResponse('Não consegui ler seus tetos de gasto agora. Tente de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    if (pedido.acao === 'consultar') {
+      createAssistantResponse(respostaDaConsultaDeOrcamento(pedido, {
+        orcamentos: orcamentos.data,
+        categorias: categoryState.categories,
+        transacoes: doMes.data,
+      }), { deduplicateNarration: false });
+      return;
+    }
+    const pronto = montarPedidoDeOrcamento(pedido, {
+      orcamentos: orcamentos.data,
+      // Sem conseguir ler o papel, quem decide é a RLS, como no pedido de categoria.
+      papel: workspaceRole.error ? { canUpdate: true } : workspaceRole,
+    });
+    if (pronto.erro) {
+      createAssistantResponse(pronto.erro, { deduplicateNarration: false });
+      return;
+    }
+    const { chamada } = pronto;
+    oferecerAcao({
+      ...pronto,
+      executar: () => (chamada.acao === 'remover'
+        ? deleteCategoryBudget(workspaceId, chamada.categoriaId)
+        : saveCategoryBudget(workspaceId, chamada.categoriaId, chamada.valor)),
+      textoDoErro: 'Não consegui salvar o teto. Tente de novo ou use a tela Registros.',
+      textoCancelado: 'Tudo bem. O teto continua como estava.',
+    });
+  }
+
+  // Conta pelo uni-interpret (#266): criar, renomear, arquivar e reativar,
+  // pelo mesmo hook da tela Contas.
+  function iniciarPedidoDeConta(pedido) {
+    if (workspaceRole.isLoading) {
+      createAssistantResponse('Ainda estou carregando as permissões deste espaço. Peça de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    const pronto = montarPedidoDeConta(pedido, {
+      contas: accountState.accounts,
+      // Sem conseguir ler o papel, quem decide é a RLS, como no pedido de categoria.
+      papel: workspaceRole.error ? { canUpdate: true } : workspaceRole,
+      workspaceId: effectiveWorkspace?.id,
+    });
+    if (pronto.erro) {
+      createAssistantResponse(pronto.erro, { deduplicateNarration: false });
+      return;
+    }
+    const { chamada } = pronto;
+    oferecerAcao({
+      ...pronto,
+      executar: () => accountState.saveAccount(chamada.valores, chamada.contaId),
+      textoDoErro: 'Não consegui salvar a conta. Tente de novo ou use a tela Contas.',
+      textoCancelado: 'Tudo bem. Não mudei nenhuma conta.',
+    });
   }
 
   // Pedido de meta (criar, alterar, excluir) esperando o Confirmar do card
@@ -3859,14 +4230,25 @@ export default function UniChatPage({ variant = 'full' }) {
       return responderConsulta({ consulta, transacoes: [], dataReferencia, ...catalogo });
     }
     const periodo = periodoDaConsulta(consulta, dataReferencia);
+    // Período futuro, previsão e contas a pagar leem os previstos
+    // (statusDaConsulta); a comparação lê também o período anterior, já
+    // realizado (#265).
+    const ler = ({ inicio, fim }, status) => listTransactionsForPeriod(effectiveWorkspace.id, {
+      dateFrom: inicio,
+      dateTo: fim,
+      status,
+    });
     try {
-      const { data, error } = await listTransactionsForPeriod(effectiveWorkspace.id, {
-        dateFrom: periodo.inicio,
-        dateTo: periodo.fim,
-        status: statusDaConsulta(consulta, dataReferencia),
+      const [atual, anterior] = await Promise.all([
+        ler(periodo, statusDaConsulta(consulta, dataReferencia)),
+        consulta.tipo === 'comparacao'
+          ? ler(periodoAnterior(periodo, dataReferencia), 'completed')
+          : Promise.resolve({ data: [] }),
+      ]);
+      if (atual.error || anterior.error) return null;
+      return responderConsulta({
+        consulta, transacoes: atual.data, transacoesAnteriores: anterior.data, dataReferencia, ...catalogo,
       });
-      if (error) return null;
-      return responderConsulta({ consulta, transacoes: data, dataReferencia, ...catalogo });
     } catch {
       return null;
     }
@@ -3898,6 +4280,7 @@ export default function UniChatPage({ variant = 'full' }) {
 
     switch (rota) {
       case ROTAS_INTERPRETACAO.LANCAMENTO: {
+        if (await tentarConfirmarPrevisto(interpretacao.operacoes[0], text, turnToken)) return true;
         const { parsed, overrides } = interpretacaoParaRascunho(interpretacao, text);
         const result = financialConversation.startFromParsed(parsed, overrides);
         if (!result.handled) {
@@ -3969,6 +4352,20 @@ export default function UniChatPage({ variant = 'full' }) {
       case ROTAS_INTERPRETACAO.EXCLUSAO:
         setIsTyping(false);
         await iniciarExclusao(interpretacao.exclusao, turnToken);
+        return true;
+      case ROTAS_INTERPRETACAO.RECORRENCIA:
+        await iniciarPedidoDeRecorrencia(interpretacao.recorrencia, turnToken);
+        return true;
+      case ROTAS_INTERPRETACAO.ORCAMENTO:
+        await iniciarPedidoDeOrcamento(interpretacao.orcamento, turnToken);
+        return true;
+      case ROTAS_INTERPRETACAO.CONTA:
+        setIsTyping(false);
+        iniciarPedidoDeConta(interpretacao.conta);
+        return true;
+      case ROTAS_INTERPRETACAO.EDICAO:
+        setIsTyping(false);
+        iniciarEdicaoDoModelo(interpretacao.edicao, turnToken);
         return true;
       case ROTAS_INTERPRETACAO.CONVERSA:
         setIsTyping(false);
@@ -4081,6 +4478,7 @@ export default function UniChatPage({ variant = 'full' }) {
     // andamento, "corrige…" continua sendo deles.
     if (!hasPendingFinancialConversation && !hasPendingAgendaConversation) {
       if (tratarPedidoDeCategoriaPendente(functionalText, userMsg)) return;
+      if (tratarAcaoPendente(functionalText, userMsg)) return;
       if (tratarPedidoDeMetaPendente(functionalText, userMsg)) return;
       if (edicaoPendenteRef.current && !edicaoAtiva()) {
         const vencida = edicaoPendenteRef.current;
@@ -4101,6 +4499,7 @@ export default function UniChatPage({ variant = 'full' }) {
       if (exclusaoPendenteRef.current) encerrarExclusao('expired');
       encerrarPedidoDeCategoria('expired');
       encerrarPedidoDeMeta('expired');
+      encerrarAcaoPendente('expired');
     }
     if (hasAgendaConversation) {
       syncMessageToSupabase(userMsg);
@@ -4363,6 +4762,15 @@ export default function UniChatPage({ variant = 'full' }) {
       } else {
         encerrarExclusao('expired');
         reportConfirmationError(id, TEXTO_EXCLUSAO_VENCIDA);
+      }
+      return;
+    }
+    if (acaoPendenteRef.current?.messageId === id) {
+      if (acaoPendenteAtiva()) {
+        await confirmarAcaoPendente(id);
+      } else {
+        encerrarAcaoPendente('expired');
+        reportConfirmationError(id, TEXTO_ACAO_VENCIDA);
       }
       return;
     }
@@ -4731,6 +5139,10 @@ export default function UniChatPage({ variant = 'full' }) {
     }
     if (exclusaoPendenteRef.current?.messageId === id) {
       cancelarExclusao(id);
+      return;
+    }
+    if (acaoPendenteRef.current?.messageId === id) {
+      cancelarAcaoPendente(id);
       return;
     }
     if (

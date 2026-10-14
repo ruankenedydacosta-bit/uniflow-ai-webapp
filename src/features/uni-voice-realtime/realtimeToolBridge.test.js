@@ -358,8 +358,8 @@ test('a sessão manda criar, mudar, excluir, consultar meta e registrar aporte p
   assert.match(EDGE_SOURCE, /o pedido de categoria ou o pedido de meta que está aguardando confirmação/);
 });
 
-test('a sessão manda criar, renomear ou excluir categoria pelo chat, com card e confirmação', () => {
-  assert.match(EDGE_SOURCE, /Para criar, renomear ou excluir uma categoria, passe a frase com enviar_para_uni\./);
+test('a sessão manda criar, renomear, excluir, ocultar ou mostrar categoria pelo chat, com card e confirmação', () => {
+  assert.match(EDGE_SOURCE, /Para criar, renomear, excluir, ocultar ou voltar a mostrar uma categoria, passe a frase com enviar_para_uni\./);
   assert.match(EDGE_SOURCE, /Quando a pessoa aceitar ou recusar, use responder_rascunho\./);
   assert.doesNotMatch(EDGE_SOURCE, /ainda não dá pela conversa/);
 });

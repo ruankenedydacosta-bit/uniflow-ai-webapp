@@ -10,8 +10,18 @@ import { roundMoney } from '../uni-chat/financialSnapshot.js';
 import { normalizeSearchText } from '../../utils/searchText.js';
 import { splitCategoriesByType } from '../categories/categoryUtils.js';
 
-const TIPOS_RESPONDIVEIS = new Set(['saidas', 'entradas', 'resumo', 'previsao', 'lancamentos', 'categorias']);
-const TRANSACTION_TYPE_POR_TIPO = Object.freeze({ saidas: 'expense', entradas: 'income' });
+const TIPOS_RESPONDIVEIS = new Set([
+  'saidas', 'entradas', 'resumo', 'previsao', 'lancamentos', 'categorias', 'maior_gasto', 'comparacao', 'a_pagar',
+]);
+// Quantas categorias o maior gasto cita depois da primeira.
+const MAX_CATEGORIAS_SEGUINTES = 2;
+// Sem período, "o que tenho pra pagar" olha os próximos 7 dias e as
+// atrasadas de até 45 dias, que ainda estão por pagar.
+const DIAS_A_PAGAR = 7;
+const DIAS_DE_ATRASO = 45;
+const TRANSACTION_TYPE_POR_TIPO = Object.freeze({
+  saidas: 'expense', entradas: 'income', comparacao: 'expense', a_pagar: 'expense',
+});
 
 // Quantos lançamentos a resposta lista por extenso. A voz lê a resposta
 // inteira; o resto fica na tela Financeiro.
@@ -41,12 +51,37 @@ export function consultaRespondivel(consulta) {
   return TIPOS_RESPONDIVEIS.has(consulta?.tipo);
 }
 
-// Sem período, vale o mês da data de referência.
+// Sem período, vale o mês da data de referência; em a_pagar, os próximos
+// 7 dias.
 export function periodoDaConsulta(consulta, dataReferencia) {
   if (consulta?.inicio && consulta?.fim) return { inicio: consulta.inicio, fim: consulta.fim };
+  if (consulta?.tipo === 'a_pagar') {
+    return { inicio: deslocarDias(dataReferencia, -DIAS_DE_ATRASO), fim: deslocarDias(dataReferencia, DIAS_A_PAGAR) };
+  }
   const [ano, mes] = dataReferencia.split('-').map(Number);
   const prefixo = dataReferencia.slice(0, 7);
   return { inicio: `${prefixo}-01`, fim: `${prefixo}-${String(ultimoDiaDoMes(ano, mes)).padStart(2, '0')}` };
+}
+
+// Período anterior para a comparação. Mês inteiro compara com o mês
+// anterior; outro período, com o mesmo número de dias logo antes. Período
+// ainda em andamento compara só o trecho que já passou: de 1 a 14 de outubro
+// contra de 1 a 14 de setembro.
+export function periodoAnterior({ inicio, fim }, dataReferencia = fim) {
+  const fimEfetivo = fim > dataReferencia ? dataReferencia : fim;
+  const decorridos = Math.round((emUtc(fimEfetivo) - emUtc(inicio)) / 86400000);
+  const [anoInicio, mesInicio, diaInicio] = inicio.split('-').map(Number);
+  const [anoFim, mesFim, diaFim] = fim.split('-').map(Number);
+  if (anoInicio === anoFim && mesInicio === mesFim && diaInicio === 1 && diaFim === ultimoDiaDoMes(anoFim, mesFim)) {
+    const fimDoMesAnterior = deslocarDias(inicio, -1);
+    const inicioAnterior = `${fimDoMesAnterior.slice(0, 7)}-01`;
+    if (fimEfetivo === fim) return { inicio: inicioAnterior, fim: fimDoMesAnterior };
+    const fimAnterior = deslocarDias(inicioAnterior, decorridos);
+    return { inicio: inicioAnterior, fim: fimAnterior < fimDoMesAnterior ? fimAnterior : fimDoMesAnterior };
+  }
+  const dias = Math.round((emUtc(fim) - emUtc(inicio)) / 86400000) + 1;
+  const inicioAnterior = deslocarDias(inicio, -dias);
+  return { inicio: inicioAnterior, fim: deslocarDias(inicioAnterior, decorridos) };
 }
 
 function diaEMes(iso, comAno) {
@@ -197,6 +232,60 @@ function responderLancamentos({ encontradas, quando, filtro, contas, previsto })
   return `${quando}, encontrei ${contagem(encontradas.length, nomeSingular, nomePlural)}${filtro}${soma}.${abertura}${linhas.join('; ')}.${fecho}`;
 }
 
+// "Em agosto, onde você mais gastou foi Alimentação: R$ 1.200,00, 40% das
+// saídas. Depois vêm Transporte, R$ 400,00, e Lazer, R$ 300,00."
+function responderMaiorGasto({ saidas, quando, naConta, categorias }) {
+  if (saidas.length === 0) return `${quando}, não encontrei saídas${naConta}.`;
+  const nomes = new Map((Array.isArray(categorias) ? categorias : []).map((categoria) => [categoria.id, categoria.name]));
+  const porCategoria = new Map();
+  for (const transacao of saidas) {
+    const nome = nomes.get(transacao.category_id) ?? 'Sem categoria';
+    porCategoria.set(nome, roundMoney((porCategoria.get(nome) ?? 0) + roundMoney(transacao.amount)));
+  }
+  const ranking = [...porCategoria.entries()].sort((a, b) => b[1] - a[1]);
+  const total = somar(saidas);
+  const [[primeira, valor], ...resto] = ranking;
+  const parte = total > 0 ? Math.round((valor / total) * 100) : 0;
+  const seguintes = resto.slice(0, MAX_CATEGORIAS_SEGUINTES).map(([nome, soma]) => `${nome}, ${formatCurrency(soma)}`);
+  const depois = seguintes.length ? ` Depois ${seguintes.length === 1 ? 'vem' : 'vêm'} ${enumerar(seguintes)}.` : '';
+  return `${quando}${naConta}, onde você mais gastou foi ${primeira}: ${formatCurrency(valor)}, ${parte}% das saídas.${depois}`;
+}
+
+// "Neste mês você gastou R$ 1.500,00; no mês passado, R$ 1.200,00. São
+// R$ 300,00 a mais, 25%."
+function responderComparacao({ atual, anterior, quando, quandoAnterior, filtro }) {
+  const somaAtual = somar(atual);
+  const somaAnterior = somar(anterior);
+  const abertura = `${quando} você gastou ${formatCurrency(somaAtual)}${filtro}; ${quandoAnterior}, ${formatCurrency(somaAnterior)}.`;
+  const diferenca = roundMoney(somaAtual - somaAnterior);
+  if (diferenca === 0) return `${abertura} Ficou igual.`;
+  const sentido = diferenca > 0 ? 'a mais' : 'a menos';
+  const percentual = somaAnterior > 0 ? `, ${Math.round((Math.abs(diferenca) / somaAnterior) * 100)}%` : '';
+  return `${abertura} São ${formatCurrency(Math.abs(diferenca))} ${sentido}${percentual}.`;
+}
+
+// Saídas previstas, da mais próxima à mais distante. A voz lê a resposta
+// inteira; o resto fica em Registros. Sem período na pergunta, as
+// atrasadas vêm à parte, depois das próximas.
+function responderAPagar({ previstas, quando, filtro, contas, atrasadas = null }) {
+  if (atrasadas) {
+    const proximas = responderAPagar({ previstas, quando: 'Nos próximos 7 dias', filtro, contas });
+    if (atrasadas.length === 0) return proximas;
+    const ordenadas = [...atrasadas].sort((a, b) => String(a.transaction_date).localeCompare(String(b.transaction_date)));
+    const contasPorId = new Map((Array.isArray(contas) ? contas : []).map((conta) => [conta.id, conta]));
+    const linhas = ordenadas.slice(0, MAX_LANCAMENTOS_LISTADOS).map((transacao) => linhaDoLancamento(transacao, contasPorId));
+    return `${proximas} Atrasadas: ${contagem(atrasadas.length, 'saída', 'saídas')}, que ${atrasadas.length === 1 ? 'soma' : 'somam'} ${formatCurrency(somar(atrasadas))}: ${linhas.join('; ')}.`;
+  }
+  if (previstas.length === 0) return `${quando}, você não tem saídas previstas${filtro}.`;
+  const contasPorId = new Map((Array.isArray(contas) ? contas : []).map((conta) => [conta.id, conta]));
+  const ordenadas = [...previstas].sort((a, b) => String(a.transaction_date).localeCompare(String(b.transaction_date)));
+  const linhas = ordenadas.slice(0, MAX_LANCAMENTOS_LISTADOS).map((transacao) => linhaDoLancamento(transacao, contasPorId));
+  const restantes = previstas.length - linhas.length;
+  const fecho = restantes > 0 ? ` E mais ${contagem(restantes, 'saída prevista', 'saídas previstas')}, que você vê em Registros.` : '';
+  const verbo = previstas.length === 1 ? 'que soma' : 'que somam';
+  return `${quando}, você tem ${contagem(previstas.length, 'saída prevista', 'saídas previstas')}${filtro}, ${verbo} ${formatCurrency(somar(previstas))}: ${linhas.join('; ')}.${fecho}`;
+}
+
 // Os recorrentes só viram lançamentos previstos até 3 meses à frente
 // (migration 071). Depois disso, a previsão não os tem.
 export const MESES_DE_RECORRENTES_PREVISTOS = 3;
@@ -204,7 +293,7 @@ export const MESES_DE_RECORRENTES_PREVISTOS = 3;
 // A previsão e o período que começa depois de hoje leem os lançamentos
 // previstos: o que já foi registrado não está no futuro.
 export function consultaPrevista(consulta, dataReferencia) {
-  if (consulta?.tipo === 'previsao') return true;
+  if (consulta?.tipo === 'previsao' || consulta?.tipo === 'a_pagar') return true;
   return Boolean(consulta?.inicio) && consulta.inicio > dataReferencia;
 }
 
@@ -222,10 +311,14 @@ function alemDosRecorrentes(fim, dataReferencia) {
 // já buscadas no banco. categorias e contas: o catálogo que o chat já tem,
 // para listar categorias e dizer a conta de cada lançamento.
 // Tipo que não é respondido aqui devolve null: o chamador segue com as regras.
-export function responderConsulta({ consulta, transacoes, dataReferencia, categorias = [], contas = [] }) {
+// Em comparacao, transacoesAnteriores são as concluídas do período anterior;
+// em a_pagar, transacoes são as previstas (pendentes) do período.
+export function responderConsulta({
+  consulta, transacoes, transacoesAnteriores = [], dataReferencia, categorias = [], contas = [],
+}) {
   if (!consultaRespondivel(consulta)) return null;
   if (consulta.tipo === 'categorias') return responderCategorias(categorias);
-  const resposta = responderPeriodo({ consulta, transacoes, dataReferencia, contas });
+  const resposta = responderPeriodo({ consulta, transacoes, transacoesAnteriores, dataReferencia, categorias, contas });
   const periodo = periodoDaConsulta(consulta, dataReferencia);
   if (consultaPrevista(consulta, dataReferencia) && alemDosRecorrentes(periodo.fim, dataReferencia)) {
     return `${resposta} Os lançamentos recorrentes só aparecem na previsão até ${MESES_DE_RECORRENTES_PREVISTOS} meses à frente.`;
@@ -233,7 +326,7 @@ export function responderConsulta({ consulta, transacoes, dataReferencia, catego
   return resposta;
 }
 
-function responderPeriodo({ consulta, transacoes, dataReferencia, contas }) {
+function responderPeriodo({ consulta, transacoes, transacoesAnteriores = [], dataReferencia, categorias = [], contas }) {
   const previsto = consultaPrevista(consulta, dataReferencia);
   const periodo = periodoDaConsulta(consulta, dataReferencia);
   const quando = comInicialMaiuscula(rotuloDoPeriodo(periodo, dataReferencia));
@@ -256,6 +349,11 @@ function responderPeriodo({ consulta, transacoes, dataReferencia, contas }) {
       + `e ${parteDoResumo(saidas, 'saída', 'saídas')}.`;
   }
 
+  if (consulta.tipo === 'maior_gasto') {
+    const saidas = filtrar(lista, { transactionType: 'expense', conta: consulta.conta });
+    return responderMaiorGasto({ saidas, quando, naConta, categorias });
+  }
+
   const encontradas = filtrar(lista, {
     transactionType: TRANSACTION_TYPE_POR_TIPO[consulta.tipo] ?? null,
     categoria: consulta.categoria,
@@ -270,6 +368,29 @@ function responderPeriodo({ consulta, transacoes, dataReferencia, contas }) {
   const filtro = `${doQue}${naConta}`;
 
   if (consulta.tipo === 'lancamentos') return responderLancamentos({ encontradas, quando, filtro, contas, previsto });
+  if (consulta.tipo === 'a_pagar') {
+    if (consulta.inicio) return responderAPagar({ previstas: encontradas, quando, filtro, contas });
+    const atraso = (transacao) => String(transacao.transaction_date) < dataReferencia;
+    return responderAPagar({
+      previstas: encontradas.filter((transacao) => !atraso(transacao)),
+      atrasadas: encontradas.filter(atraso),
+      quando,
+      filtro,
+      contas,
+    });
+  }
+  if (consulta.tipo === 'comparacao') {
+    const anterior = filtrar(Array.isArray(transacoesAnteriores) ? transacoesAnteriores : [], {
+      transactionType: 'expense', categoria: consulta.categoria, conta: consulta.conta, termo: consulta.termo,
+    });
+    return responderComparacao({
+      atual: encontradas,
+      anterior,
+      quando,
+      quandoAnterior: rotuloDoPeriodo(periodoAnterior(periodo, dataReferencia), dataReferencia),
+      filtro,
+    });
+  }
 
   const [singular, plural] = consulta.tipo === 'saidas' ? ['saída', 'saídas'] : ['entrada', 'entradas'];
   if (previsto) {

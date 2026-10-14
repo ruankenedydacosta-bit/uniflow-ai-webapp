@@ -13,12 +13,19 @@
 //   pede pelo nome uma categoria que não está no catálogo.
 // esperado.data: ISO; ausente quando a frase não fala de data (vale hoje).
 // esperado.titulo: em agenda, palavras que o título precisa ter (#142).
-// esperado.pedido: em categoria, a ação (criar, renomear, excluir) e,
+// esperado.pedido: em categoria, a ação (criar, renomear, excluir, ocultar,
+//   reexibir) e,
 //   quando importa, o nome e o alvo, sem acento e caixa. Em agenda (#191), a
-//   ação (editar, cancelar, concluir, excluir) e as palavras que o alvo
+//   ação (editar, cancelar, concluir, excluir, consultar) e as palavras que o alvo
 //   precisa ter. Em exclusao (#189), acao 'excluir_lancamento' com as
 //   palavras que o alvo precisa ter e, quando importa, data, valor, ultimo e
-//   lote.
+//   lote. Em edicao (#261), acao 'editar_lancamento' com os mesmos critérios
+//   e o que muda: novoValor, novaData, novaConta e novaCategoria. Em
+//   recorrencia (#263), a ação (editar, encerrar), as palavras do alvo, data
+//   (a_partir_de) e o que muda. Em orcamento (#264), a ação (definir,
+//   remover, consultar), alvo (a categoria) e valor. Em conta (#266), a ação
+//   (criar, renomear, arquivar, reativar), alvo (uma das contas de
+//   contasDaAvaliacao) e nome.
 //   Em meta (#192), a ação (criar, editar, excluir, consultar, aportar,
 //   retirar) e, quando importa, nome, alvo (uma das metas de
 //   metasDaAvaliacao), valor, data, conta (#161) e soNaMeta.
@@ -970,7 +977,8 @@ export const CASOS = [
   {
     id: 'consulta-conta-pendente',
     frase: 'tenho alguma conta pra pagar ainda?',
-    esperado: { intent: 'consulta', consulta: { tipo: 'outra' } },
+    // #265: contas a pagar saem com tipo próprio.
+    esperado: { intent: 'consulta', consulta: { tipo: 'a_pagar' } },
   },
   {
     id: 'consulta-comparar-meses',
@@ -1069,6 +1077,116 @@ export const CASOS = [
     frase: 'apaga todos os gastos de setembro',
     esperado: { intent: 'exclusao', pedido: { acao: 'excluir_lancamento', lote: true } },
   },
+  // Alteração de lançamento já salvo (#261): o modelo diz qual e o que muda.
+  {
+    id: 'edicao-mercado-valor',
+    frase: 'o mercado de ontem foi 50, não 40',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['mercado'], data: '2026-10-01', valor: 40, novoValor: 50 } },
+  },
+  {
+    id: 'edicao-almoco-na-verdade',
+    frase: 'o almoço de ontem na verdade foi 35',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['almoco'], data: '2026-10-01', novoValor: 35 } },
+  },
+  {
+    id: 'edicao-posto-errei',
+    frase: 'errei o valor do posto, era 200',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['posto'], novoValor: 200 } },
+  },
+  {
+    id: 'edicao-uber-conta',
+    contas: true,
+    frase: 'o Uber de segunda foi no Nubank',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['uber'], data: '2026-09-28', novaConta: 'Nubank' } },
+  },
+  {
+    id: 'edicao-ifood-categoria',
+    reservado: true,
+    frase: 'muda a categoria do iFood de ontem para Lazer',
+    esperado: { intent: 'edicao', pedido: { acao: 'editar_lancamento', palavras: ['ifood'], data: '2026-10-01', novaCategoria: 'Lazer' } },
+  },
+  // Lançamento que se repete (#263): mudar os próximos ou encerrar.
+  {
+    id: 'recorrencia-aluguel-sobe',
+    frase: 'o aluguel sobe pra 1.800 a partir de novembro',
+    esperado: { intent: 'recorrencia', pedido: { acao: 'editar', palavras: ['aluguel'], data: '2026-11-01', novoValor: 1800 } },
+  },
+  {
+    id: 'recorrencia-netflix-cancelei',
+    frase: 'cancelei a Netflix, tira dos próximos meses',
+    esperado: { intent: 'recorrencia', pedido: { acao: 'encerrar', palavras: ['netflix'] } },
+  },
+  {
+    id: 'recorrencia-spotify-parar',
+    reservado: true,
+    frase: 'para de lançar o Spotify todo mês',
+    esperado: { intent: 'recorrencia', pedido: { acao: 'encerrar', palavras: ['spotify'] } },
+  },
+  // Teto de gasto mensal por categoria (#264).
+  {
+    id: 'orcamento-definir-lazer',
+    frase: 'quero gastar no máximo 800 por mês com lazer',
+    esperado: { intent: 'orcamento', pedido: { acao: 'definir', alvo: 'Lazer', valor: 800 } },
+  },
+  {
+    id: 'orcamento-consultar-lazer',
+    frase: 'quanto ainda posso gastar com lazer esse mês?',
+    esperado: { intent: 'orcamento', pedido: { acao: 'consultar', alvo: 'Lazer' } },
+  },
+  {
+    id: 'orcamento-remover-lazer',
+    reservado: true,
+    frase: 'tira o teto de lazer',
+    esperado: { intent: 'orcamento', pedido: { acao: 'remover', alvo: 'Lazer' } },
+  },
+  // Consultas com tipo próprio (#265).
+  {
+    id: 'consulta-maior-gasto-setembro',
+    frase: 'com o que eu mais gastei em setembro?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'maior_gasto', inicio: '2026-09-01', fim: '2026-09-30' } },
+  },
+  {
+    id: 'consulta-comparacao-mes-passado',
+    frase: 'esse mês eu gastei mais que no mês passado?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'comparacao', inicio: '2026-10-01', fim: '2026-10-31' } },
+  },
+  {
+    id: 'consulta-a-pagar-semana',
+    reservado: true,
+    frase: 'o que eu tenho pra pagar até o fim da semana?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'a_pagar', inicio: '2026-10-02', fim: '2026-10-04' } },
+  },
+  // Contas pela conversa (#266).
+  {
+    id: 'conta-criar-inter',
+    frase: 'cria uma conta no Inter',
+    esperado: { intent: 'conta', pedido: { acao: 'criar', nome: 'Inter' } },
+  },
+  {
+    id: 'conta-arquivar-nubank',
+    contas: true,
+    frase: 'não uso mais o Nubank, pode arquivar essa conta',
+    esperado: { intent: 'conta', pedido: { acao: 'arquivar', alvo: 'Nubank' } },
+  },
+  {
+    id: 'conta-renomear-nubank',
+    contas: true,
+    reservado: true,
+    frase: 'muda o nome da conta Nubank para Nubank PJ',
+    esperado: { intent: 'conta', pedido: { acao: 'renomear', alvo: 'Nubank', nome: 'Nubank PJ' } },
+  },
+  // Ocultar e reexibir categoria (#267).
+  {
+    id: 'categoria-ocultar-dividas',
+    frase: 'esconde a categoria Dívidas, não uso',
+    esperado: { intent: 'categoria', pedido: { acao: 'ocultar', alvo: 'Dívidas' } },
+  },
+  {
+    id: 'categoria-reexibir-pets',
+    reservado: true,
+    frase: 'volta a mostrar a categoria Pets',
+    esperado: { intent: 'categoria', pedido: { acao: 'reexibir', nome: 'Pets' } },
+  },
   {
     id: 'categoria-nova-com-valor',
     frase: 'registrar uma despesa de cinco mil e quinhentos reais no dia primeiro de outubro com a categoria Impostos',
@@ -1076,6 +1194,24 @@ export const CASOS = [
   },
   // Ação sobre um compromisso já marcado (#191): a régua confere a ação e as
   // palavras do alvo; data e hora seguem com o parser da agenda.
+  // Consulta da agenda (#259, #269): o modelo diz que é consulta e, quando a
+  // pergunta cita um compromisso, qual.
+  {
+    id: 'agenda-consultar-depois-de-amanha',
+    frase: 'quais compromissos eu tenho depois de amanhã?',
+    esperado: { intent: 'agenda', pedido: { acao: 'consultar' } },
+  },
+  {
+    id: 'agenda-consultar-livre',
+    frase: 'to livre na segunda de manhã?',
+    esperado: { intent: 'agenda', pedido: { acao: 'consultar' } },
+  },
+  {
+    id: 'agenda-consultar-almoco-carla',
+    reservado: true,
+    frase: 'a que horas é o almoço com a Carla?',
+    esperado: { intent: 'agenda', pedido: { acao: 'consultar', alvo: ['almoco', 'carla'] } },
+  },
   {
     id: 'agenda-cancelar-dentista',
     frase: 'Cancela a consulta no dentista de quinta',

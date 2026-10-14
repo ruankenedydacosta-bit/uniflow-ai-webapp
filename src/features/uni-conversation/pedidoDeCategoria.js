@@ -3,7 +3,7 @@
 // pedido é conferido com as mesmas regras da tela Categorias (permissão,
 // categoria padrão, nome repetido) e vira o card que a pessoa confirma. Quem
 // grava é o chat, depois do Confirmar.
-import { canManageCategory, isDuplicateCategoryName } from '../categories/categoryUtils.js';
+import { canManageCategory, isDuplicateCategoryName, podeOcultarCategoria } from '../categories/categoryUtils.js';
 import { normalizeSearchText } from '../../utils/searchText.js';
 import { classifyPendingActionReply } from './pendingActionInput.js';
 
@@ -14,6 +14,8 @@ export const ACOES_DE_CATEGORIA = Object.freeze({
   CRIAR: 'criar',
   RENOMEAR: 'renomear',
   EXCLUIR: 'excluir',
+  OCULTAR: 'ocultar',
+  REEXIBIR: 'reexibir',
 });
 
 const CATEGORY_TYPE_POR_TIPO = Object.freeze({ saida: 'expense', entrada: 'income' });
@@ -22,6 +24,8 @@ const TITULO_DO_CARD = Object.freeze({
   criar: 'Criar categoria',
   renomear: 'Renomear categoria',
   excluir: 'Excluir categoria',
+  ocultar: 'Ocultar categoria',
+  reexibir: 'Mostrar categoria',
 });
 
 const NOME_MAX = 40;
@@ -31,18 +35,67 @@ function nomeDeCategoria(nome) {
   return limpo ? `${limpo.charAt(0).toUpperCase()}${limpo.slice(1)}` : '';
 }
 
+// Ocultar e reexibir (#267): vale também para categoria padrão, como na
+// tela, menos as genéricas. Sem apelido, a categoria é achada pelo nome.
+function montarOcultarOuReexibir(pedido, { lista, ocultas, papel }) {
+  const ocultar = pedido.acao === ACOES_DE_CATEGORIA.OCULTAR;
+  const idsOcultos = new Set(ocultas);
+  const nomeDito = normalizeSearchText(nomeDeCategoria(pedido.nome));
+  // Pelo nome, vale primeiro a do estado que muda; a do outro estado dá a
+  // resposta "já está oculta" ou "já aparece".
+  const peloNome = nomeDito ? lista.filter((item) => normalizeSearchText(item?.name ?? '') === nomeDito) : [];
+  const categoria = (pedido.alvo?.id ? lista.find((item) => item?.id === pedido.alvo.id) : null)
+    ?? peloNome.find((item) => idsOcultos.has(item?.id) !== ocultar)
+    ?? peloNome[0]
+    ?? null;
+  if (!categoria) {
+    return {
+      erro: ocultar
+        ? 'Não encontrei essa categoria. Diga o nome como aparece em Categorias.'
+        : 'Não encontrei essa categoria. Diga o nome como aparece em Categorias, no grupo Ocultas.',
+    };
+  }
+  if (papel.canUpdate !== true) return { erro: 'Você não tem permissão para mudar categorias neste espaço.' };
+  const estaOculta = idsOcultos.has(categoria.id);
+  if (ocultar && estaOculta) return { erro: `${categoria.name} já está oculta. Nada mudou.` };
+  if (!ocultar && !estaOculta) return { erro: `${categoria.name} já aparece nas escolhas. Nada mudou.` };
+  if (ocultar && !podeOcultarCategoria(categoria)) {
+    return { erro: `${categoria.name} é a categoria genérica do app e não pode ser ocultada.` };
+  }
+  const tipo = ROTULO_DO_TIPO[categoria.category_type] ?? '';
+  return {
+    acao: pedido.acao,
+    categoryType: categoria.category_type,
+    nome: null,
+    categoria,
+    texto: ocultar
+      ? `Vou ocultar a categoria ${categoria.name}. Ela sai das escolhas e das sugestões, e os lançamentos dela continuam. Posso confirmar?`
+      : `Vou voltar a mostrar a categoria ${categoria.name} nas escolhas. Posso confirmar?`,
+    card: card(pedido.acao, [
+      { label: 'Categoria', value: categoria.name },
+      { label: 'Tipo', value: tipo },
+    ]),
+  };
+}
+
 // pedido: { acao, tipo, alvo: { id, name } | null, nome } do uni-interpret.
-// contexto: categorias do espaço (já filtradas como na tela), papel da
-// pessoa ({ canUpdate, canDelete }), userId e o rótulo do espaço.
+// contexto: categorias do espaço (já filtradas como na tela), ids das
+// ocultas, papel da pessoa ({ canUpdate, canDelete }), userId e o rótulo do
+// espaço.
 // Devolve { erro } com o texto para a pessoa, ou o pedido pronto para o card.
 export function montarPedidoDeCategoria(pedido, {
   categorias = [],
+  ocultas = [],
   papel = {},
   userId = null,
   espaco = 'Pessoal',
 } = {}) {
   const acao = pedido?.acao;
   const lista = Array.isArray(categorias) ? categorias : [];
+
+  if (acao === ACOES_DE_CATEGORIA.OCULTAR || acao === ACOES_DE_CATEGORIA.REEXIBIR) {
+    return montarOcultarOuReexibir(pedido, { lista, ocultas: Array.isArray(ocultas) ? ocultas : [], papel });
+  }
 
   if (acao === ACOES_DE_CATEGORIA.CRIAR) {
     const nome = nomeDeCategoria(pedido.nome);
@@ -67,7 +120,7 @@ export function montarPedidoDeCategoria(pedido, {
   }
 
   if (acao !== ACOES_DE_CATEGORIA.RENOMEAR && acao !== ACOES_DE_CATEGORIA.EXCLUIR) {
-    return { erro: 'Não entendi o que fazer com a categoria. Diga se é para criar, renomear ou excluir.' };
+    return { erro: 'Não entendi o que fazer com a categoria. Diga se é para criar, renomear, excluir, ocultar ou mostrar.' };
   }
 
   const categoria = lista.find((item) => item?.id === pedido.alvo?.id) ?? null;
@@ -132,6 +185,12 @@ export function textoDoPedidoFeito(pedidoPronto) {
   if (pedidoPronto.acao === ACOES_DE_CATEGORIA.RENOMEAR) {
     return `Categoria ${pedidoPronto.categoria.name} renomeada para ${pedidoPronto.nome}.`;
   }
+  if (pedidoPronto.acao === ACOES_DE_CATEGORIA.OCULTAR) {
+    return `Categoria ${pedidoPronto.categoria.name} oculta. Para voltar a usar, diga "mostra a categoria ${pedidoPronto.categoria.name}".`;
+  }
+  if (pedidoPronto.acao === ACOES_DE_CATEGORIA.REEXIBIR) {
+    return `Categoria ${pedidoPronto.categoria.name} de volta nas escolhas.`;
+  }
   return `Categoria ${pedidoPronto.categoria.name} excluída.`;
 }
 
@@ -143,6 +202,8 @@ const VERBOS_DA_ACAO = Object.freeze({
   criar: String.raw`cri(?:ar|a|e)`,
   renomear: String.raw`renome(?:ar|ia|ie)|troca(?:r)?|troque|muda(?:r)?|mude`,
   excluir: String.raw`exclu(?:ir|i|a)|apag(?:ar|a|ue)|remov(?:er|e|a)|tir(?:ar|a|e)`,
+  ocultar: String.raw`ocult(?:ar|a|e)|escond(?:er|e|a)`,
+  reexibir: String.raw`reexib(?:ir|e|a)|mostr(?:ar|a|e)`,
 });
 
 export function respostaAoPedidoDeCategoria(texto, pronto) {
