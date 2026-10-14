@@ -50,7 +50,7 @@
 .titleGroup h1 {
   margin: 0;
   color: var(--uf-app-text);
-  font-size: 17px;
+  font-size: var(--uf-text-subtitle-size);
   font-weight: var(--uf-font-weight-medium);
   line-height: 1.2;
 }
@@ -113,7 +113,7 @@
 
 .profileInfo strong {
   overflow: hidden;
-  font-size: 15px;
+  font-size: var(--uf-text-subtitle-size);
   font-weight: var(--uf-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -121,8 +121,8 @@
 
 .profileInfo small {
   overflow: hidden;
-  color: var(--uf-app-text-3);
-  font-size: 12px;
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-caption-size);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -179,7 +179,7 @@
 
 .planStatusLabel {
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--uf-text-body-size);
   font-weight: var(--uf-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -188,8 +188,8 @@
 .planName,
 .planInfo small {
   overflow: hidden;
-  color: var(--uf-app-text-3);
-  font-size: 12px;
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-caption-size);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -203,14 +203,14 @@
 }
 
 .planPrice strong {
-  font-size: 14px;
+  font-size: var(--uf-text-body-size);
   font-weight: var(--uf-font-weight-medium);
   white-space: nowrap;
 }
 
 .planPrice small {
-  color: var(--uf-app-text-3);
-  font-size: 11px;
+  color: var(--uf-app-text-2);
+  font-size: var(--uf-text-micro-size);
   white-space: nowrap;
 }
 
