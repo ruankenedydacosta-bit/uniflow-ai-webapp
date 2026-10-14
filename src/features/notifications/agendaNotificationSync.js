@@ -64,7 +64,7 @@ export async function syncDueAgendaNotificationsOnce(userId, workspaceId, {
         workspaceId,
         type: 'agenda',
         title: item.title,
-        message: formatAgendaNotificationTime(item.starts_at, { timeZone }),
+        message: formatAgendaNotificationTime(item.starts_at, { timeZone, now }),
         actionUrl: '/app/agenda',
         metadata: {
           agenda_item_id: item.id,

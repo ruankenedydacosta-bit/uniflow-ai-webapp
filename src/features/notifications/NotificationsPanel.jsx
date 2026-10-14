@@ -1,13 +1,41 @@
 import { useRef, useState } from 'react';
-import Button from '../../components/ui/Button';
+import IconBox from '../../components/ui/IconBox/index.js';
+import OutlineButton from '../../components/ui/OutlineButton/index.js';
+import {
+  PhCalendarCheckIcon,
+  PhChatCircleTextIcon,
+  PhCheckIcon,
+  PhEyeSlashIcon,
+  PhFlagIcon,
+  PhReceiptIcon,
+  PhShieldCheckIcon,
+  PhUsersThreeIcon,
+  PhXIcon,
+} from '../simplified-app/SimplifiedIcons.jsx';
+import { groupNotificationsByDay } from './notificationGroups.js';
 import {
   formatNotificationDate,
   getNotificationMessage,
-  getNotificationTypeLabel,
   isNotificationUnread,
   isSafeInternalUrl,
 } from './notificationFormatting.js';
 import styles from './NotificationsPanel.module.css';
+
+// Tela 13 v2: o ícone diz o tipo (calendário para Agenda, recibo para conta,
+// bandeira para Metas), então a linha não repete o nome do tipo. A cor do
+// tipo só aparece na não lida; a lida fica neutra.
+const TYPE_PRESENTATION = Object.freeze({
+  financeiro: Object.freeze({ Icon: PhReceiptIcon, tone: 'blue' }),
+  metas: Object.freeze({ Icon: PhFlagIcon, tone: 'green' }),
+  agenda: Object.freeze({ Icon: PhCalendarCheckIcon, tone: 'violet' }),
+  crm: Object.freeze({ Icon: PhUsersThreeIcon, tone: null }),
+  sistema: Object.freeze({ Icon: PhShieldCheckIcon, tone: null }),
+  uni: Object.freeze({ Icon: PhChatCircleTextIcon, tone: 'violet' }),
+});
+
+function resolveTypePresentation(type) {
+  return TYPE_PRESENTATION[type] ?? TYPE_PRESENTATION.sistema;
+}
 
 // NOTIF2: dispensar uma notificação (nunca o compromisso/registro de
 // origem) -- arrastar pra qualquer lado até o fim some com fade gradiente,
@@ -21,6 +49,7 @@ const DIRECTION_LOCK_PX = 8;
 function NotificationItem({ notification, onActivate, onDismiss }) {
   const unread = isNotificationUnread(notification);
   const message = getNotificationMessage(notification);
+  const { Icon, tone } = resolveTypePresentation(notification.type);
   const [dragX, setDragX] = useState(0);
   const [isDismissing, setIsDismissing] = useState(false);
   const dragStateRef = useRef(null);
@@ -77,57 +106,104 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
   }
 
   const opacity = isDismissing ? 0 : 1 - Math.min(1, Math.abs(dragX) / DISMISS_MAX_PX);
+  const isDragging = dragX !== 0;
 
   return (
     <li
       className={styles.itemWrapper}
-      style={{
-        transform: dragX ? `translateX(${dragX}px)` : undefined,
-        opacity,
-        transition: isDismissing ? 'transform 180ms ease, opacity 180ms ease' : dragX ? 'none' : 'transform 180ms ease',
-      }}
+      data-dragging={isDragging ? 'true' : undefined}
+      style={{ opacity: isDismissing ? 0 : 1 }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
     >
-      <button
-        type="button"
-        className={`${styles.item} ${unread ? styles.itemUnread : ''}`}
-        onClick={() => onActivate(notification)}
-        aria-label={`${notification.title}${unread ? ' (não lida)' : ''}`}
-      >
-        <span className={styles.itemTop}>
-          <span className={styles.itemStatus}>
-            {unread ? <span className={styles.unreadDot} aria-hidden="true" /> : null}
-            <span className={styles.itemType}>{getNotificationTypeLabel(notification.type)}</span>
-          </span>
-          <span className={styles.itemDate}>{formatNotificationDate(notification.created_at)}</span>
+      {/* Fundo revelado pelo arrastar, do lado que a linha deixa livre. */}
+      {isDragging ? (
+        <span className={styles.swipeHint} data-side={dragX < 0 ? 'end' : 'start'} aria-hidden="true">
+          <PhEyeSlashIcon />
+          Dispensar
         </span>
-        <strong className={styles.itemTitle}>{notification.title}</strong>
-        {message ? (
-          <span className={styles.itemMessage}>{message}</span>
-        ) : null}
-      </button>
-      {/* Dispensa só a notificação -- nunca o compromisso/registro de
-          origem (ver notificationsService.js/dismissNotification e a
-          migration NOTIF2, que cuida do caso inverso: excluir o
-          compromisso remove a notificação automaticamente via cascade).
-          Ocupa sozinho o lugar onde antes havia o ícone de tipo (removido
-          -- o tipo já é indicado por texto em .itemType, o quadrado
-          duplicava a informação e brigava visualmente com o X). */}
-      <button
-        type="button"
-        className={styles.itemDismiss}
-        onClick={(event) => {
-          event.stopPropagation();
-          commitDismiss();
+      ) : null}
+      <div
+        className={styles.itemRow}
+        data-notification-row
+        style={{
+          transform: isDragging ? `translateX(${dragX}px)` : undefined,
+          transition: isDismissing ? 'transform 180ms ease' : isDragging ? 'none' : 'transform 180ms ease',
         }}
-        aria-label={`Dispensar notificação: ${notification.title}`}
       >
-        ×
-      </button>
+        <button
+          type="button"
+          className={styles.item}
+          data-unread={unread ? 'true' : 'false'}
+          style={{ opacity }}
+          onClick={() => onActivate(notification)}
+        >
+          <IconBox tone={unread && tone ? tone : undefined} className={unread ? undefined : styles.iconRead}>
+            <Icon />
+          </IconBox>
+          <span className={styles.itemText}>
+            <span className={styles.itemTitle}>
+              {notification.title}
+              {unread ? <span className={styles.srOnly}> (não lida)</span> : null}
+            </span>
+            {message ? (
+              <span className={styles.itemMessage}>{message}</span>
+            ) : null}
+          </span>
+          <span className={styles.itemMeta}>
+            <span className={styles.itemTime}>{formatNotificationDate(notification.created_at)}</span>
+            {unread ? <span className={styles.unreadDot} aria-hidden="true" /> : null}
+          </span>
+        </button>
+        {/* Dispensa só a notificação -- nunca o compromisso/registro de
+            origem (ver notificationsService.js/dismissNotification e a
+            migration NOTIF2, que cuida do caso inverso: excluir o
+            compromisso remove a notificação automaticamente via cascade).
+            Com mouse, aparece no lugar da hora ao passar o mouse ou focar
+            pelo teclado; no toque não há X, o gesto é arrastar. */}
+        <button
+          type="button"
+          className={styles.itemDismiss}
+          onClick={(event) => {
+            event.stopPropagation();
+            commitDismiss();
+          }}
+          aria-label={`Dispensar notificação: ${notification.title}`}
+        >
+          <PhXIcon />
+        </button>
+      </div>
     </li>
+  );
+}
+
+/**
+ * Lista agrupada por dia (Hoje, Ontem, Anteriores). Usada pelo painel do
+ * sino e pela página de notificações do Mais.
+ */
+export function NotificationList({ notifications, onActivate, onDismiss }) {
+  const dayGroups = groupNotificationsByDay(notifications);
+
+  return (
+    <div className={styles.groups}>
+      {dayGroups.map((group) => (
+        <section key={group.key} className={styles.dayGroup} aria-label={group.label}>
+          <h3 className={styles.groupLabel}>{group.label}</h3>
+          <ul className={styles.list}>
+            {group.items.map((notification) => (
+              <NotificationItem
+                key={notification.id}
+                notification={notification}
+                onActivate={onActivate}
+                onDismiss={(id) => onDismiss?.(id)}
+              />
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -136,6 +212,9 @@ function NotificationsPanel({
   isLoading = false,
   error = null,
   unreadCount = 0,
+  title,
+  titleId,
+  onClose,
   onMarkAsRead,
   onMarkAllAsRead,
   onRetry,
@@ -157,19 +236,33 @@ function NotificationsPanel({
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <span className={styles.unreadSummary} role="status">
+        {title ? <h2 id={titleId} className={styles.title}>{title}</h2> : null}
+        {/* O sino já mostra a contagem; aqui ela fica só para o leitor de tela. */}
+        <span className={styles.srOnly} role="status">
           {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}` : 'Tudo em dia'}
         </span>
-        {unreadCount > 0 ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={isLoading}
-            onClick={() => onMarkAllAsRead?.()}
-          >
-            Marcar todas como lidas
-          </Button>
-        ) : null}
+        <span className={styles.headerActions}>
+          {unreadCount > 0 ? (
+            <button
+              type="button"
+              className={styles.markAll}
+              disabled={isLoading}
+              onClick={() => onMarkAllAsRead?.()}
+            >
+              Marcar todas como lidas
+            </button>
+          ) : null}
+          {onClose ? (
+            <button
+              type="button"
+              className={styles.close}
+              onClick={() => onClose()}
+              aria-label="Fechar notificações"
+            >
+              <PhXIcon />
+            </button>
+          ) : null}
+        </span>
       </div>
 
       {isLoading ? (
@@ -177,31 +270,21 @@ function NotificationsPanel({
       ) : error ? (
         <div className={styles.stateMessage} role="alert">
           <p>Não foi possível carregar suas notificações.</p>
-          <Button variant="outline" size="sm" onClick={() => onRetry?.()}>
+          <OutlineButton variant="secondary" onClick={() => onRetry?.()}>
             Tentar novamente
-          </Button>
+          </OutlineButton>
         </div>
       ) : notifications.length === 0 ? (
-        // NOTIF-UX3: uma única frase -- a antiga segunda linha ("Toda
-        // informação importante sobre sua conta aparecerá aqui.") repetia
-        // a mesma ideia da primeira, e o painel mobile ainda soma
-        // "Tudo em dia" (unreadSummary, acima) dizendo basicamente o
-        // mesmo. Empty state compacto, sem 3 frases pra uma única ideia.
-        <div className={styles.stateMessage} role="status">
-          <span className={styles.emptyIcon} aria-hidden="true">✓</span>
-          <strong>Nenhuma notificação por enquanto.</strong>
+        <div className={styles.emptyState} role="status">
+          <IconBox tone="green" className={styles.emptyIcon}><PhCheckIcon /></IconBox>
+          <span>Nenhuma notificação por enquanto.</span>
         </div>
       ) : (
-        <ul className={styles.list} aria-label="Lista de notificações">
-          {notifications.map((notification) => (
-            <NotificationItem
-              key={notification.id}
-              notification={notification}
-              onActivate={handleItemActivate}
-              onDismiss={(id) => onDismiss?.(id)}
-            />
-          ))}
-        </ul>
+        <NotificationList
+          notifications={notifications}
+          onActivate={handleItemActivate}
+          onDismiss={onDismiss}
+        />
       )}
     </div>
   );

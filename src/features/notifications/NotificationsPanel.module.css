@@ -1,61 +1,152 @@
+/* Tela 13 v2: lista simples agrupada por dia. Linha em grade
+   36px | 1fr | auto, com o ícone do tipo à esquerda e hora + ponto de não
+   lida à direita. Não lida tem um sinal só: o ponto roxo e o título no tom
+   cheio. */
 .panel {
-  display: grid;
-  gap: var(--uf-space-12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
+  color: var(--uf-app-text);
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--uf-space-8);
-  white-space: nowrap;
+  gap: 12px;
+  min-height: 32px;
 }
 
-.unreadSummary {
-  color: var(--uf-color-text-tertiary);
-  font-size: var(--uf-text-micro-size);
+.title {
+  margin: 0;
+  color: var(--uf-app-text);
+  font-size: 15px;
+  font-weight: var(--uf-font-weight-medium);
+}
+
+.headerActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.markAll {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--uf-radius-8);
+  background: none;
+  color: var(--uf-app-brand-blue-text);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.markAll:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.markAll:focus-visible,
+.close:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 2px;
+}
+
+/* Só no toque: com mouse o painel fecha com clique fora ou Esc. */
+.close {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  margin-right: -10px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-full);
+  background: none;
+  color: var(--uf-app-text-2);
+  cursor: pointer;
+}
+
+.close svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .close {
+    display: none;
+  }
 }
 
 .stateMessage {
-  display: grid;
-  justify-items: center;
-  gap: var(--uf-space-8);
-  padding: var(--uf-space-24) var(--uf-space-12);
-  color: var(--uf-color-text-tertiary);
-  font-size: var(--uf-text-caption-size);
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 0 8px;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .stateMessage p {
   margin: 0;
 }
 
-.stateMessage strong {
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-caption-size);
+.emptyState {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 8px;
+  color: var(--uf-app-text-2);
+  font-size: 14px;
 }
 
-.emptyIcon {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--uf-color-success) 46%, transparent);
-  border-radius: var(--uf-radius-full, 999px);
-  background: color-mix(in srgb, var(--uf-color-success) 12%, transparent);
-  color: var(--uf-color-success);
-  font-size: 20px;
+.emptyIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* As linhas têm 10px de respiro interno para o fundo do hover; a lista
+   recua o mesmo tanto para o ícone alinhar com o título do painel. */
+.groups {
+  display: flex;
+  flex-direction: column;
+  margin-inline: -10px;
+}
+
+.dayGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.groupLabel {
+  margin: 0;
+  padding: 12px 10px 4px;
+  color: var(--uf-app-text-3);
+  font-size: 11px;
+  font-weight: var(--uf-font-weight-regular);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.dayGroup:first-child .groupLabel {
+  padding-top: 4px;
 }
 
 .list {
-  display: grid;
-  gap: var(--uf-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: 0;
   list-style: none;
-  max-height: calc(var(--uf-space-160) * 2);
-  overflow-y: auto;
 }
 
 /* NOTIF2: cada <li> vira o alvo do gesto de arrastar (esquerda OU direita)
@@ -63,121 +154,199 @@
    horizontal é capturado pelos handlers em JS. */
 .itemWrapper {
   position: relative;
+  overflow: hidden;
+  border-radius: var(--uf-radius-12);
   touch-action: pan-y;
+  transition: opacity 180ms ease;
 }
 
-.item {
+.itemWrapper[data-dragging="true"] {
+  background: var(--uf-app-surface-2);
+}
+
+.swipeHint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-inline: 18px;
+  color: var(--uf-app-text-2);
+  font-size: 13px;
+}
+
+.swipeHint[data-side="start"] {
+  justify-content: flex-start;
+}
+
+.swipeHint svg {
+  width: 16px;
+  height: 16px;
+}
+
+.itemRow {
   position: relative;
-  display: grid;
-  gap: var(--uf-space-4);
-  width: 100%;
-  padding: var(--uf-space-12) var(--uf-space-12) var(--uf-space-12) 50px;
-  border: 1px solid transparent;
-  border-radius: var(--uf-radius-8);
-  background: transparent;
-  color: var(--uf-color-text-primary);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.item:hover,
-.item:focus-visible {
-  background: var(--uf-color-primary-subtle);
-}
-
-.item:focus-visible {
-  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
-  outline-offset: -2px;
-}
-
-.itemUnread {
-  border-color: color-mix(in srgb, var(--uf-color-ai) 30%, transparent);
-  background: color-mix(in srgb, var(--uf-color-ai-subtle) 86%, transparent);
-  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--uf-color-ai) 72%, transparent);
-}
-
-.itemStatus {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--uf-space-6);
-  min-width: 0;
-}
-
-.itemTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--uf-space-8);
-  color: var(--uf-color-text-tertiary);
-  font-size: var(--uf-text-micro-size);
-}
-
-.itemTitle {
-  color: var(--uf-color-text-primary);
-  font-size: var(--uf-text-caption-size);
-}
-
-.itemMessage {
-  color: var(--uf-color-text-secondary);
-  font-size: var(--uf-text-micro-size);
-}
-
-/* NOTIF2: botão de dispensar -- sozinho no lugar onde antes havia o ícone
-   de tipo (removido), centralizado verticalmente com o card inteiro, nunca
-   sobreposto a outro elemento. Sempre visível (nunca só no hover), para
-   funcionar igual em touch.
-   O min-width/min-height global de 44px (globals.css/theme.css, área mínima
-   de toque) precisa ser neutralizado aqui, senão o círculo estoura o espaço
-   reservado e invade o texto -- a área de toque volta pelo ::after. */
-.itemDismiss {
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
-  padding: 0;
-  border: 1px solid var(--uf-color-border-strong);
-  border-radius: var(--uf-radius-full, 999px);
-  background: var(--uf-app-surface-2, var(--uf-color-bg-surface));
-  color: var(--uf-color-text-secondary);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-  transform: translateY(-50%);
-}
-
-/* Mantém a área de toque de 44px sem alterar o tamanho visual do círculo. */
-.itemDismiss::after {
-  content: '';
-  position: absolute;
-  inset: -7px;
   border-radius: inherit;
 }
 
-.itemDismiss:hover,
-.itemDismiss:focus-visible {
-  background: var(--uf-app-surface-3, var(--uf-color-bg-surface-hover));
-  color: var(--uf-color-text-primary);
+/* Enquanto arrasta, a linha cobre o fundo "Dispensar" com a cor da tela;
+   dentro do painel do sino, a do painel (simplifiedApp.module.css). */
+.itemWrapper[data-dragging="true"] .itemRow {
+  background: var(--uf-app-canvas);
 }
 
-.itemDismiss:focus-visible {
-  outline: var(--uf-focus-ring-width) solid var(--uf-focus-ring-color);
-  outline-offset: 1px;
+.item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 10px;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: var(--uf-app-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: -2px;
+}
+
+.iconRead {
+  color: var(--uf-app-text-3);
+}
+
+.itemText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.itemTitle {
+  font-size: 14px;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+
+.item[data-unread="false"] .itemTitle {
+  color: var(--uf-app-text-2);
+}
+
+.itemMessage {
+  color: var(--uf-app-text-2);
+  font-size: 12px;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.item[data-unread="false"] .itemMessage {
+  color: var(--uf-app-text-3);
+}
+
+.itemMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+  padding-top: 2px;
+}
+
+.itemTime {
+  color: var(--uf-app-text-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .unreadDot {
-  flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  border-radius: var(--uf-radius-full, 999px);
-  background: var(--uf-color-success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--uf-color-success) 16%, transparent);
+  width: 8px;
+  height: 8px;
+  border-radius: var(--uf-radius-full);
+  background: var(--uf-app-brand-violet);
+  box-shadow: 0 0 8px var(--uf-app-brand-violet);
+}
+
+/* X de dispensar: com mouse, aparece no lugar da hora ao passar o mouse
+   ou no foco do teclado. No toque fica fora de alcance do dedo (o gesto é
+   arrastar), mas continua na árvore para o leitor de tela.
+   O min-width/min-height global de 44px (área mínima de toque) é
+   neutralizado: o botão só existe para o mouse e o teclado. */
+.itemDismiss {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--uf-radius-full);
+  background: none;
+  color: var(--uf-app-text-2);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.itemDismiss svg {
+  width: 14px;
+  height: 14px;
+}
+
+.itemDismiss:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--uf-app-focus);
+  outline-offset: 0;
+}
+
+.itemDismiss:hover {
+  background: var(--uf-app-surface-3);
+  color: var(--uf-app-text);
+}
+
+.itemRow:focus-within:has(.itemDismiss:focus-visible) .itemMeta {
+  visibility: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .itemRow:hover .item {
+    background: var(--uf-app-surface-2);
+  }
+
+  .itemRow:hover .itemDismiss {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .itemRow:hover .itemMeta {
+    visibility: hidden;
+  }
+}
+
+/* Só para o leitor de tela: marca "(não lida)" e a contagem sem ocupar a
+   linha. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .itemWrapper {
+    transition: none;
+  }
 }

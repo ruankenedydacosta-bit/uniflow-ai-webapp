@@ -28,7 +28,7 @@ test('estado vazio mostra mensagem clara com role="status", nunca uma lista vazi
   const content = await source('NotificationsPanel.jsx');
   const block = content.slice(
     content.indexOf(') : notifications.length === 0 ? ('),
-    content.indexOf('<ul className={styles.list}'),
+    content.indexOf('<NotificationList\n'),
   );
   assert.match(block, /role="status"/);
   assert.match(block, /Nenhuma notificação por enquanto\./);
@@ -51,16 +51,14 @@ test('estado vazio tem ícone e título, compacto -- sem repetir a mesma ideia e
   assert.doesNotMatch(content, /Toda informação importante sobre sua conta aparecerá aqui\./);
 });
 
-// NOTIF2 (ajuste visual): o ícone de tipo ("□" etc, um quadrado ao lado do
-// nome da categoria) foi removido -- ele duplicava a informação já exibida
-// em texto por .itemType e brigava visualmente com o botão de dispensar
-// (X sobreposto de forma estranha). O tipo continua indicado só por texto.
-test('itens reais exibem o tipo por texto (itemType/getNotificationTypeLabel), sem ícone de tipo separado', async () => {
+// Tela 13 v2: o ícone do tipo volta à esquerda (IconBox) e o X sai de lá.
+// O ícone já diz o tipo, então o rótulo ("Agenda") sai da linha.
+test('itens mostram o tipo pelo ícone à esquerda (IconBox), sem o rótulo do tipo na linha', async () => {
   const content = await source('NotificationsPanel.jsx');
-  assert.match(content, /className=\{styles\.itemType\}/);
-  assert.doesNotMatch(content, /TYPE_ICONS/);
-  assert.doesNotMatch(content, /styles\.itemIcon/);
-  assert.doesNotMatch(content, /data-type=\{notification\.type\}/);
+  assert.match(content, /const \{ Icon, tone \} = resolveTypePresentation\(notification\.type\);/);
+  assert.match(content, /<IconBox tone=\{unread && tone \? tone : undefined\}/);
+  assert.doesNotMatch(content, /getNotificationTypeLabel/);
+  assert.doesNotMatch(content, /styles\.itemType/);
 });
 
 test('clicar num item nao lido chama onMarkAsRead; clicar num ja lido nao chama de novo', async () => {
@@ -84,33 +82,68 @@ test('so navega quando action_url passa por isSafeInternalUrl -- bloqueia URL ex
   assert.match(content, /import \{[\s\S]*?isSafeInternalUrl,?[\s\S]*?\} from '\.\/notificationFormatting\.js';/);
 });
 
-test('cada item mostra tipo, data, titulo, mensagem e indicador de nao-lida (todos os campos exigidos)', async () => {
+test('cada item mostra hora de chegada, titulo, mensagem e indicador de nao-lida, agrupado por dia', async () => {
   const content = await source('NotificationsPanel.jsx');
-  assert.match(content, /getNotificationTypeLabel\(notification\.type\)/);
+  assert.match(content, /const dayGroups = groupNotificationsByDay\(notifications\);/);
   assert.match(content, /formatNotificationDate\(notification\.created_at\)/);
-  assert.match(content, /<strong className=\{styles\.itemTitle\}>\{notification\.title\}<\/strong>/);
+  assert.match(content, /<span className=\{styles\.itemTitle\}>\s*\n\s*\{notification\.title\}/);
   assert.match(content, /const message = getNotificationMessage\(notification\);/);
   assert.match(content, /<span className=\{styles\.itemMessage\}>\{message\}<\/span>/);
-  assert.match(content, /className=\{styles\.itemStatus\}/);
-  assert.match(content, /unread \? <span className=\{styles\.unreadDot\} aria-hidden="true" \/>/);
-  const css = await source('NotificationsPanel.module.css');
-  const dotRule = css.slice(css.indexOf('.unreadDot {'));
-  assert.doesNotMatch(dotRule.slice(0, dotRule.indexOf('}')), /position:\s*absolute/);
+  assert.match(content, /\{unread \? <span className=\{styles\.unreadDot\} aria-hidden="true" \/> : null\}/);
 });
 
-test('item da lista e um <button type="button"> com aria-label indicando titulo e estado nao-lida -- acessivel por teclado', async () => {
+// Tela 13 v2: não lida tem um sinal só (ponto roxo + título no tom cheio).
+// Sai o fundo, a borda e a barra lateral.
+test('não lida não tem fundo, borda nem barra lateral; a lida apaga o título', async () => {
+  const css = await source('NotificationsPanel.module.css');
+  assert.doesNotMatch(css, /\.itemUnread/);
+  assert.doesNotMatch(css, /box-shadow: inset 3px/);
+  assert.match(css, /\.item\[data-unread="false"\] \.itemTitle \{\s*\n\s*color: var\(--uf-app-text-2\);/);
+  assert.match(css, /font-variant-numeric: tabular-nums;/);
+  assert.doesNotMatch(css, /#[0-9a-fA-F]{3,8}\b/);
+});
+
+// Leitor de tela: "(não lida)" como texto oculto dentro do botão, nunca um
+// aria-label que esconderia mensagem e hora.
+test('item da lista e um <button type="button"> com "(não lida)" só para o leitor de tela -- acessivel por teclado', async () => {
   const content = await source('NotificationsPanel.jsx');
-  assert.match(content, /<button\s*\n\s*type="button"\s*\n\s*className=\{`\$\{styles\.item\}/);
-  assert.match(content, /aria-label=\{`\$\{notification\.title\}\$\{unread \? ' \(não lida\)' : ''\}`\}/);
+  assert.match(content, /<button\s*\n\s*type="button"\s*\n\s*className=\{styles\.item\}/);
+  assert.match(content, /<span className=\{styles\.srOnly\}> \(não lida\)<\/span>/);
+  assert.doesNotMatch(content, /aria-label=\{`\$\{notification\.title\}/);
+});
+
+test('"N não lidas" sai do topo e fica só para o leitor de tela; X de fechar só no toque', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /<span className=\{styles\.srOnly\} role="status">/);
+  assert.match(content, /aria-label="Fechar notificações"/);
+  const css = await source('NotificationsPanel.module.css');
+  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\n\s*\.close \{\s*\n\s*display: none;/);
 });
 
 // ============================================================================
 // NOTIF2 -- dispensar (excluir) uma notificação nunca afeta o
-// compromisso/registro de origem; botão X sempre visível + arrastar pra
-// qualquer lado com fade gradiente, igual ao gesto nativo de celular.
+// compromisso/registro de origem. Tela 13 v2: com mouse, X à direita no
+// hover e no foco do teclado; no toque, arrastar pra qualquer lado com fade
+// gradiente, igual ao gesto nativo de celular.
 // ============================================================================
 
-test('cada item tem um botao de dispensar (X) sempre visivel, que chama onDismiss e nunca navega (stopPropagation)', async () => {
+test('X de dispensar aparece só no hover (mouse) e no foco do teclado, no lugar da hora', async () => {
+  const css = await source('NotificationsPanel.module.css');
+  const base = css.slice(css.indexOf('.itemDismiss {'));
+  const baseRule = base.slice(0, base.indexOf('}'));
+  assert.match(baseRule, /opacity: 0;/);
+  assert.match(baseRule, /pointer-events: none;/);
+  assert.match(css, /\.itemDismiss:focus-visible \{\s*\n\s*opacity: 1;/);
+  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.itemRow:hover \.itemDismiss \{\s*\n\s*opacity: 1;\s*\n\s*pointer-events: auto;/);
+  assert.match(css, /\.itemRow:hover \.itemMeta \{\s*\n\s*visibility: hidden;/);
+});
+
+test('arrastar revela "Dispensar" por baixo da linha', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /<span className=\{styles\.swipeHint\} data-side=\{dragX < 0 \? 'end' : 'start'\} aria-hidden="true">/);
+});
+
+test('cada item tem um botao de dispensar (X) que chama onDismiss e nunca navega (stopPropagation)', async () => {
   const content = await source('NotificationsPanel.jsx');
   assert.match(content, /className=\{styles\.itemDismiss\}/);
   assert.match(content, /aria-label=\{`Dispensar notificação: \$\{notification\.title\}`\}/);

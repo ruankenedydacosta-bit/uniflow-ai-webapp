@@ -45,15 +45,12 @@ test('cabeçalho: título Notificações, volta para o Mais e "Marcar todas como
   assert.match(page, /Marcar todas como lidas/);
 });
 
-test('agrupa por dia (Hoje/Ontem/data) com a hora em cada item e ponto de não lida', async () => {
+// Tela 13 v2: a lista é a mesma do painel do sino (grupos Hoje/Ontem/
+// Anteriores, ícone do tipo, ponto de não lida) e ganha o dispensar.
+test('usa a lista do painel (NotificationList) com ativar e dispensar', async () => {
   const page = await source('./SimplifiedNotificationsPage.jsx');
-  assert.match(page, /groupNotificationsByDay\(notifications\)/);
-  assert.match(page, /formatNotificationTime\(notification\.created_at\)/);
-  assert.match(page, /\{unread \? <span className=\{styles\.unreadDot\} aria-hidden="true" \/> : null\}/);
-  // Leitor de tela: "(não lida)" como texto oculto dentro do botão, nunca um
-  // aria-label que esconderia mensagem e hora.
-  assert.match(page, /<span className=\{styles\.srOnly\}> \(não lida\)<\/span>/);
-  assert.doesNotMatch(page, /aria-label=\{`\$\{notification\.title\}/);
+  assert.match(page, /import \{ NotificationList \} from '\.\.\/notifications\/NotificationsPanel\.jsx';/);
+  assert.match(page, /<NotificationList\s*\n\s*notifications=\{notifications\}\s*\n\s*onActivate=\{handleActivate\}\s*\n\s*onDismiss=\{dismissNotification\}/);
 });
 
 test('estados de carregando, erro (com Tentar novamente) e vazio -- os mesmos textos do painel do sino', async () => {
@@ -73,9 +70,8 @@ test('ativação do push reaproveita useWebPush() e só aparece no estado DEFAUL
   assert.match(page, /Por enquanto, as notificações aparecem só aqui no app\. Elas não chegam por e-mail nem por push\./);
 });
 
-test('CSS usa só tokens --uf-app-*, nunca hex fixo, e números com tabular-nums', async () => {
+test('CSS usa só tokens --uf-app-*, nunca hex fixo', async () => {
   const css = await source('./simplifiedNotifications.module.css');
   assert.doesNotMatch(css, /#[0-9a-fA-F]{3,8}\b/);
-  assert.match(css, /font-variant-numeric: tabular-nums;/);
   assert.match(css, /env\(safe-area-inset-bottom\)/);
 });
