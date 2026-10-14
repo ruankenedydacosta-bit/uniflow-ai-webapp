@@ -124,21 +124,24 @@ test('evento com a marca de outro espaço é ignorado', () => {
   }), { vinculo: null, item: null }).tipo, 'ignorar');
 });
 
-test('evento novo: entra; privado, confidencial, cancelado, gravado pelo app e fora da janela não entram', () => {
+test('evento novo: entra; cancelado, gravado pelo app e fora da janela não entram', () => {
   const novo = (extra) => decidir(eventoComHorario(extra), { vinculo: null, item: null });
   assert.equal(novo({}).tipo, 'inserir');
-  assert.equal(novo({ visibility: 'private' }).motivo, 'privado');
-  assert.equal(novo({ visibility: 'confidential' }).motivo, 'privado');
   assert.equal(novo({ status: 'cancelled' }).motivo, 'cancelado');
   assert.equal(novo({ extendedProperties: { private: { uniflow_workspace_id: ESPACO } } }).motivo, 'gravado_pelo_app');
   assert.equal(novo({ start: { dateTime: '2028-01-01T10:00:00Z' }, end: { dateTime: '2028-01-01T11:00:00Z' } }).motivo, 'fora_da_janela');
   assert.equal(novo({ start: { dateTime: '2026-08-01T10:00:00Z' }, end: { dateTime: '2026-08-01T11:00:00Z' } }).motivo, 'fora_da_janela');
 });
 
-test('privado não leva título nem descrição adiante', () => {
-  const evento = mapearEvento(eventoComHorario({ visibility: 'private' }), { workspaceId: ESPACO });
-  assert.equal(evento.naoEntra, 'privado');
-  assert.equal(evento.campos, null);
+test('privado e confidencial entram com título, descrição e local (#272)', () => {
+  for (const visibility of ['private', 'confidential']) {
+    const evento = mapearEvento(eventoComHorario({ visibility }), { workspaceId: ESPACO });
+    assert.equal(evento.naoEntra, null);
+    assert.equal(evento.privado, true);
+    assert.deepEqual([evento.campos.title, evento.campos.description, evento.campos.location], ['Dentista', 'Levar exames', 'Rua A, 10']);
+    assert.equal(decidir(eventoComHorario({ visibility }), { vinculo: null, item: null }).tipo, 'inserir');
+  }
+  assert.equal(mapearEvento(eventoComHorario({ visibility: 'public' }), { workspaceId: ESPACO }).privado, false);
 });
 
 test('local de trabalho, ausência, foco e convite recusado não entram', () => {
@@ -211,9 +214,22 @@ test('sync completo repetido não traz de volta evento antigo sem vínculo (item
   assert.equal(passaNoCorte(mapearEvento(antigo, { workspaceId: ESPACO }), null), true);
 });
 
-test('ficou privado: cancela o item que veio do Google e deixa o item criado no app', () => {
-  assert.deepEqual(decidir(eventoComHorario({ visibility: 'private' })), { tipo: 'cancelar', motivo: 'privado' });
-  assert.equal(decidir(eventoComHorario({ visibility: 'private' }), { vinculo: { ...VINCULO, origin: 'app' } }).tipo, 'visto');
+test('ficou privado no Google: o item continua e recebe a edição', () => {
+  const decisao = decidir(eventoComHorario({ visibility: 'private', summary: 'Entrevista' }));
+  assert.equal(decisao.tipo, 'atualizar');
+  assert.equal(decisao.campos.title, 'Entrevista');
+  assert.deepEqual(decidir(eventoComHorario({ visibility: 'private' })), { tipo: 'visto', motivo: 'sem_mudanca' });
+});
+
+test('primeiro completo depois do #272: só o privado antigo passa no corte', () => {
+  const corte = { desde: '2026-10-10T00:00:00.000Z', fimDaJanelaAnterior: '2027-10-10T00:00:00.000Z', privadosPassam: true };
+  const privadoAntigo = eventoComHorario({ visibility: 'private', updated: '2026-10-01T00:00:00.000Z' });
+  const publicoAntigo = eventoComHorario({ updated: '2026-10-01T00:00:00.000Z' });
+  assert.equal(decidir(privadoAntigo, { vinculo: null, item: null, corte }).tipo, 'inserir');
+  // O público antigo sem vínculo é item excluído no app: continua fora.
+  assert.equal(decidir(publicoAntigo, { vinculo: null, item: null, corte }).motivo, 'anterior_ao_ultimo_completo');
+  // Depois desse completo, o privado antigo segue o corte como os outros.
+  assert.equal(decidir(privadoAntigo, { vinculo: null, item: null, corte: { ...corte, privadosPassam: false } }).motivo, 'anterior_ao_ultimo_completo');
 });
 
 test('pagamento: data local igual mantém starts_at e is_all_day', () => {
@@ -264,7 +280,7 @@ test('planejarLote: monta as operações da RPC com o updated_at como veio do ba
     eventos: [
       eventoComHorario({ id: 'novo', etag: '"n1"' }),
       eventoComHorario({ id: 'evt1', etag: '"e2"', summary: 'Remarcado' }),
-      eventoComHorario({ id: 'privado-novo', visibility: 'private' }),
+      eventoComHorario({ id: 'privado-novo', etag: '"p1"', visibility: 'private' }),
       { id: 'apagado', status: 'cancelled', etag: '"c"', updated: '2026-10-13T11:00:00Z' },
     ],
     estado: [
@@ -278,13 +294,14 @@ test('planejarLote: monta as operações da RPC com o updated_at como veio do ba
   assert.deepEqual(operacoes.map((operacao) => [operacao.tipo, operacao.external_id]), [
     ['inserir', 'novo'],
     ['atualizar', 'evt1'],
+    ['inserir', 'privado-novo'],
     ['cancelar', 'apagado'],
   ]);
   assert.equal(operacoes[0].campos.item_type, 'meeting');
   assert.equal(operacoes[0].etag, '"n1"');
   assert.equal(operacoes[1].agenda_item_id, 'item-1');
   assert.equal(operacoes[1].esperado_updated_at, '2026-10-12T09:00:00.123456+00:00');
-  assert.equal(operacoes[2].agenda_item_id, 'item-2');
+  assert.equal(operacoes[3].agenda_item_id, 'item-2');
 });
 
 test('planejarLote: vínculo existente com evento ilegível ainda é marcado como visto', () => {

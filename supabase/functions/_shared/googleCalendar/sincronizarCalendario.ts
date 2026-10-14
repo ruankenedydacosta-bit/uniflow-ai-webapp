@@ -9,6 +9,8 @@
 //   completo semanal também traz as ocorrências de série que entraram na
 //   janela sem mudar no Google. Repetido, só insere evento alterado desde o
 //   último completo ou que entrou agora na janela (passaNoCorte).
+// - Calendário sem privados_importados_em (lido antes do #272) faz um
+//   completo, mesmo com token válido, em que o evento privado passa no corte.
 // - O completo precisa terminar numa execução: não há pageToken guardado.
 //   Mais de 40 páginas (10 mil eventos) vira erro paginas_demais.
 // - Cada página: estado atual (RPC) -> planejarLote (mapearEvento.js) ->
@@ -35,7 +37,7 @@ const FOLGA_DA_VARREDURA_MS = 5 * 60 * 1000;
 
 const CAMPOS_DO_CALENDARIO = [
   'id', 'external_calendar_id', 'is_read', 'sync_token', 'sync_window_start', 'sync_window_end',
-  'last_full_sync_at', 'channel_id', 'channel_resource_id', 'channel_expires_at',
+  'last_full_sync_at', 'privados_importados_em', 'channel_id', 'channel_resource_id', 'channel_expires_at',
 ].join(',');
 
 export interface ConexaoParaSync {
@@ -50,6 +52,7 @@ export interface CalendarioParaSync extends CalendarioComCanal {
   sync_window_start?: string | null;
   sync_window_end?: string | null;
   last_full_sync_at: string | null;
+  privados_importados_em: string | null;
 }
 
 export type StatusDoCalendario = 'ok' | 'skipped' | 'erro';
@@ -75,6 +78,8 @@ type Contagem = { inseridos: number; atualizados: number; cancelados: number };
 
 export function precisaDeSyncCompleto(calendario: CalendarioParaSync, agora = Date.now()) {
   if (!calendario.sync_token) return true;
+  // null, e não undefined: um select sem a coluna não força completo a cada sync.
+  if (calendario.privados_importados_em === null) return true;
   const ultimo = Date.parse(calendario.last_full_sync_at ?? '');
   return Number.isNaN(ultimo) || agora - ultimo > COMPLETO_A_CADA_MS;
 }
@@ -138,7 +143,11 @@ async function passada({
         workspaceId: conexao.workspace_id,
         janela,
         corte: completo && calendario.last_full_sync_at && calendario.sync_window_end
-          ? { desde: calendario.last_full_sync_at, fimDaJanelaAnterior: calendario.sync_window_end }
+          ? {
+            desde: calendario.last_full_sync_at,
+            fimDaJanelaAnterior: calendario.sync_window_end,
+            privadosPassam: calendario.privados_importados_em === null,
+          }
           : null,
       });
       if (operacoes.length > 0) {
@@ -233,7 +242,12 @@ export async function sincronizarCalendario({
       sync_lock_until: null,
       last_synced_at: agoraIso,
       last_sync_error: completo && !varreu ? 'varredura_falhou' : null,
-      ...(completoFeito ? { last_full_sync_at: agoraIso, sync_window_start: janela.inicio, sync_window_end: janela.fim } : {}),
+      ...(completoFeito ? {
+        last_full_sync_at: agoraIso,
+        sync_window_start: janela.inicio,
+        sync_window_end: janela.fim,
+        ...(calendario.privados_importados_em === null ? { privados_importados_em: agoraIso } : {}),
+      } : {}),
     },
     prefer: 'return=minimal',
   });
