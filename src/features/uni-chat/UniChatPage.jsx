@@ -181,7 +181,6 @@ import {
 import { SIMPLIFIED_ROUTES, SimplifiedHomeView } from '../simplified-app/index.js';
 import {
   buildPublicMovementSummaryResponse,
-  enforcePublicFinancialResponsePolicy,
   isPublicFinancialSummaryRequest,
   isRetiredPublicBalanceRequest,
 } from './publicBalanceExperience.js';
@@ -362,9 +361,6 @@ export default function UniChatPage({ variant = 'full' }) {
 
   const uniLlm = useUniLlm();
 
-  // Texto da última pergunta do usuário, para a política de resposta
-  // financeira pública saber o que foi pedido.
-  const lastUserTurnTextRef = useRef('');
   // Sprint 2 — Memória Conversacional: contexto de curto prazo (conta/
   // categoria/última consulta) por instância de conversa, nunca persiste.
   // Resetado na troca de conversa.
@@ -2686,19 +2682,13 @@ export default function UniChatPage({ variant = 'full' }) {
   // Todo fluxo de resposta (FinancialQueryEngine, LLM, Pending Actions,
   // confirmações, planos financeiros, avisos, erros e fluxos intermediários)
   // passa por ele.
-  // A política de resposta financeira pública entra no ÚNICO ponto de
-  // construção de mensagem do pipeline oficial (buildMessage).
-  const buildGuidedUniMessage = useCallback((text, messageOptions = {}) => {
-    const publicText = enforcePublicFinancialResponsePolicy({
-      text: typeof text === 'string' ? text : '',
-      requestText: lastUserTurnTextRef.current,
-      snapshot: financialContext.snapshot,
-    });
-    return buildUniMessage(publicText, messageOptions);
-  }, [financialContext.snapshot]);
+  const buildAssistantMessage = useCallback(
+    (text, messageOptions = {}) => buildUniMessage(typeof text === 'string' ? text : '', messageOptions),
+    [],
+  );
 
   const { createAssistantResponse } = useUniResponsePipeline({
-    buildMessage: buildGuidedUniMessage,
+    buildMessage: buildAssistantMessage,
     pushMessage,
     persistMessage: syncMessageToSupabase,
   });
@@ -3151,7 +3141,6 @@ export default function UniChatPage({ variant = 'full' }) {
     const escolha = buildUserMessage(item.label);
     pushMessage(escolha);
     syncMessageToSupabase(escolha);
-    lastUserTurnTextRef.current = item.label;
     uniTurnTokenRef.current += 1;
     stickToBottom.current = true;
     setCategoryQuestionMessageId(null);
@@ -4067,7 +4056,6 @@ export default function UniChatPage({ variant = 'full' }) {
         || (declaredIntent.startsWith('agenda_') && (!roteiaPeloModelo || hasPendingFinancialConversation))
       );
     const hasPendingConversation = hasAgendaConversation || hasPendingFinancialConversation;
-    lastUserTurnTextRef.current = text;
     if (isRetiredBalanceRequest || isPublicFinancialSummary) {
       if (hasPendingConversation) abandonStalePendingState();
       // A pergunta de fechamento da resposta ("quer mais alguma coisa?") não

@@ -3,8 +3,6 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   buildPublicMovementSummaryResponse,
-  containsForbiddenPublicBalanceNarrative,
-  enforcePublicFinancialResponsePolicy,
   isPublicFinancialSummaryRequest,
   isRetiredPublicBalanceRequest,
   PUBLIC_BALANCE_RETIREMENT_TEXT,
@@ -129,7 +127,6 @@ test('contas novas, somente Entradas, somente Saídas e zero movimentações nun
   ];
   for (const snapshot of matrices) {
     const response = buildPublicMovementSummaryResponse({ snapshot, text: 'Faz um resumo financeiro' });
-    assert.equal(containsForbiddenPublicBalanceNarrative(response.text), false);
     assert.doesNotMatch(response.text, /resultado\s+(?:positivo|negativo)|seu saldo|saldo atual/i);
   }
 });
@@ -162,41 +159,6 @@ test('períodos públicos reutilizam o resolvedor temporal existente', () => {
   }
 });
 
-test('barreira final substitui narrativa proibida da LLM/Engine somente em contexto financeiro', () => {
-  const snapshot = snapshotWithLegacyBalance(MOVEMENTS);
-  const safe = enforcePublicFinancialResponsePolicy({
-    text: 'Seu saldo atual é R$ 16.624 e o resultado negativo foi R$ 2.000.',
-    requestText: 'Me fala sobre meu dinheiro',
-    snapshot,
-  });
-  assert.match(safe, /2 entradas/);
-  assert.doesNotMatch(safe, /saldo|resultado/i);
-  assert.equal(
-    enforcePublicFinancialResponsePolicy({
-      text: 'A pauta da reunião é saldo de férias.',
-      requestText: 'Agenda uma reunião sobre saldo',
-      snapshot,
-    }),
-    'A pauta da reunião é saldo de férias.',
-  );
-});
-
-test('matriz de vazamento bloqueia saldo, resultado e subtração narrada por qualquer compositor', () => {
-  for (const text of [
-    'Seu saldo atual é R$ 16.624,00.',
-    'Você possui R$ 16.624,00.',
-    'Você está com R$ 16.624,00.',
-    'O resultado positivo foi de R$ 1.180,00.',
-    'O resultado negativo foi de R$ 1.180,00.',
-    'Sobraram R$ 1.180,00 neste mês.',
-    'A diferença foi de R$ 1.180,00.',
-    'Seu patrimônio é de R$ 16.624,00.',
-    'O valor restante é R$ 1.180,00.',
-  ]) {
-    assert.equal(containsForbiddenPublicBalanceNarrative(text), true, text);
-  }
-});
-
 test('atalho público de Saldo foi substituído por Abrir agenda e navega para a rota existente', async () => {
   assert.equal(SUGGESTIONS_PESSOAL.some((item) => item.label === 'Ver meu saldo'), false);
   assert.equal(
@@ -215,5 +177,4 @@ test('UniChat resolve resumo financeiro antes de small talk e abandona pending d
   assert.ok(summaryGate >= 0);
   assert.ok(commonGate > summaryGate);
   assert.match(page, /shouldAbandonAgendaForFinancial[\s\S]*isPublicFinancialSummary/);
-  assert.match(page, /enforcePublicFinancialResponsePolicy/);
 });

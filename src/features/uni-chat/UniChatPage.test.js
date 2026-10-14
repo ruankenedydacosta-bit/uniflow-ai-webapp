@@ -1325,26 +1325,9 @@ test('HOTFIX FINAL P1: o chat completo renderiza renderedMessages (dedupeMessage
 });
 
 // ============================================================================
-// Ponto único de saída: a política de resposta financeira pública recebe o
-// texto da pergunta do turno; a resposta do LLM só com espaços cai no texto
+// Ponto único de saída: a resposta do LLM só com espaços cai no texto
 // padrão.
 // ============================================================================
-
-test('buildGuidedUniMessage aplica a política pública com o texto da pergunta do turno', async () => {
-  const page = await source('UniChatPage.jsx');
-  const buildBlock = page.slice(
-    page.indexOf('const buildGuidedUniMessage = useCallback'),
-    page.indexOf('const { createAssistantResponse } = useUniResponsePipeline'),
-  );
-  assert.match(buildBlock, /text: typeof text === 'string' \? text : '',/);
-  assert.match(buildBlock, /requestText: lastUserTurnTextRef\.current,/);
-  assert.match(buildBlock, /return buildUniMessage\(publicText, messageOptions\);/);
-  const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
-  // Gravado antes da primeira resposta do turno (o resumo público sai logo depois).
-  const gravaIndex = body.indexOf('lastUserTurnTextRef.current = text;');
-  const resumoIndex = body.indexOf('responderResumoSemSaldo(');
-  assert.ok(gravaIndex > -1 && resumoIndex > -1 && gravaIndex < resumoIndex);
-});
 
 test('FASE 21: createAssistantResponse permanece o único ponto de publicação em handleUnresolvedMessage', async () => {
   const page = await source('UniChatPage.jsx');
