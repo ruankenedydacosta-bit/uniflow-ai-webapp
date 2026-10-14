@@ -6,7 +6,6 @@ import {
   formatAgendaNotificationTime,
   formatNotificationDate,
   getNotificationMessage,
-  getNotificationTypeLabel,
   isNotificationUnread,
   isSafeInternalUrl,
 } from './notificationFormatting.js';
@@ -76,7 +75,7 @@ test('countUnread retorna 0 para lista vazia', () => {
 });
 
 // ============================================================================
-// getNotificationTypeLabel / NOTIFICATION_TYPES
+// NOTIFICATION_TYPES
 // ============================================================================
 
 test('NOTIFICATION_TYPES cobre os 6 tipos suportados pela NOTIF1', () => {
@@ -84,20 +83,6 @@ test('NOTIFICATION_TYPES cobre os 6 tipos suportados pela NOTIF1', () => {
     [...NOTIFICATION_TYPES].sort(),
     ['agenda', 'crm', 'financeiro', 'metas', 'sistema', 'uni'].sort(),
   );
-});
-
-test('getNotificationTypeLabel traduz cada tipo suportado', () => {
-  assert.equal(getNotificationTypeLabel('financeiro'), 'Financeiro');
-  assert.equal(getNotificationTypeLabel('metas'), 'Metas');
-  assert.equal(getNotificationTypeLabel('agenda'), 'Agenda');
-  assert.equal(getNotificationTypeLabel('crm'), 'CRM');
-  assert.equal(getNotificationTypeLabel('sistema'), 'Sistema');
-  assert.equal(getNotificationTypeLabel('uni'), 'Uni');
-});
-
-test('getNotificationTypeLabel cai em "Sistema" para tipo desconhecido, nunca lanca', () => {
-  assert.equal(getNotificationTypeLabel('tipo-invalido'), 'Sistema');
-  assert.equal(getNotificationTypeLabel(undefined), 'Sistema');
 });
 
 // ============================================================================
@@ -140,6 +125,8 @@ test('formatAgendaNotificationTime: dia e hora do compromisso, vazio quando ileg
   assert.equal(formatAgendaNotificationTime('2026-10-08T19:30:00.000Z', opts), 'Qui, 08 out às 16:30');
   // 23h30 de 14/10 em São Paulo já é 15/10 em UTC: continua "Hoje".
   assert.equal(formatAgendaNotificationTime('2026-10-15T02:30:00.000Z', opts), 'Hoje às 23:30');
+  // now: null é o texto gravado no banco: sempre com a data.
+  assert.equal(formatAgendaNotificationTime('2026-10-14T16:15:00.000Z', { ...opts, now: null }), 'Qua, 14 out às 13:15');
   assert.equal(formatAgendaNotificationTime('invalido', opts), '');
   assert.equal(formatAgendaNotificationTime(null, opts), '');
 });

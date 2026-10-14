@@ -60,7 +60,7 @@ test('compromisso vencido cria notificacao so com titulo, dia e hora, sem a desc
   assert.equal(result.error, null);
   assert.equal(harness.notifications.length, 1);
   assert.equal(harness.notifications[0].title, 'Reunião');
-  assert.equal(harness.notifications[0].message, 'Hoje às 12:21');
+  assert.equal(harness.notifications[0].message, 'Ter, 11 ago às 12:21');
   assert.equal(harness.notifications[0].actionUrl, '/app/agenda');
 });
 
@@ -72,7 +72,7 @@ test('descricao longa do Google Agenda nao entra na notificacao', async () => {
     ...harness.dependencies,
   });
   assert.doesNotMatch(harness.notifications[0].message, /Teams|https:/);
-  assert.match(harness.notifications[0].message, /^Hoje às \d{2}:\d{2}$/);
+  assert.match(harness.notifications[0].message, /^[A-Z][a-zá]{2}, \d{2} [a-z]{3} às \d{2}:\d{2}$/);
 });
 
 test('futuro, concluido, outro usuario e outro workspace nao notificam', async () => {

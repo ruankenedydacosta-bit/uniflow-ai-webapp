@@ -64,7 +64,9 @@ export async function syncDueAgendaNotificationsOnce(userId, workspaceId, {
         workspaceId,
         type: 'agenda',
         title: item.title,
-        message: formatAgendaNotificationTime(item.starts_at, { timeZone, now }),
+        // Texto gravado: sempre com a data, nunca "Hoje" (envelheceria no banco).
+        // O painel recalcula o relativo a partir de metadata.agenda_starts_at.
+        message: formatAgendaNotificationTime(item.starts_at, { timeZone, now: null }),
         actionUrl: '/app/agenda',
         metadata: {
           agenda_item_id: item.id,

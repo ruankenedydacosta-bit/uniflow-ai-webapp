@@ -275,7 +275,9 @@
 
 /* X de dispensar: com mouse, aparece no lugar da hora ao passar o mouse
    ou no foco do teclado. No toque fica fora de alcance do dedo (o gesto é
-   arrastar), mas continua na árvore para o leitor de tela.
+   arrastar), mas continua na árvore para o leitor de tela: com foco, ele
+   aparece e passa a receber o toque, para a ativação do leitor cair nele
+   e não na linha de baixo.
    O min-width/min-height global de 44px (área mínima de toque) é
    neutralizado: o botão só existe para o mouse e o teclado. */
 .itemDismiss {
@@ -303,8 +305,12 @@
   height: 14px;
 }
 
-.itemDismiss:focus-visible {
+.itemDismiss:focus {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.itemDismiss:focus-visible {
   outline: 2px solid var(--uf-app-focus);
   outline-offset: 0;
 }
@@ -314,7 +320,7 @@
   color: var(--uf-app-text);
 }
 
-.itemRow:focus-within:has(.itemDismiss:focus-visible) .itemMeta {
+.itemRow:has(.itemDismiss:focus) .itemMeta {
   visibility: hidden;
 }
 

@@ -53,11 +53,13 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
   const [dragX, setDragX] = useState(0);
   const [isDismissing, setIsDismissing] = useState(false);
   const dragStateRef = useRef(null);
+  const suppressClickRef = useRef(false);
 
   function handlePointerDown(event) {
     if (isDismissing) return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     dragStateRef.current = { x: event.clientX, y: event.clientY, locked: null };
+    suppressClickRef.current = false;
   }
 
   function handlePointerMove(event) {
@@ -75,6 +77,11 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
         dragStateRef.current = null;
         return;
       }
+      // Com mouse, soltar fora da linha não chegaria aqui e a linha ficaria
+      // presa no meio do gesto; a captura garante o pointerup.
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      // O clique que o navegador dispara ao soltar não pode abrir o aviso.
+      suppressClickRef.current = true;
     }
     if (drag.locked !== 'x') return;
 
@@ -138,7 +145,13 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
           className={styles.item}
           data-unread={unread ? 'true' : 'false'}
           style={{ opacity }}
-          onClick={() => onActivate(notification)}
+          onClick={() => {
+            if (suppressClickRef.current) {
+              suppressClickRef.current = false;
+              return;
+            }
+            onActivate(notification);
+          }}
         >
           <IconBox tone={unread && tone ? tone : undefined} className={unread ? undefined : styles.iconRead}>
             <Icon />
@@ -183,14 +196,16 @@ function NotificationItem({ notification, onActivate, onDismiss }) {
  * Lista agrupada por dia (Hoje, Ontem, Anteriores). Usada pelo painel do
  * sino e pela página de notificações do Mais.
  */
-export function NotificationList({ notifications, onActivate, onDismiss }) {
+export function NotificationList({ notifications, onActivate, onDismiss, headingLevel = 3 }) {
   const dayGroups = groupNotificationsByDay(notifications);
+  // h3 abaixo do título do painel (h2); a página do Mais, com h1, usa h2.
+  const GroupHeading = `h${headingLevel}`;
 
   return (
     <div className={styles.groups}>
       {dayGroups.map((group) => (
         <section key={group.key} className={styles.dayGroup} aria-label={group.label}>
-          <h3 className={styles.groupLabel}>{group.label}</h3>
+          <GroupHeading className={styles.groupLabel}>{group.label}</GroupHeading>
           <ul className={styles.list}>
             {group.items.map((notification) => (
               <NotificationItem

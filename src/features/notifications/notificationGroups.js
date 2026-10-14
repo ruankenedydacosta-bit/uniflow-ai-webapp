@@ -1,6 +1,6 @@
 // Tela 13 v2: a lista de notificações (painel do sino e página do Mais)
-// agrupa por dia de chegada em Hoje, Ontem e Anteriores. Funções puras, com `now` injetável, no mesmo padrão de
-// formatNotificationDate.
+// agrupa por dia de chegada em Hoje, Ontem e Anteriores. Funções puras,
+// com `now` injetável, no mesmo padrão de formatNotificationDate.
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());

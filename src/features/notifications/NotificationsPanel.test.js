@@ -133,9 +133,15 @@ test('X de dispensar aparece só no hover (mouse) e no foco do teclado, no lugar
   const baseRule = base.slice(0, base.indexOf('}'));
   assert.match(baseRule, /opacity: 0;/);
   assert.match(baseRule, /pointer-events: none;/);
-  assert.match(css, /\.itemDismiss:focus-visible \{\s*\n\s*opacity: 1;/);
+  assert.match(css, /\.itemDismiss:focus \{\s*\n\s*opacity: 1;\s*\n\s*pointer-events: auto;/);
   assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{[\s\S]*?\.itemRow:hover \.itemDismiss \{\s*\n\s*opacity: 1;\s*\n\s*pointer-events: auto;/);
   assert.match(css, /\.itemRow:hover \.itemMeta \{\s*\n\s*visibility: hidden;/);
+});
+
+test('arrastar com o mouse captura o ponteiro e não abre o aviso no clique de soltar', async () => {
+  const content = await source('NotificationsPanel.jsx');
+  assert.match(content, /event\.currentTarget\.setPointerCapture\?\.\(event\.pointerId\);\s*\n[^\n]*\n\s*suppressClickRef\.current = true;/);
+  assert.match(content, /if \(suppressClickRef\.current\) \{\s*\n\s*suppressClickRef\.current = false;\s*\n\s*return;\s*\n\s*\}\s*\n\s*onActivate\(notification\);/);
 });
 
 test('arrastar revela "Dispensar" por baixo da linha', async () => {

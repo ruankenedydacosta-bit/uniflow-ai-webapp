@@ -7,19 +7,6 @@ export const NOTIFICATION_TYPES = Object.freeze([
   'uni',
 ]);
 
-const TYPE_LABELS = Object.freeze({
-  financeiro: 'Financeiro',
-  metas: 'Metas',
-  agenda: 'Agenda',
-  crm: 'CRM',
-  sistema: 'Sistema',
-  uni: 'Uni',
-});
-
-export function getNotificationTypeLabel(type) {
-  return TYPE_LABELS[type] ?? 'Sistema';
-}
-
 export function isNotificationUnread(notification) {
   return !notification?.read_at;
 }
@@ -76,12 +63,14 @@ function diaNoFuso(date, timeZone) {
 }
 
 /**
- * Dia e hora do compromisso para a notificação da Agenda ("Amanhã às 09:00",
- * "Ter, 13 out às 09:00"). Só a hora não basta: a notificação chega antes
- * do compromisso e fica na lista depois dele. A descrição do evento fica de
- * fora: a que vem do Google Agenda costuma trazer o convite inteiro da
- * reunião (links, senha, rodapé). `timeZone` e `now` injetáveis só para
- * teste; no app valem o fuso do navegador e a hora atual.
+ * Dia e hora do compromisso para a notificação da Agenda ("Hoje às 09:00",
+ * "Ter, 13 out às 09:00"). Só a hora não basta: a notificação fica na lista
+ * nos dias seguintes. "Amanhã" cobre o lembrete que chegar antes do
+ * compromisso. A descrição do evento fica de fora: a que vem do Google
+ * Agenda costuma trazer o convite inteiro da reunião (links, senha, rodapé).
+ * `now: null` devolve sempre a data, para o texto gravado no banco, que não
+ * pode envelhecer. `timeZone` e `now` injetáveis para teste; no app valem o
+ * fuso do navegador e a hora atual.
  */
 export function formatAgendaNotificationTime(startsAt, { timeZone, now = new Date() } = {}) {
   if (!startsAt) return '';
@@ -90,9 +79,11 @@ export function formatAgendaNotificationTime(startsAt, { timeZone, now = new Dat
   const hora = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone });
 
   const dia = diaNoFuso(date, timeZone);
-  const diffDays = Math.round((dia - diaNoFuso(now, timeZone)) / 86400000);
-  if (diffDays === 0) return `Hoje às ${hora}`;
-  if (diffDays === 1) return `Amanhã às ${hora}`;
+  if (now) {
+    const diffDays = Math.round((dia - diaNoFuso(now, timeZone)) / 86400000);
+    if (diffDays === 0) return `Hoje às ${hora}`;
+    if (diffDays === 1) return `Amanhã às ${hora}`;
+  }
 
   const diaDoMes = String(dia.getUTCDate()).padStart(2, '0');
   return `${DIAS_DA_SEMANA[dia.getUTCDay()]}, ${diaDoMes} ${MESES[dia.getUTCMonth()]} às ${hora}`;

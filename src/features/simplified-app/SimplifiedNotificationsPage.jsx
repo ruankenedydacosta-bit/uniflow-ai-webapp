@@ -88,6 +88,7 @@ function SimplifiedNotificationsPage() {
           notifications={notifications}
           onActivate={handleActivate}
           onDismiss={dismissNotification}
+          headingLevel={2}
         />
       )}
 
