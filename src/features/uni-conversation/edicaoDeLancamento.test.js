@@ -195,6 +195,34 @@ test('escolhe na lista pela posição, pelo valor, pela conta ou pela data', () 
   assert.equal(escolherCandidato('o mercado', lista, contexto), null);
 });
 
+test('escolhe pela posição dita com o verbo do pedido ou em frase mais longa', () => {
+  const lista = [mercadoOntem, mercadoSemanaPassada];
+  assert.equal(escolherCandidato('pode ser o primeiro', lista, contexto), mercadoOntem);
+  assert.equal(escolherCandidato('o primeiro, por favor', lista, contexto), mercadoOntem);
+  assert.equal(escolherCandidato('pode apagar o 2', lista, contexto), mercadoSemanaPassada);
+  assert.equal(escolherCandidato('o número um', lista, contexto), mercadoOntem);
+  // Frases que a conversa por voz mandou em 14/10/2026, com o item colado.
+  assert.equal(
+    escolherCandidato('Excluir o primeiro lançamento de Mercado, R$ 32,00, 07/10/2026.', lista, contexto),
+    mercadoOntem,
+  );
+  assert.equal(
+    escolherCandidato('Confirmar a exclusão do lançamento número 2 da lista, Mercado Extra, R$ 85,00, 30/09/2026.', lista, contexto),
+    mercadoSemanaPassada,
+  );
+  assert.equal(escolherCandidato('Excluir o lançamento número 1 da lista.', lista, contexto), mercadoOntem);
+  // Duas posições, ou uma fora da lista, não escolhem.
+  assert.equal(escolherCandidato('o primeiro e o segundo', lista, contexto), null);
+  assert.equal(escolherCandidato('excluir o lançamento número 3 da lista', lista, contexto), null);
+});
+
+test('"qualquer um" escolhe só quando os itens da lista são iguais', () => {
+  const repetido = lancamento({ ...mercadoOntem, id: 't1b' });
+  assert.equal(escolherCandidato('Qualquer um desses', [mercadoOntem, repetido], contexto), mercadoOntem);
+  assert.equal(escolherCandidato('pode apagar qualquer um', [mercadoOntem, repetido], contexto), mercadoOntem);
+  assert.equal(escolherCandidato('qualquer um', [mercadoOntem, mercadoSemanaPassada], contexto), null);
+});
+
 test('monta a alteração só com o que muda', () => {
   const alteracao = montarAlteracao(mercadoOntem, { amount: 50, accountId: 'itau' }, contexto);
   assert.deepEqual(alteracao.alteracoes, { amount: 50 });

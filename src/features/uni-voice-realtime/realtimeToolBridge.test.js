@@ -288,6 +288,12 @@ test('a sessão manda alterar lançamento já registrado pelo mesmo caminho do c
   assert.match(EDGE_SOURCE, /Com um rascunho ou uma alteração aguardando confirmação/);
 });
 
+// BUG REAL (voz, 14/10/2026): a resposta à lista de exclusão chegou ao chat
+// reescrita ("Excluir o lançamento número 1 da lista, Mensalidade escolar...").
+test('a sessão manda repassar a escolha na lista de exclusão com as palavras da pessoa', () => {
+  assert.match(EDGE_SOURCE, /Para excluir um lançamento já registrado[^']*Se a Uni listar vários lançamentos e perguntar qual, passe só a resposta da pessoa com enviar_para_uni, com as palavras dela/);
+});
+
 // BUG REAL (voz): a Uni dizia "corrigi" com o card igual na tela. Ela só pode
 // afirmar o que a resposta da ferramenta desta vez afirma.
 test('a sessão proíbe dizer que corrigiu, registrou ou cancelou sem a ferramenta confirmar', () => {
