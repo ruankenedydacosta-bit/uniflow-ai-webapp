@@ -107,6 +107,9 @@ function serializar(validada) {
         novaConta: paraCliente(validada.recorrencia.novaConta),
       },
     } : {}),
+    ...(validada.orcamento ? {
+      orcamento: { ...validada.orcamento, categoria: paraCliente(validada.orcamento.categoria) },
+    } : {}),
     ...(consulta ? {
       consulta: {
         tipo: consulta.tipo,

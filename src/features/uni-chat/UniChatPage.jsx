@@ -228,6 +228,12 @@ import {
 } from '../../services/transactionService.js';
 import { localizarSerie, montarPedidoDeRecorrencia } from '../uni-conversation/pedidoDeRecorrencia.js';
 import {
+  montarPedidoDeOrcamento,
+  respostaDaConsultaDeOrcamento,
+  TEXTO_ORCAMENTO_INCOMPLETO,
+} from '../uni-conversation/pedidoDeOrcamento.js';
+import { deleteCategoryBudget, listCategoryBudgets, saveCategoryBudget } from '../../services/categoryBudgetService.js';
+import {
   acharPrevisto,
   janelaDosPrevistos,
   mudancasDaConfirmacao,
@@ -1811,6 +1817,57 @@ export default function UniChatPage({ variant = 'full' }) {
         : transactionsState.saveSeriesTransactions(chamada.transacaoId, chamada.escopo, chamada.alteracoes)),
       textoDoErro: 'Não consegui mudar a série. Tente de novo ou use a tela Financeiro.',
       textoCancelado: 'Tudo bem. A série continua como estava.',
+    });
+  }
+
+  // Teto de gasto por categoria pelo uni-interpret (#264). Consultar lê o
+  // gasto realizado do mês; definir e remover passam pelo card.
+  async function iniciarPedidoDeOrcamento(pedido, turnToken) {
+    if (!pedido.acao) {
+      createAssistantResponse(TEXTO_ORCAMENTO_INCOMPLETO, { deduplicateNarration: false });
+      return;
+    }
+    const workspaceId = effectiveWorkspace?.id;
+    const conversationId = activeIdRef.current;
+    setIsTyping(true);
+    const hoje = getLocalIsoDate();
+    const [orcamentos, doMes] = await Promise.all([
+      listCategoryBudgets(workspaceId).catch(() => null),
+      pedido.acao === 'consultar'
+        ? listTransactionsForPeriod(workspaceId, { dateFrom: `${hoje.slice(0, 7)}-01`, dateTo: hoje, status: 'completed' }).catch(() => null)
+        : Promise.resolve({ data: [] }),
+    ]);
+    if (uniTurnTokenRef.current !== turnToken || activeIdRef.current !== conversationId) return;
+    setIsTyping(false);
+    if (!orcamentos || orcamentos.error || !doMes || doMes.error) {
+      createAssistantResponse('Não consegui ler seus tetos de gasto agora. Tente de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    if (pedido.acao === 'consultar') {
+      createAssistantResponse(respostaDaConsultaDeOrcamento(pedido, {
+        orcamentos: orcamentos.data,
+        categorias: categoryState.categories,
+        transacoes: doMes.data,
+      }), { deduplicateNarration: false });
+      return;
+    }
+    const pronto = montarPedidoDeOrcamento(pedido, {
+      orcamentos: orcamentos.data,
+      // Sem conseguir ler o papel, quem decide é a RLS, como no pedido de categoria.
+      papel: workspaceRole.error ? { canUpdate: true } : workspaceRole,
+    });
+    if (pronto.erro) {
+      createAssistantResponse(pronto.erro, { deduplicateNarration: false });
+      return;
+    }
+    const { chamada } = pronto;
+    oferecerAcao({
+      ...pronto,
+      executar: () => (chamada.acao === 'remover'
+        ? deleteCategoryBudget(workspaceId, chamada.categoriaId)
+        : saveCategoryBudget(workspaceId, chamada.categoriaId, chamada.valor)),
+      textoDoErro: 'Não consegui salvar o teto. Tente de novo ou use a tela Registros.',
+      textoCancelado: 'Tudo bem. O teto continua como estava.',
     });
   }
 
@@ -4239,6 +4296,9 @@ export default function UniChatPage({ variant = 'full' }) {
         return true;
       case ROTAS_INTERPRETACAO.RECORRENCIA:
         await iniciarPedidoDeRecorrencia(interpretacao.recorrencia, turnToken);
+        return true;
+      case ROTAS_INTERPRETACAO.ORCAMENTO:
+        await iniciarPedidoDeOrcamento(interpretacao.orcamento, turnToken);
         return true;
       case ROTAS_INTERPRETACAO.EDICAO:
         setIsTyping(false);

@@ -17,6 +17,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - exclusao: apagar um lançamento já registrado ("apaga o iFood de ontem", "exclui o mercado de sábado", "tira esse último lançamento, foi engano", "apaga tudo que lancei em setembro"). Excluir uma categoria é categoria; cancelar um compromisso é agenda; desistir do <rascunho> é correcao.
 - edicao: mudar um lançamento já registrado, fora do <rascunho> ("a farmácia de terça foi 62, não 26", "o lanche de hoje na verdade foi 18", "errei o valor da padaria, era 30", "o táxi de quarta foi no cartão", "muda a categoria da academia para Saúde"). Com <rascunho>, mudar o rascunho é correcao. Apagar é exclusao.
 - recorrencia: mudar ou parar um lançamento que se repete todo mês, semana ou ano ("a academia sobe pra 130 a partir de dezembro", "o condomínio agora sai da conta conjunta", "para de lançar o Spotify", "cancelei a assinatura do Disney+, tira dos próximos meses"). Um lançamento só, que não se repete, é edicao ou exclusao.
+- orcamento: definir, tirar ou consultar o teto de gasto mensal de uma categoria ("no máximo 600 por mês com delivery", "tira o limite de Vestuário", "quanto ainda posso gastar com transporte?", "como estão meus limites?"). Quanto já gastou, sem falar de teto ou limite, é consulta.
 - conversa: cumprimento, agradecimento, papo.
 - nao_entendi: nenhuma das anteriores com segurança.
 
@@ -99,6 +100,12 @@ Só quando o intent é recorrencia; nos outros, todos os campos são null.
 - alvo: o lançamento que se repete, como apareceria na descrição dele ("Academia", "Spotify"). Sem verbo, data, valor nem conta.
 - a_partir_de: o primeiro dia em que a mudança vale, resolvido a partir de hoje, só se a frase cita ("a partir de dezembro" é o dia 1 de dezembro). null se não cita: vale a partir do próximo.
 - novo_valor, nova_categoria (apelido do catálogo) e nova_conta (apelido): só em editar, só o que muda.
+
+## orcamento
+Só quando o intent é orcamento; nos outros, todos os campos são null.
+- acao: definir (criar ou mudar o teto), remover (tirar o teto) ou consultar (quanto falta, se passou, como estão os tetos).
+- categoria: apelido da categoria de saída do catálogo. null em consultar quando a pessoa pergunta de todos.
+- valor: só em definir, o teto mensal em reais.
 
 ## resposta
 Só para conversa e nao_entendi: uma frase curta em português, para ser falada. Para nao_entendi, peça para a pessoa dizer de outro jeito. Nos outros intents, string vazia.

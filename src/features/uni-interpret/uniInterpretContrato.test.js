@@ -67,7 +67,7 @@ test('apelidos seguem a ordem por tipo e nome, independente da ordem recebida', 
 });
 
 test('schema é estrito: todo campo obrigatório e nenhum extra', () => {
-  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao, ESQUEMA.properties.edicao, ESQUEMA.properties.recorrencia];
+  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao, ESQUEMA.properties.edicao, ESQUEMA.properties.recorrencia, ESQUEMA.properties.orcamento];
   for (const objeto of objetos) {
     assert.equal(objeto.additionalProperties, false);
     assert.deepEqual([...objeto.required].sort(), Object.keys(objeto.properties).sort());
@@ -673,6 +673,18 @@ test('recorrencia: ação da lista, mudança só em editar e sem mudança vira n
   assert.equal(encerrar.novoValor, null, 'encerrar não leva mudança');
   assert.equal(validarInterpretacao(pedido({ ...vazio, acao: 'editar', alvo: 'Academia' }), CONTEXTO).intent, 'nao_entendi');
   assert.equal(validarInterpretacao(pedido({ ...vazio, acao: 'pausar', alvo: 'Academia' }), CONTEXTO).intent, 'nao_entendi');
+});
+
+// Teto de gasto por categoria (#264).
+test('orcamento: só categoria de saída; definir pede valor, remover pede categoria', () => {
+  const pedido = (orcamento) => validarInterpretacao({ intent: 'orcamento', operacoes: [], resposta: '', orcamento }, CONTEXTO).orcamento;
+  const definir = pedido({ acao: 'definir', categoria: C.ali, valor: 600.004 });
+  assert.deepEqual({ ...definir, categoria: definir.categoria.id }, { acao: 'definir', categoria: 'cat-ali', valor: 600, incompleto: false });
+  assert.equal(pedido({ acao: 'definir', categoria: C.sal, valor: 600 }).acao, null, 'categoria de entrada não tem teto');
+  assert.equal(pedido({ acao: 'definir', categoria: C.ali, valor: null }).incompleto, true);
+  assert.equal(pedido({ acao: 'remover', categoria: null, valor: null }).acao, null);
+  const consultar = pedido({ acao: 'consultar', categoria: null, valor: 50 });
+  assert.deepEqual(consultar, { acao: 'consultar', categoria: null, valor: null, incompleto: false });
 });
 
 // #190: lista de lançamentos e catálogo de categorias.

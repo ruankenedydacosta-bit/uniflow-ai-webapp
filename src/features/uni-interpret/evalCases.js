@@ -21,7 +21,8 @@
 //   lote. Em edicao (#261), acao 'editar_lancamento' com os mesmos critérios
 //   e o que muda: novoValor, novaData, novaConta e novaCategoria. Em
 //   recorrencia (#263), a ação (editar, encerrar), as palavras do alvo, data
-//   (a_partir_de) e o que muda.
+//   (a_partir_de) e o que muda. Em orcamento (#264), a ação (definir,
+//   remover, consultar), alvo (a categoria) e valor.
 //   Em meta (#192), a ação (criar, editar, excluir, consultar, aportar,
 //   retirar) e, quando importa, nome, alvo (uma das metas de
 //   metasDaAvaliacao), valor, data, conta (#161) e soNaMeta.
@@ -1093,6 +1094,23 @@ export const CASOS = [
     reservado: true,
     frase: 'para de lançar o Spotify todo mês',
     esperado: { intent: 'recorrencia', pedido: { acao: 'encerrar', palavras: ['spotify'] } },
+  },
+  // Teto de gasto mensal por categoria (#264).
+  {
+    id: 'orcamento-definir-lazer',
+    frase: 'quero gastar no máximo 800 por mês com lazer',
+    esperado: { intent: 'orcamento', pedido: { acao: 'definir', alvo: 'Lazer', valor: 800 } },
+  },
+  {
+    id: 'orcamento-consultar-lazer',
+    frase: 'quanto ainda posso gastar com lazer esse mês?',
+    esperado: { intent: 'orcamento', pedido: { acao: 'consultar', alvo: 'Lazer' } },
+  },
+  {
+    id: 'orcamento-remover-lazer',
+    reservado: true,
+    frase: 'tira o teto de lazer',
+    esperado: { intent: 'orcamento', pedido: { acao: 'remover', alvo: 'Lazer' } },
   },
   {
     id: 'categoria-nova-com-valor',

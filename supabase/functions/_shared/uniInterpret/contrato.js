@@ -13,7 +13,7 @@
 // saldo não leva operação: o app público não ajusta saldo pela conversa, só
 // responde (#80). meta leva o pedido de meta (#192).
 export const INTENTS = Object.freeze([
-  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'edicao', 'recorrencia', 'conversa', 'nao_entendi',
+  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'edicao', 'recorrencia', 'orcamento', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // Consulta que o app responde com os parâmetros (#80). 'lancamentos' lista
@@ -35,6 +35,9 @@ export const ACOES_AGENDA = Object.freeze(['criar', 'editar', 'cancelar', 'concl
 // próximos, ou parar de gerar. Encerrar apaga os previstos a partir do
 // próximo; os já realizados ficam.
 export const ACOES_RECORRENCIA = Object.freeze(['editar', 'encerrar']);
+
+// Teto mensal de gasto por categoria (#264), o mesmo da tela Registros.
+export const ACOES_ORCAMENTO = Object.freeze(['definir', 'remover', 'consultar']);
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -221,12 +224,23 @@ const ESQUEMA_RECORRENCIA = {
   },
 };
 
+const ESQUEMA_ORCAMENTO = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['acao', 'categoria', 'valor'],
+  properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_ORCAMENTO, null] },
+    categoria: { ...TEXTO_OU_NULO, description: 'apelido da categoria de saída, ex.: c3' },
+    valor: { type: ['number', 'null'], description: 'teto mensal, em reais' },
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao', 'edicao', 'recorrencia'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao', 'edicao', 'recorrencia', 'orcamento'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
@@ -238,6 +252,7 @@ export const ESQUEMA = Object.freeze({
     exclusao: ESQUEMA_EXCLUSAO,
     edicao: ESQUEMA_EDICAO,
     recorrencia: ESQUEMA_RECORRENCIA,
+    orcamento: ESQUEMA_ORCAMENTO,
   },
 });
 
@@ -566,6 +581,18 @@ function validarRecorrencia(bruta, { categoriasPorApelido, contasPorApelido, dat
   };
 }
 
+// Teto só existe para categoria de saída. Definir sem valor ou sem
+// categoria, e remover sem categoria, viram ação null: o app pergunta.
+// Consultar sem categoria lê todos os tetos.
+function validarOrcamento(bruta, { categoriasPorApelido }) {
+  const acao = ACOES_ORCAMENTO.includes(bruta?.acao) ? bruta.acao : null;
+  const encontrada = categoriasPorApelido.get(bruta?.categoria) ?? null;
+  const categoria = encontrada?.category_type === 'expense' ? encontrada : null;
+  const valor = acao === 'definir' ? valorPositivo(bruta?.valor) : null;
+  const incompleto = (acao === 'definir' && (!categoria || !valor)) || (acao === 'remover' && !categoria);
+  return { acao: incompleto ? null : acao, categoria, valor, incompleto };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -608,6 +635,9 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], meta
     return recorrencia.acao
       ? { intent, operacoes: [], resposta, recorrencia }
       : { intent: 'nao_entendi', operacoes: [], resposta };
+  }
+  if (intent === 'orcamento') {
+    return { intent, operacoes: [], resposta, orcamento: validarOrcamento(bruta?.orcamento, contexto) };
   }
   if (intent !== 'lancamento' && intent !== 'correcao') {
     return { intent, operacoes: [], resposta };

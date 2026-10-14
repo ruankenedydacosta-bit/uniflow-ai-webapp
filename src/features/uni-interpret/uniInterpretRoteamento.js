@@ -21,6 +21,7 @@ export const ROTAS_INTERPRETACAO = Object.freeze({
   EXCLUSAO: 'exclusao',
   EDICAO: 'edicao',
   RECORRENCIA: 'recorrencia',
+  ORCAMENTO: 'orcamento',
   CONVERSA: 'conversa',
   NAO_ENTENDI: 'nao_entendi',
 });
@@ -88,6 +89,8 @@ export function escolherRotaDaInterpretacao(interpretacao) {
       return interpretacao.edicao ? ROTAS_INTERPRETACAO.EDICAO : null;
     case 'recorrencia':
       return interpretacao.recorrencia?.acao ? ROTAS_INTERPRETACAO.RECORRENCIA : null;
+    case 'orcamento':
+      return interpretacao.orcamento ? ROTAS_INTERPRETACAO.ORCAMENTO : null;
     case 'conversa':
       return ROTAS_INTERPRETACAO.CONVERSA;
     case 'nao_entendi':

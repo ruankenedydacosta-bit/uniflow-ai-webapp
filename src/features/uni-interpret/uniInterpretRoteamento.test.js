@@ -382,6 +382,14 @@ test('pedido sobre lançamento que se repete vai para a rota própria (#263)', (
   assert.equal(escolherRotaDaInterpretacao({ intent: 'recorrencia', operacoes: [], resposta: '' }), null);
 });
 
+test('pedido de teto de gasto vai para a rota própria (#264)', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'orcamento', operacoes: [], resposta: '', orcamento: { acao: 'consultar', categoria: null, valor: null } }),
+    ROTAS_INTERPRETACAO.ORCAMENTO,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'orcamento', operacoes: [], resposta: '' }), null);
+});
+
 test('recorrência com frequência vai para o plano e vira série registrável (#222)', () => {
   const interpretacao = {
     intent: 'lancamento',

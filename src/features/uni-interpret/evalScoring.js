@@ -161,6 +161,7 @@ const INTENT_DO_INTERPRETADOR = {
   exclusao: 'exclusao',
   edicao: 'edicao',
   recorrencia: 'recorrencia',
+  orcamento: 'orcamento',
   conversa: 'conversa',
   correcao: 'correcao',
   nao_entendi: 'nao_entendeu',
@@ -198,6 +199,10 @@ function pedidoDaInterpretacao(validada) {
   if (validada.recorrencia) {
     const { acao, alvo, aPartirDe, novoValor, novaCategoria, novaConta } = validada.recorrencia;
     return { acao, alvo, data: aPartirDe, novoValor, novaCategoria: novaCategoria?.name ?? null, novaConta: novaConta?.name ?? null };
+  }
+  if (validada.orcamento) {
+    const { acao, categoria, valor } = validada.orcamento;
+    return { acao, alvo: categoria?.name ?? null, valor };
   }
   // Criar segue a régua do título; o pedido é só sobre item existente (#191).
   if (validada.agenda?.acao && validada.agenda.acao !== 'criar') {
