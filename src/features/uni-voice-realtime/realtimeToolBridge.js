@@ -222,6 +222,7 @@ export function resolveScreenActionOutcome(messages, turn) {
     return {
       text: replies.map((message) => message.text.trim()).join(' '),
       awaitingConfirmation: replies.at(-1).confirmation?.status === 'pending',
+      repeated: replies.at(-1).confirmation?.lancamentoRepetido === true,
     };
   }
   if (!turn.confirmationId) return null;
@@ -244,7 +245,9 @@ export function buildScreenActionInstructions(action, outcome) {
     outcome.isError ? `Deu errado. O app avisou: "${text}".` : `O app respondeu: "${text}".`,
     'Diga o essencial a ela agora, em uma frase, sem ler palavra por palavra e sem oferecer ajuda extra.',
   ];
-  if (outcome.awaitingConfirmation) {
+  if (outcome.awaitingConfirmation && outcome.repeated) {
+    parts.push(AVISO_LANCAMENTO_REPETIDO);
+  } else if (outcome.awaitingConfirmation) {
     parts.push('O rascunho continua esperando confirmação: pergunte se pode confirmar.');
   }
   parts.push('Não chame ferramentas para isso.');

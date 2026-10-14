@@ -1916,8 +1916,8 @@ test('memória de categoria (#79): confirmar o card grava a descrição com a ca
   assert.match(lembrar, /void registrarConfirmacaoNaMemoria\(/);
 });
 
-// Lançamento repetido: igual a um já registrado (tipo, valor, categoria ou
-// descrição, até 3 dias de distância), a Uni avisa e o Confirmar seguinte grava.
+// Lançamento repetido: igual a um já registrado no mesmo dia (tipo, valor,
+// categoria ou descrição), a Uni avisa e o Confirmar seguinte grava.
 test('lançamento repetido: nunca vai direto, e o card sai com o aviso antes de gravar', async () => {
   const page = await source('./UniChatPage.jsx');
   const rota = page.slice(page.indexOf('case ROTAS_INTERPRETACAO.LANCAMENTO: {'), page.indexOf('case ROTAS_INTERPRETACAO.PLANO:'));
@@ -1928,13 +1928,16 @@ test('lançamento repetido: nunca vai direto, e o card sai com o aviso antes de 
   const confirmar = page.slice(page.indexOf('async function handleConfirmAction(id) {'));
   assert.ok(confirmar.indexOf('await procurarLancamentoRepetido(acaoConfirmada)')
     < confirmar.indexOf('const outcome = await financialConversation.confirm();'));
-  assert.match(confirmar, /publishConversationResult\(\{ action: acaoConfirmada, response: \{ text: '' \} \}, \{ repetido \}\);/);
+  // O texto do rascunho guardado na pilha não é apagado pelo aviso.
+  assert.match(confirmar, /response: \{ text: financialConversation\.state\.response \?\? '' \},\s*\}, \{ repetido \}\);/);
 
-  // O aviso dado vale para o rascunho: o segundo Confirmar grava.
+  // O aviso dado vale para o rascunho: o segundo Confirmar grava sem buscar.
+  // Rede que não responde não segura o Confirmar.
   const procurar = page.slice(page.indexOf('async function procurarLancamentoRepetido(action) {'));
-  assert.match(procurar, /repetidoAvisadoPorOperacaoRef\.current\.get\(action\.clientOperationId\) === repetido\.id\) return null;/);
+  assert.match(procurar, /repetidoVerificadoPorOperacaoRef\.current\.get\(action\.clientOperationId\) === assinaturaDoRascunho\(action\)\) \{\s*return null;/);
+  assert.match(procurar, /Promise\.race\(\[[\s\S]*setTimeout\(\(\) => resolve\(null\), BUSCA_DO_REPETIDO_MS\)/);
   const publicar = page.slice(page.indexOf('function publishConversationResult(result, { repetido = null } = {}) {'), page.indexOf('function publishAccountCreationConfirmation('));
-  assert.match(publicar, /avisados\.set\(operacaoId, repetido\.id\);/);
+  assert.match(publicar, /marcarRepetidoVerificado\(result\.action\);/);
   assert.match(publicar, /confirmation\.lancamentoRepetido = true;/);
 });
 

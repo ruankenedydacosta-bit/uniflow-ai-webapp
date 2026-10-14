@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
   acharLancamentoRepetido,
   deveProcurarRepetido,
-  janelaDoRepetido,
+  assinaturaDoRascunho,
   linhaDoRepetido,
   textoDoRepetido,
 } from './lancamentoRepetido.js';
@@ -35,8 +35,10 @@ const existente = (campos = {}) => ({
   ...campos,
 });
 
-test('janela vai de 3 dias antes a 3 dias depois da data do rascunho', () => {
-  assert.deepEqual(janelaDoRepetido('2026-10-13'), { dateFrom: '2026-10-10', dateTo: '2026-10-16' });
+test('rascunho corrigido tem outra assinatura; o mesmo rascunho, a mesma', () => {
+  assert.equal(assinaturaDoRascunho(rascunho()), assinaturaDoRascunho(rascunho()));
+  assert.notEqual(assinaturaDoRascunho(rascunho()), assinaturaDoRascunho(rascunho({ amount: 350 })));
+  assert.notEqual(assinaturaDoRascunho(rascunho()), assinaturaDoRascunho(rascunho({ transaction_date: '2026-10-14' })));
 });
 
 test('só procura em saída ou entrada pronta, com valor, data e id da operação', () => {
@@ -47,6 +49,8 @@ test('só procura em saída ou entrada pronta, com valor, data e id da operaçã
   assert.equal(deveProcurarRepetido(rascunho({}, { status: 'needs_clarification' })), false);
   assert.equal(deveProcurarRepetido(rascunho({}, { clientOperationId: null })), false);
   assert.equal(deveProcurarRepetido(rascunho({ transaction_date: null })), false);
+  assert.equal(deveProcurarRepetido(rascunho({}, { installments: { count: 12 } })), false, 'parcelado');
+  assert.equal(deveProcurarRepetido(rascunho({}, { recurrence: { frequency: 'monthly' } })), false, 'recorrente');
   assert.equal(deveProcurarRepetido(null), false);
 });
 
@@ -74,19 +78,24 @@ test('não acusa valor, tipo, categoria e descrição diferentes, nem cancelado'
   assert.equal(acharLancamentoRepetido(rascunho(), [existente({ status: 'canceled' })]), null, 'cancelado');
 });
 
-test('a mensalidade do mês anterior não é repetida; a de ontem é', () => {
+test('só o mesmo dia conta: o gasto de ontem e a mensalidade do mês anterior não são repetição', () => {
   assert.equal(acharLancamentoRepetido(rascunho(), [existente({ transaction_date: '2026-09-13' })]), null);
-  assert.equal(acharLancamentoRepetido(rascunho(), [existente({ transaction_date: '2026-10-09' })]), null);
-  assert.equal(acharLancamentoRepetido(rascunho(), [existente({ transaction_date: '2026-10-12' })])?.id, 't1');
-  assert.equal(acharLancamentoRepetido(rascunho(), [existente({ transaction_date: '2026-10-16' })])?.id, 't1');
+  assert.equal(acharLancamentoRepetido(rascunho(), [existente({ transaction_date: '2026-10-12' })]), null);
+  assert.equal(acharLancamentoRepetido(rascunho(), [existente({ transaction_date: '2026-10-14' })]), null);
 });
 
-test('com mais de um, devolve o de data mais perto', () => {
-  const lista = [
-    existente({ id: 'longe', transaction_date: '2026-10-10' }),
-    existente({ id: 'perto', transaction_date: '2026-10-14' }),
-  ];
-  assert.equal(acharLancamentoRepetido(rascunho(), lista)?.id, 'perto');
+test('conta diferente dos dois lados não é repetição; conta faltando de um lado é', () => {
+  const noCartao = rascunho({ account_id: 'cartao' });
+  assert.equal(acharLancamentoRepetido(noCartao, [existente({ account_id: 'pix' })]), null);
+  assert.equal(acharLancamentoRepetido(noCartao, [existente({ account_id: 'cartao' })])?.id, 't1');
+  assert.equal(acharLancamentoRepetido(noCartao, [existente({ account_id: null })])?.id, 't1');
+  assert.equal(acharLancamentoRepetido(rascunho(), [existente({ account_id: 'pix' })])?.id, 't1');
+});
+
+test('previsto é dito como previsto: "já existe" sozinho faria pensar que foi pago', () => {
+  const previsto = existente({ status: 'pending' });
+  assert.match(textoDoRepetido(previsto), /, 13\/10\/2026, previsto\. Confirme/);
+  assert.match(linhaDoRepetido(previsto).value, /, previsto$/);
 });
 
 test('texto e linha do card descrevem o lançamento que já existe', () => {
@@ -100,7 +109,7 @@ test('texto e linha do card descrevem o lançamento que já existe', () => {
   );
   assert.deepEqual(linhaDoRepetido(transacao, { accounts }), {
     key: 'repeated',
-    label: 'Já lançado',
+    label: 'Já existe',
     value: `Mensalidade escolar, ${valor}, Nubank, 13/10/2026`,
   });
 });
