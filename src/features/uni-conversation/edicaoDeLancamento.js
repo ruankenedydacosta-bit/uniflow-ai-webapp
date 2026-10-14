@@ -351,24 +351,81 @@ const ORDINAIS = Object.freeze({
   terceiro: 2, terceira: 2, tres: 2, '3': 2,
   quarto: 3, quatro: 3, '4': 3,
   quinto: 4, cinco: 4, '5': 4,
+  ultimo: -1, ultima: -1,
 });
 
+const POSICAO = String.raw`(primeir[oa]|segundo|terceir[oa]|quarto|quinto|ultim[oa]|um|dois|tres|quatro|cinco|[1-5])`;
+const POSICAO_ORDINAL = String.raw`(primeir[oa]|segundo|terceir[oa]|quarto|quinto|ultim[oa])`;
+
+// A frase é só a posição: "o segundo", "pode ser o 1", "o último da lista".
+const POSICAO_SOZINHA = new RegExp(String.raw`^(?:(?:e|foi|era|pode\s+ser|fico\s+com)\s+)?(?:(?:o|a|esse|essa)\s+)?(?:(?:numero|opcao|item)\s+)?${POSICAO}(?:\s+(?:lancamento|item|opcao|da\s+lista))?(?:\s+(?:mesmo|por\s+favor))?$`);
+
+// "Apaga o 2", "pode excluir o primeiro": o verbo do pedido antes da posição.
+const VERBO_DA_ESCOLHA = /^(?:(?:pode|quero|vou)\s+)?(?:exclu(?:ir|i|a)|apag(?:ar|a|ue)|remov(?:er|e|a)|tir(?:ar|a|e)|delet(?:ar|a|e)|alter(?:ar|a|e)|corrig(?:ir|e))\s+/;
+
+// Na voz, a conversa às vezes reescreve a resposta e cola o item: "Excluir o
+// lançamento número 1 da lista, Mensalidade escolar, R$ 300,00". No meio da
+// frase só vale a posição marcada como posição da lista: "quarto" ou
+// "primeiro" soltos podem ser parte do nome. Depois de "lançamento", só o
+// algarismo: em "o lançamento um pouco mais caro", "um" é artigo.
+const POSICAO_MARCADA = new RegExp(String.raw`\b(?:(?:numero|item|opcao)\s+${POSICAO}|lancamento\s+([1-5])|${POSICAO_ORDINAL}\s+(?:lancamento|item|opcao|da\s+lista))\b`, 'g');
+
+// "O segundo, não, o primeiro": a pessoa se corrigiu no meio da frase.
+const CORRECAO_NA_FRASE = /\b(?:nao|quer\s+dizer|melhor)\b/;
+
+const QUALQUER_UM = /^(?:(?:pode\s+ser|e|foi)\s+)?(?:qualquer\s+(?:um|uma)|tanto\s+faz)(?:\s+(?:desses|dessas|deles|delas|dos\s+dois|das\s+duas|da\s+lista))?(?:\s+tanto\s+faz)?$/;
+
+function limparEscolha(texto) {
+  return texto.replace(/[.,;!?]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Índice na lista; null quando a frase não diz uma posição só. Fora da
+// lista também vale: quem chama recusa.
+function posicaoDita(inteira, comeco, tamanho) {
+  const indice = (palavra) => (ORDINAIS[palavra] < 0 ? tamanho + ORDINAIS[palavra] : ORDINAIS[palavra]);
+  const sozinha = inteira.match(POSICAO_SOZINHA);
+  if (sozinha) return indice(sozinha[1]);
+  if (CORRECAO_NA_FRASE.test(inteira)) return null;
+  const doComeco = comeco.match(POSICAO_SOZINHA);
+  if (doComeco) return indice(doComeco[1]);
+  const marcadas = new Set(
+    [...inteira.matchAll(POSICAO_MARCADA)].map((achado) => indice(achado[1] ?? achado[2] ?? achado[3])),
+  );
+  return marcadas.size === 1 ? [...marcadas][0] : null;
+}
+
+// Iguais no que a lista mostra (descrição, valor, conta e data), no tipo e
+// na categoria, a pessoa não tem como preferir um: "qualquer um" vale.
+function iguaisNaLista(lista) {
+  const chave = (transacao) => [
+    transacao.transaction_type,
+    transacao.category_id ?? '',
+    normalizeSearchText(transacao.description ?? ''),
+    Number(transacao.amount),
+    transacao.account_id ?? '',
+    transacao.transaction_date,
+  ].join('|');
+  return lista.every((transacao) => chave(transacao) === chave(lista[0]));
+}
+
 // Resposta à lista "qual deles?": "o segundo", "o de 85", "o do Nubank",
-// "o de ontem". "A segunda", "a quarta" e "a quinta" são dias da semana,
-// não posições. null quando não dá para saber qual.
+// "o de ontem", e "qualquer um" quando os itens são iguais. "A segunda", "a
+// quarta" e "a quinta" são dias da semana, não posições. null quando não dá
+// para saber qual.
 export function escolherCandidato(resposta, candidatos, contexto = {}) {
   const lista = Array.isArray(candidatos) ? candidatos : [];
-  const frase = normalizeSearchText(resposta).replace(/[.,!]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const texto = normalizeSearchText(resposta);
+  const frase = limparEscolha(texto);
   if (!frase || !lista.length) return null;
+  // A vírgula entre algarismos é do valor ("o 2,50"), não fim do trecho.
+  const comeco = limparEscolha(texto.split(/,(?!\d)|;/)[0]).replace(VERBO_DA_ESCOLHA, '');
 
-  const ordinal = frase.match(/^(?:(?:e|foi|era)\s+)?(?:(?:o|a)\s+)?(?:(?:numero|opcao)\s+)?(primeir[oa]|segundo|terceir[oa]|quarto|quinto|um|dois|tres|quatro|cinco|[1-5])(?:\s+(?:lancamento|da\s+lista|opcao))?$/);
-  if (ordinal) {
-    const indice = ORDINAIS[ordinal[1]];
-    return indice < lista.length ? lista[indice] : null;
-  }
-  if (/^(?:(?:e|foi|era)\s+)?(?:(?:o|a)\s+)?ultim[oa](?:\s+da\s+lista)?$/.test(frase)) return lista.at(-1);
+  const indice = posicaoDita(frase, comeco, lista.length);
+  if (indice !== null) return indice < lista.length ? lista[indice] : null;
+  if (QUALQUER_UM.test(frase) || QUALQUER_UM.test(comeco)) return iguaisNaLista(lista) ? lista[0] : null;
 
-  const alvo = analisarAlvo(frase, contexto);
+  // "Apaga o de 85": o verbo do pedido não é critério de busca.
+  const alvo = analisarAlvo(frase.replace(VERBO_DA_ESCOLHA, ''), contexto);
   if (!alvo.criterios) return null;
   const categoriasPorId = categoriasIndexadas(contexto.categories);
   const achados = lista.filter((transacao) => bateComAlvo(transacao, alvo, categoriasPorId));
