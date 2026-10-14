@@ -29,7 +29,7 @@ const ESPERA_ENTRE_TENTATIVAS_MS = 5000;
 
 const CAMPOS = [
   'id', 'external_calendar_id', 'is_read', 'sync_token', 'sync_window_start', 'sync_window_end',
-  'last_full_sync_at', 'channel_id', 'channel_resource_id', 'channel_token', 'channel_expires_at', 'sync_lock_until',
+  'last_full_sync_at', 'privados_importados_em', 'channel_id', 'channel_resource_id', 'channel_token', 'channel_expires_at', 'sync_lock_until',
   'conexao:calendar_connections(id,user_id,workspace_id,status)',
 ].join(',');
 

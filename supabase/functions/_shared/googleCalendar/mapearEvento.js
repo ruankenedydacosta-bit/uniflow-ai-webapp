@@ -11,10 +11,12 @@
 // - Evento com uniflow_workspace_id de outro espaço é ignorado.
 // - Evento com a marca deste espaço e sem vínculo foi gravado pelo app: o
 //   vínculo é da exportação (#100), a importação não cria outro item.
-// - Não entra (naoEntra): privado ou confidencial (a agenda do espaço é vista
-//   por todos), convite recusado e evento que não é compromisso (local de
-//   trabalho, ausência, foco, aniversário). Item que veio do Google e passou
-//   a ser um desses é cancelado.
+// - Não entra (naoEntra): convite recusado e evento que não é compromisso
+//   (local de trabalho, ausência, foco, aniversário). Item que veio do Google
+//   e passou a ser um desses é cancelado.
+// - Privado e confidencial entram como qualquer outro (#272): todo espaço é
+//   pessoal. A privacidade num espaço com mais de uma pessoa fica com o plano
+//   família (#273), pela RLS, e não com a importação.
 // - Apagado no Google: o item vira 'cancelled'. Nada é apagado. Item
 //   cancelado no app não é reaberto por uma edição no Google.
 // - Mesmo etag do vínculo: foi o próprio app que gravou, só marca como visto.
@@ -26,7 +28,9 @@
 //   vira um item só: a RPC não insere se o evento já tem vínculo no espaço.
 // - Sync completo repetido (semanal ou depois de um 410) só insere evento
 //   alterado desde o último completo ou que acabou de entrar na janela. Item
-//   que a pessoa excluiu no app não volta sem uma mudança no Google.
+//   que a pessoa excluiu no app não volta sem uma mudança no Google. Exceção:
+//   no primeiro completo depois do #272, o privado passa no corte, porque
+//   antes nunca entrou (corte.privadosPassam).
 // - Com horário: 'meeting'. Dia inteiro: 'other'. Vários dias inteiros:
 //   ends_at guarda o último dia (mesma convenção do eventoGoogle.js).
 // - Pagamento (payment_due, receivable) editado no Google: data local igual
@@ -47,7 +51,6 @@ const VISIBILIDADES_PRIVADAS = new Set(['private', 'confidential']);
 const TIPOS_DE_EVENTO_IMPORTADOS = new Set(['default', 'fromGmail']);
 
 function motivoParaNaoEntrar(evento) {
-  if (VISIBILIDADES_PRIVADAS.has(evento?.visibility)) return 'privado';
   if (evento?.eventType && !TIPOS_DE_EVENTO_IMPORTADOS.has(evento.eventType)) return 'tipo_de_evento';
   const eu = Array.isArray(evento?.attendees) ? evento.attendees.find((convidado) => convidado?.self === true) : null;
   if (eu?.responseStatus === 'declined') return 'recusado';
@@ -147,6 +150,7 @@ export function mapearEvento(evento, { workspaceId, fuso = FUSO_PADRAO } = {}) {
     ignorar: null,
     cancelado: evento?.status === 'cancelled',
     naoEntra: motivoParaNaoEntrar(evento),
+    privado: VISIBILIDADES_PRIVADAS.has(evento?.visibility),
     doApp: false,
     campos: null,
   };
@@ -157,7 +161,7 @@ export function mapearEvento(evento, { workspaceId, fuso = FUSO_PADRAO } = {}) {
   if (espacoDaMarca && espacoDaMarca !== workspaceId) return { ...resultado, ignorar: 'outro_espaco' };
   resultado.doApp = Boolean(espacoDaMarca);
 
-  // Cancelado não precisa de campos; privado não pode levar o conteúdo adiante.
+  // Cancelado e o que não entra não precisam de campos.
   if (resultado.cancelado || resultado.naoEntra) return resultado;
 
   const horario = camposDoHorario(evento, fuso);
@@ -240,8 +244,11 @@ function semMudanca(item, campos) {
 // Num sync completo repetido, só entra evento novo alterado depois do último
 // completo ou que começa depois do fim da janela anterior. corte = null: entra
 // tudo o que cruza a janela (primeiro completo, incremental).
+// corte.privadosPassam: o calendário ainda não teve o completo que traz os
+// privados descartados antes do #272.
 export function passaNoCorte(evento, corte) {
   if (!corte) return true;
+  if (corte.privadosPassam && evento.privado) return true;
   const desde = Date.parse(corte.desde ?? '');
   const fimAnterior = Date.parse(corte.fimDaJanelaAnterior ?? '');
   if (Number.isNaN(desde) || Number.isNaN(fimAnterior)) return true;

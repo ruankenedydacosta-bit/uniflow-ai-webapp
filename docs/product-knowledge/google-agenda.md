@@ -29,7 +29,7 @@ Ver os compromissos do UniFlow no Google Agenda e trazer para o UniFlow os event
 
 - Eventos das agendas marcadas em **Agendas lidas**, de 30 dias atrás até 1 ano à frente.
 - Só agendas da sua própria conta podem ser lidas. Agenda compartilhada com você por outra pessoa aparece na lista com a caixa desabilitada.
-- Evento marcado como privado no Google não entra no UniFlow.
+- Evento marcado como privado no Google também entra no UniFlow, com título, descrição e local. Quem participa do espaço passa a vê-lo.
 - Ao alterar no Google um compromisso do UniFlow que está numa agenda lida, a mudança volta para o UniFlow.
 
 ## Excluir e desconectar

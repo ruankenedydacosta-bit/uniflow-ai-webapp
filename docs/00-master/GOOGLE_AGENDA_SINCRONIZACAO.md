@@ -21,8 +21,11 @@ Regras da importação (Google → app):
 - Sync completo repetido só insere evento alterado desde o último completo ou
   que acabou de entrar na janela. Um item importado e excluído no app só volta
   se o evento mudar no Google.
-- Não entram: evento privado ou confidencial, convite recusado e evento que
-  não é compromisso (local de trabalho, ausência, foco, aniversário).
+- Não entram: convite recusado e evento que não é compromisso (local de
+  trabalho, ausência, foco, aniversário).
+- Evento privado ou confidencial entra como os outros (#272). O calendário
+  lido antes disso faz um completo a mais, em que só o privado passa no corte
+  acima (`privados_importados_em` nulo, migration 074).
 - O mesmo evento em calendários de dois membros do espaço vira um item só.
 - Item cancelado no app continua cancelado quando o evento muda no Google.
 - Canal de 7 dias, renovado quando faltam menos de 2.
