@@ -339,14 +339,34 @@ test('consulta: sem período vale o mês atual; sem fim vai até hoje; o resto v
   assert.equal(periodo('2026-09-31', '2026-10-01').ajustes[0], 'periodo_invalido');
   assert.equal(periodo('2026-09-10', '2026-09-01').ajustes[0], 'periodo_invalido');
   assert.deepEqual(periodo('2026-11-01', '2026-11-30'), {
-    tipo: 'outra', inicio: '2026-11-01', fim: '2026-11-30', ajustes: ['periodo_futuro'],
+    tipo: 'saidas', inicio: '2026-11-01', fim: '2026-11-30', ajustes: [],
   });
   assert.deepEqual(periodo('2020-01-01', null).ajustes, ['periodo_longo']);
   assert.deepEqual(periodo('2025-01-01', '2026-10-02').ajustes, []);
 });
 
+test('consulta: período futuro vale em todo tipo; a previsão não filtra por categoria nem termo', () => {
+  const resultado = (campos) => {
+    const { tipo, inicio, fim, categoria, conta, termo, ajustes } = validarInterpretacao(consulta(campos), CONTEXTO).consulta;
+    return { tipo, inicio, fim, categoria: categoria?.id ?? null, conta: conta?.id ?? null, termo, ajustes };
+  };
+  const novembro = { inicio: '2026-11-01', fim: '2026-11-30' };
+  assert.deepEqual(resultado({ tipo: 'previsao', ...novembro, conta: K.pp }), {
+    tipo: 'previsao', ...novembro, categoria: null, conta: 'conta-pp', termo: null, ajustes: [],
+  });
+  assert.deepEqual(resultado({ tipo: 'previsao' }).ajustes, []);
+  // Um lado só, com filtro, ou a lista: o tipo fica, e o app lê os previstos.
+  assert.deepEqual(resultado({ ...novembro, categoria: C.ali, termo: 'Mercado' }), {
+    tipo: 'saidas', ...novembro, categoria: 'cat-ali', conta: null, termo: 'Mercado', ajustes: [],
+  });
+  assert.equal(resultado({ tipo: 'lancamentos', ...novembro }).tipo, 'lancamentos');
+  assert.deepEqual(resultado({ tipo: 'previsao', ...novembro, categoria: C.ali }).ajustes, ['categoria_descartada']);
+  assert.deepEqual(resultado({ tipo: 'previsao', ...novembro, termo: 'Uber' }).ajustes, ['termo_na_previsao']);
+  assert.equal(resultado({ tipo: 'previsao', ...novembro, termo: 'Uber' }).tipo, 'outra');
+});
+
 test('consulta: tipo fora do contrato ou consulta ausente vira outra', () => {
-  assert.equal(validarInterpretacao(consulta({ tipo: 'previsao' }), CONTEXTO).consulta.tipo, 'outra');
+  assert.equal(validarInterpretacao(consulta({ tipo: 'ultima_compra' }), CONTEXTO).consulta.tipo, 'outra');
   const semConsulta = validarInterpretacao({ intent: 'consulta', operacoes: [], resposta: '' }, CONTEXTO);
   assert.equal(semConsulta.consulta.tipo, 'outra');
   assert.equal(semConsulta.consulta.inicio, null);
@@ -355,7 +375,7 @@ test('consulta: tipo fora do contrato ou consulta ausente vira outra', () => {
 test('consulta #265: a_pagar aceita período futuro; maior_gasto não filtra por termo', () => {
   const futuro = validarInterpretacao(consulta({ tipo: 'a_pagar', inicio: '2026-10-05', fim: '2026-10-11' }), CONTEXTO).consulta;
   assert.deepEqual({ tipo: futuro.tipo, inicio: futuro.inicio, fim: futuro.fim }, { tipo: 'a_pagar', inicio: '2026-10-05', fim: '2026-10-11' });
-  assert.equal(validarInterpretacao(consulta({ tipo: 'saidas', inicio: '2026-10-05', fim: '2026-10-11' }), CONTEXTO).consulta.tipo, 'outra');
+  assert.equal(validarInterpretacao(consulta({ tipo: 'saidas', inicio: '2026-10-05', fim: '2026-10-11' }), CONTEXTO).consulta.tipo, 'saidas', 'período futuro vale desde a #271');
   assert.equal(validarInterpretacao(consulta({ tipo: 'maior_gasto', termo: 'Uber' }), CONTEXTO).consulta.tipo, 'outra');
   const comparacao = validarInterpretacao(consulta({ tipo: 'comparacao', categoria: C.ali }), CONTEXTO).consulta;
   assert.deepEqual({ tipo: comparacao.tipo, categoria: comparacao.categoria?.id }, { tipo: 'comparacao', categoria: 'cat-ali' });

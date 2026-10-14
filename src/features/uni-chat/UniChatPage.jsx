@@ -136,6 +136,7 @@ import {
   memoriaDaConsulta,
   periodoDaConsulta,
   responderConsulta,
+  statusDaConsulta,
 } from '../uni-interpret/uniInterpretConsulta.js';
 import { executeFinancialIntentAction } from '../uni-conversation/financialIntentAction.js';
 import { supabase, supabaseUrl, supabaseAnonKey, isSupabaseConfigured } from '../../services/supabaseClient';
@@ -181,7 +182,6 @@ import {
 import { SIMPLIFIED_ROUTES, SimplifiedHomeView } from '../simplified-app/index.js';
 import {
   buildPublicMovementSummaryResponse,
-  enforcePublicFinancialResponsePolicy,
   isPublicFinancialSummaryRequest,
   isRetiredPublicBalanceRequest,
 } from './publicBalanceExperience.js';
@@ -379,9 +379,6 @@ export default function UniChatPage({ variant = 'full' }) {
 
   const uniLlm = useUniLlm();
 
-  // Texto da última pergunta do usuário, para a política de resposta
-  // financeira pública saber o que foi pedido.
-  const lastUserTurnTextRef = useRef('');
   // Sprint 2 — Memória Conversacional: contexto de curto prazo (conta/
   // categoria/última consulta) por instância de conversa, nunca persiste.
   // Resetado na troca de conversa.
@@ -3056,19 +3053,13 @@ export default function UniChatPage({ variant = 'full' }) {
   // Todo fluxo de resposta (FinancialQueryEngine, LLM, Pending Actions,
   // confirmações, planos financeiros, avisos, erros e fluxos intermediários)
   // passa por ele.
-  // A política de resposta financeira pública entra no ÚNICO ponto de
-  // construção de mensagem do pipeline oficial (buildMessage).
-  const buildGuidedUniMessage = useCallback((text, messageOptions = {}) => {
-    const publicText = enforcePublicFinancialResponsePolicy({
-      text: typeof text === 'string' ? text : '',
-      requestText: lastUserTurnTextRef.current,
-      snapshot: financialContext.snapshot,
-    });
-    return buildUniMessage(publicText, messageOptions);
-  }, [financialContext.snapshot]);
+  const buildAssistantMessage = useCallback(
+    (text, messageOptions = {}) => buildUniMessage(typeof text === 'string' ? text : '', messageOptions),
+    [],
+  );
 
   const { createAssistantResponse } = useUniResponsePipeline({
-    buildMessage: buildGuidedUniMessage,
+    buildMessage: buildAssistantMessage,
     pushMessage,
     persistMessage: syncMessageToSupabase,
   });
@@ -3521,7 +3512,6 @@ export default function UniChatPage({ variant = 'full' }) {
     const escolha = buildUserMessage(item.label);
     pushMessage(escolha);
     syncMessageToSupabase(escolha);
-    lastUserTurnTextRef.current = item.label;
     uniTurnTokenRef.current += 1;
     stickToBottom.current = true;
     setCategoryQuestionMessageId(null);
@@ -4240,17 +4230,20 @@ export default function UniChatPage({ variant = 'full' }) {
       return responderConsulta({ consulta, transacoes: [], dataReferencia, ...catalogo });
     }
     const periodo = periodoDaConsulta(consulta, dataReferencia);
-    // Contas a pagar leem os previstos; a comparação lê também o período
-    // anterior (#265).
-    const ler = ({ inicio, fim }) => listTransactionsForPeriod(effectiveWorkspace.id, {
+    // Período futuro, previsão e contas a pagar leem os previstos
+    // (statusDaConsulta); a comparação lê também o período anterior, já
+    // realizado (#265).
+    const ler = ({ inicio, fim }, status) => listTransactionsForPeriod(effectiveWorkspace.id, {
       dateFrom: inicio,
       dateTo: fim,
-      status: consulta.tipo === 'a_pagar' ? 'pending' : 'completed',
+      status,
     });
     try {
       const [atual, anterior] = await Promise.all([
-        ler(periodo),
-        consulta.tipo === 'comparacao' ? ler(periodoAnterior(periodo, dataReferencia)) : Promise.resolve({ data: [] }),
+        ler(periodo, statusDaConsulta(consulta, dataReferencia)),
+        consulta.tipo === 'comparacao'
+          ? ler(periodoAnterior(periodo, dataReferencia), 'completed')
+          : Promise.resolve({ data: [] }),
       ]);
       if (atual.error || anterior.error) return null;
       return responderConsulta({
@@ -4460,7 +4453,6 @@ export default function UniChatPage({ variant = 'full' }) {
         || (declaredIntent.startsWith('agenda_') && (!roteiaPeloModelo || hasPendingFinancialConversation))
       );
     const hasPendingConversation = hasAgendaConversation || hasPendingFinancialConversation;
-    lastUserTurnTextRef.current = text;
     if (isRetiredBalanceRequest || isPublicFinancialSummary) {
       if (hasPendingConversation) abandonStalePendingState();
       // A pergunta de fechamento da resposta ("quer mais alguma coisa?") não

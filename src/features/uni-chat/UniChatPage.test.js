@@ -1325,26 +1325,9 @@ test('HOTFIX FINAL P1: o chat completo renderiza renderedMessages (dedupeMessage
 });
 
 // ============================================================================
-// Ponto único de saída: a política de resposta financeira pública recebe o
-// texto da pergunta do turno; a resposta do LLM só com espaços cai no texto
+// Ponto único de saída: a resposta do LLM só com espaços cai no texto
 // padrão.
 // ============================================================================
-
-test('buildGuidedUniMessage aplica a política pública com o texto da pergunta do turno', async () => {
-  const page = await source('UniChatPage.jsx');
-  const buildBlock = page.slice(
-    page.indexOf('const buildGuidedUniMessage = useCallback'),
-    page.indexOf('const { createAssistantResponse } = useUniResponsePipeline'),
-  );
-  assert.match(buildBlock, /text: typeof text === 'string' \? text : '',/);
-  assert.match(buildBlock, /requestText: lastUserTurnTextRef\.current,/);
-  assert.match(buildBlock, /return buildUniMessage\(publicText, messageOptions\);/);
-  const { body } = extractFunctionBody(page, 'function sendText(text, metadata) {');
-  // Gravado antes da primeira resposta do turno (o resumo público sai logo depois).
-  const gravaIndex = body.indexOf('lastUserTurnTextRef.current = text;');
-  const resumoIndex = body.indexOf('responderResumoSemSaldo(');
-  assert.ok(gravaIndex > -1 && resumoIndex > -1 && gravaIndex < resumoIndex);
-});
 
 test('FASE 21: createAssistantResponse permanece o único ponto de publicação em handleUnresolvedMessage', async () => {
   const page = await source('UniChatPage.jsx');
@@ -1817,11 +1800,13 @@ test('#80: consulta com parâmetros soma o período inteiro no banco; outra perg
   assert.match(consulta, /setIsTyping\(false\);\s*runDeterministicFinancialFlow\(text, historySnapshot, true\);\s*return true;\s*\}\s*$/);
 
   // O chat só carrega as movimentações recentes: a soma vem do período
-  // inteiro, só das concluídas (contas a pagar leem as previstas, #265), e
-  // falha de busca devolve null.
+  // inteiro, das concluídas (ou das previstas, na previsão e em contas a
+  // pagar, #265), e falha de busca devolve null. A comparação lê também o
+  // período anterior, já realizado.
   const { body: busca } = extractFunctionBody(page, 'async function responderConsultaDoModelo(consulta, dataDaFuncao) {');
-  assert.match(busca, /listTransactionsForPeriod\(effectiveWorkspace\.id, \{\s*dateFrom: inicio,\s*dateTo: fim,\s*status: consulta\.tipo === 'a_pagar' \? 'pending' : 'completed',\s*\}\)/);
-  assert.match(busca, /ler\(periodo\)/);
+  assert.match(busca, /listTransactionsForPeriod\(effectiveWorkspace\.id, \{\s*dateFrom: inicio,\s*dateTo: fim,\s*status,\s*\}\)/);
+  assert.match(busca, /ler\(periodo, statusDaConsulta\(consulta, dataReferencia\)\)/);
+  assert.match(busca, /ler\(periodoAnterior\(periodo, dataReferencia\), 'completed'\)/);
   assert.match(busca, /if \(atual\.error \|\| anterior\.error\) return null;/);
   assert.match(busca, /catch \{\s*return null;\s*\}/);
 });

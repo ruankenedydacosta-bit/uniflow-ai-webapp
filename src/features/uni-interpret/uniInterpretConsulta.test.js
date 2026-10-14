@@ -8,6 +8,7 @@ import {
   periodoDaConsulta,
   responderConsulta,
   rotuloDoPeriodo,
+  statusDaConsulta,
 } from './uniInterpretConsulta.js';
 
 // Sexta, 02/10/2026.
@@ -32,8 +33,8 @@ function consulta(campos = {}) {
   return { tipo: 'saidas', inicio: null, fim: null, categoria: null, conta: null, termo: null, ...campos };
 }
 
-test('só saídas, entradas e resumo são respondidos com os parâmetros', () => {
-  for (const tipo of ['saidas', 'entradas', 'resumo']) assert.equal(consultaRespondivel(consulta({ tipo })), true);
+test('só saídas, entradas, resumo e previsão são respondidos com os parâmetros', () => {
+  for (const tipo of ['saidas', 'entradas', 'resumo', 'previsao']) assert.equal(consultaRespondivel(consulta({ tipo })), true);
   assert.equal(consultaRespondivel(consulta({ tipo: 'outra' })), false);
   assert.equal(consultaRespondivel(undefined), false);
 });
@@ -113,6 +114,80 @@ test('resumo junta entradas e saídas, sem saldo', () => {
   assert.equal(
     responder({ consulta: consulta({ tipo: 'resumo' }), transacoes: [], dataReferencia: HOJE }),
     'Neste mês, você não registrou entradas nem saídas.',
+  );
+});
+
+const NOVEMBRO = { inicio: '2026-11-01', fim: '2026-11-30' };
+
+test('previsão e período futuro leem os previstos; o resto, os concluídos', () => {
+  assert.equal(statusDaConsulta(consulta({ tipo: 'previsao' }), HOJE), 'pending');
+  for (const tipo of ['saidas', 'entradas', 'resumo', 'lancamentos']) {
+    assert.equal(statusDaConsulta(consulta({ tipo, ...NOVEMBRO }), HOJE), 'pending');
+    assert.equal(statusDaConsulta(consulta({ tipo }), HOJE), 'completed');
+    assert.equal(statusDaConsulta(consulta({ tipo, inicio: '2026-10-01', fim: '2026-10-31' }), HOJE), 'completed');
+  }
+});
+
+test('previsão junta entradas e saídas previstas', () => {
+  const previsao = consulta({ tipo: 'previsao', ...NOVEMBRO });
+  assert.equal(
+    responder({ consulta: previsao, transacoes: TRANSACOES, dataReferencia: HOJE }),
+    'Em novembro, a previsão é de 1 entrada, que soma R$ 5.000,00, e 3 saídas, que somam R$ 235,30.',
+  );
+  assert.equal(
+    responder({ consulta: { ...previsao, conta: NUBANK }, transacoes: TRANSACOES, dataReferencia: HOJE }),
+    'Em novembro, na conta Nubank, a previsão é de 2 saídas, que somam R$ 155,10, e nenhuma entrada.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'previsao' }), transacoes: [], dataReferencia: HOJE }),
+    'Neste mês, você não tem entradas nem saídas previstas.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'resumo', ...NOVEMBRO }), transacoes: TRANSACOES, dataReferencia: HOJE }),
+    'Em novembro, a previsão é de 1 entrada, que soma R$ 5.000,00, e 3 saídas, que somam R$ 235,30.',
+  );
+});
+
+test('período futuro de um lado só responde a previsão daquele lado, com os filtros', () => {
+  assert.equal(
+    responder({ consulta: consulta({ ...NOVEMBRO, categoria: SAUDE }), transacoes: TRANSACOES, dataReferencia: HOJE }),
+    'Em novembro, a previsão de saídas com Saúde é de R$ 200,30, em 2 saídas.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'entradas', ...NOVEMBRO }), transacoes: TRANSACOES, dataReferencia: HOJE }),
+    'Em novembro, a previsão de entradas é de R$ 5.000,00, em 1 entrada.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'entradas', ...NOVEMBRO }), transacoes: [], dataReferencia: HOJE }),
+    'Em novembro, não encontrei entradas previstas.',
+  );
+});
+
+test('lista de previstos vai do mais próximo ao mais distante', () => {
+  const previstos = [
+    { transaction_type: 'expense', amount: 650, account_id: 'conta-nu', description: 'Condomínio', transaction_date: '2026-11-20' },
+    { transaction_type: 'expense', amount: 90, account_id: 'conta-nu', description: 'Internet', transaction_date: '2026-11-05' },
+  ];
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', ...NOVEMBRO }), transacoes: previstos, dataReferencia: HOJE, contas: [NUBANK] }),
+    'Em novembro, encontrei 2 saídas previstas, que somam R$ 740,00. 05/11, Internet, R$ 90,00, no Nubank; 20/11, Condomínio, R$ 650,00, no Nubank.',
+  );
+  assert.equal(
+    responder({ consulta: consulta({ tipo: 'lancamentos', ...NOVEMBRO }), transacoes: [], dataReferencia: HOJE }),
+    'Em novembro, não encontrei lançamentos previstos.',
+  );
+});
+
+test('previsão além de 3 meses avisa que os recorrentes ainda não estão lá', () => {
+  const marco = consulta({ tipo: 'previsao', inicio: '2027-03-01', fim: '2027-03-31' });
+  assert.equal(
+    responder({ consulta: marco, transacoes: [], dataReferencia: HOJE }),
+    'Em março de 2027, você não tem entradas nem saídas previstas. '
+      + 'Os lançamentos recorrentes só aparecem na previsão até 3 meses à frente.',
+  );
+  assert.doesNotMatch(
+    responder({ consulta: consulta({ tipo: 'previsao', ...NOVEMBRO }), transacoes: [], dataReferencia: HOJE }),
+    /recorrentes/,
   );
 });
 
@@ -294,4 +369,11 @@ test('a pagar sem período: próximos 7 dias e as atrasadas à parte', () => {
     responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: [previstas[0]], dataReferencia: '2026-10-14' }).replace(/\u00a0/g, ' '),
     'Nos próximos 7 dias, você tem 1 saída prevista, que soma R$ 1.500,00: 15/10, Aluguel, R$ 1.500,00.',
   );
+});
+
+test('contas a pagar leem os previstos; maior gasto e comparação, os realizados', () => {
+  assert.equal(statusDaConsulta({ tipo: 'a_pagar' }, '2026-10-14'), 'pending');
+  assert.equal(statusDaConsulta({ tipo: 'a_pagar', inicio: '2026-10-05', fim: '2026-10-11' }, '2026-10-14'), 'pending');
+  assert.equal(statusDaConsulta({ tipo: 'maior_gasto', inicio: '2026-09-01', fim: '2026-09-30' }, '2026-10-14'), 'completed');
+  assert.equal(statusDaConsulta({ tipo: 'comparacao' }, '2026-10-14'), 'completed');
 });

@@ -11,7 +11,7 @@ import { normalizeSearchText } from '../../utils/searchText.js';
 import { splitCategoriesByType } from '../categories/categoryUtils.js';
 
 const TIPOS_RESPONDIVEIS = new Set([
-  'saidas', 'entradas', 'resumo', 'lancamentos', 'categorias', 'maior_gasto', 'comparacao', 'a_pagar',
+  'saidas', 'entradas', 'resumo', 'previsao', 'lancamentos', 'categorias', 'maior_gasto', 'comparacao', 'a_pagar',
 ]);
 // Quantas categorias o maior gasto cita depois da primeira.
 const MAX_CATEGORIAS_SEGUINTES = 2;
@@ -204,26 +204,32 @@ function maisRecentePrimeiro(a, b) {
 }
 
 // Lista do mais recente ao mais antigo, com total quando todos são do mesmo
-// tipo (somar entrada com saída não diz nada).
-function responderLancamentos({ encontradas, quando, filtro, contas }) {
+// tipo (somar entrada com saída não diz nada). Os previstos vêm do mais
+// próximo ao mais distante.
+function responderLancamentos({ encontradas, quando, filtro, contas, previsto }) {
   const tipos = new Set(encontradas.map((transacao) => transacao.transaction_type));
   const [singular, plural] = tipos.size === 1 && tipos.has('expense') ? ['saída', 'saídas']
     : tipos.size === 1 && tipos.has('income') ? ['entrada', 'entradas']
       : ['lançamento', 'lançamentos'];
-  if (encontradas.length === 0) return `${quando}, não encontrei lançamentos${filtro}.`;
+  const [previstoSingular, previstoPlural] = singular === 'lançamento' ? [' previsto', ' previstos'] : [' prevista', ' previstas'];
+  const [nomeSingular, nomePlural] = previsto
+    ? [`${singular}${previstoSingular}`, `${plural}${previstoPlural}`]
+    : [singular, plural];
+  if (encontradas.length === 0) return `${quando}, não encontrei lançamentos${previsto ? ' previstos' : ''}${filtro}.`;
 
   const contasPorId = new Map((Array.isArray(contas) ? contas : []).map((conta) => [conta.id, conta]));
   const ordenadas = [...encontradas].sort(maisRecentePrimeiro);
+  if (previsto) ordenadas.reverse();
   const linhas = ordenadas.slice(0, MAX_LANCAMENTOS_LISTADOS).map((transacao) => linhaDoLancamento(transacao, contasPorId));
   const soma = tipos.size === 1 && !tipos.has('transfer') ? `, que ${encontradas.length === 1 ? 'soma' : 'somam'} ${formatCurrency(somar(encontradas))}` : '';
 
-  if (encontradas.length === 1) return `${quando}, encontrei 1 ${singular}${filtro}: ${linhas[0]}.`;
+  if (encontradas.length === 1) return `${quando}, encontrei 1 ${nomeSingular}${filtro}: ${linhas[0]}.`;
   const restantes = encontradas.length - linhas.length;
-  const abertura = restantes > 0 ? ' Os mais recentes: ' : ' ';
+  const abertura = restantes > 0 ? (previsto ? ' Os próximos: ' : ' Os mais recentes: ') : ' ';
   const fecho = restantes > 0
     ? ` E mais ${contagem(restantes, 'lançamento', 'lançamentos')}, que você vê em Financeiro.`
     : '';
-  return `${quando}, encontrei ${contagem(encontradas.length, singular, plural)}${filtro}${soma}.${abertura}${linhas.join('; ')}.${fecho}`;
+  return `${quando}, encontrei ${contagem(encontradas.length, nomeSingular, nomePlural)}${filtro}${soma}.${abertura}${linhas.join('; ')}.${fecho}`;
 }
 
 // "Em agosto, onde você mais gastou foi Alimentação: R$ 1.200,00, 40% das
@@ -280,9 +286,30 @@ function responderAPagar({ previstas, quando, filtro, contas, atrasadas = null }
   return `${quando}, você tem ${contagem(previstas.length, 'saída prevista', 'saídas previstas')}${filtro}, ${verbo} ${formatCurrency(somar(previstas))}: ${linhas.join('; ')}.${fecho}`;
 }
 
-// transacoes: as movimentações concluídas do período, já buscadas no banco.
-// categorias e contas: o catálogo que o chat já tem, para listar categorias e
-// dizer a conta de cada lançamento.
+// Os recorrentes só viram lançamentos previstos até 3 meses à frente
+// (migration 071). Depois disso, a previsão não os tem.
+export const MESES_DE_RECORRENTES_PREVISTOS = 3;
+
+// A previsão e o período que começa depois de hoje leem os lançamentos
+// previstos: o que já foi registrado não está no futuro.
+export function consultaPrevista(consulta, dataReferencia) {
+  if (consulta?.tipo === 'previsao' || consulta?.tipo === 'a_pagar') return true;
+  return Boolean(consulta?.inicio) && consulta.inicio > dataReferencia;
+}
+
+export function statusDaConsulta(consulta, dataReferencia) {
+  return consultaPrevista(consulta, dataReferencia) ? 'pending' : 'completed';
+}
+
+function alemDosRecorrentes(fim, dataReferencia) {
+  const limite = emUtc(dataReferencia);
+  limite.setUTCMonth(limite.getUTCMonth() + MESES_DE_RECORRENTES_PREVISTOS);
+  return fim > limite.toISOString().slice(0, 10);
+}
+
+// transacoes: as movimentações do período com o status de statusDaConsulta,
+// já buscadas no banco. categorias e contas: o catálogo que o chat já tem,
+// para listar categorias e dizer a conta de cada lançamento.
 // Tipo que não é respondido aqui devolve null: o chamador segue com as regras.
 // Em comparacao, transacoesAnteriores são as concluídas do período anterior;
 // em a_pagar, transacoes são as previstas (pendentes) do período.
@@ -291,22 +318,34 @@ export function responderConsulta({
 }) {
   if (!consultaRespondivel(consulta)) return null;
   if (consulta.tipo === 'categorias') return responderCategorias(categorias);
+  const resposta = responderPeriodo({ consulta, transacoes, transacoesAnteriores, dataReferencia, categorias, contas });
+  const periodo = periodoDaConsulta(consulta, dataReferencia);
+  if (consultaPrevista(consulta, dataReferencia) && alemDosRecorrentes(periodo.fim, dataReferencia)) {
+    return `${resposta} Os lançamentos recorrentes só aparecem na previsão até ${MESES_DE_RECORRENTES_PREVISTOS} meses à frente.`;
+  }
+  return resposta;
+}
 
+function responderPeriodo({ consulta, transacoes, transacoesAnteriores = [], dataReferencia, categorias = [], contas }) {
+  const previsto = consultaPrevista(consulta, dataReferencia);
   const periodo = periodoDaConsulta(consulta, dataReferencia);
   const quando = comInicialMaiuscula(rotuloDoPeriodo(periodo, dataReferencia));
   const lista = Array.isArray(transacoes) ? transacoes : [];
   const naConta = consulta.conta ? ` na conta ${consulta.conta.name}` : '';
 
-  if (consulta.tipo === 'resumo') {
+  if (consulta.tipo === 'resumo' || consulta.tipo === 'previsao') {
     const entradas = filtrar(lista, { transactionType: 'income', conta: consulta.conta });
     const saidas = filtrar(lista, { transactionType: 'expense', conta: consulta.conta });
     if (entradas.length === 0 && saidas.length === 0) {
-      return `${quando}, você não registrou entradas nem saídas${naConta}.`;
+      return previsto
+        ? `${quando}, você não tem entradas nem saídas previstas${naConta}.`
+        : `${quando}, você não registrou entradas nem saídas${naConta}.`;
     }
     const onde = `${quando}${naConta ? `,${naConta}` : ''}`;
-    if (entradas.length === 0) return `${onde}, você teve ${parteDoResumo(saidas, 'saída', 'saídas')}, e nenhuma entrada.`;
-    if (saidas.length === 0) return `${onde}, você teve ${parteDoResumo(entradas, 'entrada', 'entradas')}, e nenhuma saída.`;
-    return `${onde}, você teve ${parteDoResumo(entradas, 'entrada', 'entradas')}, `
+    const abertura = previsto ? 'a previsão é de' : 'você teve';
+    if (entradas.length === 0) return `${onde}, ${abertura} ${parteDoResumo(saidas, 'saída', 'saídas')}, e nenhuma entrada.`;
+    if (saidas.length === 0) return `${onde}, ${abertura} ${parteDoResumo(entradas, 'entrada', 'entradas')}, e nenhuma saída.`;
+    return `${onde}, ${abertura} ${parteDoResumo(entradas, 'entrada', 'entradas')}, `
       + `e ${parteDoResumo(saidas, 'saída', 'saídas')}.`;
   }
 
@@ -328,7 +367,7 @@ export function responderConsulta({
     : comTermo;
   const filtro = `${doQue}${naConta}`;
 
-  if (consulta.tipo === 'lancamentos') return responderLancamentos({ encontradas, quando, filtro, contas });
+  if (consulta.tipo === 'lancamentos') return responderLancamentos({ encontradas, quando, filtro, contas, previsto });
   if (consulta.tipo === 'a_pagar') {
     if (consulta.inicio) return responderAPagar({ previstas: encontradas, quando, filtro, contas });
     const atraso = (transacao) => String(transacao.transaction_date) < dataReferencia;
@@ -353,6 +392,11 @@ export function responderConsulta({
     });
   }
 
+  const [singular, plural] = consulta.tipo === 'saidas' ? ['saída', 'saídas'] : ['entrada', 'entradas'];
+  if (previsto) {
+    if (encontradas.length === 0) return `${quando}, não encontrei ${plural} previstas${filtro}.`;
+    return `${quando}, a previsão de ${plural}${filtro} é de ${formatCurrency(somar(encontradas))}, em ${contagem(encontradas.length, singular, plural)}.`;
+  }
   if (consulta.tipo === 'saidas') {
     if (encontradas.length === 0) return `${quando}, não encontrei saídas${filtro}.`;
     return `${quando}, você gastou ${formatCurrency(somar(encontradas))}${filtro}, em ${contagem(encontradas.length, 'saída', 'saídas')}.`;
