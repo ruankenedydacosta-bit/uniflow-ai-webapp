@@ -951,7 +951,8 @@ export const CASOS = [
   {
     id: 'consulta-conta-pendente',
     frase: 'tenho alguma conta pra pagar ainda?',
-    esperado: { intent: 'consulta', consulta: { tipo: 'outra' } },
+    // #265: contas a pagar saem com tipo próprio.
+    esperado: { intent: 'consulta', consulta: { tipo: 'a_pagar' } },
   },
   {
     id: 'consulta-comparar-meses',
@@ -1111,6 +1112,23 @@ export const CASOS = [
     reservado: true,
     frase: 'tira o teto de lazer',
     esperado: { intent: 'orcamento', pedido: { acao: 'remover', alvo: 'Lazer' } },
+  },
+  // Consultas com tipo próprio (#265).
+  {
+    id: 'consulta-maior-gasto-setembro',
+    frase: 'com o que eu mais gastei em setembro?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'maior_gasto', inicio: '2026-09-01', fim: '2026-09-30' } },
+  },
+  {
+    id: 'consulta-comparacao-mes-passado',
+    frase: 'esse mês eu gastei mais que no mês passado?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'comparacao', inicio: '2026-10-01', fim: '2026-10-31' } },
+  },
+  {
+    id: 'consulta-a-pagar-semana',
+    reservado: true,
+    frase: 'o que eu tenho pra pagar até o fim da semana?',
+    esperado: { intent: 'consulta', consulta: { tipo: 'a_pagar', inicio: '2026-10-02', fim: '2026-10-04' } },
   },
   {
     id: 'categoria-nova-com-valor',

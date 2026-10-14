@@ -20,7 +20,11 @@ export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // os itens em vez de somar e 'categorias' lista o catálogo (#190). 'outra'
 // (meta, contas a pagar, maior gasto, comparação...) segue para as regras de
 // consulta.
-export const TIPOS_CONSULTA = Object.freeze(['saidas', 'entradas', 'resumo', 'lancamentos', 'categorias', 'outra']);
+// Em #265, maior_gasto (onde mais gastou), comparacao (gasto do período
+// contra o anterior) e a_pagar (saídas previstas) também saem com parâmetros.
+export const TIPOS_CONSULTA = Object.freeze([
+  'saidas', 'entradas', 'resumo', 'lancamentos', 'categorias', 'maior_gasto', 'comparacao', 'a_pagar', 'outra',
+]);
 // Criar, renomear ou excluir uma categoria pela conversa. O app confere
 // permissão, nome repetido e categoria padrão antes de mostrar o card.
 export const ACOES_CATEGORIA = Object.freeze(['criar', 'renomear', 'excluir']);
@@ -362,7 +366,9 @@ function validarOperacao(bruta, { categoriasPorApelido, contasPorApelido, dataRe
   };
 }
 
-const CATEGORY_TYPE_POR_TIPO_CONSULTA = Object.freeze({ saidas: 'expense', entradas: 'income' });
+const CATEGORY_TYPE_POR_TIPO_CONSULTA = Object.freeze({
+  saidas: 'expense', entradas: 'income', maior_gasto: 'expense', comparacao: 'expense', a_pagar: 'expense',
+});
 // Mais que isso é histórico inteiro: as regras respondem sem baixar anos de
 // movimentações para uma soma.
 export const MAX_DIAS_CONSULTA = 731;
@@ -371,7 +377,8 @@ export const MAX_DIAS_CONSULTA = 731;
 // sem fim e vai até hoje. Qualquer outro período que não dá para respeitar
 // (só o fim, data impossível, invertido, futuro, longo demais) devolve o
 // motivo, e a consulta vai para as regras em vez de responder outro período.
-function validarPeriodo(bruta, dataReferencia) {
+// a_pagar olha para a frente: período futuro vale.
+function validarPeriodo(bruta, dataReferencia, { aceitaFuturo = false } = {}) {
   const temInicio = bruta?.inicio !== null && bruta?.inicio !== undefined;
   const temFim = bruta?.fim !== null && bruta?.fim !== undefined;
   if (!temInicio && !temFim) return { inicio: null, fim: null, problema: null };
@@ -379,7 +386,7 @@ function validarPeriodo(bruta, dataReferencia) {
   const inicio = dataValida(bruta.inicio) ? bruta.inicio : null;
   const fim = temFim ? (dataValida(bruta.fim) ? bruta.fim : null) : (inicio ? dataReferencia : null);
   if (!inicio || !fim || inicio > fim) return { inicio: inicio ?? null, fim: fim ?? null, problema: 'periodo_invalido' };
-  if (inicio > dataReferencia) return { inicio, fim, problema: 'periodo_futuro' };
+  if (inicio > dataReferencia && !aceitaFuturo) return { inicio, fim, problema: 'periodo_futuro' };
   if (distanciaEmDias(inicio, fim) > MAX_DIAS_CONSULTA) return { inicio, fim, problema: 'periodo_longo' };
   return { inicio, fim, problema: null };
 }
@@ -396,7 +403,7 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
     return { tipo, inicio: null, fim: null, categoria: null, conta: null, termo: null, ajustes: [] };
   }
 
-  const { inicio, fim, problema } = validarPeriodo(bruta, dataReferencia);
+  const { inicio, fim, problema } = validarPeriodo(bruta, dataReferencia, { aceitaFuturo: tipo === 'a_pagar' });
   if (problema) ajustes.push(problema);
 
   // Categoria de outro tipo ("quanto gastei de salário") ou apelido inventado.
@@ -412,7 +419,8 @@ function validarConsulta(bruta, { categoriasPorApelido, contasPorApelido, dataRe
 
   const termo = textoLimpo(bruta?.termo, MAX_TERMO) || null;
   // O resumo soma tudo do período: não filtra por categoria nem por termo.
-  if (tipo === 'resumo' && termo) ajustes.push('termo_no_resumo');
+  // Maior gasto agrupa por categoria: termo junto não tem resposta.
+  if ((tipo === 'resumo' || tipo === 'maior_gasto') && termo) ajustes.push('termo_no_resumo');
 
   if (ajustes.length > 0) tipo = 'outra';
 

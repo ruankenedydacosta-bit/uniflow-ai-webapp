@@ -132,6 +132,7 @@ import {
 } from '../uni-interpret/uniInterpretRoteamento.js';
 import {
   consultaRespondivel,
+  periodoAnterior,
   memoriaDaConsulta,
   periodoDaConsulta,
   responderConsulta,
@@ -4182,14 +4183,22 @@ export default function UniChatPage({ variant = 'full' }) {
       return responderConsulta({ consulta, transacoes: [], dataReferencia, ...catalogo });
     }
     const periodo = periodoDaConsulta(consulta, dataReferencia);
+    // Contas a pagar leem os previstos; a comparação lê também o período
+    // anterior (#265).
+    const ler = ({ inicio, fim }) => listTransactionsForPeriod(effectiveWorkspace.id, {
+      dateFrom: inicio,
+      dateTo: fim,
+      status: consulta.tipo === 'a_pagar' ? 'pending' : 'completed',
+    });
     try {
-      const { data, error } = await listTransactionsForPeriod(effectiveWorkspace.id, {
-        dateFrom: periodo.inicio,
-        dateTo: periodo.fim,
-        status: 'completed',
+      const [atual, anterior] = await Promise.all([
+        ler(periodo),
+        consulta.tipo === 'comparacao' ? ler(periodoAnterior(periodo, dataReferencia)) : Promise.resolve({ data: [] }),
+      ]);
+      if (atual.error || anterior.error) return null;
+      return responderConsulta({
+        consulta, transacoes: atual.data, transacoesAnteriores: anterior.data, dataReferencia, ...catalogo,
       });
-      if (error) return null;
-      return responderConsulta({ consulta, transacoes: data, dataReferencia, ...catalogo });
     } catch {
       return null;
     }
