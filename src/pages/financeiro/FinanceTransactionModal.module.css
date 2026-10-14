@@ -53,6 +53,11 @@
   z-index: calc(var(--uf-z-modal) + 1);
 }
 
+/* Folha de nova categoria aberta pelo seletor: mesma camada da confirmação. */
+.categoryCreateOverlay.categoryCreateOverlay {
+  z-index: calc(var(--uf-z-modal) + 1);
+}
+
 .deleteConfirmDialog {
   max-width: 420px;
 }
