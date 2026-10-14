@@ -390,6 +390,14 @@ test('pedido de teto de gasto vai para a rota própria (#264)', () => {
   assert.equal(escolherRotaDaInterpretacao({ intent: 'orcamento', operacoes: [], resposta: '' }), null);
 });
 
+test('pedido de conta vai para a rota própria (#266)', () => {
+  assert.equal(
+    escolherRotaDaInterpretacao({ intent: 'conta', operacoes: [], resposta: '', conta: { acao: 'criar', alvo: null, nome: 'Inter', accountType: null } }),
+    ROTAS_INTERPRETACAO.CONTA,
+  );
+  assert.equal(escolherRotaDaInterpretacao({ intent: 'conta', operacoes: [], resposta: '' }), null);
+});
+
 test('recorrência com frequência vai para o plano e vira série registrável (#222)', () => {
   const interpretacao = {
     intent: 'lancamento',

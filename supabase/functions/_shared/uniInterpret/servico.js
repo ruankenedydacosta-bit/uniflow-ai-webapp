@@ -110,6 +110,9 @@ function serializar(validada) {
     ...(validada.orcamento ? {
       orcamento: { ...validada.orcamento, categoria: paraCliente(validada.orcamento.categoria) },
     } : {}),
+    ...(validada.conta ? {
+      conta: { ...validada.conta, alvo: paraCliente(validada.conta.alvo) },
+    } : {}),
     ...(consulta ? {
       consulta: {
         tipo: consulta.tipo,

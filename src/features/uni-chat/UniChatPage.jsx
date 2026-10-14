@@ -234,6 +234,7 @@ import {
   TEXTO_ORCAMENTO_INCOMPLETO,
 } from '../uni-conversation/pedidoDeOrcamento.js';
 import { deleteCategoryBudget, listCategoryBudgets, saveCategoryBudget } from '../../services/categoryBudgetService.js';
+import { montarPedidoDeConta } from '../uni-conversation/pedidoDeConta.js';
 import {
   acharPrevisto,
   janelaDosPrevistos,
@@ -1869,6 +1870,32 @@ export default function UniChatPage({ variant = 'full' }) {
         : saveCategoryBudget(workspaceId, chamada.categoriaId, chamada.valor)),
       textoDoErro: 'Não consegui salvar o teto. Tente de novo ou use a tela Registros.',
       textoCancelado: 'Tudo bem. O teto continua como estava.',
+    });
+  }
+
+  // Conta pelo uni-interpret (#266): criar, renomear, arquivar e reativar,
+  // pelo mesmo hook da tela Contas.
+  function iniciarPedidoDeConta(pedido) {
+    if (workspaceRole.isLoading) {
+      createAssistantResponse('Ainda estou carregando as permissões deste espaço. Peça de novo em instantes.', { deduplicateNarration: false });
+      return;
+    }
+    const pronto = montarPedidoDeConta(pedido, {
+      contas: accountState.accounts,
+      // Sem conseguir ler o papel, quem decide é a RLS, como no pedido de categoria.
+      papel: workspaceRole.error ? { canUpdate: true } : workspaceRole,
+      workspaceId: effectiveWorkspace?.id,
+    });
+    if (pronto.erro) {
+      createAssistantResponse(pronto.erro, { deduplicateNarration: false });
+      return;
+    }
+    const { chamada } = pronto;
+    oferecerAcao({
+      ...pronto,
+      executar: () => accountState.saveAccount(chamada.valores, chamada.contaId),
+      textoDoErro: 'Não consegui salvar a conta. Tente de novo ou use a tela Contas.',
+      textoCancelado: 'Tudo bem. Não mudei nenhuma conta.',
     });
   }
 
@@ -4308,6 +4335,10 @@ export default function UniChatPage({ variant = 'full' }) {
         return true;
       case ROTAS_INTERPRETACAO.ORCAMENTO:
         await iniciarPedidoDeOrcamento(interpretacao.orcamento, turnToken);
+        return true;
+      case ROTAS_INTERPRETACAO.CONTA:
+        setIsTyping(false);
+        iniciarPedidoDeConta(interpretacao.conta);
         return true;
       case ROTAS_INTERPRETACAO.EDICAO:
         setIsTyping(false);

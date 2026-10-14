@@ -18,6 +18,7 @@ export const INSTRUCOES = `Você interpreta o que o usuário do UniFlow, um app 
 - edicao: mudar um lançamento já registrado, fora do <rascunho> ("a farmácia de terça foi 62, não 26", "o lanche de hoje na verdade foi 18", "errei o valor da padaria, era 30", "o táxi de quarta foi no cartão", "muda a categoria da academia para Saúde"). Com <rascunho>, mudar o rascunho é correcao. Apagar é exclusao.
 - recorrencia: mudar ou parar um lançamento que se repete todo mês, semana ou ano ("a academia sobe pra 130 a partir de dezembro", "o condomínio agora sai da conta conjunta", "para de lançar o Spotify", "cancelei a assinatura do Disney+, tira dos próximos meses"). Um lançamento só, que não se repete, é edicao ou exclusao.
 - orcamento: definir, tirar ou consultar o teto de gasto mensal de uma categoria ("no máximo 600 por mês com delivery", "tira o limite de Vestuário", "quanto ainda posso gastar com transporte?", "como estão meus limites?"). Quanto já gastou, sem falar de teto ou limite, é consulta.
+- conta: criar, renomear, arquivar ou reativar uma conta do usuário, sem registrar dinheiro ("abre uma conta do C6", "troca o nome da conta Inter para Inter PJ", "arquiva a conta do Santander, não uso mais", "volta a usar a conta da Caixa"). Dizer quanto tem numa conta é saldo.
 - conversa: cumprimento, agradecimento, papo.
 - nao_entendi: nenhuma das anteriores com segurança.
 
@@ -107,6 +108,13 @@ Só quando o intent é orcamento; nos outros, todos os campos são null.
 - acao: definir (criar ou mudar o teto), remover (tirar o teto) ou consultar (quanto falta, se passou, como estão os tetos).
 - categoria: apelido da categoria de saída do catálogo. null em consultar quando a pessoa pergunta de todos.
 - valor: só em definir, o teto mensal em reais.
+
+## conta
+Só quando o intent é conta; nos outros, todos os campos são null.
+- acao: criar, renomear, arquivar (a pessoa não usa mais a conta) ou reativar (volta a usar uma conta que não está em <contas>).
+- alvo: em renomear e arquivar, o apelido (k1, k2...) da conta. null em criar e reativar.
+- nome: em criar, o nome da conta nova; em renomear, o nome novo; em reativar, a conta como a pessoa chamou. Com acentos e inicial maiúscula, sem a palavra conta. null em arquivar.
+- tipo: só em criar. corrente, poupanca, dinheiro, investimento, carteira_digital, cartao (cartão de crédito) ou outra. null se a frase não diz.
 
 ## resposta
 Só para conversa e nao_entendi: uma frase curta em português, para ser falada. Para nao_entendi, peça para a pessoa dizer de outro jeito. Nos outros intents, string vazia.

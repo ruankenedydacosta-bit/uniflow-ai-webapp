@@ -67,7 +67,7 @@ test('apelidos seguem a ordem por tipo e nome, independente da ordem recebida', 
 });
 
 test('schema é estrito: todo campo obrigatório e nenhum extra', () => {
-  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao, ESQUEMA.properties.edicao, ESQUEMA.properties.recorrencia, ESQUEMA.properties.orcamento];
+  const objetos = [ESQUEMA, ESQUEMA.properties.operacoes.items, ESQUEMA.properties.agenda, ESQUEMA.properties.consulta, ESQUEMA.properties.categoria, ESQUEMA.properties.meta, ESQUEMA.properties.exclusao, ESQUEMA.properties.edicao, ESQUEMA.properties.recorrencia, ESQUEMA.properties.orcamento, ESQUEMA.properties.conta];
   for (const objeto of objetos) {
     assert.equal(objeto.additionalProperties, false);
     assert.deepEqual([...objeto.required].sort(), Object.keys(objeto.properties).sort());
@@ -695,6 +695,17 @@ test('orcamento: só categoria de saída; definir pede valor, remover pede categ
   assert.equal(pedido({ acao: 'remover', categoria: null, valor: null }).acao, null);
   const consultar = pedido({ acao: 'consultar', categoria: null, valor: 50 });
   assert.deepEqual(consultar, { acao: 'consultar', categoria: null, valor: null, incompleto: false });
+});
+
+// Contas pela conversa (#266).
+test('conta: ação da lista, alvo pelo apelido e tipo só em criar', () => {
+  const pedido = (conta) => validarInterpretacao({ intent: 'conta', operacoes: [], resposta: '', conta }, CONTEXTO);
+  const criar = pedido({ acao: 'criar', alvo: K.cc, nome: ' Inter ', tipo: 'poupanca' }).conta;
+  assert.deepEqual(criar, { acao: 'criar', alvo: null, nome: 'Inter', accountType: 'savings' });
+  const arquivar = pedido({ acao: 'arquivar', alvo: K.pp, nome: null, tipo: 'corrente' }).conta;
+  assert.deepEqual({ ...arquivar, alvo: arquivar.alvo.id }, { acao: 'arquivar', alvo: 'conta-pp', nome: null, accountType: null });
+  assert.equal(pedido({ acao: 'renomear', alvo: 'k9', nome: 'X', tipo: null }).conta.alvo, null);
+  assert.equal(pedido({ acao: 'excluir', alvo: K.cc, nome: null, tipo: null }).intent, 'nao_entendi');
 });
 
 // #190: lista de lançamentos e catálogo de categorias.

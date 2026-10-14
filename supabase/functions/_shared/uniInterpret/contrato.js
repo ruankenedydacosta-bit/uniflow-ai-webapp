@@ -13,7 +13,7 @@
 // saldo não leva operação: o app público não ajusta saldo pela conversa, só
 // responde (#80). meta leva o pedido de meta (#192).
 export const INTENTS = Object.freeze([
-  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'edicao', 'recorrencia', 'orcamento', 'conversa', 'nao_entendi',
+  'lancamento', 'saldo', 'meta', 'consulta', 'agenda', 'correcao', 'categoria', 'exclusao', 'edicao', 'recorrencia', 'orcamento', 'conta', 'conversa', 'nao_entendi',
 ]);
 export const TIPOS = Object.freeze(['saida', 'entrada', 'transferencia']);
 // Consulta que o app responde com os parâmetros (#80). 'lancamentos' lista
@@ -42,6 +42,21 @@ export const ACOES_RECORRENCIA = Object.freeze(['editar', 'encerrar']);
 
 // Teto mensal de gasto por categoria (#264), o mesmo da tela Registros.
 export const ACOES_ORCAMENTO = Object.freeze(['definir', 'remover', 'consultar']);
+
+// Contas pela conversa (#266). Excluir conta e ajustar saldo ficam na tela.
+export const ACOES_CONTA = Object.freeze(['criar', 'renomear', 'arquivar', 'reativar']);
+// Tipo dito pela pessoa → accounts.account_type. Cartão de crédito tem
+// fechamento e vencimento: o app manda para a tela.
+export const ACCOUNT_TYPE_POR_TIPO_DE_CONTA = Object.freeze({
+  corrente: 'checking',
+  poupanca: 'savings',
+  dinheiro: 'cash',
+  investimento: 'investment',
+  carteira_digital: 'digital_wallet',
+  cartao: 'credit_card',
+  outra: 'other',
+});
+export const MAX_NOME_CONTA = 60;
 
 // Tipo da operação → category_type da tabela categories.
 export const CATEGORY_TYPE_POR_TIPO = Object.freeze({
@@ -239,12 +254,24 @@ const ESQUEMA_ORCAMENTO = {
   },
 };
 
+const ESQUEMA_CONTA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['acao', 'alvo', 'nome', 'tipo'],
+  properties: {
+    acao: { type: ['string', 'null'], enum: [...ACOES_CONTA, null] },
+    alvo: { ...TEXTO_OU_NULO, description: 'apelido da conta que muda, ex.: k1' },
+    nome: TEXTO_OU_NULO,
+    tipo: { type: ['string', 'null'], enum: [...Object.keys(ACCOUNT_TYPE_POR_TIPO_DE_CONTA), null] },
+  },
+};
+
 // Schema estrito: todo campo é obrigatório e ausência vira null, que é o que
 // o modo strict dos provedores aceita.
 export const ESQUEMA = Object.freeze({
   type: 'object',
   additionalProperties: false,
-  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao', 'edicao', 'recorrencia', 'orcamento'],
+  required: ['intent', 'operacoes', 'agenda', 'resposta', 'consulta', 'categoria', 'meta', 'exclusao', 'edicao', 'recorrencia', 'orcamento', 'conta'],
   properties: {
     intent: { type: 'string', enum: [...INTENTS] },
     operacoes: { type: 'array', items: ESQUEMA_OPERACAO },
@@ -257,6 +284,7 @@ export const ESQUEMA = Object.freeze({
     edicao: ESQUEMA_EDICAO,
     recorrencia: ESQUEMA_RECORRENCIA,
     orcamento: ESQUEMA_ORCAMENTO,
+    conta: ESQUEMA_CONTA,
   },
 });
 
@@ -601,6 +629,18 @@ function validarOrcamento(bruta, { categoriasPorApelido }) {
   return { acao: incompleto ? null : acao, categoria, valor, incompleto };
 }
 
+// Apelido inventado vira alvo null; o app tenta achar a conta pelo nome.
+// Tipo só vale em criar.
+function validarConta(bruta, { contasPorApelido }) {
+  const acao = ACOES_CONTA.includes(bruta?.acao) ? bruta.acao : null;
+  return {
+    acao,
+    alvo: acao && acao !== 'criar' ? contasPorApelido.get(bruta?.alvo) ?? null : null,
+    nome: textoLimpo(bruta?.nome, MAX_NOME_CONTA) || null,
+    accountType: acao === 'criar' ? ACCOUNT_TYPE_POR_TIPO_DE_CONTA[bruta?.tipo] ?? null : null,
+  };
+}
+
 // Recebe o JSON do modelo e o contexto que foi enviado a ele. Nunca lança:
 // resposta fora do contrato vira intent 'nao_entendi', e o chamador cai no
 // rascunho sem IA.
@@ -646,6 +686,12 @@ export function validarInterpretacao(bruta, { categorias = [], contas = [], meta
   }
   if (intent === 'orcamento') {
     return { intent, operacoes: [], resposta, orcamento: validarOrcamento(bruta?.orcamento, contexto) };
+  }
+  if (intent === 'conta') {
+    const conta = validarConta(bruta?.conta, contexto);
+    return conta.acao
+      ? { intent, operacoes: [], resposta, conta }
+      : { intent: 'nao_entendi', operacoes: [], resposta };
   }
   if (intent !== 'lancamento' && intent !== 'correcao') {
     return { intent, operacoes: [], resposta };

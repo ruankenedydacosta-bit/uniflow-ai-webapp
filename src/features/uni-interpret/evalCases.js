@@ -22,7 +22,9 @@
 //   e o que muda: novoValor, novaData, novaConta e novaCategoria. Em
 //   recorrencia (#263), a ação (editar, encerrar), as palavras do alvo, data
 //   (a_partir_de) e o que muda. Em orcamento (#264), a ação (definir,
-//   remover, consultar), alvo (a categoria) e valor.
+//   remover, consultar), alvo (a categoria) e valor. Em conta (#266), a ação
+//   (criar, renomear, arquivar, reativar), alvo (uma das contas de
+//   contasDaAvaliacao) e nome.
 //   Em meta (#192), a ação (criar, editar, excluir, consultar, aportar,
 //   retirar) e, quando importa, nome, alvo (uma das metas de
 //   metasDaAvaliacao), valor, data, conta (#161) e soNaMeta.
@@ -1129,6 +1131,25 @@ export const CASOS = [
     reservado: true,
     frase: 'o que eu tenho pra pagar até o fim da semana?',
     esperado: { intent: 'consulta', consulta: { tipo: 'a_pagar', inicio: '2026-10-02', fim: '2026-10-04' } },
+  },
+  // Contas pela conversa (#266).
+  {
+    id: 'conta-criar-inter',
+    frase: 'cria uma conta no Inter',
+    esperado: { intent: 'conta', pedido: { acao: 'criar', nome: 'Inter' } },
+  },
+  {
+    id: 'conta-arquivar-nubank',
+    contas: true,
+    frase: 'não uso mais o Nubank, pode arquivar essa conta',
+    esperado: { intent: 'conta', pedido: { acao: 'arquivar', alvo: 'Nubank' } },
+  },
+  {
+    id: 'conta-renomear-nubank',
+    contas: true,
+    reservado: true,
+    frase: 'muda o nome da conta Nubank para Nubank PJ',
+    esperado: { intent: 'conta', pedido: { acao: 'renomear', alvo: 'Nubank', nome: 'Nubank PJ' } },
   },
   {
     id: 'categoria-nova-com-valor',
