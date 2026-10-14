@@ -242,6 +242,13 @@ import {
   podeSerConfirmacaoDePrevisto,
 } from '../uni-conversation/confirmacaoDePrevisto.js';
 import {
+  acharLancamentoRepetido,
+  deveProcurarRepetido,
+  janelaDoRepetido,
+  linhaDoRepetido,
+  textoDoRepetido,
+} from '../uni-conversation/lancamentoRepetido.js';
+import {
   analisarAlvo,
   cardDaAlteracao,
   escolherCandidato,
@@ -1093,6 +1100,9 @@ export default function UniChatPage({ variant = 'full' }) {
   // Categoria do primeiro rascunho de cada lançamento (#79), por
   // clientOperationId: na confirmação, categoria diferente desta é troca.
   const categoriaInicialPorOperacaoRef = useRef(new Map());
+  // Lançamento repetido já avisado em cada rascunho, por clientOperationId:
+  // depois do aviso, o Confirmar grava.
+  const repetidoAvisadoPorOperacaoRef = useRef(new Map());
 
   function setEdicaoPendente(next) {
     edicaoPendenteRef.current = next;
@@ -1372,6 +1382,19 @@ export default function UniChatPage({ variant = 'full' }) {
       criadaEm: Date.now(),
     });
     return true;
+  }
+
+  // Lançamento já registrado igual ao rascunho, ainda não avisado neste
+  // rascunho; null quando não há. Leitura que falha não impede o lançamento:
+  // o aviso é só uma ajuda.
+  async function procurarLancamentoRepetido(action) {
+    const workspaceId = effectiveWorkspace?.id;
+    if (!workspaceId || !deveProcurarRepetido(action)) return null;
+    const lidos = await listTransactionsForPeriod(workspaceId, janelaDoRepetido(action.payload.transaction_date))
+      .catch(() => null);
+    const repetido = acharLancamentoRepetido(action, lidos?.data ?? []);
+    if (!repetido || repetidoAvisadoPorOperacaoRef.current.get(action.clientOperationId) === repetido.id) return null;
+    return repetido;
   }
 
   // Resposta com a edição pendente. false quando a frase é outro assunto:
@@ -3456,7 +3479,9 @@ export default function UniChatPage({ variant = 'full' }) {
     return stack;
   }
 
-  function publishConversationResult(result) {
+  // `repetido`: lançamento já registrado igual ao rascunho. O card sai com o
+  // aviso no lugar do texto de sempre, e o Confirmar dele grava.
+  function publishConversationResult(result, { repetido = null } = {}) {
     syncFinancialParentSnapshot(result);
     const operacaoId = result?.action?.clientOperationId;
     const categoriasIniciais = categoriaInicialPorOperacaoRef.current;
@@ -3485,7 +3510,17 @@ export default function UniChatPage({ variant = 'full' }) {
     if (result?.action?.status === 'ready') {
       setPendingAction(result.action);
       const confirmation = buildConfirmationFromAction(result.action);
-      createAssistantResponse(result.response.text, {
+      let texto = result.response.text;
+      if (repetido && operacaoId) {
+        const contexto = { accounts: accountState.accounts };
+        confirmation.rows = [...confirmation.rows, linhaDoRepetido(repetido, contexto)];
+        confirmation.lancamentoRepetido = true;
+        texto = textoDoRepetido(repetido, contexto);
+        const avisados = repetidoAvisadoPorOperacaoRef.current;
+        avisados.set(operacaoId, repetido.id);
+        if (avisados.size > 20) avisados.delete(avisados.keys().next().value);
+      }
+      createAssistantResponse(texto, {
         type: 'confirmation',
         confirmation,
         clientOperationId: result.action.clientOperationId,
@@ -4286,7 +4321,14 @@ export default function UniChatPage({ variant = 'full' }) {
           setIsTyping(false);
           return false;
         }
-        if (await tentarLancarDireto(interpretacao, result.action, turnToken)) {
+        // Igual a um lançamento já registrado, o rascunho nunca vai direto:
+        // sai o card com o aviso.
+        const repetido = await procurarLancamentoRepetido(result.action);
+        if (uniTurnTokenRef.current !== turnToken) {
+          financialConversation.reset();
+          return true;
+        }
+        if (!repetido && await tentarLancarDireto(interpretacao, result.action, turnToken)) {
           setIsTyping(false);
           return true;
         }
@@ -4296,7 +4338,7 @@ export default function UniChatPage({ variant = 'full' }) {
           return true;
         }
         setIsTyping(false);
-        publishConversationResult(phrased);
+        publishConversationResult(phrased, { repetido });
         if (interpretacao.operacoes[0]?.recorrente === true) {
           createAssistantResponse(TEXTO_RECORRENCIA_SO_ESTE_LANCAMENTO, { deduplicateNarration: false });
         }
@@ -4996,6 +5038,26 @@ export default function UniChatPage({ variant = 'full' }) {
       }
 
       const acaoConfirmada = financialConversation.state.action;
+      // Rascunho que chegou ao Confirmar sem o aviso de repetido (regras,
+      // correção, retomada depois de criar conta ou categoria): o primeiro
+      // Confirmar troca o card por um com o aviso, e o segundo grava.
+      const repetido = await procurarLancamentoRepetido(acaoConfirmada);
+      if (activeIdRef.current !== currentConversationId || !confirmingRef.current) {
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+        return;
+      }
+      if (repetido) {
+        setMessages((prev) => prev.map((message) => (
+          message.id === id
+            ? { ...message, confirmation: { ...message.confirmation, status: 'updated' } }
+            : message
+        )));
+        publishConversationResult({ action: acaoConfirmada, response: { text: '' } }, { repetido });
+        setIsExecutingAction(false);
+        confirmingRef.current = false;
+        return;
+      }
       const outcome = await financialConversation.confirm();
 
       // Guard: se a conversa mudou durante a execução, abortar.

@@ -6,6 +6,7 @@ import {
   buildRealtimeToolErrorOutput,
   NAME_PRONUNCIATION_MAX_LENGTH,
   readRealtimeNamePronunciation,
+  AVISO_LANCAMENTO_REPETIDO,
   buildRealtimeToolOutput,
   buildScreenActionInstructions,
   findUniReplyAfter,
@@ -89,6 +90,18 @@ test('saída da ferramenta diz se há rascunho esperando confirmação', () => {
     { resposta: 'Lançado.', aguardando_confirmacao: false },
   );
   assert.deepEqual(JSON.parse(buildRealtimeToolErrorOutput('demorou')), { erro: 'demorou' });
+});
+
+test('rascunho igual a um lançamento já registrado vai com o aviso para perguntar de novo', () => {
+  const card = { status: 'pending', lancamentoRepetido: true };
+  assert.deepEqual(
+    JSON.parse(buildRealtimeToolOutput({ text: 'Parece que esse lançamento já existe.', confirmation: card })),
+    { resposta: 'Parece que esse lançamento já existe.', aguardando_confirmacao: true, aviso: AVISO_LANCAMENTO_REPETIDO },
+  );
+  assert.equal(
+    JSON.parse(buildRealtimeToolOutput({ text: 'Lançado.', confirmation: { ...card, status: 'confirmed' } })).aviso,
+    undefined,
+  );
 });
 
 test('a sessão criada no servidor declara a mesma ferramenta', () => {

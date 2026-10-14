@@ -97,10 +97,16 @@ export function buildEndConversationOutput() {
   });
 }
 
+// Rascunho igual a um lançamento já registrado: a instrução de sempre ("diga
+// o valor, o que é e a conta") faria a IA ler o rascunho e pular o aviso.
+export const AVISO_LANCAMENTO_REPETIDO = 'A Uni achou um lançamento igual já registrado. Diga à pessoa que parece que esse lançamento já existe, com os dados que vieram na resposta, e pergunte se quer lançar de novo. Só confirme se ela disser que sim.';
+
 export function buildRealtimeToolOutput(reply) {
+  const aguardando = reply.confirmation?.status === 'pending';
   return JSON.stringify({
     resposta: reply.text.trim(),
-    aguardando_confirmacao: reply.confirmation?.status === 'pending',
+    aguardando_confirmacao: aguardando,
+    ...(aguardando && reply.confirmation.lancamentoRepetido ? { aviso: AVISO_LANCAMENTO_REPETIDO } : {}),
   });
 }
 
