@@ -237,7 +237,7 @@ test('maior gasto agrupa as saídas por categoria e cita as duas seguintes', () 
     { transaction_type: 'income', category_id: 'c-sal', amount: 5000 }];
   const resposta = responderConsulta({ consulta: { tipo: 'maior_gasto', inicio: '2026-09-01', fim: '2026-09-30' }, transacoes, dataReferencia: '2026-10-14', categorias });
   assert.equal(
-    resposta.replace(/ /g, ' '),
+    resposta.replace(/\u00a0/g, ' '),
     'No mês passado, onde você mais gastou foi Alimentação: R$ 800,00, 50% das saídas. Depois vêm Transporte, R$ 400,00 e Lazer, R$ 300,00.',
   );
   assert.equal(responderConsulta({ consulta: { tipo: 'maior_gasto' }, transacoes: [], dataReferencia: '2026-10-14' }), 'Neste mês, não encontrei saídas.');
@@ -252,7 +252,7 @@ test('comparação diz os dois totais e a diferença', () => {
     dataReferencia: '2026-10-14',
   });
   assert.equal(
-    resposta.replace(/ /g, ' '),
+    resposta.replace(/\u00a0/g, ' '),
     'Neste mês você gastou R$ 1.500,00; de 01/09 a 14/09, R$ 1.200,00. São R$ 300,00 a mais, 25%.',
   );
   const igual = responderConsulta({
@@ -261,7 +261,7 @@ test('comparação diz os dois totais e a diferença', () => {
     transacoesAnteriores: [saida(100)],
     dataReferencia: '2026-10-14',
   });
-  assert.match(igual.replace(/ /g, ' '), /^No mês passado você gastou R\$ 100,00 com Alimentação; em agosto, R\$ 100,00\. Ficou igual\.$/);
+  assert.match(igual.replace(/\u00a0/g, ' '), /^No mês passado você gastou R\$ 100,00 com Alimentação; em agosto, R\$ 100,00\. Ficou igual\.$/);
 });
 
 test('a pagar: sem período, os próximos 7 dias, da saída mais próxima à mais distante', () => {
@@ -273,7 +273,7 @@ test('a pagar: sem período, os próximos 7 dias, da saída mais próxima à mai
   ];
   const resposta = responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: previstas, dataReferencia: '2026-10-14' });
   assert.equal(
-    resposta.replace(/ /g, ' '),
+    resposta.replace(/\u00a0/g, ' '),
     'De 14/10 a 21/10, você tem 2 saídas previstas, que somam R$ 1.620,00: 15/10, Aluguel, R$ 1.500,00; 20/10, Internet, R$ 120,00.',
   );
   assert.equal(responderConsulta({ consulta: { tipo: 'a_pagar' }, transacoes: [], dataReferencia: '2026-10-14' }), 'De 14/10 a 21/10, você não tem saídas previstas.');
