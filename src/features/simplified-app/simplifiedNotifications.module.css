@@ -1,6 +1,6 @@
-/* Fase 3 do redesign (#90): tela 13 do handoff. Grupos por dia com rótulo
-   uppercase, itens em grade 36px | 1fr | auto, hora e ponto de não lida à
-   direita. */
+/* Fase 3 do redesign (#90): tela 13 do handoff. A lista em si (grupos e
+   linhas) vem do NotificationList, com o estilo em
+   NotificationsPanel.module.css (tela 13 v2). */
 .page {
   width: min(100%, 720px);
   margin-inline: auto;
@@ -45,132 +45,17 @@
   border-radius: var(--uf-radius-8);
 }
 
-.dayGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.item {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 12px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--uf-radius-8);
-  background: none;
-  color: var(--uf-app-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.item:focus-visible {
-  outline: 2px solid var(--uf-app-focus);
-  outline-offset: 4px;
-}
-
-.icon {
-  color: var(--uf-app-text-2);
-}
-
-.tone_blue {
-  color: var(--uf-app-brand-blue-text);
-}
-
-.tone_green {
-  color: var(--uf-app-brand-green-text);
-}
-
-.tone_violet {
-  color: var(--uf-app-brand-violet-text);
-}
-
-.tone_neutral {
-  color: var(--uf-app-text-2);
-}
-
-.itemText {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.itemTitle {
-  font-size: 14px;
-  line-height: 1.4;
-  text-wrap: pretty;
-}
-
-.item[data-unread="false"] .itemTitle {
-  color: var(--uf-app-text-2);
-}
-
-.itemMessage {
-  color: var(--uf-app-text-3);
-  font-size: 12px;
-  line-height: 1.45;
-  text-wrap: pretty;
-}
-
-.itemMeta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  padding-top: 2px;
-}
-
-.itemTime {
-  color: var(--uf-app-text-3);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.unreadDot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--uf-radius-full);
-  background: var(--uf-app-brand-violet);
-  box-shadow: 0 0 8px var(--uf-app-brand-violet);
-}
-
-/* Só para o leitor de tela: marca "(não lida)" sem ocupar a linha. */
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
+/* Tela 13 v2: vazio e erro alinhados à esquerda, no padrão da lista. */
 .state {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   margin: 0;
-  padding: 32px 0;
+  padding: 16px 0;
   color: var(--uf-app-text-2);
   font-size: 14px;
   line-height: 1.5;
-  text-align: center;
 }
 
 .state p {

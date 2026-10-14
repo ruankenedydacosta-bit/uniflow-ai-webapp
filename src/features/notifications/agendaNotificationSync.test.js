@@ -49,7 +49,7 @@ test('relogio agenda a proxima virada de minuto com pequena margem', () => {
   assert.equal(getNextAgendaNotificationDelay(Date.parse('2026-08-11T15:20:59.900Z')), 350);
 });
 
-test('compromisso vencido cria notificacao so com titulo e hora, sem a descricao', async () => {
+test('compromisso vencido cria notificacao so com titulo, dia e hora, sem a descricao', async () => {
   const harness = createHarness([agendaItem()]);
   const result = await syncDueAgendaNotificationsOnce(USER_ID, WORKSPACE_ID, {
     now: NOW,
@@ -60,7 +60,7 @@ test('compromisso vencido cria notificacao so com titulo e hora, sem a descricao
   assert.equal(result.error, null);
   assert.equal(harness.notifications.length, 1);
   assert.equal(harness.notifications[0].title, 'Reunião');
-  assert.equal(harness.notifications[0].message, 'Às 12:21');
+  assert.equal(harness.notifications[0].message, 'Ter, 11 ago às 12:21');
   assert.equal(harness.notifications[0].actionUrl, '/app/agenda');
 });
 
@@ -72,7 +72,7 @@ test('descricao longa do Google Agenda nao entra na notificacao', async () => {
     ...harness.dependencies,
   });
   assert.doesNotMatch(harness.notifications[0].message, /Teams|https:/);
-  assert.match(harness.notifications[0].message, /^Às \d{2}:\d{2}$/);
+  assert.match(harness.notifications[0].message, /^[A-Z][a-zá]{2}, \d{2} [a-z]{3} às \d{2}:\d{2}$/);
 });
 
 test('futuro, concluido, outro usuario e outro workspace nao notificam', async () => {

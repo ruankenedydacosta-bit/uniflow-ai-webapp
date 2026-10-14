@@ -1,7 +1,6 @@
-// Fase 3 do redesign (#90): a página de notificações (tela 13) agrupa a
-// lista por dia (Hoje, Ontem, depois a data) e mostra só a hora em cada
-// item. Funções puras, com `now` injetável, no mesmo padrão de
-// formatNotificationDate.
+// Tela 13 v2: a lista de notificações (painel do sino e página do Mais)
+// agrupa por dia de chegada em Hoje, Ontem e Anteriores. Funções puras,
+// com `now` injetável, no mesmo padrão de formatNotificationDate.
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -13,19 +12,13 @@ function parseDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function formatNotificationTime(createdAt) {
-  const date = parseDate(createdAt);
-  if (!date) return '';
-  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
-
 export function resolveNotificationDayLabel(createdAt, now = new Date()) {
   const date = parseDate(createdAt);
-  if (!date) return 'Sem data';
+  if (!date) return 'Anteriores';
   const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
-  if (diffDays === 0) return 'Hoje';
+  if (diffDays <= 0) return 'Hoje';
   if (diffDays === 1) return 'Ontem';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return 'Anteriores';
 }
 
 /**
@@ -35,15 +28,10 @@ export function resolveNotificationDayLabel(createdAt, now = new Date()) {
 export function groupNotificationsByDay(notifications = [], now = new Date()) {
   const groups = new Map();
   for (const notification of notifications) {
-    const date = parseDate(notification?.created_at);
-    const key = date ? startOfDay(date).toISOString() : 'sem-data';
-    const group = groups.get(key) ?? {
-      key,
-      label: resolveNotificationDayLabel(notification?.created_at, now),
-      items: [],
-    };
+    const label = resolveNotificationDayLabel(notification?.created_at, now);
+    const group = groups.get(label) ?? { key: label, label, items: [] };
     group.items.push(notification);
-    groups.set(key, group);
+    groups.set(label, group);
   }
   return [...groups.values()];
 }

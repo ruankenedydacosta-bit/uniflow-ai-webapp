@@ -6,7 +6,6 @@ import {
   formatAgendaNotificationTime,
   formatNotificationDate,
   getNotificationMessage,
-  getNotificationTypeLabel,
   isNotificationUnread,
   isSafeInternalUrl,
 } from './notificationFormatting.js';
@@ -76,7 +75,7 @@ test('countUnread retorna 0 para lista vazia', () => {
 });
 
 // ============================================================================
-// getNotificationTypeLabel / NOTIFICATION_TYPES
+// NOTIFICATION_TYPES
 // ============================================================================
 
 test('NOTIFICATION_TYPES cobre os 6 tipos suportados pela NOTIF1', () => {
@@ -84,20 +83,6 @@ test('NOTIFICATION_TYPES cobre os 6 tipos suportados pela NOTIF1', () => {
     [...NOTIFICATION_TYPES].sort(),
     ['agenda', 'crm', 'financeiro', 'metas', 'sistema', 'uni'].sort(),
   );
-});
-
-test('getNotificationTypeLabel traduz cada tipo suportado', () => {
-  assert.equal(getNotificationTypeLabel('financeiro'), 'Financeiro');
-  assert.equal(getNotificationTypeLabel('metas'), 'Metas');
-  assert.equal(getNotificationTypeLabel('agenda'), 'Agenda');
-  assert.equal(getNotificationTypeLabel('crm'), 'CRM');
-  assert.equal(getNotificationTypeLabel('sistema'), 'Sistema');
-  assert.equal(getNotificationTypeLabel('uni'), 'Uni');
-});
-
-test('getNotificationTypeLabel cai em "Sistema" para tipo desconhecido, nunca lanca', () => {
-  assert.equal(getNotificationTypeLabel('tipo-invalido'), 'Sistema');
-  assert.equal(getNotificationTypeLabel(undefined), 'Sistema');
 });
 
 // ============================================================================
@@ -111,10 +96,11 @@ test('formatNotificationDate mostra hora quando e hoje', () => {
   assert.match(result, /^\d{2}:\d{2}$/);
 });
 
-test('formatNotificationDate mostra "Ontem" para o dia anterior', () => {
+// Tela 13 v2: o grupo "Ontem" já diz o dia; a linha mostra a hora.
+test('formatNotificationDate mostra a hora também para o dia anterior', () => {
   const now = new Date('2026-07-24T15:30:00');
   const createdAt = new Date('2026-07-23T10:00:00').toISOString();
-  assert.equal(formatNotificationDate(createdAt, now), 'Ontem');
+  assert.equal(formatNotificationDate(createdAt, now), '10:00');
 });
 
 test('formatNotificationDate mostra dd/mm para datas mais antigas', () => {
@@ -129,21 +115,30 @@ test('formatNotificationDate retorna string vazia para entrada ausente ou invali
   assert.equal(formatNotificationDate('nao-e-uma-data'), '');
 });
 
-test('formatAgendaNotificationTime: so a hora do compromisso, vazio quando ilegivel', () => {
-  const opts = { timeZone: 'America/Sao_Paulo' };
-  assert.equal(formatAgendaNotificationTime('2026-10-13T16:15:00.000Z', opts), 'Às 13:15');
+// Tela 13 v2: "Às 09:00" não dizia o dia. Hoje e amanhã por extenso; os
+// demais com dia da semana e data. O dia é o do fuso, não o da máquina.
+test('formatAgendaNotificationTime: dia e hora do compromisso, vazio quando ilegivel', () => {
+  const opts = { timeZone: 'America/Sao_Paulo', now: new Date('2026-10-14T20:00:00.000Z') };
+  assert.equal(formatAgendaNotificationTime('2026-10-14T16:15:00.000Z', opts), 'Hoje às 13:15');
+  assert.equal(formatAgendaNotificationTime('2026-10-15T12:00:00.000Z', opts), 'Amanhã às 09:00');
+  assert.equal(formatAgendaNotificationTime('2026-10-13T12:00:00.000Z', opts), 'Ter, 13 out às 09:00');
+  assert.equal(formatAgendaNotificationTime('2026-10-08T19:30:00.000Z', opts), 'Qui, 08 out às 16:30');
+  // 23h30 de 14/10 em São Paulo já é 15/10 em UTC: continua "Hoje".
+  assert.equal(formatAgendaNotificationTime('2026-10-15T02:30:00.000Z', opts), 'Hoje às 23:30');
+  // now: null é o texto gravado no banco: sempre com a data.
+  assert.equal(formatAgendaNotificationTime('2026-10-14T16:15:00.000Z', { ...opts, now: null }), 'Qua, 14 out às 13:15');
   assert.equal(formatAgendaNotificationTime('invalido', opts), '');
   assert.equal(formatAgendaNotificationTime(null, opts), '');
 });
 
-test('getNotificationMessage: agenda mostra a hora mesmo com descricao gravada em message', () => {
-  const opts = { timeZone: 'America/Sao_Paulo' };
+test('getNotificationMessage: agenda mostra dia e hora mesmo com descricao gravada em message', () => {
+  const opts = { timeZone: 'America/Sao_Paulo', now: new Date('2026-10-13T12:00:00.000Z') };
   const antiga = {
     type: 'agenda',
     message: 'Microsoft Teams meeting Join: https://teams.microsoft.com/...',
     metadata: { agenda_starts_at: '2026-10-13T16:15:00.000Z' },
   };
-  assert.equal(getNotificationMessage(antiga, opts), 'Às 13:15');
+  assert.equal(getNotificationMessage(antiga, opts), 'Hoje às 13:15');
   assert.equal(getNotificationMessage({ type: 'agenda', message: 'Texto', metadata: {} }, opts), 'Texto');
   assert.equal(getNotificationMessage({ type: 'financeiro', message: 'Conta vence hoje' }, opts), 'Conta vence hoje');
   assert.equal(getNotificationMessage({ type: 'uni', message: null }, opts), '');

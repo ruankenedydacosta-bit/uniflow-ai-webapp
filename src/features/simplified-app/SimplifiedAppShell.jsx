@@ -255,22 +255,14 @@ function SimplifiedAppShell({ children }) {
                 inert={!isNotificationsOpen}
                 tabIndex={-1}
               >
-                <div className={styles.notificationsDropdownHeader}>
-                  <h2 id="simplified-notifications-title">Notificações</h2>
-                  <button
-                    type="button"
-                    className={styles.notificationsClose}
-                    onClick={() => closeNotifications()}
-                    aria-label="Fechar notificações"
-                  >
-                    ×
-                  </button>
-                </div>
                 <NotificationsPanel
                   notifications={notifications}
                   isLoading={isLoading}
                   error={error}
                   unreadCount={unreadCount}
+                  title="Notificações"
+                  titleId="simplified-notifications-title"
+                  onClose={() => closeNotifications()}
                   onMarkAsRead={markAsRead}
                   onMarkAllAsRead={markAllAsRead}
                   onRetry={refresh}
