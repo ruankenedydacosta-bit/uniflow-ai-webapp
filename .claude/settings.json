@@ -1,8 +1,6 @@
 {
   "permissions": {
     "ask": [
-      "Bash(rm:*)",
-      "Bash(git rm:*)",
       "Bash(mv:*)",
       "Bash(git mv:*)"
     ]
