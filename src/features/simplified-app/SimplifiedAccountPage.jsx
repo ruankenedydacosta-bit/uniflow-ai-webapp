@@ -43,8 +43,8 @@ import styles from './simplifiedAccount.module.css';
 
 /**
  * Correção (Bloco Saldo + Cobrança): esta tela lê sua PRÓPRIA assinatura
- * via useAssinatura (mesmo valor guardado de "Seu plano"/
- * "Pagamento e assinatura") em vez de reaproveitar useSession().subscription
+ * via useAssinatura (mesmo valor guardado de "Seu plano")
+ * em vez de reaproveitar useSession().subscription
  * -- aquele valor vem de workspaceService.getWorkspaceSubscription(),
  * filtrado para status IN ('trialing','active','past_due') para fins de
  * CONTROLE DE ACESSO do app inteiro (App.jsx). Reaproveitar esse mesmo valor

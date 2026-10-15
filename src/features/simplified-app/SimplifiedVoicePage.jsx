@@ -88,7 +88,7 @@ function SimplifiedVoicePage() {
         </button>
         <div>
           <h1>Estilo das respostas</h1>
-          <p>Escolha como a Uni responde no chat. A conversa por voz não muda.</p>
+          <p>Escolha o tamanho das respostas da Uni.</p>
         </div>
       </header>
 

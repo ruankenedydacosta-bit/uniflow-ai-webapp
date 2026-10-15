@@ -6,7 +6,7 @@ Explicar os planos do Plano Pessoal, o que muda entre eles e como trocar de plan
 
 ## Onde encontrar
 
-O plano atual, o preço e os minutos de conversa por voz que restam no mês ficam em Conta → Seu plano. Para assinar, use a página do Plano Pessoal, que aparece para quem ainda não assinou.
+O plano atual, o preço e os minutos de conversa por voz que restam no mês ficam em Mais → Seu plano. Para assinar, use a página do Plano Pessoal, que aparece para quem ainda não assinou.
 
 ## Passo a passo
 
@@ -26,7 +26,7 @@ Para assinar:
 Os minutos de voz renovam a cada cobrança paga. Minutos que sobram não passam para o mês seguinte.
 
 Para trocar de plano:
-1. Abra Conta → Seu plano.
+1. Abra Mais → Seu plano.
 2. Toque em Trocar de plano e escolha o novo plano.
 3. Para um plano mais barato, a troca vale a partir da próxima cobrança. Até lá, a pessoa continua com os minutos do plano atual.
 4. Para um plano mais caro, pague a diferença por Pix. Os minutos do novo plano entram assim que o pagamento é confirmado. A partir da próxima cobrança, o valor mensal passa a ser o do novo plano.

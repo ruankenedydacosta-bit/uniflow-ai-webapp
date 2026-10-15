@@ -409,17 +409,18 @@ test('logout: loading real durante signOut (botão "Sair da conta" com loading),
 });
 
 // ============================================================================
-// Estilo das respostas (antiga Voz da Uni). #290: vale só para o chat de
-// texto e abre por Configurações, para onde o voltar leva.
+// Estilo das respostas (antiga Voz da Uni). #290: abre por Configurações,
+// para onde o voltar leva.
 // ============================================================================
 
-test('Estilo das respostas volta para Configurações e avisa que a voz não muda', async () => {
+test('Estilo das respostas volta para Configurações', async () => {
   const page = await source('./SimplifiedVoicePage.jsx');
   assert.match(page, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.THEME\]\.path\)/);
   assert.match(page, /aria-label="Voltar para Configurações"/);
   assert.match(page, /<h1>Estilo das respostas<\/h1>/);
-  assert.match(page, /A conversa por voz não muda\./);
-  assert.doesNotMatch(page, /por voz\.'/);
+  // O turno de voz também passa pelo estilo (sendText), então a tela não
+  // promete que a voz fica de fora.
+  assert.doesNotMatch(page, /voz não muda|por voz\.'/);
 });
 
 test('Estilo das respostas oferece só os estilos de conversa e salva só o estilo', async () => {

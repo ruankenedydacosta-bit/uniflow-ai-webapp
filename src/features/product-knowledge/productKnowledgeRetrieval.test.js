@@ -32,7 +32,7 @@ for (const question of ['Como faço para agendar uma reunião?', 'Onde fica a Ag
     const { results } = retrieveProductKnowledge(question);
     const entry = results.find((result) => result.id === 'agenda-and-projects');
     assert.ok(entry);
-    assert.match(entry.content, /Conta → Agenda/);
+    assert.match(entry.content, /aba Agenda da barra inferior/);
   });
 }
 

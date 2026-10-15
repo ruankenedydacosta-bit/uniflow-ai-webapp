@@ -131,6 +131,8 @@ function SimplifiedPlanPage() {
   // Plano manual (concedido pela equipe) não tem cobrança: nada a cancelar
   // nem a trocar pelo app.
   const isManualPlan = subscription?.source === 'manual';
+  // Plano manual não tem cobrança; sem assinatura não há o que mostrar.
+  const showPaymentMethod = !isManualPlan && planState.status !== 'not_configured';
   const canCancel = planState.status === 'active' && !isManualPlan;
 
   const usageMessage = isLoadingTransactions
@@ -251,7 +253,7 @@ function SimplifiedPlanPage() {
             </div>
           </div>
 
-          {(renewsAt || cancelEffectiveAt || trialEndsAt || paymentMethodLabel) ? (
+          {(renewsAt || cancelEffectiveAt || trialEndsAt || showPaymentMethod) ? (
             <div className={styles.infoGrid}>
               {renewsAt ? (
                 <div className={styles.infoTile}>
@@ -275,11 +277,11 @@ function SimplifiedPlanPage() {
                 </div>
               ) : null}
               {/* #290: veio de Pagamento e assinatura, que saiu do Mais. */}
-              {paymentMethodLabel ? (
+              {showPaymentMethod ? (
                 <div className={styles.infoTile}>
                   <span className={styles.infoIcon} aria-hidden="true"><CardIcon /></span>
                   <small>Forma de pagamento</small>
-                  <strong>{paymentMethodLabel}</strong>
+                  <strong>{paymentMethodLabel ?? 'Não configurada'}</strong>
                 </div>
               ) : null}
             </div>

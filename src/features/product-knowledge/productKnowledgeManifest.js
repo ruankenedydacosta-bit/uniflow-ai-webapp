@@ -142,7 +142,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.LIMITED,
     updatedAt: UPDATED_AT,
     content:
-      'Movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni, sempre com os campos obrigatórios e confirmação explícita antes de salvar. Open Finance é DEMONSTRAÇÃO VISUAL, sem conexão bancária real. Data futura fica prevista: aparece em Previstos no Financeiro, fora do saldo e dos totais, até ser confirmada. Lançamento recorrente, pelo formulário ou pela Uni, vira uma série: os próximos 3 meses entram na hora e os seguintes são criados sozinhos. Cada operação respeita o espaço Pessoal/Empresa ativo. Contas ficam em Conta → Minhas contas.',
+      'Movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni, sempre com os campos obrigatórios e confirmação explícita antes de salvar. Open Finance é DEMONSTRAÇÃO VISUAL, sem conexão bancária real. Data futura fica prevista: aparece em Previstos no Financeiro, fora do saldo e dos totais, até ser confirmada. Lançamento recorrente, pelo formulário ou pela Uni, vira uma série: os próximos 3 meses entram na hora e os seguintes são criados sozinhos. Cada operação respeita o espaço Pessoal/Empresa ativo. Contas e categorias ficam em Mais → Contas e categorias.',
   },
   {
     id: 'goals',
@@ -184,7 +184,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A Agenda está disponível nos espaços Pessoal e Empresa em Conta → Agenda e pela rota interna /app/agenda. A Uni também consulta, marca, remarca, cancela, conclui e exclui itens da Agenda pela conversa e pela voz, sempre no espaço ativo; antes de cancelar ou excluir ela pergunta se pode. Não existe integração com Google Calendar nesta fase. Projetos, contratos e documentos não estão expostos na interface simplificada atual.',
+      'A Agenda está disponível nos espaços Pessoal e Empresa na aba Agenda da barra inferior (/app/agenda). A Uni também consulta, marca, remarca, cancela, conclui e exclui itens da Agenda pela conversa e pela voz, sempre no espaço ativo; antes de cancelar ou excluir ela pergunta se pode. Não existe integração com Google Calendar nesta fase. Projetos, contratos e documentos não estão expostos na interface simplificada atual.',
   },
   {
     id: 'notifications',
@@ -254,7 +254,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A voz da Uni existe só na conversa por voz em tempo real. A conversa por texto não lê as respostas em voz alta e não tem botão "Ouvir". O estilo do chat fica em Mais → Configurações → Estilo das respostas. Áudio e transcrição não cruzam usuários nem espaços. Tocar em Falar na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni e toca em Parar para terminar. Pela voz dá para registrar, alterar e excluir movimentações (depois de excluir, dizer "desfazer" em até 20 segundos traz de volta), listar movimentações e categorias, criar, renomear e excluir categorias, criar, alterar, excluir e consultar metas, registrar aporte e retirada e marcar, remarcar, cancelar, concluir e excluir compromissos. Movimentação, categoria e meta passam por um card: a Uni lê o que vai mudar e pergunta se pode confirmar; fora o lançamento direto com Desfazer, nada é salvo antes disso. Compromisso não tem card: a Uni pergunta se pode cancelar ou excluir. Fechada a tela de voz, o rascunho esperando fica na Home. Cada plano tem minutos de voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Mais → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
+      'A voz da Uni existe só na conversa por voz em tempo real. A conversa por texto não lê as respostas em voz alta e não tem botão "Ouvir". O estilo fica em Mais → Configurações → Estilo das respostas. Áudio e transcrição não cruzam usuários nem espaços. Tocar em Falar na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni e toca em Parar para terminar. Pela voz dá para registrar, alterar e excluir movimentações (depois de excluir, dizer "desfazer" em até 20 segundos traz de volta), listar movimentações e categorias, criar, renomear e excluir categorias, criar, alterar, excluir e consultar metas, registrar aporte e retirada e marcar, remarcar, cancelar, concluir e excluir compromissos. Movimentação, categoria e meta passam por um card: a Uni lê o que vai mudar e pergunta se pode confirmar; fora o lançamento direto com Desfazer, nada é salvo antes disso. Compromisso não tem card: a Uni pergunta se pode cancelar ou excluir. Fechada a tela de voz, o rascunho esperando fica na Home. Cada plano tem minutos de voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Mais → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
   },
   {
     id: 'uni-categoria-e-memoria',
@@ -282,7 +282,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Plano Pessoal em três opções, todas com acesso completo e registro por texto sem limite: Essencial R$ 14,90/mês com 20 minutos de conversa por voz, Uni Voz R$ 29,90/mês com 60 minutos, Uni Voz Plus R$ 69,90/mês com 180 minutos. Assinatura pela página do Plano Pessoal, com Pix ou cartão. Os minutos renovam a cada cobrança paga e não acumulam. Trocar de plano em Conta → Seu plano: para um plano mais barato, vale na próxima cobrança; para um mais caro, paga-se a diferença cheia por Pix e os minutos novos entram quando o pagamento é confirmado. Sem minutos, o registro continua pelo texto. Business e Enterprise (CRM, Clientes, Projetos, com Espaço Empresa) ainda não são contratados pela interface: indicar o suporte.',
+      'Plano Pessoal em três opções, todas com acesso completo e registro por texto sem limite: Essencial R$ 14,90/mês com 20 minutos de conversa por voz, Uni Voz R$ 29,90/mês com 60 minutos, Uni Voz Plus R$ 69,90/mês com 180 minutos. Assinatura pela página do Plano Pessoal, com Pix ou cartão. Os minutos renovam a cada cobrança paga e não acumulam. Trocar de plano em Mais → Seu plano: para um plano mais barato, vale na próxima cobrança; para um mais caro, paga-se a diferença cheia por Pix e os minutos novos entram quando o pagamento é confirmado. Sem minutos, o registro continua pelo texto. Business e Enterprise (CRM, Clientes, Projetos, com Espaço Empresa) ainda não são contratados pela interface: indicar o suporte.',
   },
   {
     id: 'troubleshooting',
