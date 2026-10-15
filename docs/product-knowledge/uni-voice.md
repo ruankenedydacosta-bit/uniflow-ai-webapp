@@ -89,7 +89,7 @@ Os três botões de baixo fazem:
 - **Conversa**: fecha a voz e abre a conversa completa.
 
 Cada plano tem uma cota mensal de minutos de conversa por voz (Essencial 20,
-Uni Voz 60, Uni Voz Plus 180). Os minutos restantes ficam em Conta → Seu plano.
+Uni Voz 60, Uni Voz Plus 180). Os minutos restantes ficam em Mais → Seu plano.
 Quando eles acabam, use o texto, que não tem limite.
 
 Para não usar a voz, escreva na conversa por texto: ela não fala nem gasta

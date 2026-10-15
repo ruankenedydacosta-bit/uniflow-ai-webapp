@@ -22,6 +22,7 @@ import { useAssinatura } from './useAssinatura.js';
 import {
   formatDate,
   resolveCancelEffectiveAt,
+  resolvePaymentMethodLabel,
   resolvePlanState,
   resolveRenewsAt,
   resolveTrialEndsAt,
@@ -126,9 +127,12 @@ function SimplifiedPlanPage() {
   const renewsAt = resolveRenewsAt(subscription, planState);
   const cancelEffectiveAt = resolveCancelEffectiveAt(subscription, planState);
   const trialEndsAt = resolveTrialEndsAt(subscription, planState);
+  const paymentMethodLabel = resolvePaymentMethodLabel(subscription?.payment_method);
   // Plano manual (concedido pela equipe) não tem cobrança: nada a cancelar
   // nem a trocar pelo app.
   const isManualPlan = subscription?.source === 'manual';
+  // Plano manual não tem cobrança; sem assinatura não há o que mostrar.
+  const showPaymentMethod = !isManualPlan && planState.status !== 'not_configured';
   const canCancel = planState.status === 'active' && !isManualPlan;
 
   const usageMessage = isLoadingTransactions
@@ -249,7 +253,7 @@ function SimplifiedPlanPage() {
             </div>
           </div>
 
-          {(renewsAt || cancelEffectiveAt || trialEndsAt) ? (
+          {(renewsAt || cancelEffectiveAt || trialEndsAt || showPaymentMethod) ? (
             <div className={styles.infoGrid}>
               {renewsAt ? (
                 <div className={styles.infoTile}>
@@ -270,6 +274,14 @@ function SimplifiedPlanPage() {
                   <span className={styles.infoIcon} aria-hidden="true"><CalendarIcon /></span>
                   <small>Teste encerra em</small>
                   <strong>{formatDate(trialEndsAt)}</strong>
+                </div>
+              ) : null}
+              {/* #290: veio de Pagamento e assinatura, que saiu do Mais. */}
+              {showPaymentMethod ? (
+                <div className={styles.infoTile}>
+                  <span className={styles.infoIcon} aria-hidden="true"><CardIcon /></span>
+                  <small>Forma de pagamento</small>
+                  <strong>{paymentMethodLabel ?? 'Não configurada'}</strong>
                 </div>
               ) : null}
             </div>

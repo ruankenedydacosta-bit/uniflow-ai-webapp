@@ -41,7 +41,7 @@ export const KNOWLEDGE_CATEGORIES = Object.freeze({
 });
 
 const MANIFEST_VERSION = 1;
-const UPDATED_AT = '2026-10-13';
+const UPDATED_AT = '2026-10-14';
 
 // id estável (nunca renomear um id existente -- criar um novo e marcar o
 // antigo como deprecated se o conteúdo for substituído).
@@ -58,7 +58,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'UniFlow AI é um aplicativo financeiro web mobile-first para organizar finanças pessoais (Espaço Pessoal/PF) e de um negócio (Espaço Empresa/PJ), com apoio da assistente Uni. Não existe app nativo iOS/Android nesta fase. Na experiência simplificada atual, o usuário navega por Home, Registros e Conta; pela área Conta acessa Agenda, Pagamento e assinatura, Minhas contas, Voz da Uni, Suporte e Sobre a UniFlow AI. Um usuário pode ter os dois espaços e alternar entre eles sem misturar dados.',
+      'UniFlow AI é um aplicativo financeiro web mobile-first para organizar finanças pessoais (Espaço Pessoal/PF) e de um negócio (Espaço Empresa/PJ), com apoio da assistente Uni. Não existe app nativo iOS/Android nesta fase. No celular, a barra inferior tem Hoje, Financeiro, Falar (conversa por voz com a Uni), Agenda e Mais. Em Mais ficam perfil, plano, configurações, conversa escrita com a Uni, relatórios, metas, contas e categorias, notificações, suporte e Sobre a UniFlow AI. Um usuário pode ter os dois espaços e alternar entre eles sem misturar dados.',
   },
   {
     id: 'navigation-desktop',
@@ -80,13 +80,13 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     category: KNOWLEDGE_CATEGORIES.NAVIGATION,
     version: MANIFEST_VERSION,
     file: 'docs/product-knowledge/navigation-mobile.md',
-    routes: ['/app/home', '/app/registros', '/app/conta', '/app/agenda', '/app/conta/suporte', '/app/conta/voz'],
+    routes: ['/app/home', '/app/registros', '/app/conta', '/app/agenda', '/app/conta/suporte'],
     workspaces: WORKSPACE_SCOPE.BOTH,
     keywords: ['barra inferior', 'menu mais', 'navegar no celular', 'onde fica no mobile', 'bottom navigation'],
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Na experiência simplificada atual, a barra inferior tem Home, Registros e Conta. Home concentra a interação com a Uni. Registros reúne movimentações financeiras. Em Conta ficam o seletor Pessoal/Empresa e os acessos a Editar perfil, Segurança, Agenda, Seu plano, Pagamento e assinatura, Histórico de pagamentos, Minhas contas, Voz da Uni, Suporte e Sobre a UniFlow AI. Agenda também pode ser aberta pela Uni. Suporte possui conversa própria e não acessa ferramentas financeiras.',
+      'No celular, a barra inferior tem Hoje, Financeiro, Falar, Agenda e Mais. Hoje mostra o resumo do mês. Financeiro reúne as movimentações. Falar abre a conversa por voz com a Uni. No topo de Mais ficam o card do perfil e o card do plano, que abre Seu plano (assinatura, forma de pagamento e histórico de pagamentos). O grupo Conta tem Perfil, Configurações (tema, estilo das respostas, Google Agenda e segurança) e Privacidade e Analytics. O grupo Produto tem Conversa com a Uni, Relatórios, Notificações, Metas, Contas e categorias, Suporte e Sobre a UniFlow AI. Suporte possui conversa própria e não acessa ferramentas financeiras.',
   },
   {
     id: 'authentication-and-onboarding',
@@ -142,7 +142,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.LIMITED,
     updatedAt: UPDATED_AT,
     content:
-      'Movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni, sempre com os campos obrigatórios e confirmação explícita antes de salvar. Open Finance é DEMONSTRAÇÃO VISUAL, sem conexão bancária real. Data futura fica prevista: aparece em Previstos no Financeiro, fora do saldo e dos totais, até ser confirmada. Lançamento recorrente, pelo formulário ou pela Uni, vira uma série: os próximos 3 meses entram na hora e os seguintes são criados sozinhos. Cada operação respeita o espaço Pessoal/Empresa ativo. Contas ficam em Conta → Minhas contas.',
+      'Movimentações são consultadas e registradas em Registros (/app/registros) ou conversando com a Uni, sempre com os campos obrigatórios e confirmação explícita antes de salvar. Open Finance é DEMONSTRAÇÃO VISUAL, sem conexão bancária real. Data futura fica prevista: aparece em Previstos no Financeiro, fora do saldo e dos totais, até ser confirmada. Lançamento recorrente, pelo formulário ou pela Uni, vira uma série: os próximos 3 meses entram na hora e os seguintes são criados sozinhos. Cada operação respeita o espaço Pessoal/Empresa ativo. Contas e categorias ficam em Mais → Contas e categorias.',
   },
   {
     id: 'goals',
@@ -184,7 +184,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A Agenda está disponível nos espaços Pessoal e Empresa em Conta → Agenda e pela rota interna /app/agenda. A Uni também consulta, marca, remarca, cancela, conclui e exclui itens da Agenda pela conversa e pela voz, sempre no espaço ativo; antes de cancelar ou excluir ela pergunta se pode. Não existe integração com Google Calendar nesta fase. Projetos, contratos e documentos não estão expostos na interface simplificada atual.',
+      'A Agenda está disponível nos espaços Pessoal e Empresa na aba Agenda da barra inferior (/app/agenda). A Uni também consulta, marca, remarca, cancela, conclui e exclui itens da Agenda pela conversa e pela voz, sempre no espaço ativo; antes de cancelar ou excluir ela pergunta se pode. Não existe integração com Google Calendar nesta fase. Projetos, contratos e documentos não estão expostos na interface simplificada atual.',
   },
   {
     id: 'notifications',
@@ -254,7 +254,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'A voz da Uni existe só na conversa por voz em tempo real. A conversa por texto não lê as respostas em voz alta e não tem botão "Ouvir". O estilo das respostas fica em Conta → Voz da Uni. Áudio e transcrição não cruzam usuários nem espaços. Tocar no orb da Uni na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni e toca em Parar para terminar. Pela voz dá para registrar, alterar e excluir movimentações (depois de excluir, dizer "desfazer" em até 20 segundos traz de volta), listar movimentações e categorias, criar, renomear e excluir categorias, criar, alterar, excluir e consultar metas, registrar aporte e retirada e marcar, remarcar, cancelar, concluir e excluir compromissos. Movimentação, categoria e meta passam por um card: a Uni lê o que vai mudar e pergunta se pode confirmar; fora o lançamento direto com Desfazer, nada é salvo antes disso. Compromisso não tem card: a Uni pergunta se pode cancelar ou excluir. Fechada a tela de voz, o rascunho esperando fica na Home. Cada plano tem minutos de voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Conta → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
+      'A voz da Uni existe só na conversa por voz em tempo real. A conversa por texto não lê as respostas em voz alta e não tem botão "Ouvir". O estilo fica em Mais → Configurações → Estilo das respostas. Áudio e transcrição não cruzam usuários nem espaços. Tocar em Falar na barra inferior abre a conversa; a pessoa fala com pausas, pode interromper a Uni e toca em Parar para terminar. Pela voz dá para registrar, alterar e excluir movimentações (depois de excluir, dizer "desfazer" em até 20 segundos traz de volta), listar movimentações e categorias, criar, renomear e excluir categorias, criar, alterar, excluir e consultar metas, registrar aporte e retirada e marcar, remarcar, cancelar, concluir e excluir compromissos. Movimentação, categoria e meta passam por um card: a Uni lê o que vai mudar e pergunta se pode confirmar; fora o lançamento direto com Desfazer, nada é salvo antes disso. Compromisso não tem card: a Uni pergunta se pode cancelar ou excluir. Fechada a tela de voz, o rascunho esperando fica na Home. Cada plano tem minutos de voz por mês (Essencial 20, Uni Voz 60, Uni Voz Plus 180), vistos em Mais → Seu plano; quando acabam, o registro continua pelo texto, sem limite.',
   },
   {
     id: 'uni-categoria-e-memoria',
@@ -282,7 +282,7 @@ export const PRODUCT_KNOWLEDGE_MANIFEST = Object.freeze([
     status: KNOWLEDGE_STATUS.AVAILABLE,
     updatedAt: UPDATED_AT,
     content:
-      'Plano Pessoal em três opções, todas com acesso completo e registro por texto sem limite: Essencial R$ 14,90/mês com 20 minutos de conversa por voz, Uni Voz R$ 29,90/mês com 60 minutos, Uni Voz Plus R$ 69,90/mês com 180 minutos. Assinatura pela página do Plano Pessoal, com Pix ou cartão. Os minutos renovam a cada cobrança paga e não acumulam. Trocar de plano em Conta → Seu plano: para um plano mais barato, vale na próxima cobrança; para um mais caro, paga-se a diferença cheia por Pix e os minutos novos entram quando o pagamento é confirmado. Sem minutos, o registro continua pelo texto. Business e Enterprise (CRM, Clientes, Projetos, com Espaço Empresa) ainda não são contratados pela interface: indicar o suporte.',
+      'Plano Pessoal em três opções, todas com acesso completo e registro por texto sem limite: Essencial R$ 14,90/mês com 20 minutos de conversa por voz, Uni Voz R$ 29,90/mês com 60 minutos, Uni Voz Plus R$ 69,90/mês com 180 minutos. Assinatura pela página do Plano Pessoal, com Pix ou cartão. Os minutos renovam a cada cobrança paga e não acumulam. Trocar de plano em Mais → Seu plano: para um plano mais barato, vale na próxima cobrança; para um mais caro, paga-se a diferença cheia por Pix e os minutos novos entram quando o pagamento é confirmado. Sem minutos, o registro continua pelo texto. Business e Enterprise (CRM, Clientes, Projetos, com Espaço Empresa) ainda não são contratados pela interface: indicar o suporte.',
   },
   {
     id: 'troubleshooting',

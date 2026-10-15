@@ -21,19 +21,14 @@ test('autoCloseOnCreate só fecha em CRIAÇÃO (isCreate), nunca ao editar uma c
   assert.match(fnSlice, /if \(autoCloseOnCreate && isCreate\) \{\s*\n\s*onClose\(\);/);
 });
 
-test('consumidores existentes (Financeiro desktop e Minhas Contas simplificado) nunca passam autoCloseOnCreate -- zero mudança de comportamento para eles', async () => {
-  const [financeiroPage, simplifiedMyAccounts] = await Promise.all([
-    source('../FinanceiroPage.jsx'),
-    source('../../features/simplified-app/SimplifiedMyAccountsPage.jsx'),
-  ]);
+test('consumidor existente (Financeiro desktop) nunca passa autoCloseOnCreate -- zero mudança de comportamento para ele', async () => {
+  const financeiroPage = await source('../FinanceiroPage.jsx');
   assert.doesNotMatch(financeiroPage, /autoCloseOnCreate/);
-  assert.doesNotMatch(simplifiedMyAccounts, /autoCloseOnCreate/);
 });
 
 // ============================================================================
 // BLOCO REGISTROS iOS (refino visual): className/overlayClassName são
-// aditivos (default undefined) -- FinanceiroPage.jsx e
-// SimplifiedMyAccountsPage.jsx continuam reativos ao tema --uf-* do site,
+// aditivos (default undefined) -- FinanceiroPage.jsx continua reativo ao tema --uf-* do site,
 // só o sub-fluxo "Criar conta" de UpdateBalanceModal.jsx força a
 // identidade escura.
 // ============================================================================
@@ -54,11 +49,7 @@ function sliceJsxTag(content, openTagNeedle) {
   return content.slice(start, end);
 }
 
-test('consumidores existentes (Financeiro desktop e Minhas Contas simplificado) nunca passam className/overlayClassName -- continuam reativos ao tema do site', async () => {
-  const [financeiroPage, simplifiedMyAccounts] = await Promise.all([
-    source('../FinanceiroPage.jsx'),
-    source('../../features/simplified-app/SimplifiedMyAccountsPage.jsx'),
-  ]);
+test('consumidor existente (Financeiro desktop) nunca passa className/overlayClassName -- continua reativo ao tema do site', async () => {
+  const financeiroPage = await source('../FinanceiroPage.jsx');
   assert.doesNotMatch(sliceJsxTag(financeiroPage, '<FinanceAccountModal'), /overlayClassName|className=/);
-  assert.doesNotMatch(sliceJsxTag(simplifiedMyAccounts, '<FinanceAccountModal'), /overlayClassName|className=/);
 });

@@ -34,12 +34,10 @@ import {
   SimplifiedAgendaPage,
   SimplifiedAboutPage,
   SimplifiedAccountPage,
-  SimplifiedAccountSubpagePlaceholder,
   SimplifiedEditProfilePage,
   SimplifiedGoogleAgendaPage,
   SimplifiedNotificationsPage,
   SimplifiedPaymentHistoryPage,
-  SimplifiedPaymentsPage,
   SimplifiedPlanPage,
   SimplifiedRecordsPage,
   SimplifiedReportPage,
@@ -299,12 +297,12 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedPlanPage />,
   },
+  // #290: Pagamento e assinatura repetia Seu plano. A rota antiga só
+  // redireciona, para não quebrar link ou bookmark salvo.
   {
     path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].path,
-    label: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].title,
-    title: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].title,
     simplified: true,
-    element: <SimplifiedPaymentsPage />,
+    element: <Navigate to={ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].path} replace />,
   },
   {
     path: ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY].path,
@@ -375,38 +373,6 @@ export const appRoutes = [
     simplified: true,
     element: <SimplifiedGoogleAgendaPage />,
   },
-  // ETAPA 4 (Fase 8): demais rotas internas de Conta -- placeholders
-  // honestos e consistentes (título + botão voltar + mensagem curta),
-  // nunca uma tela em branco. A construção completa de cada uma acontece
-  // em tarefas futuras, usando as respectivas referências visuais
-  // aprovadas.
-  ...Object.values(ACCOUNT_SUBROUTES)
-    .filter((subroute) => (
-      subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SECURITY].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENT_HISTORY].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.MY_ACCOUNTS].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.SUPPORT].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.ABOUT].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].path
-      && subroute.path !== ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.GOOGLE_CALENDAR].path
-    ))
-    .map((subroute) => ({
-      path: subroute.path,
-      label: subroute.title,
-      title: subroute.title,
-      simplified: true,
-      element: (
-        <SimplifiedAccountSubpagePlaceholder
-          title={subroute.title}
-          description={subroute.description}
-        />
-      ),
-    })),
   {
     path: '/dashboard',
     moduleId: MODULE_IDS.DASHBOARD,

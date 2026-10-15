@@ -113,9 +113,9 @@ test('metas são anunciadas em Mais → Produto, na rota /app/metas', () => {
   assert.match(goals.content, /Mais → Produto → Metas/);
 });
 
-test('navegação mobile descreve apenas Home, Registros e Conta como barra inferior', () => {
+test('navegação mobile descreve a barra inferior atual (Hoje, Financeiro, Falar, Agenda e Mais)', () => {
   const navigation = getKnowledgeEntryById('navigation-mobile');
-  assert.match(navigation.content, /barra inferior tem Home, Registros e Conta/);
+  assert.match(navigation.content, /barra inferior tem Hoje, Financeiro, Falar, Agenda e Mais/);
   assert.doesNotMatch(navigation.content, /Home, Financeiro, Uni/);
 });
 

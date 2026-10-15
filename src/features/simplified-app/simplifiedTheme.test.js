@@ -41,7 +41,7 @@ test('cabeçalho Configurações com as abas Perfil, Preferências e Segurança 
   assert.match(tabs, /label: 'Segurança'/);
 });
 
-test('grupo Uni: só o que existe (Preferências da Uni abre Voz da Uni); nenhum "Em breve", interruptor sem efeito ou linha sem feature', async () => {
+test('grupo Uni: só o que existe (Estilo das respostas); nenhum "Em breve", interruptor sem efeito ou linha sem feature', async () => {
   const page = await source('./SimplifiedThemePage.jsx');
   assert.match(page, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.VOICE\]\.path\)/);
   assert.doesNotMatch(page, /<Toggle|Em breve|Voz nas respostas da Uni|Animações do botão da Uni|Escolher o que avisar/);

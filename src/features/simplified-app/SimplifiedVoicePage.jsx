@@ -4,7 +4,7 @@ import {
   CONVERSATION_STYLES,
   resolveConversationStyle,
 } from '../uni-llm/conversationStyle.js';
-import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
+import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { useNavegar } from './movimentoDeTelaContext.js';
 import styles from './simplifiedVoice.module.css';
 
@@ -12,7 +12,7 @@ const STYLE_OPTIONS = Object.freeze([
   Object.freeze({
     id: 'simple',
     title: 'Simples',
-    description: 'Respostas curtas e diretas, ideais para interações rápidas por voz.',
+    description: 'Respostas curtas e diretas.',
     recommendation: 'Padrão recomendado',
   }),
   Object.freeze({
@@ -81,14 +81,14 @@ function SimplifiedVoicePage() {
         <button
           type="button"
           className={styles.backButton}
-          onClick={() => navigate(SIMPLIFIED_ROUTES.ACCOUNT)}
-          aria-label="Voltar para Conta"
+          onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.THEME].path)}
+          aria-label="Voltar para Configurações"
         >
           <BackIcon />
         </button>
         <div>
-          <h1>Voz da Uni</h1>
-          <p>Escolha como a Uni deve desenvolver as respostas.</p>
+          <h1>Estilo das respostas</h1>
+          <p>Escolha o tamanho das respostas da Uni.</p>
         </div>
       </header>
 

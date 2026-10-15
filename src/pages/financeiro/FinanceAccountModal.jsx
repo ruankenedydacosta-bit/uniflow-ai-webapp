@@ -20,12 +20,12 @@ const DELETE_BLOCKED_TITLE = 'Você não possui permissão para excluir contas d
 // automaticamente após criar a PRIMEIRA conta criada nesta sessão de uso --
 // usado por fluxos que abrem esta modal apenas para criar rapidamente uma
 // conta e voltar (ex.: UpdateBalanceModal.jsx), sem alterar em nada o
-// comportamento padrão (gerenciar várias contas) usado em FinanceiroPage e
-// SimplifiedMyAccountsPage, onde a prop nunca é passada.
+// comportamento padrão (gerenciar várias contas) usado em FinanceiroPage,
+// onde a prop nunca é passada.
 // `className`/`overlayClassName` (opcionais): permitem que um fluxo chamador
 // force a identidade escura oficial (ex.: sub-fluxo "Criar conta" dentro de
 // UpdateBalanceModal.jsx) sem afetar o uso padrão desta modal em
-// FinanceiroPage.jsx/SimplifiedMyAccountsPage.jsx, que continuam reativos ao
+// FinanceiroPage.jsx, que continua reativo ao
 // tema --uf-* do site (comportamento inalterado quando as props não são
 // passadas).
 // Tela 22: no celular o Modal vira a folha padrão. Campos de 44px (Field),

@@ -30,7 +30,7 @@ export const GA4_PAGE_CATALOG = Object.freeze({
     'Conta - Historico de Pagamentos',
   ),
   '/app/conta/minhas-contas': createPage('/app/conta/minhas-contas', 'Conta - Minhas Contas'),
-  '/app/conta/voz': createPage('/app/conta/voz', 'Conta - Voz'),
+  '/app/conta/voz': createPage('/app/conta/voz', 'Conta - Estilo das respostas'),
   '/app/conta/suporte': createPage('/app/conta/suporte', 'Conta - Suporte'),
   '/app/conta/suporte/uni': createPage('/app/conta/suporte/uni', 'Conta - Uni Suporte'),
   '/app/conta/tema': createPage('/app/conta/tema', 'Conta - Tema'),

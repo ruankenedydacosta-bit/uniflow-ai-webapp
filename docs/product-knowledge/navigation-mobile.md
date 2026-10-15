@@ -10,38 +10,18 @@ Barra inferior fixa, sempre visível.
 
 ## Passo a passo
 
-**Barra inferior**: Home (`/dashboard`), Financeiro (`/financeiro`), Uni (botão central destacado, `/uni-ai`), Agenda (`/agenda`), Mais (abre o menu "Mais").
+**Barra inferior**: Hoje (`/app/home`), Financeiro (`/app/registros`), Falar (botão central, abre a conversa por voz com a Uni), Agenda (`/app/agenda`), Mais (`/app/conta`).
 
-**Menu "Mais"**, agrupado em:
-- **Conta**: Perfil, Configurações, Segurança.
-- **Gestão** (somente Espaço Empresa): Clientes, CRM, Projetos.
-- **Produto**: Objetivos, Visão de Futuro, Categorias, Open Finance, Relatórios, Notificações (abre o painel de notificações), Suporte (desabilitado, "em breve").
+**Menu "Mais"**:
+- No topo: card do perfil e card do plano. O card do plano abre Seu plano, com assinatura, forma de pagamento e histórico de pagamentos.
+- **Conta**: Perfil, Configurações (tema, estilo das respostas do chat, Google Agenda e segurança), Privacidade e Analytics.
+- **Produto**: Conversa com a Uni, Relatórios, Notificações, Metas, Contas e categorias, Suporte, Sobre a UniFlow AI.
 - **Sessão**: Sair.
-
-## Diferenças PF/PJ
-
-O grupo "Gestão" (Clientes, CRM, Projetos) só aparece no menu "Mais" quando o Espaço Empresa está ativo.
 
 ## Desktop / mobile
 
-Este documento cobre apenas mobile. Para desktop, ver `navigation-desktop.md`. No mobile não há gate por plano no menu — apenas por tipo de espaço.
-
-## Permissões
-
-Mesma lógica de papéis do desktop (owner/admin/member/viewer) para ações dentro de cada módulo.
+Este documento cobre apenas mobile. Para desktop, ver `navigation-desktop.md`.
 
 ## Pré-requisitos
 
 Sessão autenticada, apresentação e Plano Pessoal concluídos.
-
-## Limitações atuais
-
-O item "Suporte" no menu "Mais" está visível, mas desabilitado ("em breve") — ainda não existe uma Central de Suporte navegável.
-
-## Mensagens de erro conhecidas
-
-Nenhuma específica de navegação.
-
-## Funcionalidades ainda não disponíveis
-
-- Central de Suporte com tela própria no menu "Mais".

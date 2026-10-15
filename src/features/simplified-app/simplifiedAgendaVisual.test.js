@@ -179,24 +179,16 @@ test('form: editar compromisso tem entry point real de lembrete -- reutiliza Age
 });
 
 // ============================================================================
-// Conta -- entrada do calendário logo abaixo do plano e antes do pagamento.
+// #290: a Agenda é aba da barra inferior e saiu do Mais.
 // ============================================================================
 
-test('Conta: card "Agenda" logo abaixo do card do plano e ANTES de "Pagamento e assinatura"', async () => {
+test('Mais não repete a Agenda, que já está na barra inferior', async () => {
   const [page, routes] = await Promise.all([
     source('./SimplifiedAccountPage.jsx'),
-    source('../../app/routes.jsx'),
+    source('./simplifiedRoutes.js'),
   ]);
-  const agendaIndex = page.indexOf(`title: 'Agenda'`);
-  const paymentIndex = page.indexOf(`id: ACCOUNT_SUBROUTE_IDS.PAYMENTS`);
-  assert.ok(agendaIndex !== -1, 'card Agenda existe');
-  assert.ok(agendaIndex < paymentIndex, 'Agenda vem ANTES de Pagamento e assinatura');
-  assert.match(page, /title: 'Agenda',/);
-  assert.match(page, /subtitle: 'Seus compromissos e lembretes',/);
-  assert.match(page, /CalendarIcon/);
-  assert.match(page, /to: SIMPLIFIED_ROUTES\.AGENDA/);
-  assert.match(page, /item\.to \? navigate\(item\.to\) : goTo\(item\.id\)/);
-  assert.match(routes, /path: SIMPLIFIED_ROUTES\.AGENDA/);
+  assert.doesNotMatch(page, /title: 'Agenda'|SIMPLIFIED_ROUTES\.AGENDA\b/);
+  assert.match(routes, /id: SIMPLIFIED_ROUTE_IDS\.AGENDA,\s*\n\s*label: 'Agenda',/);
 });
 
 test('Conta: rota Agenda SEGUE registrada e não aparece na barra inferior', async () => {

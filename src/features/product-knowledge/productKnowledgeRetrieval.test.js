@@ -32,7 +32,7 @@ for (const question of ['Como faço para agendar uma reunião?', 'Onde fica a Ag
     const { results } = retrieveProductKnowledge(question);
     const entry = results.find((result) => result.id === 'agenda-and-projects');
     assert.ok(entry);
-    assert.match(entry.content, /Conta → Agenda/);
+    assert.match(entry.content, /aba Agenda da barra inferior/);
   });
 }
 
@@ -51,11 +51,11 @@ test('explica a troca entre Pessoal e Empresa sem cruzar dados', () => {
   assert.match(entry.content, /Pessoal\/Empresa/);
 });
 
-test('explica a configuração de voz na rota real de Conta', () => {
+test('explica que a voz não tem configuração e onde fica o estilo das respostas', () => {
   const { results } = retrieveProductKnowledge('Como configurar a voz da Uni?');
   const entry = results.find((result) => result.id === 'uni-voice');
   assert.ok(entry);
-  assert.match(entry.content, /Conta → Voz da Uni/);
+  assert.match(entry.content, /Mais → Configurações → Estilo das respostas/);
 });
 
 test('"como ouço uma resposta da Uni" leva ao documento de voz, que diz que o chat não lê em voz alta', () => {
