@@ -1,7 +1,7 @@
 // BLOCO FINAL DO MVP (Histórico de pagamentos): testes estruturais
 // (source-regex) sobre SimplifiedPaymentHistoryPage.jsx -- mesmo padrão já
 // usado no projeto para telas sem Testing Library/jsdom (ver
-// simplifiedPlan.test.js/simplifiedPayments.test.js).
+// simplifiedPlan.test.js).
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -9,7 +9,7 @@ import test from 'node:test';
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 // Reorganização dos acessos à Uni: "Ajuda" direciona para Suporte, nunca
-// abre a conversa da Uni direto (mesmo padrão de Pagamento e assinatura).
+// abre a conversa da Uni direto.
 test('botão "Ajuda" direciona para Suporte -- nunca abre a Uni direto', async () => {
   const page = await source('./SimplifiedPaymentHistoryPage.jsx');
   const helpButtonStart = page.indexOf('className={styles.helpButton}');
@@ -51,8 +51,8 @@ test('cada item mostra comprovante (invoice_url) só quando existe -- nunca um l
   assert.match(page, /rel="noreferrer noopener"/);
 });
 
-test('volta para "Pagamento e assinatura" (drill-down real, não uma tela solta)', async () => {
+test('volta para "Seu plano" (#290: Pagamento e assinatura saiu)', async () => {
   const page = await source('./SimplifiedPaymentHistoryPage.jsx');
-  assert.match(page, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PAYMENTS\]\.path\)/);
-  assert.match(page, /aria-label="Voltar para Pagamento e assinatura"/);
+  assert.match(page, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PLAN\]\.path\)/);
+  assert.match(page, /aria-label="Voltar para Seu plano"/);
 });

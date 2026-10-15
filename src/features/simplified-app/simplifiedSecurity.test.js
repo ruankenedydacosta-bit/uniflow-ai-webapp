@@ -10,8 +10,7 @@ import test from 'node:test';
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 // ============================================================================
-// routes.jsx -- seguranca usa a tela real, demais subrotas continuam
-// placeholders.
+// routes.jsx -- seguranca usa a tela real.
 // ============================================================================
 
 test('routes.jsx renderiza SimplifiedSecurityPage na rota de segurança', async () => {
@@ -21,12 +20,6 @@ test('routes.jsx renderiza SimplifiedSecurityPage na rota de segurança', async 
     content,
     /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SECURITY\]\.path[\s\S]{0,200}<SimplifiedSecurityPage \/>/,
   );
-});
-
-test('routes.jsx filtra editar-perfil E segurança da lista de placeholders genéricos', async () => {
-  const content = await source('../../app/routes.jsx');
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\]\.path/);
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SECURITY\]\.path/);
 });
 
 test('index.js exporta SimplifiedSecurityPage', async () => {

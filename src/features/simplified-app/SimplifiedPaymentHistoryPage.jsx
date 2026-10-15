@@ -35,7 +35,7 @@ function SimplifiedPaymentHistoryPage() {
   useEffect(() => {
     let isActive = true;
     // Mesmo padrao de deferimento via setTimeout(0) usado pelas demais
-    // telas de assinatura (SimplifiedPlanPage.jsx/SimplifiedPaymentsPage.jsx).
+    // telas de assinatura (SimplifiedPlanPage.jsx).
     const timeoutId = window.setTimeout(() => {
       if (!workspaceId) {
         setIsLoading(false);
@@ -62,8 +62,8 @@ function SimplifiedPaymentHistoryPage() {
           <button
             type="button"
             className={styles.backButton}
-            onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PAYMENTS].path)}
-            aria-label="Voltar para Pagamento e assinatura"
+            onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.PLAN].path)}
+            aria-label="Voltar para Seu plano"
           >
             <BackIcon />
           </button>

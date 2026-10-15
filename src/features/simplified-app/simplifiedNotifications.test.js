@@ -7,11 +7,10 @@ import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRout
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
-test('rota /app/conta/notificacoes registrada com a página real, fora do loop de placeholders', async () => {
+test('rota /app/conta/notificacoes registrada com a página real', async () => {
   assert.equal(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.NOTIFICATIONS].path, '/app/conta/notificacoes');
   const routes = await source('../../app/routes.jsx');
   assert.match(routes, /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.NOTIFICATIONS\]\.path[\s\S]{0,200}<SimplifiedNotificationsPage \/>/);
-  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.NOTIFICATIONS\]\.path/);
   const barrel = await source('./index.js');
   assert.match(barrel, /export \{ default as SimplifiedNotificationsPage \} from '\.\/SimplifiedNotificationsPage\.jsx';/);
 });

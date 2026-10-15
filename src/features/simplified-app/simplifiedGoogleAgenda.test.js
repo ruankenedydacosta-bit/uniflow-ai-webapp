@@ -90,10 +90,9 @@ test('tela: aviso inline com "X" (sem toast), conectar, desconectar com confirma
   assert.match(page, /urlDeAutorizacaoValida\(data\?\.authorization_url\)/);
 });
 
-test('routes.jsx monta a tela e a tira do placeholder', async () => {
+test('routes.jsx monta a tela na rota do Google Agenda', async () => {
   const routes = await source('../../app/routes.jsx');
-  assert.match(routes, /<SimplifiedGoogleAgendaPage \/>/);
-  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.GOOGLE_CALENDAR\]\.path/);
+  assert.match(routes, /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.GOOGLE_CALENDAR\]\.path[\s\S]{0,200}<SimplifiedGoogleAgendaPage \/>/);
 });
 
 test('retorno "confirmar" traz o id da pendência; sem id válido não há confirmação', () => {

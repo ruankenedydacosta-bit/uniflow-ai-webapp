@@ -18,8 +18,8 @@ const THEME_ORDER = Object.freeze([THEME_IDS.LIGHT, THEME_IDS.UNIFLOW]);
 /**
  * Fase 3 do redesign (#90): aba "Preferências" da tela 14 Configurações.
  * Continua na rota de Tema e reutiliza exclusivamente o ThemeProvider
- * oficial (useTheme). O grupo Uni traz só o que existe (Voz da Uni, que
- * define o estilo de conversa); as linhas do handoff sem feature por trás
+ * oficial (useTheme). O grupo Uni traz só o que existe (Estilo das
+ * respostas, que vale para o chat de texto); as linhas do handoff sem feature por trás
  * (voz nas respostas, animações do botão, notificações) ficam de fora,
  * porque placeholder é promessa vazia (ver simplifiedAccountRoutes.js).
  * "Trocar senha por e-mail" só aparece para quem entra com senha.
@@ -89,8 +89,8 @@ function SimplifiedThemePage() {
             onClick={() => navigate(ACCOUNT_SUBROUTES[ACCOUNT_SUBROUTE_IDS.VOICE].path)}
           >
             <span className={groups.rowText}>
-              <span className={groups.rowTitle}>Preferências da Uni</span>
-              <span className={groups.rowSubtitle}>Tom, explicações e alertas</span>
+              <span className={groups.rowTitle}>Estilo das respostas</span>
+              <span className={groups.rowSubtitle}>Escolha o tamanho das respostas da Uni no chat</span>
             </span>
             <span className={groups.caret} aria-hidden="true"><PhCaretRightIcon /></span>
           </button>

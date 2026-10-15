@@ -9,8 +9,7 @@ import test from 'node:test';
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 // ============================================================================
-// routes.jsx -- plano usa a tela real, demais subrotas continuam
-// placeholders.
+// routes.jsx -- plano usa a tela real.
 // ============================================================================
 
 test('routes.jsx renderiza SimplifiedPlanPage na rota de plano', async () => {
@@ -20,13 +19,6 @@ test('routes.jsx renderiza SimplifiedPlanPage na rota de plano', async () => {
     content,
     /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PLAN\]\.path[\s\S]{0,200}<SimplifiedPlanPage \/>/,
   );
-});
-
-test('routes.jsx filtra editar-perfil, segurança E plano da lista de placeholders genéricos', async () => {
-  const content = await source('../../app/routes.jsx');
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\]\.path/);
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SECURITY\]\.path/);
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PLAN\]\.path/);
 });
 
 test('index.js exporta SimplifiedPlanPage', async () => {
@@ -88,7 +80,7 @@ test('usa a fonte única de apresentação de assinatura (subscriptionPresentati
   const content = await source('./SimplifiedPlanPage.jsx');
   assert.match(
     content,
-    /import \{\s*\n\s*formatDate,\s*\n\s*resolveCancelEffectiveAt,\s*\n\s*resolvePlanState,\s*\n\s*resolveRenewsAt,\s*\n\s*resolveTrialEndsAt,\s*\n\s*\} from '\.\/subscriptionPresentation\.js';/,
+    /import \{\s*\n\s*formatDate,\s*\n\s*resolveCancelEffectiveAt,\s*\n\s*resolvePaymentMethodLabel,\s*\n\s*resolvePlanState,\s*\n\s*resolveRenewsAt,\s*\n\s*resolveTrialEndsAt,\s*\n\s*\} from '\.\/subscriptionPresentation\.js';/,
   );
   assert.doesNotMatch(content, /function resolvePlanState/);
   assert.doesNotMatch(content, /function formatDate/);

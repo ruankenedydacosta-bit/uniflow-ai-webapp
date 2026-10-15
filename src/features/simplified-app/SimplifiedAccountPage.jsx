@@ -22,11 +22,9 @@ import { SIMPLIFIED_ROUTES } from './simplifiedRoutes.js';
 import { useAssinatura } from './useAssinatura.js';
 import { useUniUpdates } from './useUniUpdates.js';
 import {
-  PhCalendarIcon,
   PhCaretRightIcon,
   PhChartBarIcon,
   PhChatCircleTextIcon,
-  PhCreditCardIcon,
   PhCrownIcon,
   PhFlagIcon,
   PhSquaresFourIcon,
@@ -34,8 +32,6 @@ import {
   PhInfoIcon,
   PhLifebuoyIcon,
   PhLockKeyIcon,
-  PhMicrophoneIcon,
-  PhShieldCheckIcon,
   PhSignOutIcon,
   PhUserIcon,
   PhUsersThreeIcon,
@@ -102,8 +98,8 @@ function SimplifiedAccountPage() {
     setShowLogoutConfirm(false);
   }
 
-  // Grupo "Conta" do handoff: Perfil, Configurações (a aba Preferências,
-  // que mora na rota de Tema) e Segurança.
+  // Grupo "Conta": Perfil, Configurações (abre a aba Preferências; Segurança
+  // é outra aba da mesma tela) e Privacidade e Analytics (#290).
   const accountItems = [
     {
       id: ACCOUNT_SUBROUTE_IDS.EDIT_PROFILE,
@@ -116,17 +112,23 @@ function SimplifiedAccountPage() {
       title: 'Configurações',
     },
     {
-      id: ACCOUNT_SUBROUTE_IDS.SECURITY,
-      Icon: PhShieldCheckIcon,
-      title: 'Segurança',
+      id: 'analytics-consent',
+      Icon: PhLockKeyIcon,
+      title: 'Privacidade e Analytics',
+      subtitle: analyticsConsentStatus === 'granted'
+        ? 'Dados de uso permitidos'
+        : analyticsConsentStatus === 'denied'
+          ? 'Dados de uso não permitidos'
+          : 'Escolher preferência',
+      onSelect: () => setShowAnalyticsPreferences(true),
     },
   ];
 
-  // Grupo "Produto": Relatórios e Notificações vêm do handoff; Agenda,
-  // Pagamento e assinatura, Voz da Uni, Suporte, Privacidade e Sobre são
-  // telas que já existem e continuam alcançáveis por aqui. A conversa
-  // escrita com a Uni (/app/uni) entrou quando o card da última conversa
-  // saiu da Home (#128): é o caminho até ela sem abrir a tela de voz.
+  // Grupo "Produto". A conversa escrita com a Uni (/app/uni) entrou quando o
+  // card da última conversa saiu da Home (#128): é o caminho até ela sem
+  // abrir a tela de voz. Saíram em #290: Agenda (já está na barra
+  // inferior), Pagamento e assinatura (o card do plano abre Seu plano) e
+  // Voz da Uni (o estilo das respostas fica em Configurações).
   const productItems = [
     {
       id: 'uni-chat',
@@ -140,15 +142,6 @@ function SimplifiedAccountPage() {
       Icon: PhChartBarIcon,
       title: 'Relatórios',
       to: SIMPLIFIED_ROUTES.RELATORIO,
-    },
-    // LOTE AGENDA VISUAL: não é subrota de Conta (não existe em
-    // ACCOUNT_SUBROUTES) -- navega pela rota interna /app/agenda.
-    {
-      id: 'agenda',
-      Icon: PhCalendarIcon,
-      title: 'Agenda',
-      subtitle: 'Seus compromissos e lembretes',
-      to: SIMPLIFIED_ROUTES.AGENDA,
     },
     {
       id: 'metas',
@@ -165,34 +158,9 @@ function SimplifiedAccountPage() {
       onSelect: () => navigate(SIMPLIFIED_ROUTES.ORGANIZAR, { state: { de: SIMPLIFIED_ROUTES.ACCOUNT } }),
     },
     {
-      id: ACCOUNT_SUBROUTE_IDS.PAYMENTS,
-      Icon: PhCreditCardIcon,
-      title: 'Pagamento e assinatura',
-      // Sem valor guardado ainda, nenhum dos dois textos: ambos supõem um estado.
-      subtitle: isLoadingSubscription
-        ? null
-        : planState.status === 'active' ? 'Ver detalhes da assinatura' : 'Gerenciar plano e pagamento',
-    },
-    {
-      id: ACCOUNT_SUBROUTE_IDS.VOICE,
-      Icon: PhMicrophoneIcon,
-      title: 'Voz da Uni',
-    },
-    {
       id: ACCOUNT_SUBROUTE_IDS.SUPPORT,
       Icon: PhLifebuoyIcon,
       title: 'Suporte',
-    },
-    {
-      id: 'analytics-consent',
-      Icon: PhLockKeyIcon,
-      title: 'Privacidade e Analytics',
-      subtitle: analyticsConsentStatus === 'granted'
-        ? 'Dados de uso permitidos'
-        : analyticsConsentStatus === 'denied'
-          ? 'Dados de uso não permitidos'
-          : 'Escolher preferência',
-      onSelect: () => setShowAnalyticsPreferences(true),
     },
     {
       id: ACCOUNT_SUBROUTE_IDS.ABOUT,
@@ -299,9 +267,9 @@ function SimplifiedAccountPage() {
       <section className={groups.group} aria-label="Produto">
         <h2 className={groups.groupLabel}>Produto</h2>
         <div className={groups.list}>
-          {productItems.slice(0, 3).map(renderRow)}
+          {productItems.slice(0, 2).map(renderRow)}
           <SimplifiedAccountNotificationsRow />
-          {productItems.slice(3).map(renderRow)}
+          {productItems.slice(2).map(renderRow)}
         </div>
       </section>
 

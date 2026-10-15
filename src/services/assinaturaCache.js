@@ -1,6 +1,5 @@
-// Assinatura guardada em memória por workspace. As telas de Mais, Seu plano
-// e Pagamento e assinatura pintam o valor guardado na hora e revalidam em
-// segundo plano. Antes, cada tela buscava ao montar e descartava ao sair, e
+// Assinatura guardada em memória por workspace. As telas de Mais e Seu
+// plano pintam o valor guardado na hora e revalidam em segundo plano. Antes, cada tela buscava ao montar e descartava ao sair, e
 // o menu mostrava "Carregando" (ou "Nenhuma assinatura ativa") a cada visita.
 //
 // A busca usa sempre local_only: o status vem do banco, que o webhook da

@@ -10,8 +10,7 @@ import test from 'node:test';
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 // ============================================================================
-// routes.jsx -- suporte usa a tela real, demais subrotas continuam
-// placeholders.
+// routes.jsx -- suporte usa a tela real.
 // ============================================================================
 
 test('routes.jsx renderiza SimplifiedSupportPage na rota de suporte', async () => {
@@ -21,16 +20,6 @@ test('routes.jsx renderiza SimplifiedSupportPage na rota de suporte', async () =
     content,
     /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SUPPORT\]\.path[\s\S]{0,200}<SimplifiedSupportPage \/>/,
   );
-});
-
-test('routes.jsx filtra as 6 rotas com tela real da lista de placeholders genéricos', async () => {
-  const content = await source('../../app/routes.jsx');
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\]\.path/);
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SECURITY\]\.path/);
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PLAN\]\.path/);
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PAYMENTS\]\.path/);
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.MY_ACCOUNTS\]\.path/);
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SUPPORT\]\.path/);
 });
 
 test('index.js exporta SimplifiedSupportPage', async () => {

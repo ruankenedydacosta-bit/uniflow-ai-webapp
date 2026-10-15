@@ -10,8 +10,7 @@ import test from 'node:test';
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
 // ============================================================================
-// routes.jsx -- editar-perfil usa a tela real, demais subrotas continuam
-// placeholders.
+// routes.jsx -- editar-perfil usa a tela real.
 // ============================================================================
 
 test('routes.jsx renderiza SimplifiedEditProfilePage na rota de editar perfil', async () => {
@@ -21,11 +20,6 @@ test('routes.jsx renderiza SimplifiedEditProfilePage na rota de editar perfil', 
     content,
     /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\]\.path[\s\S]{0,200}<SimplifiedEditProfilePage \/>/,
   );
-});
-
-test('routes.jsx filtra editar-perfil da lista de placeholders genéricos (sem rota duplicada)', async () => {
-  const content = await source('../../app/routes.jsx');
-  assert.match(content, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\]\.path/);
 });
 
 test('index.js exporta SimplifiedEditProfilePage', async () => {

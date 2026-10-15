@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { ACCOUNT_SUBROUTES } from './simplifiedAccountRoutes.js';
+import { ACCOUNT_SUBROUTE_IDS, ACCOUNT_SUBROUTES } from './simplifiedAccountRoutes.js';
 import { resolveSimplifiedGreeting } from './simplifiedGreeting.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -42,10 +42,9 @@ test('ACCOUNT_SUBROUTES tem exatamente os 12 paths pedidos, sob /app/conta/ -- p
   }
 });
 
-test('todo subroute tem título e descrição honesta (nunca vazio, nunca dado fictício)', () => {
+test('todo subroute tem título (nunca vazio)', () => {
   for (const subroute of Object.values(ACCOUNT_SUBROUTES)) {
     assert.ok(subroute.title.trim());
-    assert.ok(subroute.description.trim());
   }
 });
 
@@ -65,33 +64,41 @@ test('routes.jsx: /app/conta usa SimplifiedAccountPage, não mais o placeholder 
   assert.match(routes, /path: SIMPLIFIED_ROUTES\.ACCOUNT,\s*\n\s*label: 'Conta',\s*\n\s*title: 'Conta',\s*\n\s*simplified: true,\s*\n\s*element: <SimplifiedAccountPage \/>/);
 });
 
-test('routes.jsx: as rotas internas de Conta são geradas a partir de ACCOUNT_SUBROUTES (fonte única, sem paths hardcoded soltos)', async () => {
+// #290: o gerador de placeholders "Em breve" saiu (nenhuma subrota caía
+// nele). Sem ele, uma subrota nova sem rota cairia no catch-all, então
+// toda subrota precisa aparecer em routes.jsx com tela ou redirecionamento.
+test('routes.jsx: toda subrota de Conta tem tela real ou redirecionamento, sem placeholder genérico', async () => {
   const routes = await source('../../app/routes.jsx');
-  // Todas as 10 subrotas hoje têm tela real (Editar perfil, Segurança, Plano,
-  // Pagamentos, Histórico, Minhas contas, Voz, Suporte, Tema, Sobre) -- o loop de
-  // placeholders genéricos continua existindo (infraestrutura para futuras
-  // subrotas), mas não gera nenhuma rota hoje.
-  assert.match(routes, /Object\.values\(ACCOUNT_SUBROUTES\)\s*\n\s*\.filter\(\(subroute\) => \(/);
-  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE\]\.path/);
-  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.SECURITY\]\.path/);
-  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PLAN\]\.path/);
-  assert.match(routes, /<SimplifiedAccountSubpagePlaceholder/);
-  assert.match(routes, /<SimplifiedEditProfilePage \/>/);
-  assert.match(routes, /<SimplifiedSecurityPage \/>/);
-  assert.match(routes, /<SimplifiedPlanPage \/>/);
-  assert.match(routes, /<SimplifiedVoicePage \/>/);
-  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.VOICE\]\.path/);
-  assert.match(routes, /<SimplifiedThemePage \/>/);
-  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.THEME\]\.path/);
-  assert.match(routes, /<SimplifiedAboutPage \/>/);
-  assert.match(routes, /subroute\.path !== ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.ABOUT\]\.path/);
-  assert.match(routes, /simplified: true,/);
+  for (const id of Object.keys(ACCOUNT_SUBROUTE_IDS)) {
+    assert.match(
+      routes,
+      new RegExp(`path: ACCOUNT_SUBROUTES\\[ACCOUNT_SUBROUTE_IDS\\.${id}\\]\\.path,`),
+      `subrota sem rota: ${id}`,
+    );
+  }
+  assert.doesNotMatch(routes, /SimplifiedAccountSubpagePlaceholder|Object\.values\(ACCOUNT_SUBROUTES\)/);
 });
 
-test('routes.jsx: importa SimplifiedAccountPage e SimplifiedAccountSubpagePlaceholder do barrel simplified-app', async () => {
+test('rotas antigas de Pagamento e assinatura e Minhas contas só redirecionam (#182, #290)', async () => {
+  const routes = await source('../../app/routes.jsx');
+  assert.match(
+    routes,
+    /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PAYMENTS\]\.path,\s*\n\s*simplified: true,\s*\n\s*element: <Navigate to=\{ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PLAN\]\.path\} replace \/>/,
+  );
+  assert.match(
+    routes,
+    /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.MY_ACCOUNTS\]\.path,\s*\n\s*simplified: true,\s*\n\s*element: <Navigate to=\{SIMPLIFIED_ROUTES\.CONTAS\} replace \/>/,
+  );
+  assert.match(
+    routes,
+    /ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.PAYMENT_HISTORY\]\.path[\s\S]{0,200}<SimplifiedPaymentHistoryPage \/>/,
+  );
+  assert.doesNotMatch(routes, /SimplifiedPaymentsPage|SimplifiedMyAccountsPage/);
+});
+
+test('routes.jsx: importa SimplifiedAccountPage do barrel simplified-app', async () => {
   const routes = await source('../../app/routes.jsx');
   assert.match(routes, /SimplifiedAccountPage/);
-  assert.match(routes, /SimplifiedAccountSubpagePlaceholder/);
   assert.match(routes, /ACCOUNT_SUBROUTES/);
 });
 
@@ -143,12 +150,15 @@ test('perfil: card com nome e e-mail reais abre Perfil -- nunca um telefone ou n
   assert.doesNotMatch(page, /<Badge/);
 });
 
-test('grupo Conta: Perfil, Configurações e Segurança navegam para as rotas internas preparadas', async () => {
+// #290: Segurança é aba de Configurações e saiu do menu; Privacidade e
+// Analytics é preferência da conta e veio do grupo Produto.
+test('grupo Conta: Perfil, Configurações e Privacidade e Analytics, sem linha própria de Segurança', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
   const block = page.slice(page.indexOf('const accountItems'), page.indexOf('const productItems'));
   assert.match(block, /id: ACCOUNT_SUBROUTE_IDS\.EDIT_PROFILE,\s*\n\s*Icon: PhUserIcon,\s*\n\s*title: 'Perfil',/);
   assert.match(block, /id: ACCOUNT_SUBROUTE_IDS\.THEME,\s*\n\s*Icon: PhGearIcon,\s*\n\s*title: 'Configurações',/);
-  assert.match(block, /id: ACCOUNT_SUBROUTE_IDS\.SECURITY,\s*\n\s*Icon: PhShieldCheckIcon,\s*\n\s*title: 'Segurança',/);
+  assert.match(block, /id: 'analytics-consent',\s*\n\s*Icon: PhLockKeyIcon,\s*\n\s*title: 'Privacidade e Analytics',/);
+  assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.SECURITY/);
   assert.match(page, /navigate\(ACCOUNT_SUBROUTES\[subrouteId\]\.path\)/);
 });
 
@@ -215,20 +225,21 @@ test('preço exibido é o da assinatura (épico #116), com a constante compartil
 // Segurança), Produto (Relatórios, Agenda, Notificações, Pagamento e
 // assinatura, Voz da Uni, Suporte, Privacidade e Analytics, Sobre) e Sessão
 // (Sair).
-test('menu preserva os itens existentes na ordem da tela 07 e inclui a preferência mínima de Analytics antes de Sobre', async () => {
+// #290: saíram Agenda (está na barra inferior), Pagamento e assinatura (o
+// card do plano abre Seu plano) e Voz da Uni (o estilo das respostas fica
+// em Configurações).
+test('grupo Produto na ordem: conversa, Relatórios, Notificações, Metas, Contas e categorias, Suporte, Sobre', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
-  const order = ['EDIT_PROFILE', 'THEME', 'SECURITY', 'PAYMENTS', 'VOICE', 'SUPPORT', 'ABOUT'];
-  const indices = order.map((id) => page.indexOf(`ACCOUNT_SUBROUTE_IDS.${id},`));
-  assert.ok(indices.every((i) => i > -1), 'algum item do menu está ausente');
+  const productItems = page.slice(page.indexOf('const productItems'), page.indexOf('function renderRow'));
+  const order = ["id: 'uni-chat'", "id: 'reports'", "id: 'metas'", "id: 'organizar'", 'id: ACCOUNT_SUBROUTE_IDS.SUPPORT,', 'id: ACCOUNT_SUBROUTE_IDS.ABOUT,'];
+  const indices = order.map((marker) => productItems.indexOf(marker));
+  assert.ok(indices.every((i) => i > -1), 'algum item do grupo Produto está ausente');
   for (let i = 1; i < indices.length; i += 1) {
     assert.ok(indices[i] > indices[i - 1], `ordem incorreta: ${order[i - 1]} deveria vir antes de ${order[i]}`);
   }
-  assert.match(page, /to: SIMPLIFIED_ROUTES\.RELATORIO,/);
-  assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.PRIVACY/);
-  assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.MY_ACCOUNTS/);
-  const analyticsIndex = page.indexOf("id: 'analytics-consent'");
-  assert.ok(analyticsIndex > indices[5] && analyticsIndex < indices[6]);
-  assert.match(page, /title: 'Privacidade e Analytics'/);
+  assert.match(productItems, /to: SIMPLIFIED_ROUTES\.RELATORIO,/);
+  assert.doesNotMatch(page, /ACCOUNT_SUBROUTE_IDS\.(PRIVACY|MY_ACCOUNTS|PAYMENTS|VOICE)\b/);
+  assert.doesNotMatch(page, /SIMPLIFIED_ROUTES\.AGENDA\b|id: 'agenda'/);
 });
 
 // #128 tirou da Home o link "Ver conversa completa". A conversa escrita
@@ -241,8 +252,8 @@ test('menu Mais abre a conversa escrita com a Uni no topo do grupo Produto', asy
   assert.ok(productItems.indexOf("id: 'uni-chat'") < productItems.indexOf("id: 'reports'"));
   assert.match(productItems, /title: 'Conversa com a Uni',/);
   assert.match(productItems, /to: SIMPLIFIED_ROUTES\.UNI,/);
-  // Notificações continua depois de Relatórios e Agenda.
-  assert.match(page, /\{productItems\.slice\(0, 3\)\.map\(renderRow\)\}\s*<SimplifiedAccountNotificationsRow \/>/);
+  // Notificações vem logo depois de Relatórios.
+  assert.match(page, /\{productItems\.slice\(0, 2\)\.map\(renderRow\)\}\s*<SimplifiedAccountNotificationsRow \/>/);
 });
 
 test('PRIVACY não existe em ACCOUNT_SUBROUTE_IDS/ACCOUNT_SUBROUTES -- remoção total, não só do menu; NOTIFICATIONS existe (Fase 3)', async () => {
@@ -319,7 +330,7 @@ test('useAccounts não é mais importado nesta tela -- "Minhas contas" não faz 
   assert.doesNotMatch(page, /accountState/);
 });
 
-test('"Pagamento e assinatura" nunca mostra um cartão inventado (ex.: "Visa final 1234")', async () => {
+test('Mais nunca mostra um cartão inventado (ex.: "Visa final 1234")', async () => {
   const page = await source('./SimplifiedAccountPage.jsx');
   assert.doesNotMatch(page, /Visa final|final 1234|Mastercard final/i);
 });
@@ -398,19 +409,20 @@ test('logout: loading real durante signOut (botão "Sair da conta" com loading),
 });
 
 // ============================================================================
-// Placeholder de subpáginas (Fase 8) -- título, botão voltar, mensagem
-// curta, mesmo tema; nunca uma tela em branco.
+// Estilo das respostas (antiga Voz da Uni). #290: vale só para o chat de
+// texto e abre por Configurações, para onde o voltar leva.
 // ============================================================================
 
-test('SimplifiedAccountSubpagePlaceholder tem título, botão voltar (para /app/conta) e mensagem -- nunca em branco', async () => {
-  const placeholder = await source('./SimplifiedAccountSubpagePlaceholder.jsx');
-  assert.match(placeholder, /<h1>\{title\}<\/h1>/);
-  assert.match(placeholder, /navigate\(SIMPLIFIED_ROUTES\.ACCOUNT\)/);
-  assert.match(placeholder, /aria-label="Voltar para Conta"/);
-  assert.match(placeholder, /<p>\{description\}<\/p>/);
+test('Estilo das respostas volta para Configurações e avisa que a voz não muda', async () => {
+  const page = await source('./SimplifiedVoicePage.jsx');
+  assert.match(page, /navigate\(ACCOUNT_SUBROUTES\[ACCOUNT_SUBROUTE_IDS\.THEME\]\.path\)/);
+  assert.match(page, /aria-label="Voltar para Configurações"/);
+  assert.match(page, /<h1>Estilo das respostas<\/h1>/);
+  assert.match(page, /A conversa por voz não muda\./);
+  assert.doesNotMatch(page, /por voz\.'/);
 });
 
-test('Voz da Uni oferece só os estilos de conversa e salva só o estilo', async () => {
+test('Estilo das respostas oferece só os estilos de conversa e salva só o estilo', async () => {
   const page = await source('./SimplifiedVoicePage.jsx');
   assert.match(page, /const \{ profile, updateConversationStyle \} = useSession\(\);/);
   assert.doesNotMatch(page, /VOICE_PROVIDER_OPTIONS|Estilo de voz|name="voice-provider"|voiceProvider|uni-voice-tts/);
@@ -423,7 +435,7 @@ test('Voz da Uni oferece só os estilos de conversa e salva só o estilo', async
   assert.doesNotMatch(page, /supabase|fetch\s*\(|localStorage/);
 });
 
-test('Voz da Uni salva somente quando há alteração e mantém o estado anterior em falha', async () => {
+test('Estilo das respostas salva somente quando há alteração e mantém o estado anterior em falha', async () => {
   const page = await source('./SimplifiedVoicePage.jsx');
   assert.match(page, /const hasChanges = selectedStyle !== activeStyle;/);
   assert.match(page, /if \(!hasChanges \|\| isSaving\) return;/);
@@ -431,7 +443,7 @@ test('Voz da Uni salva somente quando há alteração e mantém o estado anterio
   assert.match(page, /disabled=\{!hasChanges \|\| isSaving\}/);
 });
 
-test('Voz da Uni possui estados honestos de loading, sucesso e erro', async () => {
+test('Estilo das respostas possui estados honestos de loading, sucesso e erro', async () => {
   const page = await source('./SimplifiedVoicePage.jsx');
   assert.match(page, /Salvando…/);
   assert.match(page, /type: 'success'/);
@@ -439,7 +451,7 @@ test('Voz da Uni possui estados honestos de loading, sucesso e erro', async () =
   assert.match(page, /role=\{feedback\.type === 'error' \? 'alert' : 'status'\}/);
 });
 
-test('CSS da tela Voz da Uni cobre safe area, 320px, foco e redução de movimento', async () => {
+test('CSS da tela Estilo das respostas cobre safe area, 320px, foco e redução de movimento', async () => {
   const css = await source('./simplifiedVoice.module.css');
   assert.match(css, /env\(safe-area-inset-top\)/);
   assert.match(css, /@media \(max-width: 359px\)/);
