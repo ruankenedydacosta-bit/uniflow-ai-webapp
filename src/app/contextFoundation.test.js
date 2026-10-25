@@ -7,6 +7,7 @@ import {
   USER_MODES,
   PLANS,
   WORKSPACE_TYPES,
+  canUseBusinessFeatures,
   getAccessFromSession,
 } from './access.js';
 import {
@@ -54,9 +55,56 @@ test('usuário só PF deriva currentWorkspace personal', () => {
 });
 
 test('usuário só PJ deriva currentWorkspace business', () => {
-  const access = getAccessFromSession({ user_mode: 'business' }, businessWs, { plan_id: 'business' });
+  const access = getAccessFromSession({ user_mode: 'business' }, businessWs, {
+    plan_id: PLANS.BUSINESS,
+    status: 'active',
+  });
   assert.equal(access.currentWorkspace, 'business');
-  assert.equal(access.plan, 'business');
+  assert.equal(access.plan, PLANS.BUSINESS);
+});
+
+test('assinante existente com plan_id pro mantém seu plano canônico na sessão', () => {
+  const access = getAccessFromSession({ user_mode: 'personal' }, personalWs, {
+    plan_id: PLANS.PRO,
+    status: 'active',
+  });
+  assert.equal(access.plan, PLANS.PRO);
+  assert.equal(access.currentWorkspace, WORKSPACE_TYPES.PERSONAL);
+});
+
+test('fallback legado de workspace Business sem assinatura permanece Business', () => {
+  const access = getAccessFromSession({ user_mode: 'business' }, businessWs, null);
+  assert.equal(access.plan, PLANS.BUSINESS);
+  assert.equal(canUseBusinessFeatures(access), true);
+});
+
+test('plano válido da sessão é preservado sem reclassificar status neste recorte', () => {
+  for (const status of ['trialing', 'active', 'past_due', 'canceled', 'expired', 'pending']) {
+    const access = getAccessFromSession({ user_mode: 'both' }, businessWs, {
+      plan_id: PLANS.BUSINESS,
+      status,
+    });
+    assert.equal(access.plan, PLANS.BUSINESS, `${status} mantém a derivação legada`);
+    assert.equal(canUseBusinessFeatures(access), true, `${status} mantém Gestão legada`);
+  }
+});
+
+test('assinaturas ativas de plano pago preservam acesso após centralização', () => {
+  for (const status of ['trialing', 'active', 'past_due']) {
+    const access = getAccessFromSession({ user_mode: 'both' }, personalWs, {
+      plan_id: PLANS.PRO,
+      status,
+    });
+    assert.equal(access.plan, PLANS.PRO, `${status} preserva o acesso legado elegível`);
+  }
+});
+
+test('canUseBusinessFeatures mantém o gating de Business e Enterprise por modo', () => {
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.FREE }), false);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.PRO }), false);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.BUSINESS }), true);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.ENTERPRISE }), true);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.PERSONAL, plan: PLANS.ENTERPRISE }), false);
 });
 
 test('usuário PF+PJ segue o workspace ativo (troca PF↔PJ muda o derivado)', () => {

@@ -1,11 +1,12 @@
-import { PLANS, USER_MODES } from './access.js';
+import { getPlansWithCapability, PLAN_IDS, USER_MODES } from './access.js';
 import { canAccessNavigationItem } from './accessRules.js';
 import { MODULE_IDS, getModuleContexts } from './moduleAccess.js';
 
 const ALL_MODES = [USER_MODES.PERSONAL, USER_MODES.BUSINESS, USER_MODES.BOTH];
-const ALL_PLANS = [PLANS.FREE, PLANS.PRO, PLANS.BUSINESS, PLANS.ENTERPRISE];
+const ALL_PLANS = PLAN_IDS;
 const BUSINESS_MODES = [USER_MODES.BUSINESS, USER_MODES.BOTH];
-const BUSINESS_PLANS = [PLANS.BUSINESS, PLANS.ENTERPRISE];
+const BUSINESS_PLANS = getPlansWithCapability('businessFeatures');
+const REPORTS_PLANS = getPlansWithCapability('reports');
 
 // UX6: fonte única de agrupamento da sidebar desktop -- ordem de exibição e
 // rótulo de cada grupo. Cada item de `navigationItems` abaixo referencia um
@@ -143,7 +144,7 @@ export const navigationItems = [
     path: '/relatorios',
     moduleId: MODULE_IDS.RELATORIOS,
     modes: ALL_MODES,
-    plans: [PLANS.PRO, PLANS.BUSINESS, PLANS.ENTERPRISE],
+    plans: REPORTS_PLANS,
     workspaces: getModuleContexts(MODULE_IDS.RELATORIOS),
     description: 'Leituras e análises do contexto financeiro.',
     group: 'visao-geral',

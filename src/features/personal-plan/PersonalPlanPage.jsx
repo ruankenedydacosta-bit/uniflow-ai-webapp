@@ -6,6 +6,7 @@ import { SIMPLIFIED_ROUTES } from '../simplified-app/index.js';
 import Button from '../../components/ui/Button/Button.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
 import { createCheckout, createCustomer, createSubscription, getSubscription } from '../../services/billingService.js';
+import { BILLING_PLAN_ID } from '../../services/billingTypes.js';
 import { useSubscriptionStatusPolling } from './useSubscriptionStatusPolling.js';
 import PlanBenefitIcon from './PlanBenefitIcon.jsx';
 import PlanBrandSignature from './PlanBrandHeader.jsx';
@@ -44,12 +45,6 @@ function withTimeout(promise, ms) {
     }),
   ]);
 }
-
-// BLOCO FINAL DO MVP: internal id real usado pelo backend (plans.id = 'pro',
-// decisão comercial congelada desde o Bloco Asaas 0) -- distinto do
-// PERSONAL_PLAN_ID ('personal'), que é só a identidade da ROTA/marca desta
-// tela, nunca enviado à Edge Function.
-const BILLING_PLAN_ID = 'pro';
 
 function CrownIcon() {
   return (

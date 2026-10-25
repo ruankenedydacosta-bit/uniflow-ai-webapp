@@ -63,6 +63,27 @@ test('Troca PF→PJ e PJ→PF atualiza a Sidebar (mesma fonte, contexto diferent
   assert.ok(!pf.includes('/crm') && pj.includes('/crm'));
 });
 
+test('permissões por plano preservam Relatórios e Gestão para os quatro planos', () => {
+  const expectations = [
+    { plan: PLANS.FREE, reports: false, management: false },
+    { plan: PLANS.PRO, reports: true, management: false },
+    { plan: PLANS.BUSINESS, reports: true, management: true },
+    { plan: PLANS.ENTERPRISE, reports: true, management: true },
+  ];
+
+  for (const expected of expectations) {
+    const visible = paths(filterNavigationItems(navigationItems, {
+      userMode: USER_MODES.BUSINESS,
+      plan: expected.plan,
+      currentWorkspace: PJ,
+    }));
+    assert.equal(visible.includes('/relatorios'), expected.reports, `${expected.plan}: Relatórios`);
+    assert.equal(visible.includes('/crm'), expected.management, `${expected.plan}: CRM`);
+    assert.equal(visible.includes('/clientes'), expected.management, `${expected.plan}: Clientes`);
+    assert.equal(visible.includes('/projetos'), expected.management, `${expected.plan}: Projetos`);
+  }
+});
+
 // ── BottomNavigation (mesma fonte declarativa) ───────────────────────────────
 
 test('BottomNavigation PF e PJ: itens fixos são todos compartilhados (composição estável)', () => {
