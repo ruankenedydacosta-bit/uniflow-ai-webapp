@@ -55,15 +55,46 @@ test('usuário só PF deriva currentWorkspace personal', () => {
 });
 
 test('usuário só PJ deriva currentWorkspace business', () => {
-  const access = getAccessFromSession({ user_mode: 'business' }, businessWs, { plan_id: 'business' });
+  const access = getAccessFromSession({ user_mode: 'business' }, businessWs, {
+    plan_id: PLANS.BUSINESS,
+    status: 'active',
+  });
   assert.equal(access.currentWorkspace, 'business');
-  assert.equal(access.plan, 'business');
+  assert.equal(access.plan, PLANS.BUSINESS);
 });
 
 test('assinante existente com plan_id pro mantém seu plano canônico na sessão', () => {
-  const access = getAccessFromSession({ user_mode: 'personal' }, personalWs, { plan_id: PLANS.PRO });
+  const access = getAccessFromSession({ user_mode: 'personal' }, personalWs, {
+    plan_id: PLANS.PRO,
+    status: 'active',
+  });
   assert.equal(access.plan, PLANS.PRO);
   assert.equal(access.currentWorkspace, WORKSPACE_TYPES.PERSONAL);
+});
+
+test('workspace Business sem assinatura ou com status sem acesso cai em Free', () => {
+  const noSubscription = getAccessFromSession({ user_mode: 'business' }, businessWs, null);
+  assert.equal(noSubscription.plan, PLANS.FREE);
+  assert.equal(canUseBusinessFeatures(noSubscription), false);
+
+  for (const status of ['pending', 'canceled', 'expired']) {
+    const access = getAccessFromSession({ user_mode: 'business' }, businessWs, {
+      plan_id: PLANS.BUSINESS,
+      status,
+    });
+    assert.equal(access.plan, PLANS.FREE, `${status} não deve conceder capacidade paga`);
+    assert.equal(canUseBusinessFeatures(access), false, `${status} não deve liberar Gestão`);
+  }
+});
+
+test('assinaturas ativas de plano pago preservam acesso após centralização', () => {
+  for (const status of ['trialing', 'active', 'past_due']) {
+    const access = getAccessFromSession({ user_mode: 'both' }, personalWs, {
+      plan_id: PLANS.PRO,
+      status,
+    });
+    assert.equal(access.plan, PLANS.PRO, `${status} preserva o acesso legado elegível`);
+  }
 });
 
 test('canUseBusinessFeatures mantém o gating de Business e Enterprise por modo', () => {

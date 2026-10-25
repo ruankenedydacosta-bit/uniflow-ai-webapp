@@ -46,6 +46,7 @@ export const DEFAULT_DEMO_ACCESS = {
 const VALID_USER_MODES = Object.values(USER_MODES);
 const VALID_PLANS = Object.values(PLANS);
 const VALID_WORKSPACE_TYPES = Object.values(WORKSPACE_TYPES);
+const ACCESSIBLE_SUBSCRIPTION_STATUSES = new Set(['trialing', 'active', 'past_due']);
 
 /**
  * FONTE DE VERDADE — mapeia a sessão real (profile + workspace + subscription do
@@ -62,11 +63,13 @@ export function getAccessFromSession(profile, workspace, subscription) {
     : currentWorkspace === WORKSPACE_TYPES.BUSINESS
       ? USER_MODES.BUSINESS
       : USER_MODES.PERSONAL;
-  const fallbackPlan =
-    currentWorkspace === WORKSPACE_TYPES.BUSINESS ? PLANS.BUSINESS : PLANS.FREE;
-  const plan = VALID_PLANS.includes(subscription?.plan_id)
+  // Workspace type selects context, not a paid entitlement. Missing or
+  // ineligible subscription data must never grant Business capabilities.
+  const hasAccessibleSubscription =
+    subscription && ACCESSIBLE_SUBSCRIPTION_STATUSES.has(subscription.status);
+  const plan = hasAccessibleSubscription && VALID_PLANS.includes(subscription.plan_id)
     ? subscription.plan_id
-    : fallbackPlan;
+    : PLANS.FREE;
 
   return { userMode, plan, currentWorkspace };
 }
