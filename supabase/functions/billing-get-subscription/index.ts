@@ -14,11 +14,10 @@ import {
   AsaasTimeoutError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
+import { getPlanLabel } from '../_shared/planCatalog.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const PLAN_LABELS: Record<string, string> = { pro: 'Plano Pessoal' };
-
 function getAllowedOrigins() {
   return new Set(
     (Deno.env.get('APP_ALLOWED_ORIGINS') ?? '')
@@ -222,7 +221,7 @@ Deno.serve(async (request) => {
     workspace_id: workspaceId,
     exists: true,
     plan_id: local.plan_id,
-    plan_name: PLAN_LABELS[local.plan_id] ?? local.plan_id,
+    plan_name: getPlanLabel(local.plan_id),
     value: 29.9,
     cycle: 'MONTHLY',
     internal_status: local.status,

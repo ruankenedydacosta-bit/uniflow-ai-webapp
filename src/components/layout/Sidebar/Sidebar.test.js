@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { WORKSPACE_TYPES } from '../../../app/access.js';
+import { PLANS, WORKSPACE_TYPES } from '../../../app/access.js';
 import { canAccessModule, getModuleContexts } from '../../../app/moduleAccess.js';
 import { filterNavigationItems, navigationItems, SIDEBAR_GROUPS } from '../../../app/navigation.js';
+import { getDemoPlanCapabilities } from '../../../../supabase/functions/_shared/planCatalog.js';
 import {
   MORE_MENU_ROUTES,
 } from '../../../layouts/mobile-app-shell/shellRoutes.js';
@@ -13,8 +14,18 @@ const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const PF = WORKSPACE_TYPES.PERSONAL;
 const PJ = WORKSPACE_TYPES.BUSINESS;
 
-const accessPF = { userMode: 'personal', plan: 'business', currentWorkspace: PF };
-const accessPJ = { userMode: 'business', plan: 'business', currentWorkspace: PJ };
+const accessPF = {
+  userMode: 'personal',
+  plan: PLANS.BUSINESS,
+  currentWorkspace: PF,
+  capabilities: getDemoPlanCapabilities(PLANS.BUSINESS),
+};
+const accessPJ = {
+  userMode: 'business',
+  plan: PLANS.BUSINESS,
+  currentWorkspace: PJ,
+  capabilities: getDemoPlanCapabilities(PLANS.BUSINESS),
+};
 
 function groupItems(access, groupId) {
   return filterNavigationItems(navigationItems, access).filter((item) => item.group === groupId);

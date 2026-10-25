@@ -133,6 +133,14 @@ A tarefa pediu 9 estados (`free, pending, active, overdue, suspended, canceled, 
 - `20260716_009_fix_atomic_financial_action_and_balances.sql` e `20260723_019_fix_financial_goals_linked_account_fk.sql` — migrations corretivas já fechadas (bugs de 008 e 011 respectivamente); não relacionadas a billing, citadas aqui só para reforçar o padrão do projeto: correções viram migration nova, nunca edição de uma já aplicada.
 - `20260720_013_ensure_auth_session_rls.sql` — reafirma RLS de `subscriptions` de forma idempotente; uma migration de billing que mexer em RLS de `subscriptions` deve seguir o mesmo padrão (idempotente, `drop policy if exists` + `create policy`), não presumir que só uma aplicação vai rodar.
 
+### 0.6 — Implementação proposta para catálogo e autorização de capacidades (issue #55)
+
+O PR empilhado sobre #123 propõe `public.plan_capabilities` como fonte persistida das capacidades dos quatro planos. O seed preserva a matriz existente: `pro` recebe Relatórios; `business` e `enterprise` recebem Relatórios e Gestão; `free` não recebe capacidades pagas. A migration não atualiza nem remove assinaturas e não troca IDs existentes.
+
+O cliente carrega as capacidades pela relação da assinatura com o catálogo. As Edge Functions compartilham os IDs/nomes canônicos do módulo `supabase/functions/_shared/planCatalog.js`; os RLS de `clients`, `crm_pipeline_stages`, `crm_opportunities` e `projects` consultam uma função SQL que escolhe a mesma assinatura elegível mais recente do cliente e combina membership ativa, plano ativo, status e capacidade. Uma assinatura cancelada mantém a capacidade somente até `current_period_ends_at`.
+
+**Estado desta proposta em 2026-10-25:** validada em cluster PostgreSQL 17 descartável, com schema mínimo equivalente às tabelas/funções referenciadas pela migration; a migration aplicou sem erro e asserts com role `authenticated` cobriram a matriz de capacidades, status ausente/pendente/ativo/cancelado/suspenso, fim do período pago, uma assinatura mais recente cancelada sobre outra ativa, desempate estável, bloqueio de SELECT/INSERT em workspace gratuito, isolamento de membro e ausência de SELECT para `anon`. O stack Supabase/PostgREST completo não foi executado, pois o Docker local não está disponível; nenhuma migration foi aplicada a ambiente remoto. Relatórios não têm tabela ou Edge Function própria; seu bloqueio continua sendo de navegação no cliente, enquanto as tabelas financeiras de base mantêm acesso conforme as policies existentes.
+
 ## Parte 4 — Auditoria dos planos atuais
 
 ### O que existe hoje (real, no banco)

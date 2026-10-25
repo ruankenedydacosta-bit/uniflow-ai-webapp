@@ -1,32 +1,18 @@
+import {
+  hasPlanAccess,
+  normalizePlanCapabilities,
+  PLAN_CAPABILITY,
+  PLAN_IDS,
+  PLANS,
+} from '../../supabase/functions/_shared/planCatalog.js';
+
 export const USER_MODES = {
   PERSONAL: 'personal',
   BUSINESS: 'business',
   BOTH: 'both',
 };
 
-export const PLANS = {
-  FREE: 'free',
-  PRO: 'pro',
-  BUSINESS: 'business',
-  ENTERPRISE: 'enterprise',
-};
-
-// FONTE UNICA das capacidades liberadas por plano. Regras de contexto PF/PJ
-// continuam em moduleAccess.js; esta matriz trata apenas de capacidades de
-// produto que variam conforme a assinatura.
-export const PLAN_CAPABILITIES = Object.freeze({
-  [PLANS.FREE]: Object.freeze({ reports: false, businessFeatures: false }),
-  [PLANS.PRO]: Object.freeze({ reports: true, businessFeatures: false }),
-  [PLANS.BUSINESS]: Object.freeze({ reports: true, businessFeatures: true }),
-  [PLANS.ENTERPRISE]: Object.freeze({ reports: true, businessFeatures: true }),
-});
-
-export const PLAN_IDS = Object.freeze(Object.keys(PLAN_CAPABILITIES));
-
-export function getPlansWithCapability(capability) {
-  if (!capability) return [];
-  return PLAN_IDS.filter((plan) => PLAN_CAPABILITIES[plan][capability] === true);
-}
+export { PLAN_CAPABILITY, PLAN_IDS, PLANS };
 
 export const WORKSPACE_TYPES = {
   PERSONAL: 'personal',
@@ -41,10 +27,11 @@ export const DEFAULT_DEMO_ACCESS = {
   userMode: USER_MODES.PERSONAL,
   plan: PLANS.FREE,
   currentWorkspace: WORKSPACE_TYPES.PERSONAL,
+  capabilities: normalizePlanCapabilities([]),
 };
 
 const VALID_USER_MODES = Object.values(USER_MODES);
-const VALID_PLANS = Object.values(PLANS);
+const VALID_PLANS = PLAN_IDS;
 const VALID_WORKSPACE_TYPES = Object.values(WORKSPACE_TYPES);
 
 /**
@@ -53,7 +40,7 @@ const VALID_WORKSPACE_TYPES = Object.values(WORKSPACE_TYPES);
  * produzir `access.currentWorkspace` a partir de dados autenticados: o tipo PF/PJ
  * deriva sempre de `workspace.workspace_type`, nunca de estado paralelo.
  */
-export function getAccessFromSession(profile, workspace, subscription) {
+export function getAccessFromSession(profile, workspace, subscription, now = new Date()) {
   const currentWorkspace = VALID_WORKSPACE_TYPES.includes(workspace?.workspace_type)
     ? workspace.workspace_type
     : WORKSPACE_TYPES.PERSONAL;
@@ -62,16 +49,17 @@ export function getAccessFromSession(profile, workspace, subscription) {
     : currentWorkspace === WORKSPACE_TYPES.BUSINESS
       ? USER_MODES.BUSINESS
       : USER_MODES.PERSONAL;
-  // Keep the pre-existing session derivation unchanged in this UI-only
-  // centralization: workspace fallback and subscription lifecycle are handled
-  // by their existing flows and authorization layers.
-  const fallbackPlan =
-    currentWorkspace === WORKSPACE_TYPES.BUSINESS ? PLANS.BUSINESS : PLANS.FREE;
-  const plan = VALID_PLANS.includes(subscription?.plan_id)
+  // Workspace type selects context, not a paid entitlement. Missing or
+  // ineligible subscription data must never grant Business capabilities.
+  const hasAccessibleSubscription = hasPlanAccess(subscription, now);
+  const plan = hasAccessibleSubscription && VALID_PLANS.includes(subscription.plan_id)
     ? subscription.plan_id
-    : fallbackPlan;
+    : PLANS.FREE;
+  const capabilities = hasAccessibleSubscription && VALID_PLANS.includes(subscription.plan_id)
+    ? normalizePlanCapabilities(subscription.capabilities)
+    : normalizePlanCapabilities([]);
 
-  return { userMode, plan, currentWorkspace };
+  return { userMode, plan, currentWorkspace, capabilities };
 }
 
 export function isBusinessMode(userMode) {
@@ -82,6 +70,7 @@ export function isPersonalMode(userMode) {
   return userMode === USER_MODES.PERSONAL || userMode === USER_MODES.BOTH;
 }
 
-export function canUseBusinessFeatures({ userMode, plan }) {
-  return isBusinessMode(userMode) && PLAN_CAPABILITIES[plan]?.businessFeatures === true;
+export function canUseBusinessFeatures({ userMode, capabilities }) {
+  return isBusinessMode(userMode)
+    && capabilities?.[PLAN_CAPABILITY.BUSINESS_FEATURES] === true;
 }

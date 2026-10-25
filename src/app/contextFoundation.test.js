@@ -7,9 +7,11 @@ import {
   USER_MODES,
   PLANS,
   WORKSPACE_TYPES,
+  PLAN_CAPABILITY,
   canUseBusinessFeatures,
   getAccessFromSession,
 } from './access.js';
+import { getDemoPlanCapabilities } from '../../supabase/functions/_shared/planCatalog.js';
 import {
   MODULE_IDS,
   MODULE_ACCESS,
@@ -58,6 +60,7 @@ test('usuário só PJ deriva currentWorkspace business', () => {
   const access = getAccessFromSession({ user_mode: 'business' }, businessWs, {
     plan_id: PLANS.BUSINESS,
     status: 'active',
+    capabilities: [{ capability_id: PLAN_CAPABILITY.REPORTS }, { capability_id: PLAN_CAPABILITY.BUSINESS_FEATURES }],
   });
   assert.equal(access.currentWorkspace, 'business');
   assert.equal(access.plan, PLANS.BUSINESS);
@@ -67,26 +70,48 @@ test('assinante existente com plan_id pro mantém seu plano canônico na sessão
   const access = getAccessFromSession({ user_mode: 'personal' }, personalWs, {
     plan_id: PLANS.PRO,
     status: 'active',
+    capabilities: [{ capability_id: PLAN_CAPABILITY.REPORTS }],
   });
   assert.equal(access.plan, PLANS.PRO);
   assert.equal(access.currentWorkspace, WORKSPACE_TYPES.PERSONAL);
+  assert.equal(access.capabilities[PLAN_CAPABILITY.REPORTS], true);
+  assert.equal(access.capabilities[PLAN_CAPABILITY.BUSINESS_FEATURES], false);
 });
 
-test('fallback legado de workspace Business sem assinatura permanece Business', () => {
-  const access = getAccessFromSession({ user_mode: 'business' }, businessWs, null);
-  assert.equal(access.plan, PLANS.BUSINESS);
-  assert.equal(canUseBusinessFeatures(access), true);
-});
+test('workspace Business sem assinatura ou com status sem acesso cai em Free', () => {
+  const noSubscription = getAccessFromSession({ user_mode: 'business' }, businessWs, null);
+  assert.equal(noSubscription.plan, PLANS.FREE);
+  assert.equal(canUseBusinessFeatures(noSubscription), false);
 
-test('plano válido da sessão é preservado sem reclassificar status neste recorte', () => {
-  for (const status of ['trialing', 'active', 'past_due', 'canceled', 'expired', 'pending']) {
-    const access = getAccessFromSession({ user_mode: 'both' }, businessWs, {
+  for (const status of ['pending', 'expired']) {
+    const access = getAccessFromSession({ user_mode: 'business' }, businessWs, {
       plan_id: PLANS.BUSINESS,
       status,
+      current_period_ends_at: '2099-01-01T00:00:00.000Z',
+      capabilities: getDemoPlanCapabilities(PLANS.BUSINESS),
     });
-    assert.equal(access.plan, PLANS.BUSINESS, `${status} mantém a derivação legada`);
-    assert.equal(canUseBusinessFeatures(access), true, `${status} mantém Gestão legada`);
+    assert.equal(access.plan, PLANS.FREE, `${status} não deve conceder capacidade paga`);
+    assert.equal(canUseBusinessFeatures(access), false, `${status} não deve liberar Gestão`);
   }
+});
+
+test('assinatura cancelada preserva capacidades somente até o fim do período pago', () => {
+  const subscription = {
+    plan_id: PLANS.PRO,
+    status: 'canceled',
+    current_period_ends_at: '2099-01-01T00:00:00.000Z',
+    capabilities: [{ capability_id: PLAN_CAPABILITY.REPORTS }],
+  };
+  const beforePeriodEnd = getAccessFromSession({ user_mode: 'personal' }, personalWs, subscription);
+  assert.equal(beforePeriodEnd.plan, PLANS.PRO);
+  assert.equal(beforePeriodEnd.capabilities[PLAN_CAPABILITY.REPORTS], true);
+
+  const afterPeriodEnd = getAccessFromSession({ user_mode: 'personal' }, personalWs, {
+    ...subscription,
+    current_period_ends_at: '2000-01-01T00:00:00.000Z',
+  });
+  assert.equal(afterPeriodEnd.plan, PLANS.FREE);
+  assert.equal(afterPeriodEnd.capabilities[PLAN_CAPABILITY.REPORTS], false);
 });
 
 test('assinaturas ativas de plano pago preservam acesso após centralização', () => {
@@ -100,11 +125,11 @@ test('assinaturas ativas de plano pago preservam acesso após centralização', 
 });
 
 test('canUseBusinessFeatures mantém o gating de Business e Enterprise por modo', () => {
-  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.FREE }), false);
-  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.PRO }), false);
-  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.BUSINESS }), true);
-  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.ENTERPRISE }), true);
-  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.PERSONAL, plan: PLANS.ENTERPRISE }), false);
+  const withoutBusinessFeatures = { [PLAN_CAPABILITY.BUSINESS_FEATURES]: false };
+  const withBusinessFeatures = { [PLAN_CAPABILITY.BUSINESS_FEATURES]: true };
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, capabilities: withoutBusinessFeatures }), false);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, capabilities: withBusinessFeatures }), true);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.PERSONAL, capabilities: withBusinessFeatures }), false);
 });
 
 test('usuário PF+PJ segue o workspace ativo (troca PF↔PJ muda o derivado)', () => {

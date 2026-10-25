@@ -57,6 +57,7 @@ import {
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
 import { buildCheckoutPayload } from '../_shared/billingSubscriptionRules.ts';
+import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -177,7 +178,7 @@ async function insertPendingCheckoutSubscription({
     },
     body: JSON.stringify({
       workspace_id: workspaceId,
-      plan_id: 'pro',
+      plan_id: BILLING_PLAN_ID,
       // BLOCO ASAAS CHECKOUT: nunca 'active' -- so o webhook ativa, apos
       // PAYMENT_CONFIRMED/PAYMENT_RECEIVED (mesma regra do Pix).
       status: 'pending',

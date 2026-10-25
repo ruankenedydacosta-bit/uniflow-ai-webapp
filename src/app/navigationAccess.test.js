@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { USER_MODES, PLANS, WORKSPACE_TYPES, DEFAULT_DEMO_ACCESS } from './access.js';
+import { getDemoPlanCapabilities } from '../../supabase/functions/_shared/planCatalog.js';
 import { MODULE_IDS, modulesForContext } from './moduleAccess.js';
 import { navigationItems, filterNavigationItems } from './navigation.js';
 import {
@@ -21,16 +22,19 @@ const accessPF = {
   userMode: USER_MODES.PERSONAL,
   plan: PLANS.FREE,
   currentWorkspace: PF,
+  capabilities: getDemoPlanCapabilities(PLANS.FREE),
 };
 const accessPJ = {
   userMode: USER_MODES.BUSINESS,
   plan: PLANS.BUSINESS,
   currentWorkspace: PJ,
+  capabilities: getDemoPlanCapabilities(PLANS.BUSINESS),
 };
 const accessBoth = {
   userMode: USER_MODES.BOTH,
   plan: PLANS.ENTERPRISE,
   currentWorkspace: PJ,
+  capabilities: getDemoPlanCapabilities(PLANS.ENTERPRISE),
 };
 
 const labels = (items) => items.map((i) => i.label);
@@ -76,6 +80,7 @@ test('permissões por plano preservam Relatórios e Gestão para os quatro plano
       userMode: USER_MODES.BUSINESS,
       plan: expected.plan,
       currentWorkspace: PJ,
+      capabilities: getDemoPlanCapabilities(expected.plan),
     }));
     assert.equal(visible.includes('/relatorios'), expected.reports, `${expected.plan}: Relatórios`);
     assert.equal(visible.includes('/crm'), expected.management, `${expected.plan}: CRM`);

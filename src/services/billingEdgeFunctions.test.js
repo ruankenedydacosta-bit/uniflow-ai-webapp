@@ -197,8 +197,9 @@ test('billing-create-checkout: customerData continua OMITIDO (checkout hospedado
 
 // -- SUBSCRIPTION ---------------------------------------------------------------
 
-test('billing-create-subscription: só aceita plan_id "pro" -- qualquer outro é rejeitado', () => {
-  assert.match(CREATE_SUBSCRIPTION, /ALLOWED_PLAN_IDS = new Set\(\['pro'\]\);/);
+test('billing-create-subscription: allowlist usa o ID compartilhado do Plano Pessoal', () => {
+  assert.match(CREATE_SUBSCRIPTION, /import \{ BILLING_PLAN_ID \} from '\.\.\/_shared\/planCatalog\.js';/);
+  assert.match(CREATE_SUBSCRIPTION, /ALLOWED_PLAN_IDS = new Set<string>\(\[BILLING_PLAN_ID\]\);/);
   assert.match(CREATE_SUBSCRIPTION, /INVALID_PLAN/);
 });
 
@@ -295,7 +296,8 @@ test('billing-create-subscription: falha ao buscar o QR nunca quebra a criação
 
 test('billing-get-subscription: resposta normalizada -- nunca o payload bruto da Asaas', () => {
   assert.doesNotMatch(GET_SUBSCRIPTION, /return jsonResponse\(200, remote/);
-  assert.match(GET_SUBSCRIPTION, /plan_name: PLAN_LABELS\[local\.plan_id\]/);
+  assert.match(GET_SUBSCRIPTION, /import \{ getPlanLabel \} from '\.\.\/_shared\/planCatalog\.js';/);
+  assert.match(GET_SUBSCRIPTION, /plan_name: getPlanLabel\(local\.plan_id\)/);
 });
 
 test('billing-get-subscription: assinatura ausente é tratada (exists:false), nunca um erro', () => {

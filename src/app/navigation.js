@@ -1,12 +1,10 @@
-import { getPlansWithCapability, PLAN_IDS, USER_MODES } from './access.js';
+import { PLAN_CAPABILITY, PLAN_IDS, USER_MODES } from './access.js';
 import { canAccessNavigationItem } from './accessRules.js';
 import { MODULE_IDS, getModuleContexts } from './moduleAccess.js';
 
 const ALL_MODES = [USER_MODES.PERSONAL, USER_MODES.BUSINESS, USER_MODES.BOTH];
 const ALL_PLANS = PLAN_IDS;
 const BUSINESS_MODES = [USER_MODES.BUSINESS, USER_MODES.BOTH];
-const BUSINESS_PLANS = getPlansWithCapability('businessFeatures');
-const REPORTS_PLANS = getPlansWithCapability('reports');
 
 // UX6: fonte única de agrupamento da sidebar desktop -- ordem de exibição e
 // rótulo de cada grupo. Cada item de `navigationItems` abaixo referencia um
@@ -104,7 +102,8 @@ export const navigationItems = [
     path: '/crm',
     moduleId: MODULE_IDS.CRM,
     modes: BUSINESS_MODES,
-    plans: BUSINESS_PLANS,
+    plans: ALL_PLANS,
+    capabilityId: PLAN_CAPABILITY.BUSINESS_FEATURES,
     workspaces: getModuleContexts(MODULE_IDS.CRM),
     description: 'Relacionamento comercial e oportunidades de negócio.',
     group: 'gestao',
@@ -114,7 +113,8 @@ export const navigationItems = [
     path: '/clientes',
     moduleId: MODULE_IDS.CLIENTES,
     modes: BUSINESS_MODES,
-    plans: BUSINESS_PLANS,
+    plans: ALL_PLANS,
+    capabilityId: PLAN_CAPABILITY.BUSINESS_FEATURES,
     workspaces: getModuleContexts(MODULE_IDS.CLIENTES),
     description: 'Relacionamentos, cobranças e próximos passos empresariais.',
     group: 'gestao',
@@ -124,7 +124,8 @@ export const navigationItems = [
     path: '/projetos',
     moduleId: MODULE_IDS.PROJETOS,
     modes: BUSINESS_MODES,
-    plans: BUSINESS_PLANS,
+    plans: ALL_PLANS,
+    capabilityId: PLAN_CAPABILITY.BUSINESS_FEATURES,
     workspaces: getModuleContexts(MODULE_IDS.PROJETOS),
     description: 'Projetos e entregas ligados ao espaço empresarial.',
     group: 'gestao',
@@ -144,7 +145,8 @@ export const navigationItems = [
     path: '/relatorios',
     moduleId: MODULE_IDS.RELATORIOS,
     modes: ALL_MODES,
-    plans: REPORTS_PLANS,
+    plans: ALL_PLANS,
+    capabilityId: PLAN_CAPABILITY.REPORTS,
     workspaces: getModuleContexts(MODULE_IDS.RELATORIOS),
     description: 'Leituras e análises do contexto financeiro.',
     group: 'visao-geral',

@@ -1,11 +1,13 @@
 import { canAccessModule } from './moduleAccess.js';
 
-export function canAccessNavigationItem(item, { userMode, plan, currentWorkspace }) {
+export function canAccessNavigationItem(item, access = {}) {
+  const { userMode, plan, currentWorkspace, capabilities = {} } = access;
   const canUseMode = item.modes.includes(userMode);
-  const canUsePlan = item.plans.includes(plan);
+  const canUsePlan = !item.plans || item.plans.includes(plan);
+  const canUseCapability = !item.capabilityId || capabilities[item.capabilityId] === true;
   const canUseWorkspace = !item.workspaces || item.workspaces.includes(currentWorkspace);
 
-  return canUseMode && canUsePlan && canUseWorkspace;
+  return canUseMode && canUsePlan && canUseCapability && canUseWorkspace;
 }
 
 export function canAccessRoute(route, access) {

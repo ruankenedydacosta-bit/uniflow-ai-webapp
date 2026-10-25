@@ -1,4 +1,16 @@
 import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { normalizePlanCapabilities } from '../../supabase/functions/_shared/planCatalog.js';
+
+const WORKSPACE_SUBSCRIPTION_SELECT =
+  'id, workspace_id, plan_id, status, trial_ends_at, current_period_ends_at, created_at, updated_at, plan:plans!subscriptions_plan_id_fkey(plan_capabilities(capability_id))';
+
+function withPlanCapabilities(subscription) {
+  if (!subscription) return null;
+  return {
+    ...subscription,
+    capabilities: normalizePlanCapabilities(subscription.plan?.plan_capabilities),
+  };
+}
 
 function createWorkspaceSchemaPendingResult(data = null) {
   return {
@@ -97,30 +109,26 @@ export async function getWorkspaceSubscription(workspaceId) {
 
   const { data, error } = await supabase
     .from('subscriptions')
-    .select(
-      'id, workspace_id, plan_id, status, trial_ends_at, current_period_ends_at, created_at, updated_at',
-    )
+    .select(WORKSPACE_SUBSCRIPTION_SELECT)
     .eq('workspace_id', workspaceId)
-    .in('status', ['trialing', 'active', 'past_due'])
+    .in('status', ['trialing', 'active', 'past_due', 'canceled'])
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(1)
     .maybeSingle();
 
   return {
-    data,
+    data: withPlanCapabilities(data),
     error,
     isConfigured: true,
   };
 }
 
 /**
- * ETAPA 4 -- Seu plano: getWorkspaceSubscription() acima só busca status
- * 'trialing'/'active'/'past_due' (usado por SessionContext para o resto do
- * app). Isso significa que uma assinatura 'canceled'/'expired' nunca é
- * retornada por ali -- fica indistinguível de "nunca assinou". A tela de
- * plano precisa mostrar o estado real mesmo quando cancelado/expirado, por
- * isso busca a assinatura mais recente sem filtrar por status. Mesma
- * tabela, mesmas colunas reais, nenhuma escrita.
+ * Plano: getWorkspaceSubscriptionAny busca o estado mais recente sem filtrar
+ * status, para a tela de cobrança distinguir cancelada/expirada de ausência.
+ * A sessão usa getWorkspaceSubscription, que também lê cancelada para manter
+ * acesso até current_period_ends_at; hasPlanAccess aplica esse limite.
  */
 export async function getWorkspaceSubscriptionAny(workspaceId) {
   if (!supabase) {
@@ -137,16 +145,15 @@ export async function getWorkspaceSubscriptionAny(workspaceId) {
 
   const { data, error } = await supabase
     .from('subscriptions')
-    .select(
-      'id, workspace_id, plan_id, status, trial_ends_at, current_period_ends_at, created_at, updated_at',
-    )
+    .select(WORKSPACE_SUBSCRIPTION_SELECT)
     .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(1)
     .maybeSingle();
 
   return {
-    data,
+    data: withPlanCapabilities(data),
     error,
     isConfigured: true,
   };
