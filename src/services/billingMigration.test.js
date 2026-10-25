@@ -6,6 +6,10 @@ const migration = () => readFile(
   new URL('../../supabase/migrations/20260730002400_024_billing_asaas_foundation.sql', import.meta.url),
   'utf8',
 );
+const operationAttemptsMigration = () => readFile(
+  new URL('../../supabase/migrations/20261025150000_050_billing_operation_attempts.sql', import.meta.url),
+  'utf8',
+);
 
 // ============================================================================
 // BILLING1 (Bloco Asaas 1) -- migration de fundação da infraestrutura de
@@ -20,6 +24,19 @@ test('migration começa com begin e termina com commit -- atômica, mesmo padrã
   const sql = await migration();
   assert.match(sql.trim(), /^begin;/);
   assert.match(sql.trim(), /commit;$/);
+});
+
+test('migration 050 serializa customer/subscription por workspace e plano, com tentativas ambíguas sem retry automático', async () => {
+  const sql = await operationAttemptsMigration();
+  assert.match(sql.trim(), /^begin;/);
+  assert.match(sql.trim(), /commit;$/);
+  assert.match(sql, /create table public\.billing_operation_attempts/);
+  assert.match(sql, /operation in \('customer', 'subscription'\)/);
+  assert.match(sql, /status in \('processing', 'uncertain', 'completed', 'failed'\)/);
+  assert.match(sql, /unique index billing_operation_attempts_scope_uidx[\s\S]*operation, workspace_id, coalesce\(plan_id, ''\)/);
+  assert.match(sql, /alter table public\.billing_operation_attempts enable row level security/);
+  assert.match(sql, /revoke all on table public\.billing_operation_attempts from anon, authenticated/);
+  assert.match(sql, /grant select, insert, update on table public\.billing_operation_attempts to service_role/);
 });
 
 test('subscriptions ganha as 5 colunas aditivas previstas -- nenhuma delas é "not null" sem default seguro', async () => {

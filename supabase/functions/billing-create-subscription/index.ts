@@ -170,6 +170,68 @@ async function persistSubscription({
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
 
+async function findSubscriptionAttempt({ supabaseUrl, serviceRoleKey, workspaceId }: {
+  supabaseUrl: string; serviceRoleKey: string; workspaceId: string;
+}) {
+  const params = new URLSearchParams({
+    select: '*', operation: 'eq.subscription', workspace_id: `eq.${workspaceId}`,
+    plan_id: `eq.${BILLING_PLAN_ID}`, limit: '1',
+  });
+  const response = await fetch(`${supabaseUrl}/rest/v1/billing_operation_attempts?${params}`, {
+    headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
+  });
+  if (!response.ok) return null;
+  const rows = await response.json();
+  return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+}
+
+async function claimSubscriptionAttempt({ supabaseUrl, serviceRoleKey, workspaceId }: {
+  supabaseUrl: string; serviceRoleKey: string; workspaceId: string;
+}) {
+  const url = `${supabaseUrl}/rest/v1/billing_operation_attempts`;
+  const headers = {
+    Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey,
+    'Content-Type': 'application/json', Prefer: 'return=representation',
+  };
+  const inserted = await fetch(url, {
+    method: 'POST', headers,
+    body: JSON.stringify({ operation: 'subscription', workspace_id: workspaceId, plan_id: BILLING_PLAN_ID, status: 'processing' }),
+  });
+  if (inserted.ok) {
+    const rows = await inserted.json();
+    return { claimed: true, attempt: Array.isArray(rows) ? rows[0] : null };
+  }
+  if (inserted.status !== 409) return { claimed: false, attempt: null, unavailable: true };
+  const existing = await findSubscriptionAttempt({ supabaseUrl, serviceRoleKey, workspaceId });
+  if (existing?.status !== 'failed') return { claimed: false, attempt: existing };
+  const params = new URLSearchParams({
+    operation: 'eq.subscription', workspace_id: `eq.${workspaceId}`,
+    plan_id: `eq.${BILLING_PLAN_ID}`, status: 'eq.failed',
+  });
+  const retried = await fetch(`${url}?${params}`, {
+    method: 'PATCH', headers,
+    body: JSON.stringify({ status: 'processing', provider_resource_id: null }),
+  });
+  const rows = retried.ok ? await retried.json() : [];
+  if (Array.isArray(rows) && rows.length === 1) return { claimed: true, attempt: rows[0] };
+  return { claimed: false, attempt: await findSubscriptionAttempt({ supabaseUrl, serviceRoleKey, workspaceId }) };
+}
+
+async function updateSubscriptionAttempt({ supabaseUrl, serviceRoleKey, attemptId, status, providerResourceId }: {
+  supabaseUrl: string; serviceRoleKey: string; attemptId: string; status: string; providerResourceId?: string | null;
+}) {
+  const params = new URLSearchParams({ id: `eq.${attemptId}` });
+  const response = await fetch(`${supabaseUrl}/rest/v1/billing_operation_attempts?${params}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey,
+      'Content-Type': 'application/json', Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ status, provider_resource_id: providerResourceId ?? null }),
+  });
+  return response.ok;
+}
+
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -299,7 +361,6 @@ const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
         const client = createAsaasClient({
           apiKey: asaasApiKey,
           baseUrl: asaasBaseUrl,
-          allowProduction: true,
         });
 
         pix = await fetchPixQrCode(
@@ -350,13 +411,36 @@ const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
     creditCardToken = rawToken.trim();
   }
 
+  const claim = await claimSubscriptionAttempt({ supabaseUrl, serviceRoleKey, workspaceId });
+  if (claim.unavailable) {
+    return jsonResponse(503, errorBody('OPERATION_GUARD_UNAVAILABLE', 'Não foi possível reservar a criação da assinatura. Tente novamente.'), origin);
+  }
+  const attempt = claim.attempt as { id?: string; status?: string; provider_resource_id?: string } | null;
+  if (!claim.claimed && attempt?.status === 'completed' && attempt.provider_resource_id) {
+    const persisted = await persistSubscription({
+      supabaseUrl, serviceRoleKey, workspaceId,
+      asaasCustomerId: billingCustomer.asaas_customer_id,
+      asaasSubscriptionId: attempt.provider_resource_id,
+      paymentMethod: paymentMethod as string,
+    });
+    if (!persisted) return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Assinatura existente na Asaas, mas não foi possível concluir o vínculo local. Use billing-sync para reconciliar.'), origin);
+    let pix = null;
+    if (paymentMethod === 'pix') {
+      const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl });
+      pix = await fetchPixQrCode(client, attempt.provider_resource_id);
+    }
+    return jsonResponse(200, {
+      workspace_id: workspaceId, status: 'pending',
+      asaas_subscription_id: attempt.provider_resource_id, reused: true, pix,
+    }, origin);
+  }
+  if (!claim.claimed) {
+    return jsonResponse(409, errorBody('OPERATION_IN_PROGRESS', 'Já existe uma tentativa de criação da assinatura. Aguarde a reconciliação antes de tentar novamente.'), origin);
+  }
+
 
   try {
-    const client = createAsaasClient({
-  apiKey: asaasApiKey,
-  baseUrl: asaasBaseUrl,
-  allowProduction: true,
-});
+    const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl });
 
     const asaasPayload: Record<string, unknown> = {
       customer: billingCustomer.asaas_customer_id,
@@ -376,8 +460,14 @@ const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
     const created = await client.createSubscription(asaasPayload) as { id?: string };
     const asaasSubscriptionId = typeof created?.id === 'string' ? created.id : null;
     if (!asaasSubscriptionId) {
+      await updateSubscriptionAttempt({ supabaseUrl, serviceRoleKey, attemptId: attempt?.id ?? '', status: 'uncertain' });
       return jsonResponse(502, errorBody('ASAAS_API_ERROR', 'A Asaas nao retornou um identificador de assinatura valido.'), origin);
     }
+
+    const completed = await updateSubscriptionAttempt({
+      supabaseUrl, serviceRoleKey, attemptId: attempt?.id ?? '', status: 'completed', providerResourceId: asaasSubscriptionId,
+    });
+    if (!completed) return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Assinatura criada na Asaas, mas a tentativa não foi registrada. Use billing-sync para reconciliar e não tente novamente.'), origin);
 
     const persisted = await persistSubscription({
       supabaseUrl, serviceRoleKey, workspaceId,
@@ -401,6 +491,14 @@ const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
       pix,
     }, origin);
   } catch (error) {
+    if (
+      error instanceof AsaasConfigurationError
+      || error instanceof AsaasValidationError
+      || (error instanceof AsaasApiError && error.providerStatus === 400)
+    ) {
+      const attempt = await findSubscriptionAttempt({ supabaseUrl, serviceRoleKey, workspaceId });
+      if (attempt?.id) await updateSubscriptionAttempt({ supabaseUrl, serviceRoleKey, attemptId: attempt.id, status: 'failed' });
+    }
     if (error instanceof AsaasConfigurationError) {
       return jsonResponse(503, errorBody('SERVICE_UNAVAILABLE', 'Integracao com a Asaas nao esta configurada.'), origin);
     }
