@@ -11,6 +11,23 @@ export const PLANS = {
   ENTERPRISE: 'enterprise',
 };
 
+// FONTE UNICA das capacidades liberadas por plano. Regras de contexto PF/PJ
+// continuam em moduleAccess.js; esta matriz trata apenas de capacidades de
+// produto que variam conforme a assinatura.
+export const PLAN_CAPABILITIES = Object.freeze({
+  [PLANS.FREE]: Object.freeze({ reports: false, businessFeatures: false }),
+  [PLANS.PRO]: Object.freeze({ reports: true, businessFeatures: false }),
+  [PLANS.BUSINESS]: Object.freeze({ reports: true, businessFeatures: true }),
+  [PLANS.ENTERPRISE]: Object.freeze({ reports: true, businessFeatures: true }),
+});
+
+export const PLAN_IDS = Object.freeze(Object.keys(PLAN_CAPABILITIES));
+
+export function getPlansWithCapability(capability) {
+  if (!capability) return [];
+  return PLAN_IDS.filter((plan) => PLAN_CAPABILITIES[plan][capability] === true);
+}
+
 export const WORKSPACE_TYPES = {
   PERSONAL: 'personal',
   BUSINESS: 'business',
@@ -63,5 +80,5 @@ export function isPersonalMode(userMode) {
 }
 
 export function canUseBusinessFeatures({ userMode, plan }) {
-  return isBusinessMode(userMode) && [PLANS.BUSINESS, PLANS.ENTERPRISE].includes(plan);
+  return isBusinessMode(userMode) && PLAN_CAPABILITIES[plan]?.businessFeatures === true;
 }

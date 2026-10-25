@@ -86,7 +86,8 @@ test('startSubscription.js foi removido -- CTA agora chama billingService de ver
 
 test('BILLING_PLAN_ID é "pro" (internal id real do backend) -- distinto de PERSONAL_PLAN_ID ("personal", só identidade da rota)', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /const BILLING_PLAN_ID = 'pro';/);
+  assert.match(page, /import \{ BILLING_PLAN_ID \} from '\.\.\/\.\.\/services\/billingTypes\.js';/);
+  assert.doesNotMatch(page, /const BILLING_PLAN_ID\s*=/);
   assert.match(page, /planId: BILLING_PLAN_ID,/);
 });
 
