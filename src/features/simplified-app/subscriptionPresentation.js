@@ -14,7 +14,21 @@ import { PAYMENT_METHOD } from '../../services/billingTypes.js';
 export function formatDate(value) {
   if (!value) return '';
   try {
-    return new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    let date;
+    const dateOnly = typeof value === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(value) : null;
+    if (dateOnly) {
+      const [, year, month, day] = dateOnly;
+      date = new Date(Number(year), Number(month) - 1, Number(day), 12);
+      if (
+        date.getFullYear() !== Number(year)
+        || date.getMonth() !== Number(month) - 1
+        || date.getDate() !== Number(day)
+      ) return '';
+    } else {
+      date = new Date(value);
+    }
+    if (!Number.isFinite(date.getTime())) return '';
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   } catch {
     return '';
   }
