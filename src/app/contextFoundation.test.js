@@ -7,6 +7,7 @@ import {
   USER_MODES,
   PLANS,
   WORKSPACE_TYPES,
+  canUseBusinessFeatures,
   getAccessFromSession,
 } from './access.js';
 import {
@@ -57,6 +58,20 @@ test('usuário só PJ deriva currentWorkspace business', () => {
   const access = getAccessFromSession({ user_mode: 'business' }, businessWs, { plan_id: 'business' });
   assert.equal(access.currentWorkspace, 'business');
   assert.equal(access.plan, 'business');
+});
+
+test('assinante existente com plan_id pro mantém seu plano canônico na sessão', () => {
+  const access = getAccessFromSession({ user_mode: 'personal' }, personalWs, { plan_id: PLANS.PRO });
+  assert.equal(access.plan, PLANS.PRO);
+  assert.equal(access.currentWorkspace, WORKSPACE_TYPES.PERSONAL);
+});
+
+test('canUseBusinessFeatures mantém o gating de Business e Enterprise por modo', () => {
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.FREE }), false);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.PRO }), false);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.BUSINESS }), true);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.BUSINESS, plan: PLANS.ENTERPRISE }), true);
+  assert.equal(canUseBusinessFeatures({ userMode: USER_MODES.PERSONAL, plan: PLANS.ENTERPRISE }), false);
 });
 
 test('usuário PF+PJ segue o workspace ativo (troca PF↔PJ muda o derivado)', () => {
