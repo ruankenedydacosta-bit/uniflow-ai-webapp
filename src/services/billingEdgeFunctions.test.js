@@ -621,17 +621,23 @@ test('billing-webhook: evento duplicado (mesmo asaas_event_id) não duplica efei
 // billingSubscriptionRules.test.js e billingWebhookProcessing.test.js para
 // as regras de negócio) -- este teste passa a exigir que ele exista e seja
 // SEMPRE não-bloqueante (2xx mesmo se o processamento falhar).
-test('billing-webhook: processa o evento (ativação/inadimplência) de forma idempotente, mas a resposta 2xx nunca depende do resultado do processamento', () => {
+test('billing-webhook: reconsulta a cobrança na Asaas, rejeita divergência e não confia no status enviado no payload', () => {
+  assert.match(WEBHOOK, /client\.getPayment\(asaasPaymentId\)/);
+  assert.match(WEBHOOK, /providerPayment\.customer !== eventCustomerId/);
+  assert.match(WEBHOOK, /providerPayment\.subscription !== eventSubscriptionId/);
+  assert.match(WEBHOOK, /const payment = providerPayment;/);
+  assert.match(WEBHOOK, /isProviderPaymentStatusConsistent\(eventType, payment\.status\)/);
+  assert.match(WEBHOOK, /buildBillingPaymentRow\([\s\S]{0,150}payment,/);
+});
+
+test('billing-webhook: persiste antes do 200 e executa processamento em background com estado de erro durável', () => {
   assert.match(WEBHOOK, /jsonResponse\(200, \{ received: true, asaas_event_id: asaasEventId \}\);/);
   assert.match(WEBHOOK, /processPaymentEvent/);
   assert.match(WEBHOOK, /patchSubscription/);
-  // A chamada de processamento fica DENTRO de um try/catch cujo catch nunca
-  // devolve um status de erro -- só registra processing_error e segue.
-  const tryIdx = WEBHOOK.indexOf('try {\n      await processPaymentEvent');
-  const catchIdx = WEBHOOK.indexOf('} catch (error) {', tryIdx);
-  assert.ok(tryIdx > -1 && catchIdx > tryIdx);
-  const catchBlock = WEBHOOK.slice(catchIdx, WEBHOOK.indexOf('return jsonResponse(200,'));
-  assert.doesNotMatch(catchBlock, /jsonResponse\(5\d\d/, 'erro de processamento nunca deveria gerar um status 5xx');
+  assert.match(WEBHOOK, /await persistWebhookEvent\([\s\S]*?if \(!persistResult\.ok\)/);
+  assert.match(WEBHOOK, /EdgeRuntime\.waitUntil\(processPersistedEvent\(\)\)/);
+  assert.match(WEBHOOK, /buildWebhookProcessingFailurePatch\(sanitizeErrorMessage\(error\)\)/);
+  assert.doesNotMatch(WEBHOOK.slice(WEBHOOK.indexOf('const processPersistedEvent'), WEBHOOK.indexOf('EdgeRuntime.waitUntil')), /jsonResponse\(5\d\d/);
 });
 
 test('billing-webhook: sucesso é terminal; processing_error continua elegível para retry, inclusive em linha legada', () => {

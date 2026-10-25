@@ -30,6 +30,7 @@ import {
   buildBillingPaymentRow,
   PROCESSABLE_CHECKOUT_EVENT_TYPES,
   PROCESSABLE_PAYMENT_EVENT_TYPES,
+  isProviderPaymentStatusConsistent,
   resolveCheckoutHygienePatch,
   resolveSubscriptionPatchForEvent,
 } from '../_shared/billingSubscriptionRules.ts';
@@ -39,6 +40,8 @@ import {
   buildWebhookProcessingSuccessPatch,
   isWebhookEventEligibleForProcessing,
 } from '../_shared/billingWebhookReliability.ts';
+
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
 
 const ASAAS_WEBHOOK_TOKEN_HEADER = 'asaas-access-token';
 
@@ -310,11 +313,32 @@ async function processPaymentEvent({
 }: { supabaseUrl: string; serviceRoleKey: string; eventType: string; payload: Record<string, unknown> }) {
   if (!PROCESSABLE_PAYMENT_EVENT_TYPES.has(eventType)) return;
 
-  const payment = (payload?.payment ?? {}) as Record<string, unknown>;
-  const asaasPaymentId = typeof payment?.id === 'string' ? payment.id : null;
-  const asaasCustomerId = typeof payment?.customer === 'string' ? payment.customer : null;
-  const asaasSubscriptionId = typeof payment?.subscription === 'string' ? payment.subscription : null;
-  if (!asaasPaymentId || !asaasCustomerId) return;
+  const eventPayment = (payload?.payment ?? {}) as Record<string, unknown>;
+  const asaasPaymentId = typeof eventPayment?.id === 'string' ? eventPayment.id : null;
+  const eventCustomerId = typeof eventPayment?.customer === 'string' ? eventPayment.customer : null;
+  const eventSubscriptionId = typeof eventPayment?.subscription === 'string' ? eventPayment.subscription : null;
+  if (!asaasPaymentId || !eventCustomerId) return;
+
+  // O webhook é apenas um aviso. Consulta a cobrança atual na Asaas e usa
+  // os dados retornados pelo provedor para persistência e transições.
+  const asaasApiKey = Deno.env.get('ASAAS_API_KEY') ?? '';
+  const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
+  const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl, allowProduction: true });
+  const providerPayment = await client.getPayment(asaasPaymentId) as Record<string, unknown> | null;
+  if (
+    !providerPayment
+    || providerPayment.id !== asaasPaymentId
+    || providerPayment.customer !== eventCustomerId
+    || (eventSubscriptionId && providerPayment.subscription !== eventSubscriptionId)
+  ) {
+    console.log(JSON.stringify({ at: 'billing-webhook', status: 'payment_requery_mismatch', asaasPaymentId, eventType }));
+    return;
+  }
+
+  const payment = providerPayment;
+  const asaasCustomerId = typeof payment.customer === 'string' ? payment.customer : null;
+  const asaasSubscriptionId = typeof payment.subscription === 'string' ? payment.subscription : null;
+  if (!asaasCustomerId) return;
 
   let workspaceId = await findBillingCustomerWorkspace({ supabaseUrl, serviceRoleKey, asaasCustomerId });
   let linkedSubscription: Record<string, unknown> | null = null;
@@ -351,11 +375,13 @@ async function processPaymentEvent({
 
   const subscription = linkedSubscription
     ?? await findSubscriptionByAsaasId({ supabaseUrl, serviceRoleKey, asaasSubscriptionId });
-  const patch = resolveSubscriptionPatchForEvent({
-    eventType,
-    subscription: subscription ? { status: subscription.status as string, cancel_at_period_end: subscription.cancel_at_period_end as boolean } : null,
-    now: new Date().toISOString(),
-  });
+  const patch = isProviderPaymentStatusConsistent(eventType, payment.status)
+    ? resolveSubscriptionPatchForEvent({
+      eventType,
+      subscription: subscription ? { status: subscription.status as string, cancel_at_period_end: subscription.cancel_at_period_end as boolean } : null,
+      now: new Date().toISOString(),
+    })
+    : null;
   if (patch && subscription) {
     // A guarda de status torna a transição observável e atômica: somente a
     // invocação que ainda encontra o status lido aplica o patch. Uma segunda
@@ -456,39 +482,42 @@ Deno.serve(async (request) => {
     ?? await fetchWebhookEventByEventId({ supabaseUrl, serviceRoleKey, asaasEventId });
 
   if (isWebhookEventEligibleForProcessing(eventRow)) {
-    try {
-      await processPaymentEvent({ supabaseUrl, serviceRoleKey, eventType, payload });
-      // BLOCO ASAAS CHECKOUT: cada função verifica seu próprio conjunto de
-      // eventType antes de fazer qualquer coisa -- nunca ambas processam o
-      // mesmo evento (payment.* vs checkout.*, conjuntos disjuntos).
-      await processCheckoutEvent({ supabaseUrl, serviceRoleKey, eventType, payload });
-      await patchWebhookEventProcessingState({
-        supabaseUrl,
-        serviceRoleKey,
-        eventRowId: eventRow.id as string,
-        patch: buildWebhookProcessingSuccessPatch(new Date().toISOString()),
-      });
-    } catch (error) {
-      // BLOCO ASAAS FINAL: falha de processamento NUNCA derruba a resposta
-      // 2xx (o evento ja esta persistido) -- fica registrada para
-      // investigacao, sanitizada, nunca com o payload/token bruto.
-      console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_failed', asaasEventId, eventType }));
+    const processPersistedEvent = async () => {
       try {
+        await processPaymentEvent({ supabaseUrl, serviceRoleKey, eventType, payload });
+        // BLOCO ASAAS CHECKOUT: cada função verifica seu próprio conjunto de
+        // eventType antes de fazer qualquer coisa -- nunca ambas processam o
+        // mesmo evento (payment.* vs checkout.*, conjuntos disjuntos).
+        await processCheckoutEvent({ supabaseUrl, serviceRoleKey, eventType, payload });
         await patchWebhookEventProcessingState({
           supabaseUrl,
           serviceRoleKey,
           eventRowId: eventRow.id as string,
-          patch: buildWebhookProcessingFailurePatch(sanitizeErrorMessage(error)),
+          patch: buildWebhookProcessingSuccessPatch(new Date().toISOString()),
         });
-      } catch {
-        // A linha inserida permanece sem processed_at e, portanto, elegível
-        // para retry mesmo se a própria gravação do diagnóstico falhar.
-        console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_error_persist_failed', asaasEventId, eventType }));
+      } catch (error) {
+        // O evento já está durável. Registra erro sanitizado sem solicitar
+        // retries HTTP da Asaas, que podem pausar sua fila após falhas seguidas.
+        console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_failed', asaasEventId, eventType }));
+        try {
+          await patchWebhookEventProcessingState({
+            supabaseUrl,
+            serviceRoleKey,
+            eventRowId: eventRow.id as string,
+            patch: buildWebhookProcessingFailurePatch(sanitizeErrorMessage(error)),
+          });
+        } catch {
+          // A linha permanece sem processed_at e poderá ser reconciliada.
+          console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_error_persist_failed', asaasEventId, eventType }));
+        }
       }
-    }
+    };
+    // Persiste antes de responder e continua o processamento em background.
+    // billing-sync reconcilia se o worker for interrompido após a resposta.
+    EdgeRuntime.waitUntil(processPersistedEvent());
   }
 
-  // BILLING2: 2xx rapido -- o processamento (quando aplicavel) ja aconteceu
-  // de forma idempotente acima; a resposta nunca espera nada alem disso.
+  // Só responde 200 depois de confirmar a persistência do evento; o trabalho
+  // de negócio não prolonga a resposta HTTP.
   return jsonResponse(200, { received: true, asaas_event_id: asaasEventId });
 });

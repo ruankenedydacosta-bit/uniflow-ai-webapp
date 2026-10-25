@@ -7,6 +7,7 @@ import {
   computeNextPeriodEnd,
   GRACE_PERIOD_DAYS,
   isGracePeriodExpired,
+  isProviderPaymentStatusConsistent,
   mapAsaasPaymentStatus,
   PLAN_CYCLE,
   PLAN_PRICE_BRL,
@@ -27,6 +28,15 @@ import {
 
 test('GRACE_PERIOD_DAYS é exatamente 3 (regra comercial congelada)', () => {
   assert.equal(GRACE_PERIOD_DAYS, 3);
+});
+
+test('webhook só aplica transições quando o status reconsultado na Asaas confirma o evento', () => {
+  assert.equal(isProviderPaymentStatusConsistent('PAYMENT_CONFIRMED', 'CONFIRMED'), true);
+  assert.equal(isProviderPaymentStatusConsistent('PAYMENT_RECEIVED', 'RECEIVED_IN_CASH'), true);
+  assert.equal(isProviderPaymentStatusConsistent('PAYMENT_CONFIRMED', 'PENDING'), false);
+  assert.equal(isProviderPaymentStatusConsistent('PAYMENT_OVERDUE', 'OVERDUE'), true);
+  assert.equal(isProviderPaymentStatusConsistent('PAYMENT_OVERDUE', 'RECEIVED'), false);
+  assert.equal(isProviderPaymentStatusConsistent('PAYMENT_REFUNDED', 'REFUNDED'), true);
 });
 
 test('mapAsaasPaymentStatus: mapeamento completo de status bruto da Asaas -> nosso enum', () => {
