@@ -33,7 +33,7 @@ import {
   AsaasTimeoutError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
-import { isGracePeriodExpired } from '../_shared/billingSubscriptionRules.ts';
+import { computePaidPeriodEnd, isGracePeriodExpired } from '../_shared/billingSubscriptionRules.ts';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -144,9 +144,18 @@ async function upsertBillingPayments({
 }
 
 async function patchSubscriptionStatus({
-  supabaseUrl, serviceRoleKey, subscriptionId, status,
-}: { supabaseUrl: string; serviceRoleKey: string; subscriptionId: string; status: string }) {
+  supabaseUrl, serviceRoleKey, subscriptionId, patch, expectedCurrentPeriodEndsAt,
+}: {
+  supabaseUrl: string; serviceRoleKey: string; subscriptionId: string;
+  patch: { status?: string; current_period_ends_at?: string };
+  expectedCurrentPeriodEndsAt?: string | null;
+}) {
   const params = new URLSearchParams({ id: `eq.${subscriptionId}` });
+  if (expectedCurrentPeriodEndsAt !== undefined) {
+    params.set('current_period_ends_at', expectedCurrentPeriodEndsAt === null
+      ? 'is.null'
+      : `eq.${expectedCurrentPeriodEndsAt}`);
+  }
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     method: 'PATCH',
     headers: {
@@ -155,7 +164,7 @@ async function patchSubscriptionStatus({
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
     },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(patch),
   });
   if (!response.ok) return null;
   const rows = await response.json();
@@ -224,7 +233,18 @@ Deno.serve(async (request) => {
     const remotePayments = Array.isArray(remotePaymentsResponse?.data) ? remotePaymentsResponse.data : [];
 
     const providerStatus = typeof remoteSubscription?.status === 'string' ? remoteSubscription.status : null;
-    const hasConfirmedPayment = remotePayments.some((payment) => PAYMENT_EVIDENCE_STATUSES.has(String(payment.status ?? '').toUpperCase()));
+    const confirmedPayments = remotePayments
+      .filter((payment) => PAYMENT_EVIDENCE_STATUSES.has(String(payment.status ?? '').toUpperCase()))
+      .sort((left, right) => {
+        const dateValue = (payment: Record<string, unknown>) => {
+          const value = payment.paymentDate ?? payment.clientPaymentDate ?? payment.dueDate;
+          const parsed = typeof value === 'string' ? Date.parse(value) : Number.NaN;
+          return Number.isFinite(parsed) ? parsed : 0;
+        };
+        return dateValue(left) - dateValue(right);
+      });
+    const latestConfirmedPayment = confirmedPayments.at(-1) ?? null;
+    const hasConfirmedPayment = latestConfirmedPayment !== null;
 
     const paymentsUpserted = await upsertBillingPayments({
       supabaseUrl, serviceRoleKey, workspaceId,
@@ -232,9 +252,34 @@ Deno.serve(async (request) => {
     });
 
     let updatedStatus = subscription.status;
-    if (hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES.has(subscription.status)) {
+    const paidPeriodEnd = latestConfirmedPayment
+      ? computePaidPeriodEnd({
+        paymentDate: typeof latestConfirmedPayment.paymentDate === 'string'
+          ? latestConfirmedPayment.paymentDate
+          : (typeof latestConfirmedPayment.clientPaymentDate === 'string' ? latestConfirmedPayment.clientPaymentDate : null),
+        dueDate: typeof latestConfirmedPayment.dueDate === 'string' ? latestConfirmedPayment.dueDate : null,
+        currentPeriodEndsAt: typeof subscription.current_period_ends_at === 'string'
+          ? subscription.current_period_ends_at
+          : null,
+        now: new Date().toISOString(),
+      })
+      : null;
+    const shouldActivate = hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES.has(subscription.status);
+    const shouldExtendPeriod = Boolean(
+      paidPeriodEnd
+      && (!subscription.current_period_ends_at
+        || Date.parse(paidPeriodEnd) > Date.parse(String(subscription.current_period_ends_at))),
+    );
+    if (shouldActivate || (subscription.status === 'active' && shouldExtendPeriod)) {
       const updated = await patchSubscriptionStatus({
-        supabaseUrl, serviceRoleKey, subscriptionId: subscription.id, status: 'active',
+        supabaseUrl,
+        serviceRoleKey,
+        subscriptionId: subscription.id,
+        expectedCurrentPeriodEndsAt: (subscription.current_period_ends_at as string | null) ?? null,
+        patch: {
+          ...(shouldActivate ? { status: 'active' } : {}),
+          ...(paidPeriodEnd ? { current_period_ends_at: paidPeriodEnd } : {}),
+        },
       });
       if (updated) updatedStatus = updated.status;
     } else if (subscription.status === 'past_due') {
@@ -248,7 +293,7 @@ Deno.serve(async (request) => {
       // de ganhar evidencia de pagamento (branch acima tem prioridade).
       if (isGracePeriodExpired({ pastDueSince: subscription.updated_at, now: new Date().toISOString() })) {
         const updated = await patchSubscriptionStatus({
-          supabaseUrl, serviceRoleKey, subscriptionId: subscription.id, status: 'suspended',
+          supabaseUrl, serviceRoleKey, subscriptionId: subscription.id, patch: { status: 'suspended' },
         });
         if (updated) updatedStatus = updated.status;
       }

@@ -290,16 +290,22 @@ async function upsertBillingPayment({
 }
 
 async function patchSubscription({
-  supabaseUrl, serviceRoleKey, subscriptionId, patch, expectedStatus,
+  supabaseUrl, serviceRoleKey, subscriptionId, patch, expectedStatus, expectedCurrentPeriodEndsAt,
 }: {
   supabaseUrl: string;
   serviceRoleKey: string;
   subscriptionId: string;
   patch: Record<string, unknown>;
   expectedStatus?: string;
+  expectedCurrentPeriodEndsAt?: string | null;
 }): Promise<boolean> {
   const params = new URLSearchParams({ id: `eq.${subscriptionId}` });
   if (expectedStatus) params.set('status', `eq.${expectedStatus}`);
+  if (expectedCurrentPeriodEndsAt !== undefined) {
+    params.set('current_period_ends_at', expectedCurrentPeriodEndsAt === null
+      ? 'is.null'
+      : `eq.${expectedCurrentPeriodEndsAt}`);
+  }
 
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     method: 'PATCH',
@@ -399,8 +405,16 @@ async function processPaymentEvent({
   const patch = isProviderPaymentStatusConsistent(eventType, payment.status)
     ? resolveSubscriptionPatchForEvent({
       eventType,
-      subscription: subscription ? { status: subscription.status as string, cancel_at_period_end: subscription.cancel_at_period_end as boolean } : null,
+      subscription: subscription ? {
+        status: subscription.status as string,
+        cancel_at_period_end: subscription.cancel_at_period_end as boolean,
+        current_period_ends_at: subscription.current_period_ends_at as string | null,
+      } : null,
       now: new Date().toISOString(),
+      paymentDate: typeof payment.paymentDate === 'string'
+        ? payment.paymentDate
+        : (typeof payment.clientPaymentDate === 'string' ? payment.clientPaymentDate : null),
+      dueDate: typeof payment.dueDate === 'string' ? payment.dueDate : null,
     })
     : null;
   if (patch && subscription) {
@@ -413,6 +427,9 @@ async function processPaymentEvent({
       subscriptionId: subscription.id as string,
       patch,
       expectedStatus: subscription.status as string,
+      expectedCurrentPeriodEndsAt: typeof patch.current_period_ends_at === 'string'
+        ? (subscription.current_period_ends_at as string | null) ?? null
+        : undefined,
     });
     return { subscription_transition_applied: transitionApplied };
   }

@@ -5,6 +5,7 @@ import {
   buildCheckoutPayload,
   CHECKOUT_MINUTES_TO_EXPIRE,
   computeNextPeriodEnd,
+  computePaidPeriodEnd,
   GRACE_PERIOD_DAYS,
   isGracePeriodExpired,
   isProviderPaymentStatusConsistent,
@@ -91,6 +92,25 @@ test('computeNextPeriodEnd avança exatamente 1 mês em UTC, inclusive em virada
   assert.equal(computeNextPeriodEnd('2026-01-31T00:00:00.000Z'), '2026-03-03T00:00:00.000Z', 'JS soma mês corretamente mesmo sem dia 31 em fevereiro (overflow natural do Date)');
 });
 
+test('computePaidPeriodEnd usa a data da cobrança, preserva períodos adiantados e limita o fim ao último dia do mês', () => {
+  assert.equal(computePaidPeriodEnd({
+    paymentDate: '2026-03-01T09:00:00.000Z', dueDate: '2026-03-01',
+    currentPeriodEndsAt: null, now: '2026-05-20T00:00:00.000Z',
+  }), '2026-04-01T09:00:00.000Z', 'atraso do webhook não move o início do período para maio');
+  assert.equal(computePaidPeriodEnd({
+    paymentDate: '2026-02-20T09:00:00.000Z', dueDate: '2026-03-01',
+    currentPeriodEndsAt: '2026-03-01T09:00:00.000Z', now: '2026-02-20T09:00:00.000Z',
+  }), '2026-04-01T00:00:00.000Z', 'vencimento mantém a renovação alinhada mesmo com pagamento antecipado');
+  assert.equal(computePaidPeriodEnd({
+    paymentDate: '2026-01-31T00:00:00.000Z', dueDate: null,
+    currentPeriodEndsAt: null, now: '2026-01-31T00:00:00.000Z',
+  }), '2026-02-28T00:00:00.000Z', 'fim de mês é limitado ao último dia do mês seguinte');
+  assert.equal(computePaidPeriodEnd({
+    paymentDate: '2026-03-01T00:00:00.000Z', dueDate: null,
+    currentPeriodEndsAt: '2026-05-01T00:00:00.000Z', now: '2026-03-01T00:00:00.000Z',
+  }), '2026-05-01T00:00:00.000Z', 'reconciliação repetida não encurta o período já persistido');
+});
+
 test('resolveSubscriptionPatchForEvent: subscription nula -> null (cobrança avulsa, sem assinatura para atualizar)', () => {
   assert.equal(resolveSubscriptionPatchForEvent({ eventType: 'PAYMENT_RECEIVED', subscription: null, now: '2026-01-01T00:00:00Z' }), null);
 });
@@ -120,24 +140,41 @@ test('resolveSubscriptionPatchForEvent: PAYMENT_RECEIVED após PAYMENT_CONFIRMED
     eventType: 'PAYMENT_CONFIRMED',
     subscription: { status: 'pending' },
     now: '2026-03-01T00:00:00.000Z',
+    paymentDate: '2026-03-01T00:00:00.000Z',
+    dueDate: '2026-03-01',
   });
   assert.deepEqual(firstPatch, { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' });
 
   const duplicateSemanticPatch = resolveSubscriptionPatchForEvent({
     eventType: 'PAYMENT_RECEIVED',
-    subscription: { status: 'active' },
+    subscription: { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' },
     now: '2026-03-02T00:00:00.000Z',
+    paymentDate: '2026-03-01T00:00:00.000Z',
+    dueDate: '2026-03-01',
   });
   assert.equal(duplicateSemanticPatch, null);
 });
 
-test('resolveSubscriptionPatchForEvent: PAYMENT_CONFIRMED repetido em assinatura ativa é no-op comercial', () => {
+test('resolveSubscriptionPatchForEvent: cobrança duplicada não estende o período ativo', () => {
   const patch = resolveSubscriptionPatchForEvent({
     eventType: 'PAYMENT_CONFIRMED',
-    subscription: { status: 'active' },
+    subscription: { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' },
     now: '2026-03-02T00:00:00.000Z',
+    paymentDate: '2026-03-01T00:00:00.000Z',
+    dueDate: '2026-03-01',
   });
   assert.equal(patch, null);
+});
+
+test('resolveSubscriptionPatchForEvent: nova cobrança confirmada estende uma assinatura ativa a partir do vencimento', () => {
+  const patch = resolveSubscriptionPatchForEvent({
+    eventType: 'PAYMENT_RECEIVED',
+    subscription: { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' },
+    now: '2026-05-20T00:00:00.000Z',
+    paymentDate: '2026-03-30T12:00:00.000Z',
+    dueDate: '2026-04-01',
+  });
+  assert.deepEqual(patch, { status: 'active', current_period_ends_at: '2026-05-01T00:00:00.000Z' });
 });
 
 test('resolveSubscriptionPatchForEvent: PAYMENT_RECEIVED antes de PAYMENT_CONFIRMED termina active sem segunda transição', () => {
@@ -145,13 +182,17 @@ test('resolveSubscriptionPatchForEvent: PAYMENT_RECEIVED antes de PAYMENT_CONFIR
     eventType: 'PAYMENT_RECEIVED',
     subscription: { status: 'pending' },
     now: '2026-03-01T00:00:00.000Z',
+    paymentDate: '2026-03-01T00:00:00.000Z',
+    dueDate: '2026-03-01',
   });
   assert.deepEqual(receivedFirst, { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' });
 
   const confirmedLate = resolveSubscriptionPatchForEvent({
     eventType: 'PAYMENT_CONFIRMED',
-    subscription: { status: 'active' },
+    subscription: { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' },
     now: '2026-03-03T00:00:00.000Z',
+    paymentDate: '2026-03-01T00:00:00.000Z',
+    dueDate: '2026-03-01',
   });
   assert.equal(confirmedLate, null);
 });
