@@ -6,6 +6,7 @@ import {
   buildWebhookProcessingFailurePatch,
   buildWebhookProcessingSuccessPatch,
   isWebhookEventEligibleForProcessing,
+  WEBHOOK_PROCESSING_MAX_ATTEMPTS,
 } from '../../supabase/functions/_shared/billingWebhookReliability.ts';
 
 // ============================================================================
@@ -28,6 +29,11 @@ const GET_SUBSCRIPTION = source('billing-get-subscription');
 const CANCEL_SUBSCRIPTION = source('billing-cancel-subscription');
 const SYNC = source('billing-sync');
 const WEBHOOK = source('billing-webhook');
+const WEBHOOK_RETRY = source('billing-webhook-retry');
+const WEBHOOK_RETRY_MIGRATION = readFileSync(new URL(
+  '../../supabase/migrations/20261025160000_051_billing_webhook_retry.sql',
+  import.meta.url,
+), 'utf8');
 
 test('as 8 Edge Functions de billing importam o cliente HTTP compartilhado (_shared/asaasClient.ts) -- nenhuma duplica lógica de fetch para a Asaas', () => {
   for (const [name, code] of Object.entries({
@@ -630,33 +636,45 @@ test('billing-webhook: reconsulta a cobrança na Asaas, rejeita divergência e n
   assert.match(WEBHOOK, /buildBillingPaymentRow\([\s\S]{0,150}payment,/);
 });
 
-test('billing-webhook: persiste antes do 200 e executa processamento em background com estado de erro durável', () => {
+test('billing-webhook: persiste antes do 200, reclama atomicamente e processa em background', () => {
   assert.match(WEBHOOK, /jsonResponse\(200, \{ received: true, asaas_event_id: asaasEventId \}\);/);
   assert.match(WEBHOOK, /processPaymentEvent/);
   assert.match(WEBHOOK, /patchSubscription/);
   assert.match(WEBHOOK, /await persistWebhookEvent\([\s\S]*?if \(!persistResult\.ok\)/);
+  assert.match(WEBHOOK, /rpc\/claim_billing_webhook_event/);
   assert.match(WEBHOOK, /EdgeRuntime\.waitUntil\(processPersistedEvent\(\)\)/);
-  assert.match(WEBHOOK, /buildWebhookProcessingFailurePatch\(sanitizeErrorMessage\(error\)\)/);
+  assert.match(WEBHOOK, /buildWebhookProcessingFailurePatch\([\s\S]{0,200}sanitizeErrorMessage\(error\)/);
   assert.doesNotMatch(WEBHOOK.slice(WEBHOOK.indexOf('const processPersistedEvent'), WEBHOOK.indexOf('EdgeRuntime.waitUntil')), /jsonResponse\(5\d\d/);
 });
 
-test('billing-webhook: sucesso é terminal; processing_error continua elegível para retry, inclusive em linha legada', () => {
+test('billing-webhook: sucesso é terminal; erro persistido e linha legada são recuperáveis até o limite', () => {
   assert.equal(isWebhookEventEligibleForProcessing({ processed_at: null, processing_error: null }), true);
   assert.equal(isWebhookEventEligibleForProcessing({ processed_at: null, processing_error: 'SUBSCRIPTION_PATCH_FAILED' }), true);
   assert.equal(isWebhookEventEligibleForProcessing({ processed_at: '2026-08-15T10:00:00Z', processing_error: 'LEGACY_FAILURE' }), true);
   assert.equal(isWebhookEventEligibleForProcessing({ processed_at: '2026-08-15T10:00:00Z', processing_error: null }), false);
+  assert.equal(isWebhookEventEligibleForProcessing({ processed_at: null, processing_attempts: WEBHOOK_PROCESSING_MAX_ATTEMPTS }), false);
   assert.match(WEBHOOK, /isWebhookEventEligibleForProcessing\(eventRow\)/);
-  assert.match(WEBHOOK, /select: 'id,processed_at,processing_error'/);
+  assert.match(WEBHOOK, /claimWebhookEvent\(/);
+  assert.match(WEBHOOK_RETRY_MIGRATION, /for update skip locked/i);
+  assert.match(WEBHOOK_RETRY_MIGRATION, /processing_attempts = event\.processing_attempts \+ 1/);
 });
 
-test('billing-webhook: SUCCESS preenche processed_at e limpa processing_error; FAILURE registra erro sem concluir evento', () => {
+test('billing-webhook: SUCCESS limpa lease; FAILURE registra erro, libera lease e agenda backoff exponencial', () => {
   assert.deepEqual(buildWebhookProcessingSuccessPatch('2026-08-15T10:00:00Z'), {
     processed_at: '2026-08-15T10:00:00Z',
     processing_error: null,
+    processing_started_at: null,
+    next_attempt_at: null,
   });
-  assert.deepEqual(buildWebhookProcessingFailurePatch('SUBSCRIPTION_PATCH_FAILED'), {
+  assert.deepEqual(buildWebhookProcessingFailurePatch(
+    'SUBSCRIPTION_PATCH_FAILED',
+    2,
+    new Date('2026-08-15T10:00:00Z'),
+  ), {
     processed_at: null,
     processing_error: 'SUBSCRIPTION_PATCH_FAILED',
+    processing_started_at: null,
+    next_attempt_at: '2026-08-15T10:01:00.000Z',
   });
 });
 
@@ -668,8 +686,19 @@ test('billing-webhook: retry posterior bem-sucedido conclui o mesmo evento e lim
   assert.deepEqual(recoveredState, {
     processed_at: '2026-08-15T10:05:00Z',
     processing_error: null,
+    processing_started_at: null,
+    next_attempt_at: null,
   });
   assert.equal(isWebhookEventEligibleForProcessing(recoveredState), false);
+});
+
+test('billing-webhook-retry: exige service role, seleciona apenas eventos pendentes e reenvia via token interno', () => {
+  assert.match(WEBHOOK_RETRY, /request\.headers\.get\('apikey'\) !== serviceRoleKey/);
+  assert.match(WEBHOOK_RETRY, /processed_at: 'is\.null'/);
+  assert.match(WEBHOOK_RETRY, /processing_attempts: `lt\.\$\{WEBHOOK_PROCESSING_MAX_ATTEMPTS\}`/);
+  assert.match(WEBHOOK_RETRY, /'asaas-access-token': webhookToken/);
+  assert.match(WEBHOOK_RETRY, /functions\/v1\/billing-webhook/);
+  assert.match(WEBHOOK_RETRY, /processing_started_at\.lt\.\$\{staleBefore\}/);
 });
 
 test('billing-webhook: falhas HTTP das escritas críticas são propagadas como erro categórico e seguro', () => {
@@ -802,7 +831,7 @@ test('billing-webhook: eventos de Checkout e de pagamento nunca se misturam -- c
 });
 
 test('billing-webhook: os dois processadores rodam por evento, mas cada um decide independentemente se faz algo (nunca quebra o handler existente)', () => {
-  const idx = WEBHOOK.indexOf('await processPaymentEvent({ supabaseUrl, serviceRoleKey, eventType, payload });');
-  const slice = WEBHOOK.slice(idx, idx + 400);
-  assert.match(slice, /await processCheckoutEvent\(\{ supabaseUrl, serviceRoleKey, eventType, payload \}\);/);
+  const idx = WEBHOOK.indexOf('await processPaymentEvent({\n              supabaseUrl, serviceRoleKey, eventType: claimedEventType, payload: claimedPayload,\n            });');
+  const slice = WEBHOOK.slice(idx, idx + 600);
+  assert.match(slice, /await processCheckoutEvent\(\{\s+supabaseUrl, serviceRoleKey, eventType: claimedEventType, payload: claimedPayload,\s+\}\);/);
 });

@@ -92,7 +92,11 @@ async function persistWebhookEvent({
 async function fetchWebhookEventByEventId({
   supabaseUrl, serviceRoleKey, asaasEventId,
 }: { supabaseUrl: string; serviceRoleKey: string; asaasEventId: string }) {
-  const params = new URLSearchParams({ select: 'id,processed_at,processing_error', asaas_event_id: `eq.${asaasEventId}`, limit: '1' });
+  const params = new URLSearchParams({
+    select: 'id,asaas_event_id,event_type,payload,processed_at,processing_error,processing_attempts,max_processing_attempts',
+    asaas_event_id: `eq.${asaasEventId}`,
+    limit: '1',
+  });
   const response = await fetch(`${supabaseUrl}/rest/v1/webhook_events?${params}`, {
     headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
   });
@@ -101,13 +105,30 @@ async function fetchWebhookEventByEventId({
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
 
+async function claimWebhookEvent({
+  supabaseUrl, serviceRoleKey, eventRowId,
+}: { supabaseUrl: string; serviceRoleKey: string; eventRowId: string }) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/claim_billing_webhook_event`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ target_event_id: eventRowId }),
+  });
+  if (!response.ok) throw new Error('BILLING_WEBHOOK_WRITE_FAILED:webhook_event_claim');
+  const rows = await response.json();
+  return Array.isArray(rows) && rows.length === 1 ? rows[0] as Record<string, unknown> : null;
+}
+
 async function patchWebhookEventProcessingState({
   supabaseUrl, serviceRoleKey, eventRowId, patch,
 }: {
   supabaseUrl: string;
   serviceRoleKey: string;
   eventRowId: string;
-  patch: { processed_at: string | null; processing_error: string | null };
+  patch: Record<string, unknown>;
 }) {
   const response = await fetch(`${supabaseUrl}/rest/v1/webhook_events?id=eq.${eventRowId}`, {
     method: 'PATCH',
@@ -475,46 +496,66 @@ Deno.serve(async (request) => {
     return jsonResponse(500, errorBody('PERSISTENCE_FAILED', 'Nao foi possivel registrar o evento.'));
   }
 
-  // BLOCO ASAAS FINAL: se a linha nao veio da insercao (evento ja existia),
-  // busca a linha real para checar o estado de processamento. Um sucesso
-  // definitivo nao e reprocessado; uma falha continua elegivel para retry.
+  // Se a linha ja existia, usa sempre o payload persistido. O ID unico do
+  // evento e a fonte idempotente; uma entrega duplicada nao pode substituir
+  // o corpo que sera processado.
   const eventRow = persistResult.insertedRow
     ?? await fetchWebhookEventByEventId({ supabaseUrl, serviceRoleKey, asaasEventId });
 
   if (isWebhookEventEligibleForProcessing(eventRow)) {
-    const processPersistedEvent = async () => {
-      try {
-        await processPaymentEvent({ supabaseUrl, serviceRoleKey, eventType, payload });
-        // BLOCO ASAAS CHECKOUT: cada função verifica seu próprio conjunto de
-        // eventType antes de fazer qualquer coisa -- nunca ambas processam o
-        // mesmo evento (payment.* vs checkout.*, conjuntos disjuntos).
-        await processCheckoutEvent({ supabaseUrl, serviceRoleKey, eventType, payload });
-        await patchWebhookEventProcessingState({
-          supabaseUrl,
-          serviceRoleKey,
-          eventRowId: eventRow.id as string,
-          patch: buildWebhookProcessingSuccessPatch(new Date().toISOString()),
-        });
-      } catch (error) {
-        // O evento já está durável. Registra erro sanitizado sem solicitar
-        // retries HTTP da Asaas, que podem pausar sua fila após falhas seguidas.
-        console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_failed', asaasEventId, eventType }));
-        try {
-          await patchWebhookEventProcessingState({
-            supabaseUrl,
-            serviceRoleKey,
-            eventRowId: eventRow.id as string,
-            patch: buildWebhookProcessingFailurePatch(sanitizeErrorMessage(error)),
-          });
-        } catch {
-          // A linha permanece sem processed_at e poderá ser reconciliada.
-          console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_error_persist_failed', asaasEventId, eventType }));
-        }
+    try {
+      const claimedEvent = await claimWebhookEvent({
+        supabaseUrl,
+        serviceRoleKey,
+        eventRowId: eventRow.id as string,
+      });
+      if (claimedEvent) {
+        const claimedEventType = claimedEvent.event_type as string;
+        const claimedPayload = claimedEvent.payload as Record<string, unknown>;
+        const claimedEventId = claimedEvent.asaas_event_id as string;
+        const processPersistedEvent = async () => {
+          try {
+            await processPaymentEvent({
+              supabaseUrl, serviceRoleKey, eventType: claimedEventType, payload: claimedPayload,
+            });
+            // Os processadores isolam os conjuntos de eventos de pagamento
+            // e checkout antes de qualquer escrita.
+            await processCheckoutEvent({
+              supabaseUrl, serviceRoleKey, eventType: claimedEventType, payload: claimedPayload,
+            });
+            await patchWebhookEventProcessingState({
+              supabaseUrl,
+              serviceRoleKey,
+              eventRowId: claimedEvent.id as string,
+              patch: buildWebhookProcessingSuccessPatch(new Date().toISOString()),
+            });
+          } catch (error) {
+            // A fila de retry interna cuida de falhas; nao pede reentregas
+            // HTTP da Asaas, que podem pausar a fila de webhooks.
+            console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_failed', asaasEventId: claimedEventId, eventType: claimedEventType }));
+            try {
+              await patchWebhookEventProcessingState({
+                supabaseUrl,
+                serviceRoleKey,
+                eventRowId: claimedEvent.id as string,
+                patch: buildWebhookProcessingFailurePatch(
+                  sanitizeErrorMessage(error),
+                  Number(claimedEvent.processing_attempts),
+                ),
+              });
+            } catch {
+              // A concessao expira; o retry worker podera reaver a linha.
+              console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_error_persist_failed', asaasEventId: claimedEventId, eventType: claimedEventType }));
+            }
+          }
+        };
+        EdgeRuntime.waitUntil(processPersistedEvent());
       }
-    };
-    // Persiste antes de responder e continua o processamento em background.
-    // billing-sync reconcilia se o worker for interrompido após a resposta.
-    EdgeRuntime.waitUntil(processPersistedEvent());
+    } catch {
+      // O evento ja esta persistido. O retry worker recupera uma falha na
+      // concessao assim que a linha estiver disponivel para nova tentativa.
+      console.log(JSON.stringify({ at: 'billing-webhook', status: 'processing_claim_failed', asaasEventId, eventType }));
+    }
   }
 
   // Só responde 200 depois de confirmar a persistência do evento; o trabalho
