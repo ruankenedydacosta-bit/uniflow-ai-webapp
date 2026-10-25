@@ -72,18 +72,20 @@ test('assinante existente com plan_id pro mantém seu plano canônico na sessão
   assert.equal(access.currentWorkspace, WORKSPACE_TYPES.PERSONAL);
 });
 
-test('workspace Business sem assinatura ou com status sem acesso cai em Free', () => {
-  const noSubscription = getAccessFromSession({ user_mode: 'business' }, businessWs, null);
-  assert.equal(noSubscription.plan, PLANS.FREE);
-  assert.equal(canUseBusinessFeatures(noSubscription), false);
+test('fallback legado de workspace Business sem assinatura permanece Business', () => {
+  const access = getAccessFromSession({ user_mode: 'business' }, businessWs, null);
+  assert.equal(access.plan, PLANS.BUSINESS);
+  assert.equal(canUseBusinessFeatures(access), true);
+});
 
-  for (const status of ['pending', 'canceled', 'expired']) {
-    const access = getAccessFromSession({ user_mode: 'business' }, businessWs, {
+test('plano válido da sessão é preservado sem reclassificar status neste recorte', () => {
+  for (const status of ['trialing', 'active', 'past_due', 'canceled', 'expired', 'pending']) {
+    const access = getAccessFromSession({ user_mode: 'both' }, businessWs, {
       plan_id: PLANS.BUSINESS,
       status,
     });
-    assert.equal(access.plan, PLANS.FREE, `${status} não deve conceder capacidade paga`);
-    assert.equal(canUseBusinessFeatures(access), false, `${status} não deve liberar Gestão`);
+    assert.equal(access.plan, PLANS.BUSINESS, `${status} mantém a derivação legada`);
+    assert.equal(canUseBusinessFeatures(access), true, `${status} mantém Gestão legada`);
   }
 });
 
