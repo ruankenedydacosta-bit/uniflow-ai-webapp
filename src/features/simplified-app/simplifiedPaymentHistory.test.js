@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { formatCurrency } from '../../utils/formatters.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -45,10 +46,19 @@ test('erro de carregamento usa a mensagem honesta pedida, nunca falha silenciosa
 
 test('cada item mostra comprovante (invoice_url) só quando existe -- nunca um link fictício', async () => {
   const page = await source('./SimplifiedPaymentHistoryPage.jsx');
-  assert.match(page, /payment\.invoice_url \? \(/);
-  assert.match(page, /href=\{payment\.invoice_url\}/);
+  assert.match(page, /safeAsaasUrl\(payment\.invoice_url\) \? \(/);
+  assert.match(page, /href=\{safeAsaasUrl\(payment\.invoice_url\)\}/);
   assert.match(page, /target="_blank"/);
   assert.match(page, /rel="noreferrer noopener"/);
+});
+
+test('histórico apresenta valor pt-BR com duas casas e usa as datas/status reais da cobrança', async () => {
+  const page = await source('./SimplifiedPaymentHistoryPage.jsx');
+  assert.equal(formatCurrency(1234.5).replace(/\u00a0/g, ' '), 'R$ 1.234,50');
+  assert.match(page, /formatCurrency\(payment\.value\)/);
+  assert.match(page, /resolvePaymentStatusLabel\(payment\.status\)/);
+  assert.match(page, /formatDate\(payment\.due_date\)/);
+  assert.match(page, /formatDate\(payment\.paid_at\)/);
 });
 
 test('volta para "Pagamento e assinatura" (drill-down real, não uma tela solta)', async () => {

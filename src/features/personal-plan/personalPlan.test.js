@@ -185,7 +185,7 @@ test('confirmar com cartão chama createCustomer ANTES de createCheckout (nunca 
   const checkoutIdx = body.indexOf('await createCheckout(');
   assert.ok(cardCustomerIdx > -1 && checkoutIdx > cardCustomerIdx, 'createCustomer deve ser chamado ANTES de createCheckout no fluxo de cartão');
   assert.match(body, /await createCheckout\(\{ workspaceId: resolvedWorkspaceId \}\)/);
-  assert.match(body, /window\.location\.href = checkoutResult\.data\.checkout_url;/);
+  assert.match(body, /window\.location\.href = safeAsaasUrl\(checkoutResult\.data\.checkout_url\);/);
   assert.doesNotMatch(body, /createSubscription\(/);
 });
 
@@ -268,7 +268,7 @@ test('erro ao criar o checkout de cartão preserva o modal aberto com mensagem h
   const page = await source('./PersonalPlanPage.jsx');
   const idx = page.indexOf('const checkoutResult = await createCheckout');
   const slice = page.slice(idx, idx + 350);
-  assert.match(slice, /if \(checkoutResult\.error \|\| !checkoutResult\.data\?\.checkout_url\) \{/);
+  assert.match(slice, /if \(checkoutResult\.error \|\| !safeAsaasUrl\(checkoutResult\.data\?\.checkout_url\)\) \{/);
   assert.match(slice, /return;/);
 });
 
@@ -736,9 +736,9 @@ test('Fase 4B Lite: pix_generated dispara somente após payload Pix válido da t
 test('Fase 4B Lite: card_checkout_created dispara com checkout_url confirmada, antes do redirect, e o redirect nunca depende do tracking', async () => {
   const page = await source('./PersonalPlanPage.jsx');
   const idx = page.indexOf("if (paymentMethod === 'credit_card') {");
-  const redirectIdx = page.indexOf('window.location.href = checkoutResult.data.checkout_url;', idx);
+  const redirectIdx = page.indexOf('window.location.href = safeAsaasUrl(checkoutResult.data.checkout_url);', idx);
   const body = page.slice(idx, redirectIdx);
-  assert.match(body, /if \(checkoutResult\.error \|\| !checkoutResult\.data\?\.checkout_url\) \{/);
+  assert.match(body, /if \(checkoutResult\.error \|\| !safeAsaasUrl\(checkoutResult\.data\?\.checkout_url\)\) \{/);
   assert.match(body, /checkoutEventLifecycle\.markCardCheckoutCreated\(\);/);
   const errorIdx = body.indexOf('setSubmitError(');
   const markIdx = body.indexOf('checkoutEventLifecycle.markCardCheckoutCreated();');

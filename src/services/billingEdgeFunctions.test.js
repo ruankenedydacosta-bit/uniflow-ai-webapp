@@ -422,7 +422,7 @@ test('billing-cancel-subscription: falha LOCAL após sucesso EXTERNO retorna REC
 // -- SYNC -------------------------------------------------------------------
 
 test('billing-sync usa pagamentos canônicos validados e regras compartilhadas de ciclo de vida', () => {
-  assert.match(SYNC, /validateProviderPayments\(remotePayments, subscription.asaas_subscription_id\)/);
+  assert.match(SYNC, /validateProviderPayments\(remotePayments, subscription.asaas_subscription_id, subscription.asaas_customer_id/);
   assert.match(SYNC, /resolveBillingLifecycle\(/);
 });
 
@@ -802,8 +802,8 @@ test('billing-webhook: cobrança avulsa (sem payment.subscription) nunca toca em
 
 // -- BLOCO ASAAS CHECKOUT: correlação de pagamento originado por Checkout ----
 
-test('billing-webhook: cliente desconhecido (customer não bate) tenta o caminho alternativo via linkCheckoutOriginatedSubscription antes de desistir', () => {
-  const idx = WEBHOOK.indexOf('if (!workspaceId && asaasSubscriptionId) {');
+test('billing-webhook: assinatura desconhecida, inclusive com cliente conhecido, tenta o caminho alternativo via linkCheckoutOriginatedSubscription antes de desistir', () => {
+  const idx = WEBHOOK.indexOf('if (!linkedSubscription && asaasSubscriptionId) {');
   assert.ok(idx > -1);
   const slice = WEBHOOK.slice(idx, idx + 250);
   assert.match(slice, /linkCheckoutOriginatedSubscription/);

@@ -1,3 +1,5 @@
+import { recoverPendingSubscription } from './pendingSubscriptionRecovery.js';
+import { safeAsaasUrl } from '../../utils/asaasUrls.js';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext';
@@ -5,7 +7,7 @@ import { resolvePresentationUserId } from '../presentation';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/index.js';
 import Button from '../../components/ui/Button/Button.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
-import { createCheckout, createCustomer, createSubscription, getSubscription, pixAutomatic } from '../../services/billingService.js';
+import { createCheckout, createCustomer, createSubscription, getSubscription, syncSubscription, pixAutomatic } from '../../services/billingService.js';
 import PixAutomaticModal from './PixAutomaticModal.jsx';
 import { BILLING_PLAN_ID } from '../../services/billingTypes.js';
 import { useSubscriptionStatusPolling } from './useSubscriptionStatusPolling.js';
@@ -370,9 +372,16 @@ function PixPaymentModal({
   open, onClose, pixData, isActive, onGoHome,
 }) {
   const [copied, setCopied] = useState(false);
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    if (!open || isActive) return undefined;
+    const interval = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [open, isActive]);
+  const canPay = isValidPixPayload(pixData, clock);
 
   async function handleCopyPixCode() {
-    if (!pixData?.payload) return;
+    if (!isValidPixPayload(pixData)) return;
     try {
       await navigator.clipboard.writeText(pixData.payload);
       setCopied(true);
@@ -445,7 +454,7 @@ function PixPaymentModal({
 
           <div className={styles.pixQrCard}>
             <p className={styles.pixQrTitle}>Escaneie o QR Code com o app do seu banco</p>
-            {pixData?.encoded_image ? (
+            {canPay ? (
               <span className={styles.pixQrFrame}>
                 <img
                   className={styles.pixQrImage}
@@ -454,7 +463,7 @@ function PixPaymentModal({
                 />
               </span>
             ) : (
-              <p className={styles.hint}>Gerando QR Code...</p>
+              <p className={styles.hint}>Este QR Code não está disponível para pagamento. Verifique o histórico antes de iniciar outra tentativa.</p>
             )}
 
             <p className={styles.pixSeparator}><span>ou</span></p>
@@ -467,7 +476,7 @@ function PixPaymentModal({
               data-copied={copied ? 'true' : 'false'}
               leftIcon={copied ? <CheckCircleGlyph /> : <CopyGlyph />}
               onClick={handleCopyPixCode}
-              disabled={!pixData?.payload}
+              disabled={!canPay}
             >
               {copied ? 'Código Pix copiado' : 'Copiar código Pix'}
             </Button>
@@ -543,7 +552,8 @@ const {
         setFlowState('idle');
         return;
       }
-      getSubscription({ workspaceId }).then(({ data, error }) => {
+      getSubscription({ workspaceId }).then(async (result) => {
+        const { data, error } = await recoverPendingSubscription(result, { workspaceId, sync: syncSubscription, read: getSubscription });
         if (cancelled) return;
         if (error || !data?.exists) {
           setFlowState('idle');
@@ -670,7 +680,7 @@ if (!resolvedWorkspaceId) {
       }
 
       const checkoutResult = await createCheckout({ workspaceId: resolvedWorkspaceId })
-      if (checkoutResult.error || !checkoutResult.data?.checkout_url) {
+      if (checkoutResult.error || !safeAsaasUrl(checkoutResult.data?.checkout_url)) {
         setSubmitError('Não foi possível iniciar o pagamento por cartão agora. Tente novamente em instantes.');
         setIsSubmitting(false);
         return;
@@ -684,7 +694,7 @@ if (!resolvedWorkspaceId) {
       // no primeiro polling. Ele é categórico, fail-open e não altera o fluxo.
       persistPendingGa4SubscriptionActivation();
       checkoutEventLifecycle.markCardCheckoutCreated();
-      window.location.href = checkoutResult.data.checkout_url;
+      window.location.href = safeAsaasUrl(checkoutResult.data.checkout_url);
       return;
     }
 

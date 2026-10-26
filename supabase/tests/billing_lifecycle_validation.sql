@@ -33,4 +33,8 @@ select public.test_assert(public.apply_billing_lifecycle('30000000-0000-4000-800
 reset role;
 set local role authenticated;
 select public.test_assert((select count(*)=1 from public.accounts),'access restored');
+reset role;
+set local role service_role;
+select public.test_assert(public.apply_billing_lifecycle('30000000-0000-4000-8000-000000000001',(select updated_at from public.subscriptions limit 1),'{"cancel_at_period_end":true,"cancel_effective_at":"2099-11-01Z"}','[]','[]','2026-10-05Z'),'provider termination applied');
+select public.test_assert((select cancel_at_period_end and cancel_effective_at='2099-11-01Z'::timestamptz from public.subscriptions limit 1),'termination cutoff persisted atomically');
 rollback;

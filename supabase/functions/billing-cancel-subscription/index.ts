@@ -1,3 +1,4 @@
+import { validateProviderPayments } from '../_shared/billingLifecycle.ts';
 // Edge Function: billing-cancel-subscription
 //
 // BILLING2 (Bloco Asaas 2): cancela a RENOVACAO da assinatura -- nunca o
@@ -220,7 +221,7 @@ Deno.serve(async (request) => {
   try {
     const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl, allowProduction: true });
     let patch: Record<string, unknown>;
-    let providerPayments: unknown[] = [];
+    let providerPayments: Record<string, unknown>[] = [];
 
     if (subscription.status !== 'trialing') {
       // Consulta pontual de conciliação antes de cancelar: o webhook de uma
@@ -229,6 +230,9 @@ Deno.serve(async (request) => {
         data?: unknown;
       } | null;
       providerPayments = Array.isArray(paymentList?.data) ? paymentList.data : [];
+      if (!validateProviderPayments(providerPayments, subscription.asaas_subscription_id, subscription.asaas_customer_id ?? '')) {
+        return jsonResponse(502, errorBody('PROVIDER_PAYMENT_MISMATCH', 'Não foi possível confirmar a identidade das cobranças. Nenhuma alteração realizada.'), origin);
+      }
     }
 
     if (isPending) {

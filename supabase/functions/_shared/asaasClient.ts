@@ -299,6 +299,22 @@ export function createAsaasClient(config: AsaasClientConfig) {
     createSubscription(payload: Record<string, unknown>) {
       return request('createSubscription', '/subscriptions', { method: 'POST', body: JSON.stringify(payload) });
     },
+    // Official GET recovery: https://docs.asaas.com/reference/list-subscriptions
+    async listSubscriptions(params: Record<string, string>) {
+      const data: Record<string, unknown>[] = [];
+      let offset = 0;
+      for (let page = 0; page < 100; page += 1) {
+        const query = new URLSearchParams({ ...params, limit: '100', offset: String(offset) });
+        const result = await request('listSubscriptions', `/subscriptions?${query}`, { method: 'GET' }) as {
+          data?: Record<string, unknown>[]; hasMore?: boolean;
+        };
+        if (!Array.isArray(result?.data) || (result.hasMore && !result.data.length)) break;
+        data.push(...result.data);
+        if (!result.hasMore) return { data };
+        offset += result.data.length;
+      }
+      throw new AsaasApiError({ message: 'Consulta de assinaturas incompleta.', operationId: 'listSubscriptions', providerStatus: 502, httpStatus: 502 });
+    },
     // BLOCO ASAAS CHECKOUT: a resposta inclui `externalReference` e
     // `checkoutSession` (confirmado via
     // docs.asaas.com/reference/retrieve-a-single-subscription) -- usados

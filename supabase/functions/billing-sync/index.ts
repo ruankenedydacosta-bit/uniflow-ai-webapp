@@ -34,7 +34,7 @@ import {
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
 import { buildBillingPaymentRow } from '../_shared/billingSubscriptionRules.ts';
-import { resolveBillingLifecycle, validateProviderPayments } from '../_shared/billingLifecycle.ts';
+import { resolveBillingLifecycle, validateProviderPayments, validateProviderSubscription } from '../_shared/billingLifecycle.ts';
 import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
 
 const UUID_PATTERN =
@@ -167,16 +167,17 @@ Deno.serve(async (request) => {
 
   try {
     const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl, allowProduction: true });
-    const remoteSubscription = await client.getSubscription(subscription.asaas_subscription_id) as { status?: string };
+    const remoteSubscription = await client.getSubscription(subscription.asaas_subscription_id) as Record<string, unknown>;
+    if (!validateProviderSubscription(remoteSubscription, subscription)) return jsonResponse(502, errorBody('PROVIDER_SUBSCRIPTION_MISMATCH', 'Não foi possível confirmar os dados da assinatura.'), origin);
     const remotePaymentsResponse = await client.listSubscriptionPayments(subscription.asaas_subscription_id) as { data?: Array<Record<string, unknown>> };
     const remotePayments = Array.isArray(remotePaymentsResponse?.data) ? remotePaymentsResponse.data : [];
 
     const providerStatus = typeof remoteSubscription?.status === 'string' ? remoteSubscription.status : null;
-    if (!validateProviderPayments(remotePayments, subscription.asaas_subscription_id)) {
+    if (!validateProviderPayments(remotePayments, subscription.asaas_subscription_id, subscription.asaas_customer_id ?? '')) {
       return jsonResponse(502, errorBody('PROVIDER_PAYMENT_MISMATCH', 'Não foi possível confirmar os dados das cobranças.'), origin);
     }
     const now = new Date().toISOString();
-    const { patch, notices } = resolveBillingLifecycle({ subscription, payments: remotePayments, now });
+    const { patch, notices } = resolveBillingLifecycle({ subscription, payments: remotePayments, now, providerStatus });
     const payments = remotePayments.map((payment) => buildBillingPaymentRow({
       workspaceId, asaasPaymentId: String(payment.id),
       asaasSubscriptionId: subscription.asaas_subscription_id, eventType: 'PAYMENT_UPDATED', payment,

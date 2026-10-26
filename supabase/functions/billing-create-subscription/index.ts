@@ -31,6 +31,7 @@ import {
   AsaasValidationError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
+import { recoverConventionalSubscription } from '../_shared/subscriptionRecovery.ts';
 import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
 
 const UUID_PATTERN =
@@ -416,26 +417,30 @@ const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
     return jsonResponse(503, errorBody('OPERATION_GUARD_UNAVAILABLE', 'Não foi possível reservar a criação da assinatura. Tente novamente.'), origin);
   }
   const attempt = claim.attempt as { id?: string; status?: string; provider_resource_id?: string } | null;
-  if (!claim.claimed && attempt?.status === 'completed' && attempt.provider_resource_id) {
-    const persisted = await persistSubscription({
-      supabaseUrl, serviceRoleKey, workspaceId,
-      asaasCustomerId: billingCustomer.asaas_customer_id,
-      asaasSubscriptionId: attempt.provider_resource_id,
-      paymentMethod: paymentMethod as string,
-    });
-    if (!persisted) return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Assinatura existente na Asaas, mas não foi possível concluir o vínculo local. Use billing-sync para reconciliar.'), origin);
-    let pix = null;
-    if (paymentMethod === 'pix') {
-      const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl });
-      pix = await fetchPixQrCode(client, attempt.provider_resource_id);
-    }
-    return jsonResponse(200, {
-      workspace_id: workspaceId, status: 'pending',
-      asaas_subscription_id: attempt.provider_resource_id, reused: true, pix,
-    }, origin);
-  }
   if (!claim.claimed) {
-    return jsonResponse(409, errorBody('OPERATION_IN_PROGRESS', 'Já existe uma tentativa de criação da assinatura. Aguarde a reconciliação antes de tentar novamente.'), origin);
+    if (!attempt?.id || !['completed', 'processing', 'uncertain'].includes(attempt.status ?? '')) {
+      return jsonResponse(409, errorBody('OPERATION_IN_PROGRESS', 'Aguarde a reconciliação da tentativa existente.'), origin);
+    }
+    try {
+      const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl });
+      const recoveredId = await recoverConventionalSubscription({
+        client, customerId: billingCustomer.asaas_customer_id, workspaceId,
+        paymentMethod: paymentMethod as string, resourceId: attempt.provider_resource_id,
+      });
+      if (!recoveredId) return jsonResponse(409, errorBody('RECONCILIATION_REQUIRED', 'Não foi possível identificar uma única assinatura compatível. Não crie outra cobrança; solicite reconciliação.'), origin);
+      const recorded = await updateSubscriptionAttempt({ supabaseUrl, serviceRoleKey,
+        attemptId: attempt.id, status: 'completed', providerResourceId: recoveredId });
+      if (!recorded) return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Não foi possível registrar a assinatura recuperada.'), origin);
+      const persisted = await persistSubscription({ supabaseUrl, serviceRoleKey, workspaceId,
+        asaasCustomerId: billingCustomer.asaas_customer_id, asaasSubscriptionId: recoveredId,
+        paymentMethod: paymentMethod as string });
+      if (!persisted) return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Assinatura localizada, mas o vínculo local exige reconciliação.'), origin);
+      const pix = paymentMethod === 'pix' ? await fetchPixQrCode(client, recoveredId) : null;
+      return jsonResponse(200, { workspace_id: workspaceId, status: 'pending', asaas_subscription_id: recoveredId, reused: true, pix }, origin);
+    } catch {
+      // Do not reset the creation lock after a GET/network failure.
+      return jsonResponse(503, errorBody('RECONCILIATION_UNAVAILABLE', 'Não foi possível consultar a assinatura existente. Tente reconciliar novamente.'), origin);
+    }
   }
 
 
