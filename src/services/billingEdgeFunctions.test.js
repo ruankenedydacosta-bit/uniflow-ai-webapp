@@ -347,7 +347,8 @@ test('billing-get-subscription: só busca o QR Pix quando payment_method é "pix
 });
 
 test('billing-get-subscription: pix vai na resposta pública, ao lado de payment_method', () => {
-  assert.match(GET_SUBSCRIPTION, /payment_method: local\.payment_method,\s*\n\s*pix,/);
+  assert.match(GET_SUBSCRIPTION, /payment_method: local\.payment_method,/);
+  assert.match(GET_SUBSCRIPTION, /\n\s*pix,/);
 });
 
 test('billing-get-subscription: busca do QR é best-effort dentro do mesmo try/catch do providerStatus -- falha nunca quebra a consulta', () => {

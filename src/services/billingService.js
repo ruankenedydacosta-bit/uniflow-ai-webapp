@@ -126,6 +126,9 @@ export function createBillingService({
     syncSubscription({ workspaceId } = {}) {
       return invokeBillingFunction('billing-sync', { workspace_id: workspaceId });
     },
+    pixAutomatic({ workspaceId, action = 'status' } = {}) {
+      return invokeBillingFunction('billing-pix-automatic', { workspace_id: workspaceId, action });
+    },
     // BLOCO FINAL DO MVP (Histórico de pagamentos): lista real de
     // `billing_payments` do workspace, mais recente primeiro. RLS
     // (`is_workspace_member`) já isola por workspace -- o `.eq` abaixo é
@@ -176,5 +179,6 @@ export const createCheckout = defaultBillingService.createCheckout;
 export const cancelSubscription = defaultBillingService.cancelSubscription;
 export const getSubscription = defaultBillingService.getSubscription;
 export const syncSubscription = defaultBillingService.syncSubscription;
+export const pixAutomatic = defaultBillingService.pixAutomatic;
 export const listPayments = defaultBillingService.listPayments;
 export const healthCheck = defaultBillingService.healthCheck;

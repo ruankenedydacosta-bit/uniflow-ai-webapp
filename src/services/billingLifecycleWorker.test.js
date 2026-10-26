@@ -45,3 +45,27 @@ test('falha de rede não suspende usuário nem escreve sucesso financeiro', asyn
   assert.equal(response.status, 503);
   assert.equal(writes, 0);
 });
+
+test('worker concilia consentimento sem subscriptionId e encerra somente o período já pago', async (t) => {
+  env.UNIFLOW_PIX_AUTOMATIC_PROCESSING_ENABLED = 'true';
+  const past = new Date(Date.now() - 86_400_000).toISOString();
+  const sub = { id: 'local_subscription', workspace_id: 'workspace_fixture', status: 'active', payment_method: 'pix_automatico', asaas_subscription_id: null, current_period_ends_at: past, updated_at: 'before' };
+  const refreshed = { ...sub, updated_at: 'after', cancel_at_period_end: true, cancel_effective_at: past };
+  const authorization = { id: 'local_authorization', contract_id: 'a'.repeat(32), asaas_customer_id: 'cus_fixture', asaas_authorization_id: 'authorization_fixture', status: 'CREATED' };
+  let patch;
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    const target = String(url);
+    if (target.includes('/rest/v1/subscriptions?')) return json(target.includes('select=') && target.includes('id=eq.') ? [refreshed] : [sub]);
+    if (target.includes('/billing_pix_authorizations?')) return json([authorization]);
+    if (target.endsWith('/pix/automatic/authorizations/authorization_fixture')) return json({ id: authorization.asaas_authorization_id, contractId: authorization.contract_id, customerId: authorization.asaas_customer_id, value: 29.9, frequency: 'MONTHLY', paymentCreationMode: 'SUBSCRIPTION', status: 'REFUSED' });
+    if (target.endsWith('/rpc/apply_pix_authorization')) return json(true);
+    if (target.endsWith('/rpc/apply_billing_lifecycle')) { patch = JSON.parse(options.body); return json(true); }
+    throw new Error('unexpected request');
+  });
+  try {
+    assert.equal((await handleBillingLifecycle(req())).status, 200);
+    assert.equal(patch.p_patch.status, 'canceled');
+    assert.equal(patch.p_expected_updated_at, 'after');
+    assert.deepEqual(patch.p_payments, []);
+  } finally { delete env.UNIFLOW_PIX_AUTOMATIC_PROCESSING_ENABLED; }
+});

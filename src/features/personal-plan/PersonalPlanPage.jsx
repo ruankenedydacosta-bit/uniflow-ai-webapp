@@ -5,7 +5,8 @@ import { resolvePresentationUserId } from '../presentation';
 import { SIMPLIFIED_ROUTES } from '../simplified-app/index.js';
 import Button from '../../components/ui/Button/Button.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
-import { createCheckout, createCustomer, createSubscription, getSubscription } from '../../services/billingService.js';
+import { createCheckout, createCustomer, createSubscription, getSubscription, pixAutomatic } from '../../services/billingService.js';
+import PixAutomaticModal from './PixAutomaticModal.jsx';
 import { BILLING_PLAN_ID } from '../../services/billingTypes.js';
 import { useSubscriptionStatusPolling } from './useSubscriptionStatusPolling.js';
 import PlanBenefitIcon from './PlanBenefitIcon.jsx';
@@ -213,6 +214,15 @@ function SubscriptionMethodModal({
 }) {
   const [paymentMethod, setPaymentMethod] = useState('pix');
   const [cpfCnpj, setCpfCnpj] = useState('');
+  const [pixAutomaticAvailable, setPixAutomaticAvailable] = useState(false);
+  useEffect(() => {
+    if (!open || import.meta.env.VITE_UNIFLOW_PIX_AUTOMATIC_ENABLED !== 'true') return undefined;
+    let active = true;
+    pixAutomatic({ action: 'availability' }).then(({ data, error }) => {
+      if (active) setPixAutomaticAvailable(!error && data?.available === true);
+    });
+    return () => { active = false; };
+  }, [open]);
   const digits = normalizeCpfCnpjInput(cpfCnpj);
   // CORRECAO NOTIFICACOES (cartao): CPF/CNPJ agora é exigido pelos DOIS
   // métodos -- billing-create-customer precisa dele tanto para o Pix quanto
@@ -223,7 +233,8 @@ function SubscriptionMethodModal({
   // hospedada da Asaas (Asaas rejeita customerData parcial sem endereço,
   // que a UniFlow nunca coletou -- por isso o Checkout nunca envia
   // customerData, só o `customer` já identificado).
-  const canSubmit = isValidCpfCnpj(digits) && !isSubmitting;
+  const canSubmit = isValidCpfCnpj(digits) && !isSubmitting
+    && (paymentMethod !== 'pix_automatico' || pixAutomaticAvailable);
 
   return (
     <Modal
@@ -255,7 +266,7 @@ function SubscriptionMethodModal({
             rightIcon={<ArrowRightGlyph />}
             onClick={() => onConfirm({ cpfCnpj: digits, paymentMethod })}
           >
-            {paymentMethod === 'credit_card' ? 'Continuar com cartão' : 'Continuar com Pix'}
+            {paymentMethod === 'credit_card' ? 'Continuar com cartão' : paymentMethod === 'pix_automatico' ? 'Continuar com Pix Automático' : 'Continuar com Pix'}
           </Button>
           <button
             type="button"
@@ -315,6 +326,10 @@ function SubscriptionMethodModal({
           </span>
           <span className={styles.methodMark} aria-hidden="true"><CheckCircleGlyph /></span>
         </label>
+        {pixAutomaticAvailable ? <label className={styles.methodOption} data-selected={paymentMethod === 'pix_automatico' ? 'true' : 'false'}>
+          <input type="radio" name="payment-method" value="pix_automatico" checked={paymentMethod === 'pix_automatico'} onChange={() => setPaymentMethod('pix_automatico')} />
+          <span className={styles.methodText}><strong>Pix Automático</strong><small>Autorize no banco os próximos pagamentos mensais.</small></span>
+        </label> : null}
       </div>
 
       <p className={styles.checkoutSectionTitle}>Dados para emissão da cobrança</p>
@@ -504,6 +519,8 @@ const {
   // billing-get-subscription -- nunca gerados no frontend.
   const [pixData, setPixData] = useState(null);
   const [pixModalDismissed, setPixModalDismissed] = useState(false);
+  const [autoWorkspaceId, setAutoWorkspaceId] = useState(null);
+  const [autoModalDismissed, setAutoModalDismissed] = useState(false);
   const promotionEligibility = flowState === 'checking'
     ? null
     : !['active', 'already_active', 'cancel_scheduled'].includes(flowState);
@@ -533,6 +550,10 @@ const {
           return;
         }
         setInitialSubscription(data);
+        if (data.internal_status === 'pending' && data.payment_method === 'pix_automatico'
+          && import.meta.env.VITE_UNIFLOW_PIX_AUTOMATIC_ENABLED === 'true') {
+          setAutoWorkspaceId(workspaceId); setFlowState('automatic'); return;
+        }
         if (data.internal_status === 'active' && !data.cancel_at_period_end) {
           setFlowState('already_active');
         } else if (data.internal_status === 'active' && data.cancel_at_period_end) {
@@ -614,6 +635,22 @@ if (!resolvedWorkspaceId) {
     // um customer id para o Checkout. Redireciona na MESMA aba para
     // checkout_url; nunca considera o plano ativo só por isso (a rota de
     // retorno consulta billing-get-subscription de verdade).
+    if (paymentMethod === 'pix_automatico') {
+      try {
+        const customer = await withTimeout(createCustomer({ workspaceId: resolvedWorkspaceId, cpfCnpj }), PIX_CREATION_TIMEOUT_MS);
+        if (customer.error) throw new Error('CUSTOMER_UNAVAILABLE');
+        const result = await withTimeout(pixAutomatic({ workspaceId: resolvedWorkspaceId, action: 'create' }), PIX_CREATION_TIMEOUT_MS);
+        if (['PIX_AUTOMATIC_DISABLED','PIX_AUTOMATIC_ELIGIBILITY_UNVERIFIED'].includes(result.error?.code)) {
+          setSubmitError('Pix Automático ainda não está disponível. Escolha Pix ou cartão.'); return;
+        }
+        // Even an ambiguous creation is resumed by status/GET; never fall
+        // through to conventional Pix or silently issue a second charge.
+        setAutoWorkspaceId(resolvedWorkspaceId); setAutoModalDismissed(false); setFlowState('automatic');
+      } catch {
+        setSubmitError('Não foi possível confirmar a criação. Consulte seu plano antes de tentar outro pagamento.');
+      } finally { setIsSubmitting(false); }
+      return;
+    }
     if (paymentMethod === 'credit_card') {
       let cardCustomerResult;
       try {
@@ -902,6 +939,9 @@ if (!resolvedWorkspaceId) {
         isSubmitting={isSubmitting}
         submitError={submitError}
       />
+      {flowState === 'automatic' && autoModalDismissed ? <Button type="button" variant="secondary" onClick={() => setAutoModalDismissed(false)}>Consultar Pix Automático</Button> : null}
+      <PixAutomaticModal open={flowState === 'automatic' && !autoModalDismissed} workspaceId={autoWorkspaceId}
+        onClose={() => setAutoModalDismissed(true)} onGoHome={handleGoHome} />
 
       <PixPaymentModal
         open={(flowState === 'pending' || (flowState === 'active' && Boolean(pixData))) && !pixModalDismissed}

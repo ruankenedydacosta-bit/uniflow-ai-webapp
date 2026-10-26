@@ -43,3 +43,6 @@ verify_jwt = false
 
 [functions.billing-lifecycle]
 verify_jwt = false
+
+[functions.billing-pix-automatic]
+verify_jwt = true
