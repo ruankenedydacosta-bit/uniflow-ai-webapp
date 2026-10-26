@@ -1,0 +1,482 @@
+{
+  "startedAt": "2026-10-26T04:53:53.122Z",
+  "runtime": "native",
+  "migrations": [
+    {
+      "file": "20260710_001_auth_profiles_workspaces.sql",
+      "sha256": "5a8e869e9d49cee19c6bcbecd2a43195b00cee70cb2497688715ac1c78e72425"
+    },
+    {
+      "file": "20260711000200_002_financial_core.sql",
+      "sha256": "287374287cf1314e42395762f2116ab20d5ae9ccf7b9471f5b14dc924dc4db1c"
+    },
+    {
+      "file": "20260711000300_003_financial_catalog_seeds.sql",
+      "sha256": "83ac11226ae963f356ff3e90273379cf5bcb21f7a17ea267f5ccc89947e56afe"
+    },
+    {
+      "file": "20260711000400_004_open_finance_infrastructure.sql",
+      "sha256": "f3518036082a5fb03740ebe740e8e65fb90f4610f337e903cf38b6d05070a16c"
+    },
+    {
+      "file": "20260711000500_005_uni_financial_memory.sql",
+      "sha256": "63f4eaaff5404dcd802bd568b2fea1a7f5b1c66b94235b90261e909729a8f011"
+    },
+    {
+      "file": "20260712000600_006_ensure_authenticated_profile.sql",
+      "sha256": "5b33bbdff361c69c8d2ecc05bdd6ebe126f5a6d0e0860db61a63c171750b7a18"
+    },
+    {
+      "file": "20260712000700_007_workspace_owner_select_policy.sql",
+      "sha256": "b1d96e7f4b5ee66a889ada5b44a7030a40cdfc1cee6ab99543ccd2f0ab3a1520"
+    },
+    {
+      "file": "20260712000800_008_atomic_financial_action.sql",
+      "sha256": "4a6651d5e07fee8ece1fc121f4c24d8594c6fc08bfc58066cfb638df8478cc6d"
+    },
+    {
+      "file": "20260716_009_fix_atomic_financial_action_and_balances.sql",
+      "sha256": "22a5ed78551686b37ada8a2ce81d62b062ac4db9e038296bcfcad51f13e85aef"
+    },
+    {
+      "file": "20260719_010_uni_conversations_messages.sql",
+      "sha256": "256d6529873a3ba4a0e2216562c9a1a3a01568dcaf23c3e76e27a68ebb7d21fe"
+    },
+    {
+      "file": "20260720001100_011_financial_goals.sql",
+      "sha256": "bf7754c312e0c46fd27375efeb079db178001fbad283059d13307ce27b03e8a9"
+    },
+    {
+      "file": "20260720001200_012_onboarding_data.sql",
+      "sha256": "ac06b6107461f3e5defde9d348135ecf26488c553c48d9cedb76c70c9e33ee92"
+    },
+    {
+      "file": "20260720001300_013_ensure_auth_session_rls.sql",
+      "sha256": "03ee1c7f140cb610c0dacdc317f239767ec7c23a41c8c5a5db5d8f9dfe19b924"
+    },
+    {
+      "file": "20260721001400_014_categories_applies_to.sql",
+      "sha256": "b0e11c3d30ec2a81f22fd191dfa52f3f2f8c4d1f607b2d00a308235c236a9266"
+    },
+    {
+      "file": "20260721001500_015_crm_clients.sql",
+      "sha256": "9d6ccb2f6b4e75c19df01f4beed467b4a2cf67af217d3c1cf10f9e9269afa6c1"
+    },
+    {
+      "file": "20260721001600_016_crm_pipeline.sql",
+      "sha256": "be992cbb96fc722186a2a2533f7e5d26eca23b87966f35a11c0c667510a4d69b"
+    },
+    {
+      "file": "20260722_017_agenda_items.sql",
+      "sha256": "450fc2936548d7dd7b0942b69b9ec59ffc91bcc3be7a5e0c5e903a70ad86f843"
+    },
+    {
+      "file": "20260723001800_018_projects.sql",
+      "sha256": "4cdf49243b17b8b7d5441f342e43b174ff2176853612d0aebfbdc82f75388d35"
+    },
+    {
+      "file": "20260723001900_019_fix_financial_goals_linked_account_fk.sql",
+      "sha256": "67c85fb274d27c8c6f9e1286591e99130b7121c55dde7052ed4f3a48194af62f"
+    },
+    {
+      "file": "20260724_020_notifications.sql",
+      "sha256": "c456461d784549d747245ee5e9738176aba8b140dc812a66138a12168874bd10"
+    },
+    {
+      "file": "20260725002100_021_uni_voice_cache.sql",
+      "sha256": "8ef98beaf689ebbe9d3bddf68c7c78d69516db97406a6e66846e8c0b57119d9a"
+    },
+    {
+      "file": "20260725002200_022_support.sql",
+      "sha256": "be4096deeedc2c3693928896354f61bf75b7687a70bfb05fa24699256faf603e"
+    },
+    {
+      "file": "20260729_023_profiles_conversation_style.sql",
+      "sha256": "128c89844282dfe4b9db85344787099a13a66743e16d9b39c5c24cdcbd1e40b2"
+    },
+    {
+      "file": "20260730002400_024_billing_asaas_foundation.sql",
+      "sha256": "9cd90a3a542099e8617b339413a1b281fff324bdeb66b78ad9ee370282e5f0e5"
+    },
+    {
+      "file": "20260730002500_025_billing_unique_indexes.sql",
+      "sha256": "cfd938ebf0930a3497c07ab8284a22e2a0f63a51faca636fadf9f355dd8131ba"
+    },
+    {
+      "file": "20260730150000_026_billing_checkout_correlation.sql",
+      "sha256": "e9a9729381e0d35cb282245dfe3d5da8f309a882e52fc837c513863de1b49abb"
+    },
+    {
+      "file": "20260731_027_balance_adjustments.sql",
+      "sha256": "b0016b4790006ec57bfc0ead3b319195ae4d9cd3cc95056e38fbac36690428f7"
+    },
+    {
+      "file": "20260801_028_uni_engine_memory.sql",
+      "sha256": "16c14ea88fbb26fe319ad0466c6d2324e7eeb207cce863cca47635a9d4fbd1a6"
+    },
+    {
+      "file": "20260801_029_profile_preferences_and_avatars.sql",
+      "sha256": "edde45481addeca6fec7457b4b88a04a32596a3402c98b4a1d792e6f1e4ffdaf"
+    },
+    {
+      "file": "20260808003000_030_agenda_item_idempotency.sql",
+      "sha256": "8a799d129dbf4d07e416b4df52386366c58aeccb756939a02731b9492e18e38b"
+    },
+    {
+      "file": "20260810003100_031_agenda_explicit_time.sql",
+      "sha256": "2f9994e80042db8cfd5fdd99714080eaf88368dc8c1e00cc72663cab5739fba4"
+    },
+    {
+      "file": "20260811003200_032_profiles_voice_provider.sql",
+      "sha256": "920f7cd3e1dae6e2149742436cb960cef4c8177051c37ee5efba1a954143f32f"
+    },
+    {
+      "file": "20260811151023_033_agenda_items_authenticated_grants.sql",
+      "sha256": "d1a88788e95b3dd31b23d36b0f6f229d2ad9234b3badaf468caf7bed7b152c9e"
+    },
+    {
+      "file": "20260812150300_034_transactions_account_optional.sql",
+      "sha256": "6837530ac8f88a89964428a41a43536bc8e549c0c2005d7d1c1918d260be9846"
+    },
+    {
+      "file": "20260812160000_035_execute_confirmed_financial_action_account_optional.sql",
+      "sha256": "9f402a3d93237be06eac3f1c96df4b6ede3c5c0833bc36fcd726f9736df96b27"
+    },
+    {
+      "file": "20260812170000_036_workspace_balance_includes_accountless_transactions.sql",
+      "sha256": "31ea42c238f3fb44aca794d4c412897dd4e281d2058cfe9238ed156bb925a6ae"
+    },
+    {
+      "file": "20260812171500_037_adjustment_account_optional.sql",
+      "sha256": "03b79303861864deaa69281519a2d6471fb7adb36ee02aaf3daff5a1c15d636a"
+    },
+    {
+      "file": "20260812180000_038_adjustment_target.sql",
+      "sha256": "e381fdccb977bd3f90a2fea23979abd2870e245b8b598762756ea70039d0d7cd"
+    },
+    {
+      "file": "20260812181500_039_execute_confirmed_financial_action_adjustment_target.sql",
+      "sha256": "ac081a8cb6504488ffad439d4fbfa54f158d7853d2bf56ec596a8b3b3088ee86"
+    },
+    {
+      "file": "20260812190000_040_notifications_dismiss.sql",
+      "sha256": "556e6bef9b097e1ba79cc86f514c930ea970870140552eb5fbd38d160cae80ac"
+    },
+    {
+      "file": "20260819120000_041_notifications_soft_dismiss.sql",
+      "sha256": "c8644d31c4b79c46297952306bf711b9d73b13886197d2668876f344bfec6d66"
+    },
+    {
+      "file": "20260819130000_042_push_subscriptions.sql",
+      "sha256": "03bff0931d38a0340d612cc3cf7de645a96b73e84b2bd77580212b219e9bf2de"
+    },
+    {
+      "file": "20260819140000_043_agenda_push_reminders.sql",
+      "sha256": "3fd7307a7bfbbc893a70c17100f43f60813589ae20334b3d94e4627ab4e2601c"
+    },
+    {
+      "file": "20260820105933_044_uni_updates.sql",
+      "sha256": "963a90a9303a048c29f844e89b245d67f371c6568959ce9774cbf426d507cf4a"
+    },
+    {
+      "file": "20260820110500_045_uni_updates_seed_v1.sql",
+      "sha256": "d8e43a8f186025c2eec3a9b380862ce53f400434389b41010ee1217050635b3a"
+    },
+    {
+      "file": "20260820120000_046_uni_updates_enforce_version_increment.sql",
+      "sha256": "8b3f7336d4164ed1b52b51727777576e99977b41be5584da0b32a524a1e10c6c"
+    },
+    {
+      "file": "20260820121000_047_uni_updates_push_dispatch.sql",
+      "sha256": "1d0e74f7bfe641d387f7b065432e101021f6fb01212afd8a6cff5fbf3d9c4b5f"
+    },
+    {
+      "file": "20261025130000_048_plan_capabilities.sql",
+      "sha256": "f5607e1b154c4bfb91603c8bbe1aa4bdd5785794a0ab2f80b08b6f888ee6db3c"
+    },
+    {
+      "file": "20261025150000_050_billing_operation_attempts.sql",
+      "sha256": "ca74fe0edb76a60002ffdbfc55c089c1e96823dd0cf023502579f21ba5104982"
+    },
+    {
+      "file": "20261025160000_051_billing_webhook_retry.sql",
+      "sha256": "534b078bf8addf42315834331b019ceb1aea93180baad5eb653687dbb4803715"
+    },
+    {
+      "file": "20261025170000_052_billing_lifecycle.sql",
+      "sha256": "f4f014daa882eda13f97adfe96407d3e5c2ae74ae9a306dc3a92a2c2c053b7a8"
+    },
+    {
+      "file": "20261025180000_053_billing_rpc_suspension.sql",
+      "sha256": "4241b95bb84b45546221cad543d723c90ebcb49b6bee2884bdef2040bd102339"
+    },
+    {
+      "file": "20261025190000_054_pix_automatic_authorizations.sql",
+      "sha256": "b3d18a90c484dd3be58874db377038437d92e5ca54e03c2dc22a6ddba45c4762"
+    },
+    {
+      "file": "20261026100000_055_billing_payment_identity.sql",
+      "sha256": "f0f9a03b87c34cf4c68703705c86e1b3c693d22fba199c66c6f542d21762b405"
+    },
+    {
+      "file": "20261026110000_056_billing_provider_termination.sql",
+      "sha256": "ddca8bc43fca5cb3c69882210a309f1a1bdcadd1a753998661ce6aaa836ca3cb"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "cron disabled before migrations",
+      "passed": true
+    },
+    {
+      "name": "fresh isolated database",
+      "passed": true
+    },
+    {
+      "name": "Auth creates isolated owner",
+      "passed": true
+    },
+    {
+      "name": "Auth issues real JWT for owner",
+      "passed": true
+    },
+    {
+      "name": "Auth creates isolated outsider",
+      "passed": true
+    },
+    {
+      "name": "Auth issues real JWT for outsider",
+      "passed": true
+    },
+    {
+      "name": "Auth creates isolated disabled",
+      "passed": true
+    },
+    {
+      "name": "Auth issues real JWT for disabled",
+      "passed": true
+    },
+    {
+      "name": "Auth creates isolated viewer",
+      "passed": true
+    },
+    {
+      "name": "Auth issues real JWT for viewer",
+      "passed": true
+    },
+    {
+      "name": "all source migrations applied without mocks or skipped files",
+      "passed": true
+    },
+    {
+      "name": "preexisting paid subscriber fields preserved exactly",
+      "passed": true
+    },
+    {
+      "name": "paid owner retains account access through PostgREST",
+      "passed": true
+    },
+    {
+      "name": "foreign JWT cannot read paid workspace",
+      "passed": true
+    },
+    {
+      "name": "disabled membership cannot read paid workspace",
+      "passed": true
+    },
+    {
+      "name": "active viewer can read owned workspace",
+      "passed": true
+    },
+    {
+      "name": "viewer write rejected by real RLS",
+      "passed": true
+    },
+    {
+      "name": "Pro reports capability preserved",
+      "passed": true
+    },
+    {
+      "name": "Pro never gains Business capability",
+      "passed": true
+    },
+    {
+      "name": "Business capability preserved",
+      "passed": true
+    },
+    {
+      "name": "paid Business reads clients",
+      "passed": true
+    },
+    {
+      "name": "Pro on business workspace cannot bypass Business RLS",
+      "passed": true
+    },
+    {
+      "name": "subscriber cannot write subscription authorization",
+      "passed": true
+    },
+    {
+      "name": "authenticated JWT cannot execute service-only Pix reservation",
+      "passed": true
+    },
+    {
+      "name": "forged JWT rejected by PostgREST/Auth gateway",
+      "passed": true
+    },
+    {
+      "name": "suspension denies product reads with real JWT",
+      "passed": true
+    },
+    {
+      "name": "suspension retains billing history for regularization",
+      "passed": true
+    },
+    {
+      "name": "suspension does not delete financial data",
+      "passed": true
+    },
+    {
+      "name": "reactivation restores same persisted financial data",
+      "passed": true
+    },
+    {
+      "name": "new pending prevents fallback to older paid subscription",
+      "passed": true
+    },
+    {
+      "name": "Pix reservation has no authenticated or anon execute grants",
+      "passed": true
+    },
+    {
+      "name": "service-role reserves isolated Automatic Pix fixture through PostgREST",
+      "passed": true
+    },
+    {
+      "name": "service-role applies isolated authorization fixture through real RPC",
+      "passed": true
+    },
+    {
+      "name": "ACTIVE consent fixture alone never grants paid access",
+      "passed": true
+    },
+    {
+      "name": "Automatic Pix authorization isolated from foreign JWT",
+      "passed": true
+    },
+    {
+      "name": "Automatic Pix RPC rejects customer mismatch",
+      "passed": true
+    },
+    {
+      "name": "verified payment fixture activates through real transaction",
+      "passed": true
+    },
+    {
+      "name": "paid automatic fixture visible as active to owner JWT",
+      "passed": true
+    },
+    {
+      "name": "concurrent real PostgREST webhook claims accept exactly one worker",
+      "passed": true
+    },
+    {
+      "name": "commercial Automatic Pix offer remains disabled with real Auth JWT",
+      "passed": true
+    },
+    {
+      "name": "disabled commercial flag prevents new authorization",
+      "passed": true
+    },
+    {
+      "name": "Automatic Pix handler rejects cross-workspace real JWT",
+      "passed": true
+    },
+    {
+      "name": "webhook handler rejects forged token before provider or persistence",
+      "passed": true
+    },
+    {
+      "name": "scheduled production dispatch remained disabled throughout",
+      "passed": true
+    },
+    {
+      "name": "no provider or nonlocal HTTP request attempted by validator or handlers",
+      "passed": true
+    }
+  ],
+  "providerCalls": 0,
+  "blockedExternalRequests": 0,
+  "subscriberSnapshotSha256": "e71a7809c1e4a45939832ca2926523b97bb908dab775297b842694e7c462aedd",
+  "result": "passed",
+  "finishedAt": "2026-10-26T04:53:56.295Z",
+  "sandboxPreflight": {
+    "exitCode": 2,
+    "readiness": {
+      "missing": [
+        "ASAAS_API_KEY",
+        "ASAAS_ACCOUNT_ID",
+        "ASAAS_WEBHOOK_TOKEN"
+      ],
+      "sandbox": true,
+      "isolatedSupabase": true,
+      "commercialFlagsDisabled": true,
+      "providerReadReady": false,
+      "e2eReady": false
+    },
+    "result": "skipped_configuration_missing"
+  },
+  "commercialDecision": "pending; no catalog changes",
+  "prStack": [
+    {
+      "number": 123,
+      "branch": "codex/asaas-plan-permissions",
+      "head": "f51b2f0416d28a57af204ca3c7e76fb6a07e5a85"
+    },
+    {
+      "number": 124,
+      "branch": "codex/asaas-plan-security",
+      "head": "63aabc1f9f5ac410bfeb07ce498cfb4d1d753650"
+    },
+    {
+      "number": 125,
+      "branch": "codex/asaas-pix-creation",
+      "head": "eac38f5db4c62470b62de653e72b86a4c16a8142"
+    },
+    {
+      "number": 126,
+      "branch": "codex/asaas-webhook-sync",
+      "head": "2918db2983ec1a6cf5c992c54fa6a57d0b6a85e5"
+    },
+    {
+      "number": 127,
+      "branch": "codex/asaas-access-activation",
+      "head": "4a75a69a79ea859be51b0609bf2791c2a3d92f1d"
+    },
+    {
+      "number": 128,
+      "branch": "codex/asaas-billing-history",
+      "head": "7d2916b227772e4ef0c41c231f0d8252eddfe453"
+    },
+    {
+      "number": 129,
+      "branch": "codex/asaas-cancellation",
+      "head": "9a07a1b160ccda17489d338e7761583d0e20a686"
+    },
+    {
+      "number": 130,
+      "branch": "codex/asaas-delinquency",
+      "head": "d59610f33d05126b3701c237430188e5413c0838"
+    },
+    {
+      "number": 131,
+      "branch": "codex/asaas-pix-automatic",
+      "head": "1a380d54920da2e503de79774e8f753529f73a7b"
+    },
+    {
+      "number": 132,
+      "branch": "codex/asaas-final-review",
+      "head": "d6a3b26bc0226f051a73d387f5bdf264b9177e56"
+    }
+  ]
+}
