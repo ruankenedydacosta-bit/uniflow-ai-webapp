@@ -1,7 +1,13 @@
+import { assessSandboxEnvironment } from './billing-homologation-config.mjs';
 // Read-only preflight. Never reads .env files or prints credentials/resources.
 const key = process.env.ASAAS_API_KEY;
 const base = process.env.ASAAS_BASE_URL;
-if (base && base !== 'https://api-sandbox.asaas.com/v3') {
+const readiness = assessSandboxEnvironment(process.env);
+console.log(JSON.stringify(readiness));
+if (!readiness.commercialFlagsDisabled) {
+  console.error('REFUSED: commercial Pix Automatic flags must remain disabled during this homologation.');
+  process.exitCode = 1;
+} else if (base && base !== 'https://api-sandbox.asaas.com/v3') {
   console.error('REFUSED: ASAAS_BASE_URL must point exactly to the Asaas Sandbox.');
   process.exitCode = 1;
 } else if (!key || !base) {

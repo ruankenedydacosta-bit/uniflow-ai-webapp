@@ -2,6 +2,31 @@
 
 Atualizado em 26/10/2026. Implementação preparada para revisão conjunta; aceite externo ainda pendente. Nenhuma issue foi fechada. Nenhuma migration remota, configuração financeira, credencial, produção ou cobrança real foi alterada. Este relatório não autoriza promoção.
 
+## Homologação executada após o PR #132 — 26/10/2026
+
+**Supabase completo: validado localmente. Asaas Sandbox: bloqueado por credenciais/ingresso.** A decisão comercial da #114 está pendente, conforme confirmação explícita do usuário; os dois cenários foram preparados sem alterar catálogo ou migrar pagantes. Ver [impacto da #114](./ASAAS_114_PLAN_IMPACT.md) e [roteiro de execução](./ASAAS_SANDBOX_HOMOLOGATION_RUNBOOK.md).
+
+- PRs #123–#132 continuam abertos, sem merge e sem conflitos reportados. As dez relações de ancestralidade foram conferidas, incluindo a integração de #128 em #132. Branch nova desta preparação: `codex/asaas-sandbox-homologation`, baseada em #132.
+- Foi iniciado Supabase **nativo real** com CLI oficial 2.122.0, PostgreSQL 17, Auth e PostgREST, em projeto temporário independente. Isso superou a ausência de Docker; o CLI global 2.109.1 não foi alterado.
+- As **55 migrations completas** do repositório foram aplicadas sem omissões, sem schemas simulados de auth/storage e sem editar SQL para fazê-lo passar. As primeiras 47 precederam os fixtures de pagantes; a cadeia 048–056 foi então aplicada sobre esses dados existentes.
+- **45 assertivas reais passaram**: JWTs emitidos por Auth para owner/outsider/disabled/viewer, isolamento entre workspaces, escrita negada a viewer, capacidades Pro/Business, assinatura protegida contra escrita pelo cliente, service-only RPCs, JWT forjado recusado, suspensão/reativação preservando contas, histórico disponível para regularização, latest pending sem recuperar assinatura antiga, RPCs de Pix Automático e disputa concorrente de claim por PostgREST.
+- A preservação foi comparada campo a campo em **quatro assinaturas sintéticas preexistentes à migration 048**, com hash do snapshot. Não houve acesso ou cópia de assinantes reais de produção. Esse ensaio não substitui futura validação de uma cópia anonimizada autorizada de dados legados.
+- Pix Automático foi testado separadamente por RPCs reais e handlers com transporte Auth/PostgREST real: ACTIVE sem pagamento permanece pending, pagamento com cliente errado é recusado e fixture correta ativa. Oferta comercial desativada, criação pública recusada e acesso cruzado recusado. Handlers foram executados pelo adaptador Deno no Node; isso não é um deploy Edge nem prova do banco/provedor Pix.
+- `cron.launch_active_jobs=off` foi comprovado **antes e depois** da cadeia. Duas migrations históricas (043/047) agendam URLs fixas de produção; nenhum job foi executado. O role `postgres` local inicialmente não tinha permissão para esse GUC; a configuração foi concluída como `supabase_admin` somente local e conferida em nova conexão. Nenhuma alteração remota foi feita.
+- O validador/handlers tiveram **zero tentativas de HTTP externo**. Sua política de transporte permite somente loopback. O Asaas não recebeu nenhuma chamada nesta execução.
+- **6.540/6.540 testes principais + 90/90 Analytics passaram**; 11 testes de segurança dos novos runners passaram. ESLint direcionado e diff-check passaram. O lint global continua com falhas preexistentes registradas abaixo.
+
+Evidência sanitizada e hashes das migrations: [ASAAS_HOMOLOGATION_LOCAL_EVIDENCE.json](./ASAAS_HOMOLOGATION_LOCAL_EVIDENCE.json). Runners: `scripts/supabase/prepare-billing-homologation.mjs` e `scripts/supabase/test-billing-full-stack.mjs`.
+
+### Bloqueios que exigem intervenção
+
+1. Configurar **no gerenciador de segredos do ambiente de homologação**, sem enviar valores por chat: `ASAAS_API_KEY`, `ASAAS_ACCOUNT_ID` e `ASAAS_WEBHOOK_TOKEN` da conta Sandbox. O alvo `ASAAS_BASE_URL` foi preparado como Sandbox e as chaves Supabase locais já foram geradas privadamente. Preflight: **SKIPPED, exit 2**, com somente esses três nomes faltando; flags comerciais desligadas. Não houve teste de autenticação no Asaas sem chave.
+2. Disponibilizar acesso ao projeto Supabase **UniFlow de homologação** e uma URL HTTPS restrita para entrega real do webhook, ou definir ingresso equivalente autorizado. O acesso atual de gerenciamento lista apenas um projeto de outro produto; ele não foi usado. A stack local em loopback não é acessível ao provedor e não foi exposta publicamente.
+3. Confirmar elegibilidade e mecanismos de simulação de Pix Automático no Sandbox e comprovar correlação do primeiro pagamento. Sem isso, a oferta permanece desligada e o aceite externo não é dado.
+4. Aguardar decisão comercial da #114 antes de qualquer mudança de catálogo/cotas/preço ou migração de `pro`. O cenário atual pode ser testado tecnicamente, mas não representa aprovação comercial.
+
+Criação de cliente/assinatura/QR **no provedor**, pagamento simulado, entrega de webhook, ativação em menos de 1 minuto, renovação, cancelamento sem novas faturas, inadimplência/reconciliação e conferência com painel seguem **não executados no Asaas Sandbox**. A matriz está preparada no runbook; nenhum item externo foi marcado como aprovado por testes locais. O épico permanece aberto.
+
 ## PRs e ordem de integração
 
 Repositório: https://github.com/ruankenedydacosta-bit/uniflow-ai-webapp
@@ -17,7 +42,8 @@ Repositório: https://github.com/ruankenedydacosta-bit/uniflow-ai-webapp
 | #129 | #59: cancelamento no fim do período pago | #127 |
 | #130 | #60: carência, avisos, suspensão e reativação | #129 |
 | #131 | Pix Automático: consentimento e pagamento separados | #130 |
-| Revisão final | Integra #128 + #131 e corrige achados de segurança | #131; contém merge de #128 |
+| #132 | Integra #128 + #131 e corrige achados de segurança | #131; contém merge de #128 |
+| Homologação técnica | Runners, stack completa, evidências e análise da #114 | #132 |
 
 Não integrar o último PR isoladamente nem tratá-lo como substituto dos anteriores. Depois de cada merge autorizado, atualizar as bases dos descendentes e confirmar o diff restante; o merge commit de #128 é intencional. Preferir revisão na ordem acima. O agente não executou merges na master.
 
@@ -25,7 +51,7 @@ Não integrar o último PR isoladamente nem tratá-lo como substituto dos anteri
 
 | Issue | Implementado e testado localmente | Evidência ainda necessária |
 | --- | --- | --- |
-| #55 | Chave canônica `pro`/Plano Pessoal, capacidades SQL, gates de Business, seleção da assinatura mais recente antes de conferir status; regressões de planos e RLS | Migração com cópia de dados reais de pagantes e stack Supabase/PostgREST completo; auditoria prévia de aliases legados antes de qualquer migração remota |
+| #55 | Chave canônica `pro`/Plano Pessoal, capacidades SQL, gates de Business, seleção da assinatura mais recente antes de conferir status; regressões de planos e RLS | Stack completa aprovada com fixtures preexistentes; falta cópia anonimizada autorizada de dados legados reais e auditoria de aliases antes de migração remota |
 | #56 | CPF/erros, cliente existente, Pix, QR/copia-e-cola, lock contra duplicação, recuperação GET única após resposta perdida | QR real Sandbox; geração em produção depende de autorização futura e não foi executada |
 | #57 | Token, persistência antes do efeito, claim atômico, consulta canônica, retry limitado, sync; vínculos de cliente/workspace/plano/valor conferidos | Entrega/reentrega real de webhook, token incorreto, fila pausada, retry e sync no Sandbox |
 | #58 | Polling limitado, reconciliação no reload de tentativa pendente, período pago preservado e guards concorrentes | Medir pagamento→ativação em menos de 1 minuto no Sandbox e confirmar em duas sessões |
@@ -39,9 +65,9 @@ O épico exige dinheiro real para o aceite final. A proibição atual de cobran�
 
 - **Cliente:** `supabase/functions/_shared/planCatalog.js`, `src/app/access.js`, `src/services/billingTypes.js`, `src/services/workspaceService.js` e SessionContext usam catálogo/capacidades; `personal` e `pessoal` restantes descrevem tipo de workspace/modo da Uni, não autorização de plano. O catálogo de grants de demo não autoriza sessões reais.
 - **Backend/Edge:** `billing-*` usam `BILLING_PLAN_ID` para o produto vendido; preço/ciclo são definidos no backend. Vínculo e confirmação financeira precedem liberação. `uni-mode` e `openai-4` consultam capacidade pelo servidor. `billing-sync`, worker e cancelamento conferem customer + subscription + valor. Não há endpoint dedicado de relatório: os relatórios locais derivam dados financeiros protegidos por membership/RLS; não declarar uma proteção de endpoint inexistente.
-- **RLS:** migration 048 acrescenta políticas restritivas às tabelas de Business; 052/054 acrescentam gate de suspensão/corte temporal ao produto. Membership/permissões de escrita anteriores continuam necessários. Homologar todas as combinações owner/member/inativo/outro workspace com JWTs reais em PostgREST.
-- **SQL/banco:** `plan_capabilities` é a fonte de permissões; a assinatura mais recente é escolhida antes de validar elegibilidade. 053 protege RPCs financeiros e revoga overloads antigos. 054 restringe RPCs de autorização/pagamento ao service role. 056 persiste o cancelamento observado no provedor sem cortar o período pago; 055 impede reatribuição de dono/payment/subscription no espelho, permitindo somente NULL→subscription conhecido. Backfill legado, grants efetivos e aplicação de toda a cadeia de migrations continuam pendentes de ambiente isolado completo.
-- **Regressão:** suíte de acesso, permissões e assinatura, SQL local e comparação diferencial de 1.470 combinações foram executados nas entregas #123/#124. O fixture PostgreSQL não equivale a executar todos os schemas/extensões/policies em Supabase.
+- **RLS:** migration 048 acrescenta políticas restritivas às tabelas de Business; 052/054 acrescentam gate de suspensão/corte temporal ao produto. Membership/permissões de escrita anteriores continuam necessários. Owner/viewer/disabled/outro workspace foram validados com JWTs reais em PostgREST nesta etapa; ampliar a matriz de roles/cópia legada antes da promoção.
+- **SQL/banco:** `plan_capabilities` é a fonte de permissões; a assinatura mais recente é escolhida antes de validar elegibilidade. 053 protege RPCs financeiros e revoga overloads antigos. 054 restringe RPCs de autorização/pagamento ao service role. 056 persiste o cancelamento observado no provedor sem cortar o período pago; 055 impede reatribuição de dono/payment/subscription no espelho, permitindo somente NULL→subscription conhecido. Grants efetivos e cadeia completa foram validados nesta etapa. Backfill/cópia legada real ainda depende de dados anonimizados autorizados.
+- **Regressão:** suíte de acesso, permissões e assinatura, SQL local e comparação diferencial de 1.470 combinações foram executados nas entregas #123/#124. O fixture PostgreSQL inicial não equivale à stack completa; a execução nativa posterior com Auth/PostgREST está documentada acima.
 
 ## Revisão final de segurança
 
@@ -59,7 +85,7 @@ O diff foi revisado localmente; não é uma revisão humana independente. Achado
 
 ## Validação reproduzível
 
-- `npm test`: Analytics 90 testes; suíte principal 6.529 testes. Todos passaram na execução final desta entrega.
+- Execução do PR #132: Analytics 90 testes; suíte principal 6.529 testes, todos passaram. Execução posterior desta homologação: 6.540 + 90 passaram, conforme atualização acima.
 - `node --test src/services/billingFinalReview.test.js`: 34/34 passaram, executando processador de webhook, endpoint de criação, cliente HTTP e funções reais com transporte simulado. Inclui pagamento divergente, correlação Checkout, falha de provedor, recuperação sem POST, URL, reload e validade do QR.
 - `BILLING_TEST_INCLUDE_PIX_AUTOMATIC=1 bash scripts/supabase/test-billing-lifecycle-local.sh`: passou em PostgreSQL 17 descartável. Inclui RLS, grants/RPCs, avisos, cutoff, consentimento separado de pagamento, identidade financeira e corridas reais: um único worker aceito; uma única reserva Pix comum x automático aceita. O harness não aceita DATABASE_URL e desliga seu cluster no fim.
 - `deno check` para webhook, criação, sync, cancelamento, lifecycle e Pix Automático: passou. ESLint dos arquivos JS/JSX alterados, build e `git diff --check`: passaram.
@@ -78,7 +104,7 @@ O diff foi revisado localmente; não é uma revisão humana independente. Achado
 ## Bloqueios e decisões externas
 
 1. Sem credenciais/conta Asaas Sandbox configuradas. Não é possível comprovar liquidação, elegibilidade, webhook, latência nem parada de geração de faturas no provedor.
-2. Docker não está disponível; stack Supabase/PostgREST completo não foi iniciado. SQL usa schema mínimo controlado; faltam migração integral e testes JWT reais.
+2. Bloqueio de Docker **superado nesta etapa** com runtime nativo Supabase. Migração integral e JWT/RLS reais passaram. Permanece pendente apenas o ambiente HTTPS acessível ao provedor e a cópia legada autorizada, sem usar produção.
 3. Pix Automático exige comprovar como o primeiro pagamento referencia a autorização. Descrição exata do contrato, instrução verificada, subscription ID ou vínculo persistido são aceitos; proximidade de cliente/valor/data não é prova. Sem correlação demonstrada, manter oferta desligada. Os schemas públicos não garantem o roundtrip da descrição do QR.
 4. Elegibilidade exige evento assinado da conta esperada ou evidência administrativa oficial homologada. A documentação pública consultada não expõe GET de elegibilidade.
 5. Nova tentativa/novo QR após cancelamento ou recusa total, renovação de Pix Automático recusado, estorno, chargeback e alteração de dia de cobrança não foram automatizados sem regra comercial. Pagamento preservado não equivale a autorização de renovação.
