@@ -111,7 +111,6 @@ export async function getWorkspaceSubscription(workspaceId) {
     .from('subscriptions')
     .select(WORKSPACE_SUBSCRIPTION_SELECT)
     .eq('workspace_id', workspaceId)
-    .in('status', ['trialing', 'active', 'past_due', 'canceled'])
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })
     .limit(1)
@@ -127,8 +126,9 @@ export async function getWorkspaceSubscription(workspaceId) {
 /**
  * Plano: getWorkspaceSubscriptionAny busca o estado mais recente sem filtrar
  * status, para a tela de cobrança distinguir cancelada/expirada de ausência.
- * A sessão usa getWorkspaceSubscription, que também lê cancelada para manter
- * acesso até current_period_ends_at; hasPlanAccess aplica esse limite.
+ * A sessão também escolhe o estado mais recente sem filtrar status antes da
+ * seleção. hasPlanAccess decide o acesso; uma assinatura antiga ativa nunca
+ * deve substituir a assinatura mais recente suspensa/expirada/pendente.
  */
 export async function getWorkspaceSubscriptionAny(workspaceId) {
   if (!supabase) {
