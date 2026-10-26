@@ -35,13 +35,14 @@ const METHODS_AND_FUNCTIONS = [
   ['cancelSubscription', 'billing-cancel-subscription', { workspaceId: 'ws-1' }],
   ['getSubscription', 'billing-get-subscription', { workspaceId: 'ws-1' }],
   ['syncSubscription', 'billing-sync', { workspaceId: 'ws-1' }],
+  ['pixAutomatic', 'billing-pix-automatic', { workspaceId: 'ws-1', action: 'status' }],
   ['healthCheck', 'billing-health', undefined],
 ];
 
-test('billingService expõe exatamente os 8 métodos (6 pedidos + healthCheck + listPayments) -- BLOCO FINAL DO MVP adiciona listPayments (histórico real)', () => {
+test('billingService expõe os métodos de cobrança, histórico e autorização de Pix Automático', () => {
   const service = makeService({ fetchImpl: async () => jsonResponse(200, {}) });
   assert.deepEqual(Object.keys(service).sort(), [
-    'cancelSubscription', 'createCheckout', 'createCustomer', 'createSubscription', 'getSubscription', 'healthCheck', 'listPayments', 'syncSubscription',
+    'cancelSubscription', 'createCheckout', 'createCustomer', 'createSubscription', 'getSubscription', 'healthCheck', 'listPayments', 'pixAutomatic', 'syncSubscription',
   ]);
 });
 

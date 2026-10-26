@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
+import { pixAutomaticMessage } from '../personal-plan/pixAutomaticPresentation.js';
 import { useTransactions } from '../../hooks/index.js';
 import { cancelSubscription, getSubscription } from '../../services/billingService.js';
 import Badge from '../../components/ui/Badge/Badge.jsx';
@@ -164,6 +165,7 @@ function SimplifiedPlanPage() {
             </span>
             <strong>{planState.label}</strong>
           </div>
+          {subscription?.pix_automatic ? <p role="status">{pixAutomaticMessage(subscription.pix_automatic)}</p> : null}
 
           <div className={styles.planTop}>
             <span className={styles.planIcon} aria-hidden="true"><CrownIcon /></span>

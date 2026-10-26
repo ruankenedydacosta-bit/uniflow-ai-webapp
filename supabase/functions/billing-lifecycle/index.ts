@@ -2,6 +2,7 @@ import { createAsaasClient } from '../_shared/asaasClient.ts';
 import { buildBillingPaymentRow } from '../_shared/billingSubscriptionRules.ts';
 import { resolveBillingLifecycle, validateProviderPayments } from '../_shared/billingLifecycle.ts';
 import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
+import { cancelPixAuthorization, findPixAuthorization, pixAutomaticProcessingEnabled, pixRest, recoverPixAuthorization, savePixAuthorization } from '../_shared/pixAutomaticService.ts';
 
 export async function handleBillingLifecycle(request: Request): Promise<Response> {
   const json = (status: number, body: Record<string, unknown>) => new Response(JSON.stringify(body), {
@@ -18,7 +19,7 @@ export async function handleBillingLifecycle(request: Request): Promise<Response
     // A bounded, rotating scan also sees upcoming invoices, so notices do not
     // depend on an overdue webhook or on the customer keeping a page open.
     const params = new URLSearchParams({ select: '*', plan_id: `eq.${BILLING_PLAN_ID}`,
-      status: 'in.(active,trialing,past_due,suspended)', asaas_subscription_id: 'not.is.null',
+      status: 'in.(active,trialing,past_due,suspended)', or: '(asaas_subscription_id.not.is.null,payment_method.eq.pix_automatico)',
       order: 'billing_lifecycle_checked_at.asc.nullsfirst,id.asc', limit: '20' });
     const scan = await fetch(`${url}/rest/v1/subscriptions?${params}`, { headers });
     if (!scan.ok) return json(503, { error: 'LIFECYCLE_SCAN_FAILED' });
@@ -30,11 +31,28 @@ export async function handleBillingLifecycle(request: Request): Promise<Response
     let failed = 0;
     let attempted = 0;
     const started = Date.now();
-    for (const subscription of subscriptions) {
+    for (const scannedSubscription of subscriptions) {
+      let subscription = scannedSubscription;
       if (Date.now() - started > 90_000) break;
       attempted += 1;
       try {
-        const { data: payments } = await client.listSubscriptionPayments(subscription.asaas_subscription_id);
+        if (subscription.payment_method === 'pix_automatico' && !subscription.asaas_subscription_id && pixAutomaticProcessingEnabled()) {
+          const db = { url, key };
+          let authorization = await findPixAuthorization(db, 'subscription_id', subscription.id);
+          if (!authorization) throw new Error('PIX_AUTHORIZATION_UNAVAILABLE');
+          if (!authorization.asaas_authorization_id) authorization = await recoverPixAuthorization(db, authorization);
+          const remote = await client.getPixAutomaticAuthorization(authorization.asaas_authorization_id) as Record<string, unknown>;
+          if (authorization.cancel_requested && remote.status === 'ACTIVE') await cancelPixAuthorization(db, authorization);
+          else {
+            await savePixAuthorization(db, authorization, remote);
+            if (['CANCELLED','EXPIRED','REFUSED'].includes(String(remote.status)) && typeof remote.subscriptionId === 'string') await client.deactivateSubscription(remote.subscriptionId);
+          }
+          const refreshed = await pixRest(db, `subscriptions?${new URLSearchParams({ id: `eq.${subscription.id}`, select: '*', limit: '1' })}`);
+          if (!refreshed?.[0]) throw new Error('SUBSCRIPTION_CHANGED');
+          subscription = refreshed[0];
+        }
+        const payments = subscription.asaas_subscription_id
+          ? (await client.listSubscriptionPayments(subscription.asaas_subscription_id)).data : [];
         if (!validateProviderPayments(payments, subscription.asaas_subscription_id)) {
           throw new Error('PROVIDER_PAYMENT_MISMATCH');
         }

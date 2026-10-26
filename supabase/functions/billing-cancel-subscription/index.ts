@@ -25,6 +25,7 @@ import {
   resolveCancellationPatch,
 } from '../_shared/billingSubscriptionRules.ts';
 import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
+import { cancelPixAuthorization, findPixAuthorization } from '../_shared/pixAutomaticService.ts';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -170,6 +171,23 @@ Deno.serve(async (request) => {
     return jsonResponse(404, errorBody('SUBSCRIPTION_NOT_FOUND', 'Nenhuma assinatura encontrada para este workspace.'), origin);
   }
 
+  if (subscription.payment_method === 'pix_automatico') {
+    try {
+      const db = { url: supabaseUrl, key: serviceRoleKey };
+      const local = await findPixAuthorization(db, 'subscription_id', subscription.id);
+      if (!local || local.workspace_id !== workspaceId) throw new Error('PIX_AUTHORIZATION_UNAVAILABLE');
+      const result = await cancelPixAuthorization(db, local);
+      const updated = await getLocalSubscription({ authorization, supabaseUrl, anonKey, workspaceId });
+      return jsonResponse(200, { workspace_id: workspaceId, status: updated?.status,
+        cancel_at_period_end: updated?.cancel_at_period_end, cancel_effective_at: updated?.cancel_effective_at,
+        cancellation_pending: !['CANCELLED','EXPIRED','REFUSED'].includes(String(result?.status)),
+      }, origin);
+    } catch {
+      return jsonResponse(503, errorBody('RECONCILIATION_REQUIRED', 'Não foi possível confirmar o cancelamento do Pix Automático. Consulte a autorização e tente novamente.'), origin);
+    }
+  }
+
+
   if (TERMINAL_STATUSES.has(subscription.status)) {
     return jsonResponse(409, errorBody('SUBSCRIPTION_ALREADY_CANCELED', 'Esta assinatura ja esta cancelada ou expirada.'), origin);
   }
@@ -185,6 +203,7 @@ Deno.serve(async (request) => {
       already_scheduled: true,
     }, origin);
   }
+
 
   if (!subscription.asaas_subscription_id) {
     return jsonResponse(409, errorBody('SUBSCRIPTION_NOT_LINKED', 'Assinatura sem vinculo com a Asaas -- reconciliar antes de cancelar.'), origin);

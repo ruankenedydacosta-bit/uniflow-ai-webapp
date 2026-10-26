@@ -10,6 +10,12 @@ type Subscription = {
 type Payment = Record<string, unknown>;
 const DAY_MS = 86_400_000;
 
+export function effectiveBillingStatus(subscription: Subscription & { billing_grace_ends_at?: string | null }, now = Date.now()) {
+  if (subscription.cancel_at_period_end && Date.parse(subscription.cancel_effective_at ?? subscription.current_period_ends_at ?? '') <= now) return 'canceled';
+  if (subscription.status === 'past_due' && Date.parse(subscription.billing_grace_ends_at ?? '') <= now) return 'suspended';
+  return subscription.status;
+}
+
 export function validateProviderPayments(payments: Payment[], subscriptionId: string): boolean {
   return payments.every((row) => typeof row.id === 'string' && row.subscription === subscriptionId
     && typeof row.value === 'number' && row.value >= 0

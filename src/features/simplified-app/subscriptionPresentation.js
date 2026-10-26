@@ -30,6 +30,10 @@ export function resolvePlanState(subscription) {
     return { status: 'not_configured', label: 'Nenhuma assinatura ativa', tone: 'neutral' };
   }
   const { internal_status: status, cancel_at_period_end: cancelAtPeriodEnd } = subscription;
+  if (status === 'active' && subscription.payment_method === 'pix_automatico'
+    && subscription.pix_automatic?.status !== 'ACTIVE') {
+    return { status: 'active', label: 'Período pago ativo', tone: 'ok' };
+  }
   if (status === 'active' && cancelAtPeriodEnd) {
     return { status: 'cancel_scheduled', label: 'Cancelamento agendado', tone: 'warn' };
   }
@@ -69,12 +73,14 @@ const RENEWAL_ELIGIBLE_STATUSES = Object.freeze(['active', 'trialing']);
 // nova cobrança. Nunca inventa uma data -- ausência aqui deve virar
 // "Nenhuma próxima cobrança disponível." na tela, nunca um placeholder.
 export function resolveRenewsAt(subscription, planState) {
+  if (subscription?.payment_method === 'pix_automatico' && subscription.pix_automatic?.status !== 'ACTIVE') return null;
   return RENEWAL_ELIGIBLE_STATUSES.includes(planState.status)
     ? subscription?.current_period_ends_at ?? null
     : null;
 }
 
 export function resolveCancelEffectiveAt(subscription, planState) {
+  if (subscription?.payment_method === 'pix_automatico' && subscription.cancel_at_period_end) return subscription.cancel_effective_at ?? null;
   return planState.status === 'cancel_scheduled' ? subscription?.cancel_effective_at ?? null : null;
 }
 

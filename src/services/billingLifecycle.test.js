@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { billingDueTimestamp, resolveBillingLifecycle, validateProviderPayments } from '../../supabase/functions/_shared/billingLifecycle.ts';
+import { billingDueTimestamp, effectiveBillingStatus, resolveBillingLifecycle, validateProviderPayments } from '../../supabase/functions/_shared/billingLifecycle.ts';
 const unpaid = { id: 'pay_new', status: 'OVERDUE', dueDate: '2026-10-01', subscription: 'sub_fixture', value: 29.9 };
 const subscription = { status: 'active', current_period_ends_at: '2026-10-01T00:00:00Z' };
 const resolve = (now, payments = [unpaid], sub = subscription) => resolveBillingLifecycle({ subscription: sub, payments, now });
+
+test('estado público aplica o prazo pago e a carência mesmo antes da execução do worker', () => {
+  assert.equal(effectiveBillingStatus({ status: 'active', cancel_at_period_end: true, cancel_effective_at: '2026-10-01Z' }, Date.parse('2026-10-02Z')), 'canceled');
+  assert.equal(effectiveBillingStatus({ status: 'past_due', billing_grace_ends_at: '2026-10-04T03:00Z' }, Date.parse('2026-10-04T03:00Z')), 'suspended');
+});
 
 test('carência vence à meia-noite brasileira após três dias corridos do vencimento', () => {
   assert.equal(billingDueTimestamp('2026-10-01'), Date.parse('2026-10-01T03:00:00Z'));

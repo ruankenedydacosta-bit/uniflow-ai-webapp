@@ -15,6 +15,9 @@ import {
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
 import { BILLING_PLAN_ID, getPlanLabel } from '../_shared/planCatalog.js';
+import { findPixAuthorization, pixAutomaticProcessingEnabled } from '../_shared/pixAutomaticService.ts';
+import { pixAutomaticView } from '../_shared/pixAutomaticRules.ts';
+import { effectiveBillingStatus } from '../_shared/billingLifecycle.ts';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -218,6 +221,8 @@ Deno.serve(async (request) => {
     }
   }
 
+  const automaticAuthorization = local.payment_method === 'pix_automatico' && pixAutomaticProcessingEnabled()
+    ? await findPixAuthorization({ url: supabaseUrl, key: anonKey, authorization }, 'subscription_id', local.id) : null;
   return jsonResponse(200, {
     workspace_id: workspaceId,
     exists: true,
@@ -225,11 +230,12 @@ Deno.serve(async (request) => {
     plan_name: getPlanLabel(local.plan_id),
     value: 29.9,
     cycle: 'MONTHLY',
-    internal_status: local.status,
+    internal_status: effectiveBillingStatus(local),
     grace_ends_at: local.billing_grace_ends_at,
     provider_status: providerStatus,
     provider_deleted: providerDeleted,
     payment_method: local.payment_method,
+    pix_automatic: automaticAuthorization?.workspace_id === workspaceId ? pixAutomaticView(automaticAuthorization) : null,
     pix,
     current_period_ends_at: local.current_period_ends_at,
     trial_ends_at: local.trial_ends_at,
@@ -238,6 +244,6 @@ Deno.serve(async (request) => {
     // BILLING2: "situacao de regularizacao" -- true quando o status interno
     // indica inadimplencia (mapeamento oficial, ver billingTypes.js no
     // frontend: OVERDUE='past_due', SUSPENDED='suspended').
-    needs_regularization: local.status === 'past_due' || local.status === 'suspended',
+    needs_regularization: ['past_due','suspended'].includes(effectiveBillingStatus(local)),
   }, origin);
 });

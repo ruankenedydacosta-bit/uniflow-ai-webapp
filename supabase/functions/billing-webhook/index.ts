@@ -26,6 +26,7 @@
 //   remains the same if it is the same event.").
 
 import { createAsaasClient } from '../_shared/asaasClient.ts';
+import { processPixAutomaticEvent, processPixAutomaticPayment } from '../_shared/pixAutomaticService.ts';
 import {
   buildBillingPaymentRow,
   PROCESSABLE_CHECKOUT_EVENT_TYPES,
@@ -394,6 +395,8 @@ async function processPaymentEvent({
     }),
   });
 
+  if (await processPixAutomaticPayment({ url: supabaseUrl, key: serviceRoleKey }, payment)) return;
+
   // BLOCO ASAAS FINAL: só toca em `subscriptions` quando o pagamento
   // realmente pertence a uma assinatura recorrente (payment.subscription
   // presente) -- uma cobrança avulsa (ex.: billing-create-test-payment)
@@ -532,6 +535,9 @@ Deno.serve(async (request) => {
         const claimedEventId = claimedEvent.asaas_event_id as string;
         const processPersistedEvent = async () => {
           try {
+            await processPixAutomaticEvent({
+              supabaseUrl, serviceRoleKey, eventType: claimedEventType, payload: claimedPayload,
+            });
             await processPaymentEvent({
               supabaseUrl, serviceRoleKey, eventType: claimedEventType, payload: claimedPayload,
             });

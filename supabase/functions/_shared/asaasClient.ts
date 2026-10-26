@@ -362,6 +362,19 @@ export function createAsaasClient(config: AsaasClientConfig) {
     createPixAutomaticAuthorization(payload: Record<string, unknown>) {
       return request('createPixAutomaticAuthorization', '/pix/automatic/authorizations', { method: 'POST', body: JSON.stringify(payload) });
     },
+    getPixAutomaticAuthorization(id: string) {
+      return request('getPixAutomaticAuthorization', `/pix/automatic/authorizations/${encodeURIComponent(id)}`, { method: 'GET' });
+    },
+    listPixAutomaticAuthorizations(customerId: string, offset = 0) {
+      const params = new URLSearchParams({ customerId, offset: String(offset), limit: '100' });
+      return request('listPixAutomaticAuthorizations', `/pix/automatic/authorizations?${params}`, { method: 'GET' });
+    },
+    cancelPixAutomaticAuthorization(id: string) {
+      return request('cancelPixAutomaticAuthorization', `/pix/automatic/authorizations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    },
+    getPixAutomaticPaymentInstruction(id: string) {
+      return request('getPixAutomaticPaymentInstruction', `/pix/automatic/paymentInstructions/${encodeURIComponent(id)}`, { method: 'GET' });
+    },
     // BLOCO ASAAS 3A: cobranca AVULSA (nao recorrente) -- usada hoje somente
     // pela funcao de homologacao billing-create-test-payment, nunca pelo
     // fluxo comercial (que so cria assinatura recorrente via

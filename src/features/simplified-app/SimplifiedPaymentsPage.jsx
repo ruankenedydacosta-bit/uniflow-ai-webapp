@@ -6,6 +6,8 @@ import { formatCurrency } from '../../utils/formatters.js';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
 import Modal from '../../components/ui/Modal/Modal.jsx';
+import { pixAutomaticMessage } from '../personal-plan/pixAutomaticPresentation.js';
+import PixAutomaticModal from '../personal-plan/PixAutomaticModal.jsx';
 import {
   PERSONAL_PLAN_PRICE_LABEL,
   PERSONAL_PLAN_PRICE_PERIOD,
@@ -72,6 +74,7 @@ function SimplifiedPaymentsPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState(null);
+  const [showAutomaticModal, setShowAutomaticModal] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -238,7 +241,8 @@ function SimplifiedPaymentsPage() {
                     : planState.tone === 'neutral' ? <InfoIcon />
                       : <CheckIcon />}
               </span>
-              <p>{overviewNote}</p>
+              <p>{subscription?.pix_automatic ? pixAutomaticMessage(subscription.pix_automatic) : overviewNote}</p>
+              {subscription?.pix_automatic ? <Button type="button" variant="secondary" onClick={() => setShowAutomaticModal(true)}>Verificar Pix Automático</Button> : null}
             </div>
           </div>
 
@@ -342,6 +346,11 @@ function SimplifiedPaymentsPage() {
         </section>
       ) : null}
 
+      <PixAutomaticModal open={showAutomaticModal} workspaceId={workspaceId} onGoHome={() => navigate(SIMPLIFIED_ROUTES.HOME)}
+        onClose={() => {
+          setShowAutomaticModal(false);
+          getSubscription({ workspaceId }).then(({ data }) => { if (data) setSubscription(data); });
+        }} />
       <Modal
         open={showManageModal}
         onClose={() => setShowManageModal(false)}

@@ -283,7 +283,8 @@ test('CPF/CNPJ é validado por dígitos verificadores e rejeita sequências repe
 test('modal exige CPF/CNPJ com dígitos verificadores válidos antes de habilitar a confirmação -- para Pix e cartão', async () => {
   const page = await source('./PersonalPlanPage.jsx');
   assert.match(page, /function isValidCpfCnpj\(digits\) \{\s*\n\s*return normalizeCpfCnpj\(digits\) !== null;/);
-  assert.match(page, /const canSubmit = isValidCpfCnpj\(digits\) && !isSubmitting;/);
+  assert.match(page, /const canSubmit = isValidCpfCnpj\(digits\) && !isSubmitting/);
+  assert.match(page, /paymentMethod !== 'pix_automatico' \|\| pixAutomaticAvailable/);
   assert.doesNotMatch(page, /paymentMethod === 'credit_card'\s*\n\s*\? !isSubmitting/);
 });
 
