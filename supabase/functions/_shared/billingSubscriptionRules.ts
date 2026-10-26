@@ -139,6 +139,33 @@ function validTimestamp(value: unknown): string | null {
   return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
 }
 
+const CONFIRMED_PAYMENT_STATUSES = new Set(['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH']);
+
+export function hasConfirmedProviderPayment(payments: unknown): boolean {
+  return Array.isArray(payments) && payments.some((payment) => payment && typeof payment === 'object'
+    && CONFIRMED_PAYMENT_STATUSES.has(String((payment as Record<string, unknown>).status ?? '').toUpperCase()));
+}
+
+// Reconstrói o fim do período somente a partir de pagamentos confirmados do
+// provedor. Sem evidência de pagamento ou data válida, retorna null: nunca
+// transforma o horário da solicitação em uma data fictícia de encerramento.
+export function derivePaidPeriodEndFromPayments(payments: unknown): string | null {
+  if (!Array.isArray(payments)) return null;
+  const anchors = payments
+    .filter((payment) => payment && typeof payment === 'object'
+      && CONFIRMED_PAYMENT_STATUSES.has(String((payment as Record<string, unknown>).status ?? '').toUpperCase()))
+    .flatMap((payment) => {
+      const row = payment as Record<string, unknown>;
+      const values = [row.paymentDate, row.clientPaymentDate, row.dueDate]
+        .map(validTimestamp)
+        .filter(Boolean) as string[];
+      return values.length ? [new Date(Math.max(...values.map(Date.parse))).toISOString()] : [];
+    });
+  if (!anchors.length) return null;
+  const latestAnchor = anchors.reduce((latest, value) => Date.parse(value) > Date.parse(latest) ? value : latest);
+  return computePaidPeriodEnd({ paymentDate: latestAnchor, currentPeriodEndsAt: null, now: latestAnchor });
+}
+
 // Fixa um mês de acesso a partir da data do pagamento ou do vencimento da
 // cobrança, nunca da chegada do webhook. O fim já persistido é preservado,
 // então reconciliações repetidas são idempotentes e pagamentos adiantados não
@@ -194,6 +221,7 @@ export function resolveSubscriptionPatchForEvent({
     return {
       status: 'active',
       current_period_ends_at: periodEnd,
+      ...(subscription.cancel_at_period_end ? { cancel_effective_at: periodEnd } : {}),
     };
   }
 
@@ -326,10 +354,28 @@ export function isGracePeriodExpired({
 // permanece até `current_period_ends_at` (decisão comercial congelada desde
 // a migration 024/Bloco Asaas 0).
 export function resolveCancellationPatch({
-  subscription, now,
-}: { subscription: { current_period_ends_at: string | null }; now: string }) {
+  subscription, providerPayments = [],
+}: {
+  subscription: {
+    status?: string;
+    current_period_ends_at: string | null;
+    trial_ends_at?: string | null;
+  };
+  providerPayments?: unknown;
+}) {
+  const localPeriodEnd = validTimestamp(subscription.current_period_ends_at);
+  const providerPeriodEnd = derivePaidPeriodEndFromPayments(providerPayments);
+  const paidPeriodEnd = [localPeriodEnd, providerPeriodEnd]
+    .filter(Boolean)
+    .reduce<string | null>((latest, value) => !latest || Date.parse(value as string) > Date.parse(latest) ? value as string : latest, null);
+  const effectiveAt = subscription.status === 'trialing'
+    ? validTimestamp(subscription.trial_ends_at)
+    : paidPeriodEnd;
+  if (!effectiveAt) return null;
+
   return {
     cancel_at_period_end: true,
-    cancel_effective_at: subscription.current_period_ends_at ?? now,
+    cancel_effective_at: effectiveAt,
+    ...(subscription.status !== 'trialing' && localPeriodEnd !== effectiveAt ? { current_period_ends_at: effectiveAt } : {}),
   };
 }

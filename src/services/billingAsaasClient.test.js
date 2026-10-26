@@ -1,6 +1,27 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { createAsaasClient } from '../../supabase/functions/_shared/asaasClient.ts';
+
+test('consulta real do cliente HTTP percorre as páginas antes de reconciliar a assinatura', async (t) => {
+  const urls = [];
+  t.mock.method(globalThis, 'fetch', async (url) => {
+    urls.push(String(url));
+    return new Response(JSON.stringify(urls.length === 1
+      ? { data: [{ id: 'pay_old', status: 'PENDING' }], hasMore: true }
+      : { data: [{ id: 'pay_paid', status: 'CONFIRMED' }], hasMore: false }), { status: 200 });
+  });
+  const client = createAsaasClient({ apiKey: 'fixture-key', baseUrl: 'https://api-sandbox.asaas.com/v3' });
+  const result = await client.listSubscriptionPayments('sub_fixture');
+  assert.equal(result.data.length, 2);
+  assert.match(urls[1], /offset=1&limit=100$/);
+});
+
+test('página quebrada não é tratada como histórico vazio ou completo', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ hasMore: true, data: [] }), { status: 200 }));
+  const client = createAsaasClient({ apiKey: 'fixture-key', baseUrl: 'https://api-sandbox.asaas.com/v3' });
+  await assert.rejects(client.listSubscriptionPayments('sub_fixture'), /histórico completo/);
+});
 
 // ============================================================================
 // BILLING2 (Bloco Asaas 2) -- cobertura estrutural (source-regex) do cliente
@@ -151,8 +172,12 @@ test('getSubscription chama GET /subscriptions/{id} (docs.asaas.com/reference/re
   assert.match(CLIENT_SOURCE, /getSubscription\(asaasSubscriptionId: string\) \{\s*\n\s*return request\('getSubscription', `\/subscriptions\/\$\{encodeURIComponent\(asaasSubscriptionId\)\}`, \{ method: 'GET' \}\);/);
 });
 
-test('cancelSubscription chama DELETE /subscriptions/{id} -- para renovações futuras, nunca apaga o já pago', () => {
+test('cancelSubscription chama DELETE /subscriptions/{id} para encerrar tentativa inicial ainda não paga', () => {
   assert.match(CLIENT_SOURCE, /cancelSubscription\(asaasSubscriptionId: string\) \{\s*\n\s*return request\('cancelSubscription', `\/subscriptions\/\$\{encodeURIComponent\(asaasSubscriptionId\)\}`, \{ method: 'DELETE' \}\);/);
+});
+
+test('deactivateSubscription chama PUT INACTIVE para parar renovações sem remover cobranças existentes', () => {
+  assert.match(CLIENT_SOURCE, /deactivateSubscription\(asaasSubscriptionId: string\) \{[\s\S]{0,260}method: 'PUT', body: JSON\.stringify\(\{ status: 'INACTIVE' \}\)/);
 });
 
 test('tokenizeCreditCard chama POST /creditCard/tokenize (docs.asaas.com/reference/credit-card-tokenization) -- nunca recebe cartão bruto do nosso backend', () => {

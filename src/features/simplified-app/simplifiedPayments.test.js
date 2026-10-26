@@ -88,7 +88,7 @@ test('usa a fonte única de apresentação de assinatura (subscriptionPresentati
 
 test('busca a assinatura via billingService.getSubscription() -- MESMA fonte de "Seu plano", nunca mais getWorkspaceSubscriptionAny (que podia divergir)', async () => {
   const content = await source('./SimplifiedPaymentsPage.jsx');
-  assert.match(content, /import \{ getSubscription, listPayments \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+  assert.match(content, /import \{ cancelSubscription, getSubscription, listPayments \} from '\.\.\/\.\.\/services\/billingService\.js';/);
   assert.match(content, /getSubscription\(\{ workspaceId \}\)\.then/);
   assert.doesNotMatch(content, /workspaceService/);
 });
@@ -169,20 +169,23 @@ test('gerenciar assinatura abre modal honesto, não simula checkout nem chama As
 });
 
 // ============================================================================
-// Cancelar assinatura -- nunca cancela de verdade, sempre honesto.
+// Cancelar assinatura -- ação real e sincronizada com o backend.
 // ============================================================================
 
-test('cancelar assinatura abre modal de confirmação honesto, nunca muda status real', async () => {
+test('cancelamento usa billingService, confirma a ação e atualiza o estado do backend', async () => {
   const content = await source('./SimplifiedPaymentsPage.jsx');
+  assert.match(content, /import \{ cancelSubscription, getSubscription, listPayments \} from '\.\.\/\.\.\/services\/billingService\.js';/);
   assert.match(content, /setShowCancelModal\(true\)/);
-  assert.match(content, /O cancelamento automático ainda não está disponível nesta versão/);
-  assert.match(content, /Nenhuma alteração foi feita na sua assinatura/);
-  assert.doesNotMatch(content, /updateSubscription|\.update\(\{\s*status: 'canceled'/);
+  assert.match(content, /await cancelSubscription\(\{ workspaceId \}\)/);
+  assert.match(content, /await getSubscription\(\{ workspaceId \}\)/);
+  assert.match(content, /Confirmar cancelamento/);
+  assert.match(content, /Ao confirmar, novas cobranças recorrentes serão interrompidas/);
+  assert.doesNotMatch(content, /O cancelamento automático ainda não está disponível/);
 });
 
-test('zona de cancelamento só aparece quando há assinatura real para cancelar (active/cancel_scheduled/trialing/past_due)', async () => {
+test('zona de cancelamento só aparece quando a assinatura está ativa e ainda não tem cancelamento agendado', async () => {
   const content = await source('./SimplifiedPaymentsPage.jsx');
-  assert.match(content, /const canManageOrCancel = \['active', 'cancel_scheduled', 'trialing', 'past_due'\]\.includes\(planState\.status\);/);
+  assert.match(content, /const canManageOrCancel = planState\.status === 'active';/);
   assert.match(content, /\{canManageOrCancel \? \(/);
 });
 
