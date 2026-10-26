@@ -56,7 +56,6 @@ as $$
       subscription.current_period_ends_at
     from public.subscriptions as subscription
     where subscription.workspace_id = target_workspace_id
-      and subscription.status in ('trialing', 'active', 'past_due', 'canceled')
     order by subscription.created_at desc, subscription.id desc
     limit 1
   )
