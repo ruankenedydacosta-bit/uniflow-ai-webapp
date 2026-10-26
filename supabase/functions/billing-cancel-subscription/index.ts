@@ -3,8 +3,8 @@
 // BILLING2 (Bloco Asaas 2): cancela a RENOVACAO da assinatura -- nunca o
 // acesso ja pago (decisao comercial congelada, Bloco Asaas 0). Separa
 // explicitamente duas coisas:
-// - cancelamento NO PROVEDOR: DELETE /v3/subscriptions/{id} na Asaas, que
-//   para a geracao de NOVAS cobrancas (efeito documentado da propria API);
+// - cancelamento NO PROVEDOR: assinatura paga vira INACTIVE para parar novas
+//   cobranças sem excluir invoices pendentes/vencidas já geradas;
 // - direito INTERNO de acesso ate o fim do ciclo ja pago: nunca delegado a
 //   Asaas -- controlado só por `cancel_at_period_end`/`cancel_effective_at`
 //   no nosso banco (colunas aditivas da migration 024).
@@ -20,6 +20,11 @@ import {
   AsaasTimeoutError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
+import {
+  hasConfirmedProviderPayment,
+  resolveCancellationPatch,
+} from '../_shared/billingSubscriptionRules.ts';
+import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -86,7 +91,10 @@ async function hasWorkspaceMembership({
 async function getLocalSubscription({
   authorization, supabaseUrl, anonKey, workspaceId,
 }: { authorization: string; supabaseUrl: string; anonKey: string; workspaceId: string }) {
-  const params = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}`, limit: '1' });
+  const params = new URLSearchParams({
+    select: '*', workspace_id: `eq.${workspaceId}`, plan_id: `eq.${BILLING_PLAN_ID}`,
+    order: 'created_at.desc,id.desc', limit: '1',
+  });
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     headers: { Authorization: authorization, apikey: anonKey },
   });
@@ -96,9 +104,10 @@ async function getLocalSubscription({
 }
 
 async function patchSubscription({
-  supabaseUrl, serviceRoleKey, subscriptionId, patch,
-}: { supabaseUrl: string; serviceRoleKey: string; subscriptionId: string; patch: Record<string, unknown> }) {
+  supabaseUrl, serviceRoleKey, subscriptionId, patch, expectedUpdatedAt,
+}: { supabaseUrl: string; serviceRoleKey: string; subscriptionId: string; patch: Record<string, unknown>; expectedUpdatedAt: string }) {
   const params = new URLSearchParams({ id: `eq.${subscriptionId}` });
+  params.set('updated_at', `eq.${expectedUpdatedAt}`);
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     method: 'PATCH',
     headers: {
@@ -181,35 +190,81 @@ Deno.serve(async (request) => {
     return jsonResponse(409, errorBody('SUBSCRIPTION_NOT_LINKED', 'Assinatura sem vinculo com a Asaas -- reconciliar antes de cancelar.'), origin);
   }
 
+  const isPending = subscription.status === 'pending';
+  if (!isPending && !['active', 'trialing'].includes(subscription.status)) {
+    return jsonResponse(409, errorBody('SUBSCRIPTION_NOT_CANCELLABLE', 'Esta assinatura precisa ser reconciliada antes de cancelar.'), origin);
+  }
+
   const asaasApiKey = Deno.env.get('ASAAS_API_KEY') ?? '';
   const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
 
   try {
     const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl, allowProduction: true });
-    // Cancela no PROVEDOR primeiro -- so atualizamos o estado local depois
-    // de confirmar que a Asaas parou de gerar novas cobrancas. Se isto
-    // falhar, nada muda localmente (nunca uma inconsistencia escondida).
-    await client.cancelSubscription(subscription.asaas_subscription_id);
+    let patch: Record<string, unknown>;
+    let providerPayments: unknown[] = [];
 
-    // BILLING2: assinatura NUNCA ativada (ainda 'pending', sem evidencia de
-    // pagamento) -- cancelar e definitivo, nao ha periodo pago a preservar.
-    // Assinatura JA ativa/em regularizacao -- cancela so a renovacao,
-    // mantem acesso ate o fim do periodo ja pago.
-    const isPending = subscription.status === 'pending';
-    const patch = isPending
-      ? { status: 'canceled' }
-      : {
-          cancel_at_period_end: true,
-          cancel_effective_at: subscription.current_period_ends_at ?? new Date().toISOString(),
-        };
+    if (subscription.status !== 'trialing') {
+      // Consulta pontual de conciliação antes de cancelar: o webhook de uma
+      // renovação pode estar atrasado mesmo quando a cobrança já foi paga.
+      const paymentList = await client.listSubscriptionPayments(subscription.asaas_subscription_id) as {
+        data?: unknown;
+      } | null;
+      providerPayments = Array.isArray(paymentList?.data) ? paymentList.data : [];
+    }
 
-    const updated = await patchSubscription({ supabaseUrl, serviceRoleKey, subscriptionId: subscription.id, patch });
+    if (isPending) {
+      if (hasConfirmedProviderPayment(providerPayments)) {
+        // O estado local pode estar atrasado em relação a um pagamento já
+        // confirmado. Nesse caso, preservar o período e agendar a renovação
+        // como uma assinatura paga; nunca apagar a evidência financeira.
+        const paidCancellationPatch = resolveCancellationPatch({
+          subscription: { ...subscription, status: 'active' },
+          providerPayments,
+        });
+        if (!paidCancellationPatch) {
+          return jsonResponse(409, errorBody(
+            'BILLING_PERIOD_UNAVAILABLE',
+            'Não foi possível confirmar o período de acesso já pago. A assinatura não foi cancelada; tente novamente após a reconciliação.',
+          ), origin);
+        }
+        await client.deactivateSubscription(subscription.asaas_subscription_id);
+        patch = { status: 'active', ...paidCancellationPatch };
+      } else {
+        // Não apagar uma tentativa enquanto um pagamento pode estar em curso.
+        // O endpoint de cancelamento é da assinatura paga; a tentativa Pix
+        // inicial precisa primeiro ser reconciliada ou expirar.
+        return jsonResponse(409, errorBody(
+          'SUBSCRIPTION_PENDING_RECONCILIATION',
+          'Há uma tentativa de pagamento pendente. Verifique o pagamento antes de cancelar a assinatura.',
+        ), origin);
+      }
+    } else {
+      const cancellationPatch = resolveCancellationPatch({
+        subscription,
+        providerPayments,
+      });
+
+      if (!cancellationPatch) {
+        return jsonResponse(409, errorBody(
+          'BILLING_PERIOD_UNAVAILABLE',
+          'Não foi possível confirmar o período de acesso já pago. A assinatura não foi cancelada; tente novamente após a reconciliação.',
+        ), origin);
+      }
+
+      // INACTIVE interrompe novas cobranças sem remover cobranças pendentes
+      // ou vencidas que já existam. A data final do acesso continua sob
+      // autoridade do nosso banco, baseada no período pago confirmado.
+      await client.deactivateSubscription(subscription.asaas_subscription_id);
+      patch = cancellationPatch;
+    }
+
+    const updated = await patchSubscription({ supabaseUrl, serviceRoleKey, subscriptionId: subscription.id, patch, expectedUpdatedAt: subscription.updated_at });
     if (!updated) {
       // Falha LOCAL apos sucesso EXTERNO -- estado precisa de reconciliacao
       // (billing-sync), nunca escondido do chamador.
       return jsonResponse(502, errorBody(
         'RECONCILIATION_REQUIRED',
-        'Cancelamento confirmado na Asaas, mas nao foi possivel atualizar o estado local. Execute billing-sync para reconciliar.',
+        'A renovação foi interrompida na Asaas, mas o estado local mudou durante a operação. Verifique a assinatura e tente novamente para reconciliar a data final.',
       ), origin);
     }
 

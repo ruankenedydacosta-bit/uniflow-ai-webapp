@@ -6,7 +6,9 @@ import {
   CHECKOUT_MINUTES_TO_EXPIRE,
   computeNextPeriodEnd,
   computePaidPeriodEnd,
+  derivePaidPeriodEndFromPayments,
   GRACE_PERIOD_DAYS,
+  hasConfirmedProviderPayment,
   isGracePeriodExpired,
   isProviderPaymentStatusConsistent,
   mapAsaasPaymentStatus,
@@ -177,6 +179,22 @@ test('resolveSubscriptionPatchForEvent: nova cobrança confirmada estende uma as
   assert.deepEqual(patch, { status: 'active', current_period_ends_at: '2026-05-01T00:00:00.000Z' });
 });
 
+test('resolveSubscriptionPatchForEvent: cobrança confirmada em cancelamento agendado estende também a data efetiva', () => {
+  const patch = resolveSubscriptionPatchForEvent({
+    eventType: 'PAYMENT_CONFIRMED',
+    subscription: {
+      status: 'active',
+      cancel_at_period_end: true,
+      current_period_ends_at: '2026-03-01T00:00:00.000Z',
+    },
+    now: '2026-03-02T12:00:00.000Z',
+    paymentDate: '2026-03-02',
+    dueDate: '2026-03-01',
+  });
+  assert.equal(patch.current_period_ends_at, '2026-04-02T00:00:00.000Z');
+  assert.equal(patch.cancel_effective_at, patch.current_period_ends_at);
+});
+
 test('resolveSubscriptionPatchForEvent: PAYMENT_RECEIVED antes de PAYMENT_CONFIRMED termina active sem segunda transição', () => {
   const receivedFirst = resolveSubscriptionPatchForEvent({
     eventType: 'PAYMENT_RECEIVED',
@@ -263,17 +281,70 @@ test('isGracePeriodExpired: graceDays customizável (não usado em produção, m
 test('resolveCancellationPatch: agenda o cancelamento para o fim do período pago -- nunca corta acesso imediato', () => {
   const patch = resolveCancellationPatch({
     subscription: { current_period_ends_at: '2026-04-01T00:00:00.000Z' },
-    now: '2026-03-15T00:00:00.000Z',
   });
   assert.deepEqual(patch, { cancel_at_period_end: true, cancel_effective_at: '2026-04-01T00:00:00.000Z' });
 });
 
-test('resolveCancellationPatch: sem período vigente conhecido, usa "now" como fallback seguro (nunca null)', () => {
+test('resolveCancellationPatch: sem período vigente ou evidência de pagamento, falha fechado sem inventar uma data', () => {
   const patch = resolveCancellationPatch({
     subscription: { current_period_ends_at: null },
-    now: '2026-03-15T00:00:00.000Z',
   });
-  assert.deepEqual(patch, { cancel_at_period_end: true, cancel_effective_at: '2026-03-15T00:00:00.000Z' });
+  assert.equal(patch, null);
+});
+
+test('resolveCancellationPatch reconstrói período ausente somente com cobrança confirmada do provedor', () => {
+  const patch = resolveCancellationPatch({
+    subscription: { status: 'active', current_period_ends_at: null },
+    providerPayments: [
+      { status: 'PENDING', dueDate: '2026-04-01' },
+      { status: 'CONFIRMED', dueDate: '2026-03-01', paymentDate: '2026-03-02' },
+    ],
+  });
+  assert.equal(patch.cancel_effective_at, '2026-04-02T00:00:00.000Z');
+  assert.equal(patch.current_period_ends_at, '2026-04-02T00:00:00.000Z');
+});
+
+test('derivePaidPeriodEndFromPayments ignora status e datas sem evidência e seleciona o pagamento confirmado mais recente', () => {
+  const end = derivePaidPeriodEndFromPayments([
+    { status: 'OVERDUE', dueDate: '2026-05-10' },
+    { status: 'RECEIVED', dueDate: '2026-03-01', paymentDate: '2026-03-02' },
+    { status: 'CONFIRMED' },
+    null,
+  ]);
+  assert.equal(end, '2026-04-02T00:00:00.000Z');
+});
+
+test('cancelamento concilia renovação já paga mantendo a mesma data no acesso e na mensagem de término', () => {
+  const patch = resolveCancellationPatch({
+    subscription: { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' },
+    providerPayments: [{ status: 'CONFIRMED', paymentDate: '2026-04-01', dueDate: '2026-04-01' }],
+  });
+  assert.equal(patch.current_period_ends_at, '2026-05-01T00:00:00.000Z');
+  assert.equal(patch.cancel_effective_at, patch.current_period_ends_at);
+});
+
+test('hasConfirmedProviderPayment distingue pagamento confirmado de tentativa pendente', () => {
+  assert.equal(hasConfirmedProviderPayment([{ status: 'PENDING' }, { status: 'RECEIVED' }]), true);
+  assert.equal(hasConfirmedProviderPayment([{ status: 'PENDING' }, { status: 'OVERDUE' }]), false);
+  assert.equal(hasConfirmedProviderPayment(null), false);
+});
+
+test('assinatura local pending com Pix já confirmado usa período pago e mantém acesso no cancelamento', () => {
+  const patch = resolveCancellationPatch({
+    subscription: { status: 'active', current_period_ends_at: null },
+    providerPayments: [{ status: 'CONFIRMED', paymentDate: '2026-03-02', dueDate: '2026-03-01' }],
+  });
+  assert.equal(patch.cancel_at_period_end, true);
+  assert.equal(patch.cancel_effective_at, '2026-04-02T00:00:00.000Z');
+});
+
+test('resolveCancellationPatch usa o fim do teste para trialing e falha fechado se a data não existir', () => {
+  assert.equal(resolveCancellationPatch({
+    subscription: { status: 'trialing', current_period_ends_at: null, trial_ends_at: '2026-03-20T00:00:00Z' },
+  }).cancel_effective_at, '2026-03-20T00:00:00.000Z');
+  assert.equal(resolveCancellationPatch({
+    subscription: { status: 'trialing', current_period_ends_at: null, trial_ends_at: null },
+  }), null);
 });
 
 test('buildBillingPaymentRow: monta a linha completa a partir do payload bruto da Asaas', () => {

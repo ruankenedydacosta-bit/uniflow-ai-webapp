@@ -308,15 +308,40 @@ export function createAsaasClient(config: AsaasClientConfig) {
     getSubscription(asaasSubscriptionId: string) {
       return request('getSubscription', `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}`, { method: 'GET' });
     },
-    // Cancela -- interrompe a geracao de NOVAS cobrancas (efeito documentado
-    // da Asaas); o direito de acesso interno ate o fim do periodo ja pago e
-    // responsabilidade do NOSSO backend (cancel_at_period_end), nunca da
-    // Asaas.
+    // Remove uma assinatura sem pagamento confirmado (ex.: Pix inicial
+    // pendente). A Asaas também exclui cobranças pendentes/vencidas ligadas
+    // à recorrência; assinaturas pagas devem usar deactivateSubscription.
     cancelSubscription(asaasSubscriptionId: string) {
       return request('cancelSubscription', `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}`, { method: 'DELETE' });
     },
-    listSubscriptionPayments(asaasSubscriptionId: string) {
-      return request('listSubscriptionPayments', `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}/payments`, { method: 'GET' });
+    // Interrompe a geração de novas cobranças sem remover cobranças já
+    // criadas. Usado para preservar o ciclo financeiro ao cancelar renovação.
+    deactivateSubscription(asaasSubscriptionId: string) {
+      return request(
+        'deactivateSubscription',
+        `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}`,
+        { method: 'PUT', body: JSON.stringify({ status: 'INACTIVE' }) },
+      );
+    },
+    async listSubscriptionPayments(asaasSubscriptionId: string) {
+      const path = `/subscriptions/${encodeURIComponent(asaasSubscriptionId)}/payments`;
+      const data: Record<string, unknown>[] = [];
+      let offset = 0;
+      for (let page = 0; page < 100; page += 1) {
+        const suffix = offset ? `?offset=${offset}&limit=100` : '';
+        const result = await request('listSubscriptionPayments', `${path}${suffix}`, { method: 'GET' }) as {
+          data?: Record<string, unknown>[]; hasMore?: boolean;
+        };
+        if (!Array.isArray(result?.data) || (result.hasMore && result.data.length === 0)) break;
+        data.push(...result.data);
+        if (!result.hasMore) return { data, hasMore: false };
+        offset += result.data.length;
+      }
+      // Never reconcile against an incomplete list (including a broken page).
+      throw new AsaasApiError({
+        message: 'Não foi possível consultar o histórico completo da assinatura. Tente novamente.',
+        operationId: 'listSubscriptionPayments', providerStatus: 502, httpStatus: 502,
+      });
     },
     // CORRECAO FINAL PIX: QR Code oficial de uma cobranca Pix --
     // https://docs.asaas.com/reference/get-qr-code-for-pix-payments --

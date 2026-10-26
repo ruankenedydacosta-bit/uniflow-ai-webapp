@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
-import { getSubscription, listPayments } from '../../services/billingService.js';
+import { cancelSubscription, getSubscription, listPayments } from '../../services/billingService.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import Badge from '../../components/ui/Badge/Badge.jsx';
 import Button from '../../components/ui/Button/Button.jsx';
@@ -70,6 +70,8 @@ function SimplifiedPaymentsPage() {
   const [paymentsError, setPaymentsError] = useState(null);
   const [showManageModal, setShowManageModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
 
   useEffect(() => {
     let isActive = true;
@@ -103,12 +105,47 @@ function SimplifiedPaymentsPage() {
     };
   }, [workspaceId]);
 
+  async function handleConfirmCancel() {
+    if (!workspaceId || isCancelling) return;
+    setIsCancelling(true);
+    setCancelError(null);
+    try {
+      const result = await cancelSubscription({ workspaceId });
+      if (result.error) {
+        setCancelError(result.error.code === 'BILLING_PERIOD_UNAVAILABLE'
+          ? 'Não foi possível confirmar até quando seu acesso está pago. A assinatura não foi cancelada; tente novamente em instantes.'
+          : 'Não foi possível cancelar agora. Tente novamente em instantes.');
+        return;
+      }
+
+      // A resposta do endpoint confirma o estado persistido. A releitura é
+      // preferida; se falhar, usamos somente os campos devolvidos pelo backend.
+      const refreshed = await getSubscription({ workspaceId });
+      if (refreshed.data) {
+        setSubscription(refreshed.data);
+      } else if (result.data) {
+        setSubscription((current) => current ? {
+          ...current,
+          internal_status: result.data.status ?? current.internal_status,
+          cancel_at_period_end: result.data.cancel_at_period_end,
+          cancel_effective_at: result.data.cancel_effective_at,
+        } : current);
+      }
+      setSubscriptionError(null);
+      setShowCancelModal(false);
+    } catch {
+      setCancelError('Não foi possível cancelar agora. Tente novamente em instantes.');
+    } finally {
+      setIsCancelling(false);
+    }
+  }
+
   const planState = resolvePlanState(subscription);
   const renewsAt = resolveRenewsAt(subscription, planState);
   const cancelEffectiveAt = resolveCancelEffectiveAt(subscription, planState);
   const paymentMethodLabel = resolvePaymentMethodLabel(subscription?.payment_method);
 
-  const canManageOrCancel = ['active', 'cancel_scheduled', 'trialing', 'past_due'].includes(planState.status);
+  const canManageOrCancel = planState.status === 'active';
 
   const overviewNote = planState.status === 'active'
     ? 'Sua assinatura está ativa e você tem todos os benefícios liberados.'
@@ -324,20 +361,22 @@ function SimplifiedPaymentsPage() {
 
       <Modal
         open={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
+        onClose={() => { if (!isCancelling) setShowCancelModal(false); }}
         title="Cancelar assinatura?"
-        description="O cancelamento automático ainda não está disponível nesta versão. Nenhuma alteração foi feita na sua assinatura. Fale com a Uni ou nosso suporte para pedir ajuda com o cancelamento."
+        description="Ao confirmar, novas cobranças recorrentes serão interrompidas. Seu acesso continua até o fim do período já pago."
         footer={(
           <>
-            <Button type="button" variant="secondary" onClick={() => setShowCancelModal(false)}>
+            <Button type="button" variant="secondary" onClick={() => setShowCancelModal(false)} disabled={isCancelling}>
               Manter assinatura
             </Button>
-            <Button type="button" variant="danger" onClick={() => { setShowCancelModal(false); navigate(SIMPLIFIED_ROUTES.UNI); }}>
-              Falar com a Uni
+            <Button type="button" variant="danger" loading={isCancelling} onClick={handleConfirmCancel}>
+              Confirmar cancelamento
             </Button>
           </>
         )}
-      />
+      >
+        {cancelError ? <p className={styles.errorBanner} role="alert">{cancelError}</p> : null}
+      </Modal>
     </div>
   );
 }

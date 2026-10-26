@@ -359,17 +359,21 @@ test('billing-get-subscription: busca do QR é best-effort dentro do mesmo try/c
 
 // -- CANCEL ---------------------------------------------------------------------
 
-test('billing-cancel-subscription: agenda o cancelamento (cancel_at_period_end=true), nunca corta acesso imediato quando já pago', () => {
-  const idx = CANCEL_SUBSCRIPTION.indexOf('const isPending = subscription.status');
-  const slice = CANCEL_SUBSCRIPTION.slice(idx, idx + 400);
-  assert.match(slice, /cancel_at_period_end: true,/);
-  assert.match(slice, /cancel_effective_at: subscription\.current_period_ends_at/);
+test('billing-cancel-subscription: assinatura paga usa INACTIVE e preserva o período confirmado, sem apagar pagamentos existentes', () => {
+  assert.match(CANCEL_SUBSCRIPTION, /resolveCancellationPatch\(/);
+  assert.match(CANCEL_SUBSCRIPTION, /await client\.deactivateSubscription\(subscription\.asaas_subscription_id\);/);
+  assert.match(CANCEL_SUBSCRIPTION, /BILLING_PERIOD_UNAVAILABLE/);
+  assert.match(CANCEL_SUBSCRIPTION, /providerPayments,\s*\n\s*\}\);/);
+  assert.match(CANCEL_SUBSCRIPTION, /await client\.listSubscriptionPayments\(subscription\.asaas_subscription_id\)/);
+  assert.match(CANCEL_SUBSCRIPTION, /hasConfirmedProviderPayment\(providerPayments\)/);
+  assert.doesNotMatch(CANCEL_SUBSCRIPTION, /cancel_effective_at: subscription\.current_period_ends_at \?\? new Date\(\)\.toISOString\(\)/);
 });
 
-test('billing-cancel-subscription: assinatura nunca ativada (ainda "pending") é cancelada definitivamente -- não há período pago a preservar', () => {
-  const idx = CANCEL_SUBSCRIPTION.indexOf('const isPending');
-  const slice = CANCEL_SUBSCRIPTION.slice(idx, idx + 300);
-  assert.match(slice, /status: 'canceled' \}/);
+test('billing-cancel-subscription: tentativa pendente exige reconciliação e nunca é apagada durante um possível pagamento', () => {
+  assert.match(CANCEL_SUBSCRIPTION, /SUBSCRIPTION_PENDING_RECONCILIATION/);
+  assert.doesNotMatch(CANCEL_SUBSCRIPTION, /await client\.cancelSubscription/);
+  assert.match(CANCEL_SUBSCRIPTION, /params\.set\('updated_at', `eq\.\$\{expectedUpdatedAt\}`\)/);
+  assert.match(CANCEL_SUBSCRIPTION, /if \(hasConfirmedProviderPayment\(providerPayments\)\) \{[\s\S]*?await client\.deactivateSubscription/);
 });
 
 test('billing-cancel-subscription: repetição é idempotente -- cancelamento já agendado retorna sucesso sem nova chamada à Asaas', () => {
@@ -392,10 +396,22 @@ test('billing-cancel-subscription: guardas para assinatura inexistente, já canc
   assert.match(CANCEL_SUBSCRIPTION, /SUBSCRIPTION_NOT_LINKED/);
 });
 
-test('billing-cancel-subscription: cancela no PROVEDOR primeiro -- falha externa nunca altera o estado local (guarda contra inconsistência escondida)', () => {
-  const idx = CANCEL_SUBSCRIPTION.indexOf('await client.cancelSubscription(subscription.asaas_subscription_id);');
+test('billing-cancel-subscription: seleciona apenas o plano canônico pessoal no workspace, sem cancelar outra assinatura', () => {
+  assert.match(CANCEL_SUBSCRIPTION, /import \{ BILLING_PLAN_ID \} from '\.\.\/_shared\/planCatalog\.js';/);
+  assert.match(CANCEL_SUBSCRIPTION, /plan_id: `eq\.\$\{BILLING_PLAN_ID\}`/);
+});
+
+test('billing-cancel-subscription: modifica o provedor primeiro -- falha externa nunca altera o estado local', () => {
+  const idx = CANCEL_SUBSCRIPTION.indexOf('await client.deactivateSubscription(subscription.asaas_subscription_id);');
   const patchIdx = CANCEL_SUBSCRIPTION.indexOf('const updated = await patchSubscription');
   assert.ok(idx > -1 && patchIdx > -1 && idx < patchIdx);
+});
+
+test('billing-cancel-subscription: período ausente é resolvido antes da chamada de inativação; sem pagamento confirmado não há mutação no provedor', () => {
+  const missingPeriodIdx = CANCEL_SUBSCRIPTION.indexOf('const cancellationPatch = resolveCancellationPatch({');
+  const unavailableIdx = CANCEL_SUBSCRIPTION.indexOf("'BILLING_PERIOD_UNAVAILABLE'", missingPeriodIdx);
+  const deactivateIdx = CANCEL_SUBSCRIPTION.indexOf('await client.deactivateSubscription', unavailableIdx);
+  assert.ok(missingPeriodIdx > -1 && unavailableIdx > missingPeriodIdx && deactivateIdx > unavailableIdx);
 });
 
 test('billing-cancel-subscription: falha LOCAL após sucesso EXTERNO retorna RECONCILIATION_REQUIRED -- nunca escondida', () => {
