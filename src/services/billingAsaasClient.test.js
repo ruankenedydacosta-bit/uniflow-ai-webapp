@@ -174,6 +174,10 @@ test('createPayment chama POST /payments (docs.asaas.com/reference/create-new-pa
   assert.match(CLIENT_SOURCE, /createPayment\(payload: Record<string, unknown>\) \{\s*\n\s*return request\('createPayment', '\/payments', \{ method: 'POST'/);
 });
 
+test('getPayment reconsulta GET /payments/{id} para validar o evento antes de atualizar o estado local', () => {
+  assert.match(CLIENT_SOURCE, /getPayment\(asaasPaymentId: string\) \{\s*\n\s*return request\('getPayment', `\/payments\/\$\{encodeURIComponent\(asaasPaymentId\)\}`, \{ method: 'GET' \}\);/);
+});
+
 test('confirmSandboxPayment chama POST /sandbox/payment/{id}/confirm (docs.asaas.com/reference/confirm-payment) -- endpoint SANDBOX-ONLY documentado', () => {
   assert.match(
     CLIENT_SOURCE,

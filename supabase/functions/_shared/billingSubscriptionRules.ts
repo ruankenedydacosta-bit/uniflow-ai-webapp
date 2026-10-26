@@ -77,6 +77,20 @@ export function mapAsaasPaymentStatus(eventType: string, rawPaymentStatus: unkno
   return ASAAS_PAYMENT_STATUS_MAP[key] ?? 'pending';
 }
 
+// O corpo do webhook inicia a consulta, mas não é autoridade para mudar
+// acesso. Eventos com efeito comercial só são aceitos quando o status atual
+// reconsultado na API da Asaas confirma o mesmo estado.
+export function isProviderPaymentStatusConsistent(eventType: string, providerStatus: unknown): boolean {
+  const status = typeof providerStatus === 'string' ? providerStatus.toUpperCase() : '';
+  if (ACTIVATING_EVENT_TYPES.has(eventType)) {
+    return status === 'CONFIRMED' || status === 'RECEIVED' || status === 'RECEIVED_IN_CASH';
+  }
+  if (eventType === 'PAYMENT_OVERDUE') return status === 'OVERDUE';
+  if (REFUND_EVENT_TYPES.has(eventType)) return status === 'REFUNDED' || status === 'PARTIALLY_REFUNDED';
+  if (eventType === 'PAYMENT_DELETED') return status === 'DELETED' || status === 'CANCELED';
+  return true;
+}
+
 export function buildBillingPaymentRow({
   workspaceId, asaasPaymentId, asaasSubscriptionId, eventType, payment,
 }: {

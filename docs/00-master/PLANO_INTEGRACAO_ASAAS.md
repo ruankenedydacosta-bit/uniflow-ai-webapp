@@ -236,6 +236,12 @@ Reaproveitar `plans`/`subscriptions` como estão — não duplicar. Adicionar ap
 
 **Tabela `subscription_plans` da lista de referência da tarefa: não recomendada como tabela nova.** `plans` já cumpre esse papel — criar `subscription_plans` seria duplicar. Se o "Plano Pessoal" precisar virar uma 5ª linha real (ver decisão pendente acima), o caminho é alterar o `check constraint` de `plans`, não criar uma tabela paralela.
 
+#### Recuperação de eventos do webhook
+
+A migration `051_billing_webhook_retry.sql` adiciona tentativas, lease de processamento e próximo horário de retry ao `webhook_events`. A Edge Function `billing-webhook-retry` redispatcha até 20 eventos vencidos por execução; a RPC `claim_billing_webhook_event` faz a concessão atômica e bloqueia tentativas concorrentes. Cada evento tem até 8 tentativas, com backoff exponencial de 30 segundos até 30 minutos. Itens que atingirem o limite continuam persistidos para reconciliação manual.
+
+**Configuração operacional ainda pendente:** agendar `billing-webhook-retry` no Supabase Cron (por exemplo, a cada minuto) e guardar o URL do projeto e a chave secreta em Supabase Vault. A chamada deve enviar essa chave no header `apikey`; a função valida a chave no próprio handler. Não colocar valores de segredo no repositório. Antes de habilitar no projeto, validar uma execução de retry em Sandbox, conferir `cron.job_run_details` e observar que evento com lease ativo não é reclamado duas vezes.
+
 ### Edge Functions propostas (nomes de referência, adaptar ao padrão do projeto)
 
 Seguindo o padrão de nomeação já usado (`uni-voice-tts`, `uni-chat-llm`):

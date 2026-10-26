@@ -344,6 +344,11 @@ export function createAsaasClient(config: AsaasClientConfig) {
     createPayment(payload: Record<string, unknown>) {
       return request('createPayment', '/payments', { method: 'POST', body: JSON.stringify(payload) });
     },
+    // Reconsulta uma cobrança a partir do identificador do webhook antes de
+    // aplicar qualquer transição local de assinatura.
+    getPayment(asaasPaymentId: string) {
+      return request('getPayment', `/payments/${encodeURIComponent(asaasPaymentId)}`, { method: 'GET' });
+    },
     // BLOCO ASAAS 3A: SANDBOX-ONLY -- confirma o pagamento de uma cobranca de
     // teste sem nenhum dado real de cartao/Pix. Nunca deve ser chamado com
     // ASAAS_BASE_URL de producao (a Asaas rejeita fora do Sandbox; mesmo
