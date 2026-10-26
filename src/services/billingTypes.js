@@ -1,3 +1,5 @@
+import { BILLING_PLAN_ID } from '../../supabase/functions/_shared/planCatalog.js';
+
 // BILLING1 (Bloco Asaas 1): constantes de status/forma de pagamento da
 // integracao Asaas. Nenhuma chamada externa acontece aqui -- so os valores
 // congelados em docs/00-master/PLANO_INTEGRACAO_ASAAS.md (Bloco Asaas 0).
@@ -45,4 +47,4 @@ export const OVERDUE_TOLERANCE_DAYS = 3;
 // Identificador oficial do unico plano vendido no MVP (Bloco Asaas 0):
 // "Plano Pessoal" reaproveita a linha 'pro' ja existente em `plans` -- nunca
 // cria uma linha nova nem altera o check constraint de `plans.id`.
-export const BILLING_PLAN_ID = 'pro';
+export { BILLING_PLAN_ID };

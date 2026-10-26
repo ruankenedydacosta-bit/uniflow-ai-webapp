@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PLANS, USER_MODES, WORKSPACE_TYPES } from '../../app/access.js';
 import { useAccess } from '../../app/AccessContext';
+import { getDemoPlanCapabilities } from '../../../supabase/functions/_shared/planCatalog.js';
 import styles from './AccessModeSwitcher.module.css';
 
 const USER_MODE_OPTIONS = [
@@ -113,6 +114,7 @@ function AccessModeSwitcher() {
     setAccess((currentAccess) => ({
       ...currentAccess,
       plan: nextPlan,
+      capabilities: getDemoPlanCapabilities(nextPlan),
       ...normalizedAccess,
     }));
   }

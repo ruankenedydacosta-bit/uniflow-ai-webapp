@@ -31,12 +31,13 @@ import {
   AsaasValidationError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
+import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // BILLING2: unico plano vendido no MVP e "Plano Pessoal" = plan_id 'pro'
 // (decisao comercial congelada, Bloco Asaas 0) -- nunca aceitar outro valor.
-const ALLOWED_PLAN_IDS = new Set(['pro']);
+const ALLOWED_PLAN_IDS = new Set<string>([BILLING_PLAN_ID]);
 const ALLOWED_PAYMENT_METHODS = new Set(['pix', 'pix_automatico', 'credit_card']);
 // BILLING2: parametros comerciais definidos SOMENTE pelo backend -- nunca
 // aceitos do frontend, mesmo que enviados.
@@ -153,7 +154,7 @@ async function persistSubscription({
     },
     body: JSON.stringify({
       workspace_id: workspaceId,
-      plan_id: 'pro',
+      plan_id: BILLING_PLAN_ID,
       // BILLING2: NUNCA 'active' aqui -- so o webhook (Bloco Asaas 3) ativa,
       // apos evidencia real de pagamento confirmado (regra oficial:
       // ativacao so apos confirmacao segura do pagamento).
@@ -264,7 +265,7 @@ Deno.serve(async (request) => {
 
   const planId = payload?.plan_id;
   if (typeof planId !== 'string' || !ALLOWED_PLAN_IDS.has(planId)) {
-    return jsonResponse(400, errorBody('INVALID_PLAN', 'plan_id invalido -- so "pro" (Plano Pessoal) e vendido no MVP.'), origin);
+    return jsonResponse(400, errorBody('INVALID_PLAN', `plan_id invalido -- so "${BILLING_PLAN_ID}" (Plano Pessoal) e vendido no MVP.`), origin);
   }
 
   const paymentMethod = payload?.payment_method;
