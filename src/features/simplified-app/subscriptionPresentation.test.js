@@ -118,8 +118,11 @@ test('formatDate: valor ausente/inválido vira string vazia -- nunca "Invalid Da
   assert.equal(formatDate(null), '');
   assert.equal(formatDate(undefined), '');
   assert.equal(formatDate(''), '');
+  assert.equal(formatDate('not-a-date'), '');
+  assert.equal(formatDate('2026-02-30'), '');
 });
 
 test('formatDate: formata no padrão brasileiro dd/mm/aaaa', () => {
   assert.equal(formatDate('2026-08-30T12:58:41.581+00:00'), '30/08/2026');
+  assert.equal(formatDate('2026-04-01'), '01/04/2026', 'datas sem horário preservam o dia civil de Asaas independentemente do fuso');
 });
