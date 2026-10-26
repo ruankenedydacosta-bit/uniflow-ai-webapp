@@ -19,6 +19,7 @@ import {
 } from './personalPlanConfig.js';
 import { markPersonalPlanCompleted } from './personalPlanStorage.js';
 import { resolvePersonalWorkspaceId } from './resolvePersonalWorkspaceId.js';
+import { normalizeCpfCnpj } from '../../utils/cpfCnpj.js';
 import { isValidPersistedPixAttempt, isValidPixPayload } from './personalPlanPixAttempt.js';
 import {
   createGa4CheckoutEventLifecycle,
@@ -198,8 +199,8 @@ function normalizeCpfCnpjInput(value) {
   return value.replace(/\D/g, '').slice(0, 14);
 }
 
-function isValidCpfCnpjFormat(digits) {
-  return digits.length === 11 || digits.length === 14;
+function isValidCpfCnpj(digits) {
+  return normalizeCpfCnpj(digits) !== null;
 }
 
 // BLOCO ASAAS CHECKOUT: Pix continua o fluxo direto (createSubscription).
@@ -222,7 +223,7 @@ function SubscriptionMethodModal({
   // hospedada da Asaas (Asaas rejeita customerData parcial sem endereço,
   // que a UniFlow nunca coletou -- por isso o Checkout nunca envia
   // customerData, só o `customer` já identificado).
-  const canSubmit = isValidCpfCnpjFormat(digits) && !isSubmitting;
+  const canSubmit = isValidCpfCnpj(digits) && !isSubmitting;
 
   return (
     <Modal
@@ -328,7 +329,7 @@ function SubscriptionMethodModal({
             value={cpfCnpj}
             onChange={(event) => setCpfCnpj(event.target.value)}
             placeholder="000.000.000-00"
-            aria-invalid={cpfCnpj.length > 0 && !isValidCpfCnpjFormat(digits)}
+            aria-invalid={cpfCnpj.length > 0 && !isValidCpfCnpj(digits)}
           />
         </span>
         <small className={styles.cpfHelper}>

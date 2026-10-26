@@ -83,13 +83,14 @@ test('billing-create-customer: cliente EXISTENTE no nosso banco é reutilizado -
 test('billing-create-customer: camada extra de idempotência via externalReference na própria Asaas (cobre falha parcial anterior)', () => {
   assert.match(CREATE_CUSTOMER, /findCustomersByExternalReference\(workspaceId\)/);
   const idx = CREATE_CUSTOMER.indexOf('const found = await client.findCustomersByExternalReference');
-  const slice = CREATE_CUSTOMER.slice(idx, idx + 400);
+  const slice = CREATE_CUSTOMER.slice(idx, idx + 900);
   assert.match(slice, /if \(!asaasCustomerId\) \{\s*\n\s*const created = await client\.createCustomer/);
 });
 
-test('billing-create-customer: cpf_cnpj é OBRIGATÓRIO e nunca inventado -- ausente/inválido retorna MISSING_REQUIRED_FIELD determinístico', () => {
+test('billing-create-customer: cpf_cnpj é OBRIGATÓRIO e validado por dígitos verificadores -- nunca inventado', () => {
   assert.match(CREATE_CUSTOMER, /normalizeCpfCnpj\(payload\?\.cpf_cnpj\)/);
-  assert.match(CREATE_CUSTOMER, /MISSING_REQUIRED_FIELD.*cpf_cnpj/);
+  assert.match(CREATE_CUSTOMER, /INVALID_CPF_CNPJ/);
+  assert.match(CREATE_CUSTOMER, /import \{ normalizeCpfCnpj \} from '\.\.\/\.\.\/\.\.\/src\/utils\/cpfCnpj\.js';/);
   assert.doesNotMatch(CREATE_CUSTOMER, /cpfCnpj:\s*['"]\d{11,14}['"]/, 'nenhum CPF/CNPJ hardcoded/inventado');
 });
 
@@ -232,6 +233,17 @@ test('billing-create-subscription: criação duplicada é impedida -- qualquer a
   const idx = CREATE_SUBSCRIPTION.indexOf('if (existingSubscription) {');
   const slice = CREATE_SUBSCRIPTION.slice(idx, idx + 1150);
   assert.match(slice, /reused: true,/);
+});
+
+test('Asaas create customer/subscription serializam POSTs com tentativa persistida antes do provedor e não liberam ambiguidades', () => {
+  for (const sourceCode of [CREATE_CUSTOMER, CREATE_SUBSCRIPTION]) {
+    assert.match(sourceCode, /billing_operation_attempts/);
+    assert.match(sourceCode, /status: 'processing'/);
+    assert.match(sourceCode, /OPERATION_IN_PROGRESS/);
+    assert.match(sourceCode, /status: 'uncertain'/);
+  }
+  assert.doesNotMatch(CREATE_CUSTOMER, /allowProduction:\s*true/);
+  assert.doesNotMatch(CREATE_SUBSCRIPTION, /allowProduction:\s*true/);
 });
 
 test('billing-create-subscription: cartão nunca aceita dados brutos -- exige credit_card_token (tokenização prévia)', () => {

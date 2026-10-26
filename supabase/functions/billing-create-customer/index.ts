@@ -26,6 +26,7 @@ import {
   AsaasValidationError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
+import { normalizeCpfCnpj } from '../../../src/utils/cpfCnpj.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -138,14 +139,77 @@ async function persistBillingCustomer({
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
 
-// BILLING2: valida CPF/CNPJ apenas por FORMATO (11 ou 14 digitos apos
-// remover pontuacao) -- nunca o algoritmo completo de digito verificador
-// (fora do escopo deste bloco; a Asaas tambem valida do lado dela).
-function normalizeCpfCnpj(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
-  const digits = value.replace(/\D/g, '');
-  if (digits.length !== 11 && digits.length !== 14) return null;
-  return digits;
+async function findOperationAttempt({
+  supabaseUrl, serviceRoleKey, operation, workspaceId, planId = null,
+}: {
+  supabaseUrl: string; serviceRoleKey: string; operation: string; workspaceId: string; planId?: string | null;
+}) {
+  const params = new URLSearchParams({
+    select: '*', operation: `eq.${operation}`, workspace_id: `eq.${workspaceId}`, limit: '1',
+    plan_id: planId ? `eq.${planId}` : 'is.null',
+  });
+  const response = await fetch(`${supabaseUrl}/rest/v1/billing_operation_attempts?${params}`, {
+    headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
+  });
+  if (!response.ok) return null;
+  const rows = await response.json();
+  return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+}
+
+async function claimOperationAttempt({
+  supabaseUrl, serviceRoleKey, operation, workspaceId, planId = null,
+}: {
+  supabaseUrl: string; serviceRoleKey: string; operation: string; workspaceId: string; planId?: string | null;
+}) {
+  const body = { operation, workspace_id: workspaceId, plan_id: planId, status: 'processing' };
+  const inserted = await fetch(`${supabaseUrl}/rest/v1/billing_operation_attempts`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey,
+      'Content-Type': 'application/json', Prefer: 'return=representation',
+    },
+    body: JSON.stringify(body),
+  });
+  if (inserted.ok) {
+    const rows = await inserted.json();
+    return { claimed: true, attempt: Array.isArray(rows) ? rows[0] : null };
+  }
+  if (inserted.status !== 409) return { claimed: false, attempt: null, unavailable: true };
+
+  const existing = await findOperationAttempt({ supabaseUrl, serviceRoleKey, operation, workspaceId, planId });
+  if (existing?.status !== 'failed') return { claimed: false, attempt: existing };
+  const params = new URLSearchParams({
+    operation: `eq.${operation}`, workspace_id: `eq.${workspaceId}`, status: 'eq.failed',
+    plan_id: planId ? `eq.${planId}` : 'is.null',
+  });
+  const retried = await fetch(`${supabaseUrl}/rest/v1/billing_operation_attempts?${params}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey,
+      'Content-Type': 'application/json', Prefer: 'return=representation',
+    },
+    body: JSON.stringify({ status: 'processing', provider_resource_id: null }),
+  });
+  const rows = retried.ok ? await retried.json() : [];
+  if (Array.isArray(rows) && rows.length === 1) return { claimed: true, attempt: rows[0] };
+  return { claimed: false, attempt: await findOperationAttempt({ supabaseUrl, serviceRoleKey, operation, workspaceId, planId }) };
+}
+
+async function updateOperationAttempt({
+  supabaseUrl, serviceRoleKey, attemptId, status, providerResourceId,
+}: {
+  supabaseUrl: string; serviceRoleKey: string; attemptId: string; status: string; providerResourceId?: string | null;
+}) {
+  const params = new URLSearchParams({ id: `eq.${attemptId}` });
+  const response = await fetch(`${supabaseUrl}/rest/v1/billing_operation_attempts?${params}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey,
+      'Content-Type': 'application/json', Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ status, provider_resource_id: providerResourceId ?? null }),
+  });
+  return response.ok;
 }
 
 Deno.serve(async (request) => {
@@ -209,7 +273,7 @@ Deno.serve(async (request) => {
 
   const cpfCnpj = normalizeCpfCnpj(payload?.cpf_cnpj);
   if (!cpfCnpj) {
-    return jsonResponse(422, errorBody('MISSING_REQUIRED_FIELD', 'cpf_cnpj ausente ou invalido (11 ou 14 digitos).'), origin);
+    return jsonResponse(422, errorBody('INVALID_CPF_CNPJ', 'Informe um CPF ou CNPJ válido, com dígitos verificadores corretos.'), origin);
   }
 
   const profile = await getProfile({ authorization, supabaseUrl, anonKey, userId: user.id });
@@ -227,11 +291,23 @@ Deno.serve(async (request) => {
   const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
 
   try {
-    const client = createAsaasClient({
-  apiKey: asaasApiKey,
-  baseUrl: asaasBaseUrl,
-  allowProduction: true,
-});
+    const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl });
+
+    const claim = await claimOperationAttempt({ supabaseUrl, serviceRoleKey, operation: 'customer', workspaceId });
+    if (claim.unavailable) {
+      return jsonResponse(503, errorBody('OPERATION_GUARD_UNAVAILABLE', 'Não foi possível reservar a criação do cliente. Tente novamente.'), origin);
+    }
+    const attempt = claim.attempt as { id?: string; status?: string; provider_resource_id?: string } | null;
+    if (!claim.claimed && attempt?.status === 'completed' && attempt.provider_resource_id) {
+      const persisted = await persistBillingCustomer({
+        supabaseUrl, serviceRoleKey, workspaceId, asaasCustomerId: attempt.provider_resource_id, cpfCnpj, email: email ?? null,
+      });
+      if (persisted) return jsonResponse(200, { workspace_id: workspaceId, asaas_customer_id: attempt.provider_resource_id, reused: true }, origin);
+      return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Cliente existente na Asaas, mas não foi possível concluir o vínculo local.'), origin);
+    }
+    if (!claim.claimed) {
+      return jsonResponse(409, errorBody('OPERATION_IN_PROGRESS', 'Já existe uma tentativa de criação do cliente. Aguarde a reconciliação antes de tentar novamente.'), origin);
+    }
 
     // Idempotencia (camada 2): busca por externalReference do lado da
     // Asaas, cobrindo o caso em que uma tentativa anterior criou o cliente
@@ -239,6 +315,10 @@ Deno.serve(async (request) => {
     const found = await client.findCustomersByExternalReference(workspaceId);
     const foundList = Array.isArray((found as { data?: unknown[] })?.data) ? (found as { data: Array<{ id: string }> }).data : [];
     let asaasCustomerId = foundList.length === 1 ? foundList[0].id : null;
+    if (foundList.length > 1) {
+      await updateOperationAttempt({ supabaseUrl, serviceRoleKey, attemptId: attempt?.id ?? '', status: 'uncertain' });
+      return jsonResponse(409, errorBody('CUSTOMER_RECONCILIATION_REQUIRED', 'Foram encontrados vários clientes vinculados. A criação foi bloqueada para reconciliação.'), origin);
+    }
 
     if (!asaasCustomerId) {
       const created = await client.createCustomer({
@@ -262,8 +342,12 @@ Deno.serve(async (request) => {
     }
 
     if (!asaasCustomerId) {
+      await updateOperationAttempt({ supabaseUrl, serviceRoleKey, attemptId: attempt?.id ?? '', status: 'uncertain' });
       return jsonResponse(502, errorBody('ASAAS_API_ERROR', 'A Asaas nao retornou um identificador de cliente valido.'), origin);
     }
+
+    const completed = await updateOperationAttempt({ supabaseUrl, serviceRoleKey, attemptId: attempt?.id ?? '', status: 'completed', providerResourceId: asaasCustomerId });
+    if (!completed) return jsonResponse(502, errorBody('PERSISTENCE_FAILED', 'Cliente criado na Asaas, mas a tentativa não foi registrada. Aguarde reconciliação antes de tentar novamente.'), origin);
 
     const persisted = await persistBillingCustomer({
       supabaseUrl, serviceRoleKey, workspaceId, asaasCustomerId, cpfCnpj, email: email ?? null,
@@ -281,6 +365,14 @@ Deno.serve(async (request) => {
       reused: false,
     }, origin);
   } catch (error) {
+    if (
+      error instanceof AsaasConfigurationError
+      || error instanceof AsaasValidationError
+      || (error instanceof AsaasApiError && error.providerStatus === 400)
+    ) {
+      const attempt = await findOperationAttempt({ supabaseUrl, serviceRoleKey, operation: 'customer', workspaceId });
+      if (attempt?.id) await updateOperationAttempt({ supabaseUrl, serviceRoleKey, attemptId: attempt.id, status: 'failed' });
+    }
     if (error instanceof AsaasConfigurationError) {
       return jsonResponse(503, errorBody('SERVICE_UNAVAILABLE', 'Integracao com a Asaas nao esta configurada.'), origin);
     }

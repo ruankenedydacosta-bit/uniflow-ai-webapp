@@ -6,6 +6,7 @@ import {
   PERSONAL_PLAN_ID,
   PERSONAL_PLAN_ROUTE,
 } from './personalPlanConfig.js';
+import { normalizeCpfCnpj } from '../../utils/cpfCnpj.js';
 
 const source = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 
@@ -271,10 +272,18 @@ test('erro ao criar o checkout de cartão preserva o modal aberto com mensagem h
   assert.match(slice, /return;/);
 });
 
-test('modal exige CPF/CNPJ em formato válido (11 ou 14 dígitos) antes de habilitar a confirmação -- para os DOIS métodos (Pix e cartão)', async () => {
+test('CPF/CNPJ é validado por dígitos verificadores e rejeita sequências repetidas', () => {
+  assert.equal(normalizeCpfCnpj('529.982.247-25'), '52998224725');
+  assert.equal(normalizeCpfCnpj('11.222.333/0001-81'), '11222333000181');
+  assert.equal(normalizeCpfCnpj('529.982.247-24'), null);
+  assert.equal(normalizeCpfCnpj('111.111.111-11'), null);
+  assert.equal(normalizeCpfCnpj('11.222.333/0001-80'), null);
+});
+
+test('modal exige CPF/CNPJ com dígitos verificadores válidos antes de habilitar a confirmação -- para Pix e cartão', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /function isValidCpfCnpjFormat\(digits\) \{\s*\n\s*return digits\.length === 11 \|\| digits\.length === 14;/);
-  assert.match(page, /const canSubmit = isValidCpfCnpjFormat\(digits\) && !isSubmitting;/);
+  assert.match(page, /function isValidCpfCnpj\(digits\) \{\s*\n\s*return normalizeCpfCnpj\(digits\) !== null;/);
+  assert.match(page, /const canSubmit = isValidCpfCnpj\(digits\) && !isSubmitting;/);
   assert.doesNotMatch(page, /paymentMethod === 'credit_card'\s*\n\s*\? !isSubmitting/);
 });
 
