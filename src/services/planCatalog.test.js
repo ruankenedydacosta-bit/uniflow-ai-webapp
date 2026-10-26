@@ -91,7 +91,9 @@ test('clientes e Edge Functions importam o mesmo ID de plano', async () => {
   assert.match(getSubscription, /from '\.\.\/_shared\/planCatalog\.js'/);
   assert.match(access, /from '\.\.\/\.\.\/supabase\/functions\/_shared\/planCatalog\.js'/);
   assert.match(workspaceService, /plan:plans!subscriptions_plan_id_fkey\(plan_capabilities\(capability_id\)\)/);
-  assert.match(workspaceService, /'canceled'/);
+  assert.doesNotMatch(workspaceService, /\.in\('status'/);
+  const selection = migration.split('with latest_subscription as (')[1].split('limit 1')[0];
+  assert.doesNotMatch(selection, /subscription\.status\s+in/);
   assert.doesNotMatch(createSubscription, /plan_id:\s*'pro'/);
   assert.doesNotMatch(createCheckout, /plan_id:\s*'pro'/);
   for (const source of [billingTypes, access, navigation, createSubscription, createCheckout, getSubscription]) {
