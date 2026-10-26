@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getSubscription } from '../../services/billingService.js';
+import { getSubscription, syncSubscription } from '../../services/billingService.js';
 
 // BLOCO FINAL DO MVP: consulta billing-get-subscription em intervalo
 // controlado enquanto a assinatura está em um estado NÃO terminal
@@ -10,6 +10,7 @@ import { getSubscription } from '../../services/billingService.js';
 // que já sabia.
 const DEFAULT_INTERVAL_MS = 4000;
 const DEFAULT_MAX_ATTEMPTS = 30; // ~2 minutos no intervalo padrão
+const RECONCILE_EVERY_ATTEMPTS = 3; // consulta a Asaas no máximo a cada 12s durante o polling
 const TERMINAL_STATUSES = new Set(['active', 'canceled', 'expired']);
 
 export function useSubscriptionStatusPolling({
@@ -38,6 +39,13 @@ export function useSubscriptionStatusPolling({
     async function tick() {
       setIsPolling(true);
       attemptsRef.current += 1;
+      if (attemptsRef.current % RECONCILE_EVERY_ATTEMPTS === 0) {
+        // billing-get-subscription é leitura local; este fallback consulta a
+        // Asaas e sincroniza o pagamento quando o webhook atrasar ou falhar.
+        // O polling é limitado, e a reconciliação roda a cada terceiro tick.
+        await syncSubscription({ workspaceId });
+        if (cancelled) return;
+      }
       const { data, error: fetchError } = await getSubscription({ workspaceId });
       if (cancelled) return;
 

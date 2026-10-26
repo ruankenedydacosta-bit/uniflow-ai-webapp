@@ -406,7 +406,8 @@ test('billing-cancel-subscription: falha LOCAL após sucesso EXTERNO retorna REC
 
 test('billing-sync: NUNCA ativa uma assinatura só pelo status externo -- exige pagamento CONFIRMED/RECEIVED como evidência', () => {
   assert.match(SYNC, /PAYMENT_EVIDENCE_STATUSES = new Set\(\['CONFIRMED', 'RECEIVED'\]\);/);
-  assert.match(SYNC, /hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES\.has\(subscription\.status\)/);
+  assert.match(SYNC, /const shouldActivate = hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES\.has\(subscription\.status\);/);
+  assert.match(SYNC, /if \(shouldActivate \|\| \(subscription\.status === 'active' && shouldExtendPeriod\)\)/);
 });
 
 test('billing-sync: mapeamento provider_status/internal_status preserva o valor original da Asaas (nunca perdido)', () => {
@@ -424,6 +425,14 @@ test('billing-sync: falha de sincronização nunca corrompe o estado local -- re
 test('billing-sync: pagamentos são reconciliados via upsert idempotente (on_conflict=asaas_payment_id) -- nunca duplica cobrança', () => {
   assert.match(SYNC, /on_conflict=asaas_payment_id/);
   assert.match(SYNC, /resolution=merge-duplicates/);
+  assert.match(SYNC, /computePaidPeriodEnd\(\{/);
+  assert.match(SYNC, /expectedCurrentPeriodEndsAt/);
+});
+
+test('billing-webhook: datas do pagamento confirmado determinam o período e a guarda concorrente evita regressão', () => {
+  assert.match(WEBHOOK, /paymentDate: typeof payment\.paymentDate === 'string'/);
+  assert.match(WEBHOOK, /dueDate: typeof payment\.dueDate === 'string'/);
+  assert.match(WEBHOOK, /expectedCurrentPeriodEndsAt:/);
 });
 
 test('billing-sync: campos ainda não existentes na migration 024 (provider_status/last_synced_at/sync_error em subscriptions) são documentados, nunca escritos silenciosamente', () => {
@@ -433,18 +442,19 @@ test('billing-sync: campos ainda não existentes na migration 024 (provider_stat
 });
 
 test('BLOCO ASAAS FINAL: billing-sync suspende past_due após grace period expirado (isGracePeriodExpired), usando updated_at como início da carência -- nunca uma coluna nova', () => {
-  assert.match(SYNC, /import \{ isGracePeriodExpired \} from '\.\.\/_shared\/billingSubscriptionRules\.ts';/);
+  assert.match(SYNC, /import \{ computePaidPeriodEnd, isGracePeriodExpired \} from '\.\.\/_shared\/billingSubscriptionRules\.ts';/);
   const idx = SYNC.indexOf("subscription.status === 'past_due'");
   assert.ok(idx > -1);
   const slice = SYNC.slice(idx, idx + 900);
   assert.match(slice, /isGracePeriodExpired\(\{ pastDueSince: subscription\.updated_at, now: new Date\(\)\.toISOString\(\) \}\)/);
-  assert.match(slice, /status: 'suspended',/);
+  assert.match(slice, /patch: \{ status: 'suspended'/);
 });
 
 test('BLOCO ASAAS FINAL: suspensão por carência nunca compete com reativação -- só é avaliada quando NÃO há pagamento confirmado novo', () => {
-  const ifIdx = SYNC.indexOf('if (hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES.has(subscription.status)) {');
+  const activateIdx = SYNC.indexOf('const shouldActivate = hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES.has(subscription.status);');
+  const ifIdx = SYNC.indexOf('if (shouldActivate || (subscription.status === \'active\' && shouldExtendPeriod)) {', activateIdx);
   const elseIdx = SYNC.indexOf("} else if (subscription.status === 'past_due') {", ifIdx);
-  assert.ok(ifIdx > -1 && elseIdx > ifIdx, 'a checagem de carência deveria ser um "else if", nunca um bloco independente que pudesse rodar junto com a reativação');
+  assert.ok(activateIdx > -1 && ifIdx > activateIdx && elseIdx > ifIdx, 'a checagem de carência deveria ser o else-if da ativação ou extensão de período');
 });
 
 test('billing-sync: não confia em status enviado pelo chamador -- workspace_id é o único campo lido do payload', () => {

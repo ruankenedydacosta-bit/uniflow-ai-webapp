@@ -123,6 +123,43 @@ export function computeNextPeriodEnd(now: string): string {
   return date.toISOString();
 }
 
+function addOneUtcMonthClamped(value: string): string {
+  const date = new Date(value);
+  const day = date.getUTCDate();
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth() + 1);
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+  date.setUTCDate(Math.min(day, lastDay));
+  return date.toISOString();
+}
+
+function validTimestamp(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
+}
+
+// Fixa um mês de acesso a partir da data do pagamento ou do vencimento da
+// cobrança, nunca da chegada do webhook. O fim já persistido é preservado,
+// então reconciliações repetidas são idempotentes e pagamentos adiantados não
+// encurtam um período que já estava pago.
+export function computePaidPeriodEnd({
+  paymentDate, dueDate, currentPeriodEndsAt, now,
+}: {
+  paymentDate?: string | null;
+  dueDate?: string | null;
+  currentPeriodEndsAt?: string | null;
+  now: string;
+}): string {
+  const anchorValues = [validTimestamp(paymentDate), validTimestamp(dueDate)].filter(Boolean) as string[];
+  const anchor = anchorValues.length
+    ? new Date(Math.max(...anchorValues.map((value) => Date.parse(value)))).toISOString()
+    : validTimestamp(now) ?? new Date().toISOString();
+  const candidate = addOneUtcMonthClamped(anchor);
+  const current = validTimestamp(currentPeriodEndsAt);
+  return current && Date.parse(current) > Date.parse(candidate) ? current : candidate;
+}
+
 // Decide o patch a aplicar em `subscriptions` para um evento de pagamento --
 // retorna null quando o evento não deve alterar o status da assinatura
 // (ex.: PAYMENT_CREATED/UPDATED/DELETED, análise de risco, chargeback --
@@ -130,29 +167,33 @@ export function computeNextPeriodEnd(now: string): string {
 // automaticamente por chargeback nesta fase, já que a disputa ainda pode
 // ser revertida; apenas o pagamento em billing_payments registra o estado).
 export function resolveSubscriptionPatchForEvent({
-  eventType, subscription, now,
+  eventType, subscription, now, paymentDate, dueDate,
 }: {
   eventType: string;
-  subscription: { status: string; cancel_at_period_end?: boolean } | null;
+  subscription: { status: string; cancel_at_period_end?: boolean; current_period_ends_at?: string | null } | null;
   now: string;
+  paymentDate?: string | null;
+  dueDate?: string | null;
 }): Record<string, unknown> | null {
   if (!subscription) return null;
   if (TERMINAL_SUBSCRIPTION_STATUSES.has(subscription.status)) return null;
 
   if (ACTIVATING_EVENT_TYPES.has(eventType)) {
-    // PAYMENT_CONFIRMED e PAYMENT_RECEIVED podem representar a mesma
-    // cobrança. Depois da primeira transição para active, o segundo evento
-    // é um no-op comercial: não estende novamente o período vigente.
-    if (subscription.status === 'active') return null;
+    const periodEnd = computePaidPeriodEnd({
+      paymentDate, dueDate, currentPeriodEndsAt: subscription.current_period_ends_at, now,
+    });
+    if (
+      subscription.status === 'active'
+      && subscription.current_period_ends_at
+      && Date.parse(periodEnd) <= Date.parse(subscription.current_period_ends_at)
+    ) return null;
 
-    // BLOCO ASAAS FINAL: reativa automaticamente de pending/past_due/suspended
-    // -- nunca de canceled/expired (guarda acima). current_period_ends_at
-    // sempre avança a partir de AGORA (não do período anterior) -- evidência
-    // de pagamento é o único gatilho de ativação, nunca o status externo
-    // sozinho (mesma regra já aplicada em billing-sync).
+    // Reativa a partir de evidência de pagamento e também avança o período
+    // de assinaturas já ativas quando chega uma nova cobrança confirmada.
+    // As datas do provedor tornam a repetição do mesmo evento idempotente.
     return {
       status: 'active',
-      current_period_ends_at: computeNextPeriodEnd(now),
+      current_period_ends_at: periodEnd,
     };
   }
 

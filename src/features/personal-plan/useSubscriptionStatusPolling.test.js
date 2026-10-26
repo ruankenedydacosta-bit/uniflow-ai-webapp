@@ -10,8 +10,10 @@ import test from 'node:test';
 
 const SOURCE = readFileSync(new URL('./useSubscriptionStatusPolling.js', import.meta.url), 'utf8');
 
-test('só chama getSubscription (billing-get-subscription) -- nunca outra função de billing', () => {
-  assert.match(SOURCE, /import \{ getSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+test('consulta getSubscription e reconcilia periodicamente -- nunca cria ou cancela assinatura no polling', () => {
+  assert.match(SOURCE, /import \{ getSubscription, syncSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+  assert.match(SOURCE, /attemptsRef\.current % RECONCILE_EVERY_ATTEMPTS === 0/);
+  assert.match(SOURCE, /await syncSubscription\(\{ workspaceId \}\);[\s\S]*?await getSubscription\(\{ workspaceId \}\)/);
   assert.doesNotMatch(SOURCE, /createSubscription|createCustomer|cancelSubscription/);
 });
 

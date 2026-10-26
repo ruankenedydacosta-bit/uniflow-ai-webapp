@@ -40,6 +40,13 @@ test('polling fica ativo até resolvedState ser definido (active/canceled/expire
   assert.match(page, /active: !resolvedState,/);
 });
 
+test('polling reconcilia via billing-sync a cada terceiro tick antes de reler o estado local', async () => {
+  const hook = await source('./useSubscriptionStatusPolling.js');
+  assert.match(hook, /import \{ getSubscription, syncSubscription \} from '\.\.\/\.\.\/services\/billingService\.js';/);
+  assert.match(hook, /attemptsRef\.current % RECONCILE_EVERY_ATTEMPTS === 0/);
+  assert.match(hook, /await syncSubscription\(\{ workspaceId \}\);[\s\S]*?await getSubscription\(\{ workspaceId \}\)/);
+});
+
 test('detecta "active" e marca personalPlanCompleted automaticamente -- mesma lógica de PersonalPlanPage.jsx', async () => {
   const page = await source('./PersonalPlanReturnPage.jsx');
   const idx = page.indexOf("if (currentStatus === 'active')");
