@@ -191,7 +191,7 @@ Deno.serve(async (request) => {
   }
 
   const isPending = subscription.status === 'pending';
-  if (!isPending && !['active', 'trialing'].includes(subscription.status)) {
+  if (!isPending && !['active', 'trialing', 'past_due', 'suspended'].includes(subscription.status)) {
     return jsonResponse(409, errorBody('SUBSCRIPTION_NOT_CANCELLABLE', 'Esta assinatura precisa ser reconciliada antes de cancelar.'), origin);
   }
 

@@ -1,76 +1,44 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getSubscription } from '../../services/billingService.js';
 import { resolvePersonalPlanAccess } from './resolvePersonalPlanAccess.js';
 
-// GUARD FIX: consulta real de acesso ao Plano Pessoal -- App.jsx usava
-// isPersonalPlanCompleted() (localStorage) como autorização, o que liberava
-// /app/home para quem nunca teve assinatura real (ou cujo status mudou
-// depois: cancelou, ficou pending/past_due/suspended). Este hook é a única
-// fonte de verdade para o guard de rota: 'loading' enquanto a consulta real
-// acontece (nunca decide com dado velho/local), 'active' só com
-// internal_status === 'active' confirmado agora, 'blocked' em qualquer
-// outro caso -- inclusive erro de rede (nunca libera acesso sem
-// confirmação real).
-//
-// `revalidateWhenLeavingRoute`: booleano que representa "estou numa rota do
-// fluxo do Plano Pessoal agora" (ex.: isPersonalPlanRoute em App.jsx). Ao
-// virar de true->false (usuário acabou de sair de /plano-pessoal ou da
-// rota de retorno do Checkout), o hook refaz a consulta -- é o único
-// momento em que o status pode legitimamente ter mudado dentro da mesma
-// sessão (assinatura criada/confirmada).
+// Revalidate persisted backend state without repeatedly querying Asaas. The
+// lifecycle worker/webhook owns financial reconciliation and access changes.
 export function usePersonalPlanAccessGuard({ workspaceId, enabled, revalidateWhenLeavingRoute = false }) {
-  const [status, setStatus] = useState('idle'); // idle | loading | active | blocked
-  const wasOnPersonalPlanRoute = useRef(revalidateWhenLeavingRoute);
-
+  const [status, setStatus] = useState('idle');
+  const [statusWorkspaceId, setStatusWorkspaceId] = useState(null);
   useEffect(() => {
-    // Deferido via setTimeout(0) -- mesmo padrão já usado em
-    // PersonalPlanPage.jsx/useTransactions.js -- evita disparar setState
-    // sincrono direto no corpo do efeito.
     let cancelled = false;
-    const timeoutId = window.setTimeout(() => {
-      if (cancelled) return;
-      if (!enabled) {
-        setStatus('idle');
-        return;
+    let inFlight = false;
+    async function refresh(initial = false) {
+      if (cancelled || inFlight) return;
+      if (!enabled) { setStatus('idle'); return; }
+      if (!workspaceId) { setStatusWorkspaceId(null); setStatus('blocked'); return; }
+      inFlight = true;
+      if (initial) { setStatusWorkspaceId(workspaceId); setStatus('loading'); }
+      try {
+        const { data, error } = await getSubscription({ workspaceId, localOnly: true });
+        if (!cancelled) setStatus(error ? 'blocked' : resolvePersonalPlanAccess(data));
+      } catch {
+        if (!cancelled) setStatus('blocked');
+      } finally {
+        inFlight = false;
       }
-      if (!workspaceId) {
-        // GUARD FIX: `enabled` já garante que a sessão e os workspaces
-        // terminaram de carregar (App.jsx só habilita este guard depois de
-        // !isSessionLoading) -- então workspaceId nulo aqui é uma resposta
-        // definitiva ("este usuário ainda não tem workspace pessoal", ex.:
-        // conta nova que nunca passou pelo Plano Pessoal), nunca uma corrida
-        // de carregamento. 'blocked' manda para apresentação/Plano Pessoal
-        // normalmente -- 'loading' aqui travaria o guard para sempre (nunca
-        // resolveria 'active', já que não há workspace para consultar).
-        setStatus('blocked');
-        return;
-      }
-      setStatus('loading');
-      getSubscription({ workspaceId }).then(({ data, error }) => {
-        if (cancelled) return;
-        // Falha de rede/backend: nunca libera acesso sem confirmação real.
-        setStatus(error ? 'blocked' : resolvePersonalPlanAccess(data));
-      });
-    }, 0);
-    return () => { cancelled = true; window.clearTimeout(timeoutId); };
-  }, [workspaceId, enabled]);
-
-  useEffect(() => {
-    const was = wasOnPersonalPlanRoute.current;
-    wasOnPersonalPlanRoute.current = revalidateWhenLeavingRoute;
-    if (!enabled || !workspaceId || !(was && !revalidateWhenLeavingRoute)) return undefined;
-
-    let cancelled = false;
-    const timeoutId = window.setTimeout(() => {
-      if (cancelled) return;
-      setStatus('loading');
-      getSubscription({ workspaceId }).then(({ data, error }) => {
-        if (cancelled) return;
-        setStatus(error ? 'blocked' : resolvePersonalPlanAccess(data));
-      });
-    }, 0);
-    return () => { cancelled = true; window.clearTimeout(timeoutId); };
-  }, [revalidateWhenLeavingRoute, enabled, workspaceId]);
-
-  return { status };
+    }
+    const timeoutId = window.setTimeout(() => refresh(true), 0);
+    const onFocus = () => { if (!document.hidden) refresh(); };
+    const intervalId = window.setInterval(onFocus, 30_000);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [workspaceId, enabled, revalidateWhenLeavingRoute]);
+  // A previous workspace's result cannot authorize the first render after a
+  // workspace change, even before the deferred effect has started.
+  return { status: !enabled || statusWorkspaceId !== workspaceId ? 'idle' : status };
 }

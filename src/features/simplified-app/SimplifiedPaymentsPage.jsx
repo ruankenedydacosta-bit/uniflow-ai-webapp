@@ -145,7 +145,7 @@ function SimplifiedPaymentsPage() {
   const cancelEffectiveAt = resolveCancelEffectiveAt(subscription, planState);
   const paymentMethodLabel = resolvePaymentMethodLabel(subscription?.payment_method);
 
-  const canManageOrCancel = planState.status === 'active';
+  const canManageOrCancel = ['active', 'trialing', 'past_due', 'suspended'].includes(planState.status);
 
   const overviewNote = planState.status === 'active'
     ? 'Sua assinatura está ativa e você tem todos os benefícios liberados.'

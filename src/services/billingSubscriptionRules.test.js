@@ -172,7 +172,7 @@ test('resolveSubscriptionPatchForEvent: nova cobrança confirmada estende uma as
   const patch = resolveSubscriptionPatchForEvent({
     eventType: 'PAYMENT_RECEIVED',
     subscription: { status: 'active', current_period_ends_at: '2026-04-01T00:00:00.000Z' },
-    now: '2026-05-20T00:00:00.000Z',
+    now: '2026-04-20T00:00:00.000Z',
     paymentDate: '2026-03-30T12:00:00.000Z',
     dueDate: '2026-04-01',
   });
@@ -230,9 +230,10 @@ test('resolveSubscriptionPatchForEvent: PAYMENT_OVERDUE só marca past_due quand
   const patch = resolveSubscriptionPatchForEvent({
     eventType: 'PAYMENT_OVERDUE',
     subscription: { status: 'active' },
-    now: '2026-03-01T00:00:00.000Z',
+    now: '2026-03-01T12:00:00.000Z',
+    dueDate: '2026-03-01',
   });
-  assert.deepEqual(patch, { status: 'past_due' });
+  assert.deepEqual(patch, { status: 'past_due', billing_grace_ends_at: '2026-03-04T03:00:00.000Z' });
 });
 
 for (const status of ['pending', 'past_due', 'suspended']) {

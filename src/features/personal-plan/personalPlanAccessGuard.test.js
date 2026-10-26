@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { resolvePersonalPlanAccess } from './resolvePersonalPlanAccess.js';
+import { isBillingRegularizationRoute, resolvePersonalPlanAccess } from './resolvePersonalPlanAccess.js';
+
+test('regularização permite cobrança, recibos e suporte; não libera ferramentas do produto', () => {
+  for (const path of ['/app/conta', '/app/conta/pagamentos', '/app/conta/pagamentos/historico', '/app/conta/suporte']) {
+    assert.equal(isBillingRegularizationRoute(path), true, path);
+  }
+  for (const path of ['/app/home', '/app/uni', '/app/agenda', '/app/registros']) assert.equal(isBillingRegularizationRoute(path), false, path);
+});
+
+test('cancelamento cumprido bloqueia mesmo antes da próxima rodada do worker', () => {
+  assert.equal(resolvePersonalPlanAccess({ exists: true, internal_status: 'active', cancel_at_period_end: true, cancel_effective_at: '2026-10-01Z' }, Date.parse('2026-10-02Z')), 'blocked');
+});
 
 const HOOK_SOURCE = readFileSync(new URL('./usePersonalPlanAccessGuard.js', import.meta.url), 'utf8');
 
@@ -34,12 +45,12 @@ test('assinatura expired é bloqueada', () => {
   assert.equal(resolvePersonalPlanAccess({ exists: true, internal_status: 'expired' }), 'blocked');
 });
 
-test('assinatura past_due é bloqueada -- inadimplência nunca mantém acesso liberado', () => {
-  assert.equal(resolvePersonalPlanAccess({ exists: true, internal_status: 'past_due' }), 'blocked');
+test('past_due mantém o acesso somente durante a carência confirmada pelo backend', () => {
+  assert.equal(resolvePersonalPlanAccess({ exists: true, internal_status: 'past_due', grace_ends_at: '2099-01-01Z' }), 'active');
+  assert.equal(resolvePersonalPlanAccess({ exists: true, internal_status: 'past_due', grace_ends_at: '2000-01-01Z' }), 'regularization');
 });
-
-test('assinatura suspended é bloqueada', () => {
-  assert.equal(resolvePersonalPlanAccess({ exists: true, internal_status: 'suspended' }), 'blocked');
+test('suspended permite apenas regularização', () => {
+  assert.equal(resolvePersonalPlanAccess({ exists: true, internal_status: 'suspended' }), 'regularization');
 });
 
 test('subscriptionData nulo/ausente (falha ao consultar) é bloqueado -- nunca libera sem confirmação real', () => {
@@ -73,33 +84,10 @@ test('hook só chama getSubscription (billing-get-subscription) -- nunca outra f
   assert.doesNotMatch(HOOK_SOURCE, /createSubscription|createCustomer|cancelSubscription|createCheckout/);
 });
 
-test('hook desabilitado (enabled=false) volta para "idle" -- nunca mantém um status antigo como autorização', () => {
-  assert.match(HOOK_SOURCE, /if \(!enabled\) \{\s*\n\s*setStatus\('idle'\);/);
-});
-
-// GUARD FIX (troca de dispositivo/sessão restaurada): `enabled` já garante
-// que a sessão e os workspaces terminaram de carregar -- workspaceId nulo
-// aqui é uma resposta definitiva ("sem workspace pessoal ainda"), nunca uma
-// corrida. 'blocked' é a única opção segura: 'loading' aqui travaria o
-// guard para sempre (nunca haveria workspace para consultar e resolver
-// 'active'), impedindo até usuários sem assinatura de sair do loading
-// eterno para ver a apresentação/Plano Pessoal.
-test('hook sem workspaceId (mas já habilitado) nunca fica em loading eterno -- resolve "blocked" imediatamente', () => {
-  assert.match(HOOK_SOURCE, /if \(!workspaceId\) \{[\s\S]{0,700}setStatus\('blocked'\);/);
-  assert.doesNotMatch(HOOK_SOURCE, /if \(!workspaceId\) \{[\s\S]{0,120}setStatus\('loading'\);/);
-});
-
-test('hook usa resolvePersonalPlanAccess (regra centralizada e testada isoladamente) -- nunca uma condição solta dentro do hook', () => {
-  assert.match(HOOK_SOURCE, /import \{ resolvePersonalPlanAccess \} from '\.\/resolvePersonalPlanAccess\.js';/);
-  assert.match(HOOK_SOURCE, /resolvePersonalPlanAccess\(data\)/);
-});
-
-test('hook revalida ao sair da rota do Plano Pessoal (was && !revalidateWhenLeavingRoute) -- único momento em que o status pode ter mudado de verdade', () => {
-  assert.match(HOOK_SOURCE, /const was = wasOnPersonalPlanRoute\.current;/);
-  assert.match(HOOK_SOURCE, /if \(!enabled \|\| !workspaceId \|\| !\(was && !revalidateWhenLeavingRoute\)\) return undefined;/);
-});
-
-test('hook cancela a consulta em andamento no cleanup -- nunca aplica um resultado tardio depois de desmontar/trocar de workspace', () => {
-  const occurrences = HOOK_SOURCE.match(/cancelled = true; window\.clearTimeout\(timeoutId\);/g) ?? [];
-  assert.equal(occurrences.length, 2, 'ambos os efeitos (consulta inicial e revalidação) devem limpar o timeout no cleanup');
+test('hook consulta apenas o estado local e revalida a cada 30 segundos, foco e visibilidade', () => {
+  assert.match(HOOK_SOURCE, /localOnly: true/);
+  assert.match(HOOK_SOURCE, /setInterval\(onFocus, 30_000\)/);
+  assert.match(HOOK_SOURCE, /addEventListener\('focus', onFocus\)/);
+  assert.match(HOOK_SOURCE, /clearInterval\(intervalId\)/);
+  assert.match(HOOK_SOURCE, /cancelled = true/);
 });
