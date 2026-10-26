@@ -314,7 +314,7 @@ test('billing-create-subscription: falha ao buscar o QR nunca quebra a criação
 
 test('billing-get-subscription: resposta normalizada -- nunca o payload bruto da Asaas', () => {
   assert.doesNotMatch(GET_SUBSCRIPTION, /return jsonResponse\(200, remote/);
-  assert.match(GET_SUBSCRIPTION, /import \{ getPlanLabel \} from '\.\.\/_shared\/planCatalog\.js';/);
+  assert.match(GET_SUBSCRIPTION, /import \{ BILLING_PLAN_ID, getPlanLabel \} from '\.\.\/_shared\/planCatalog\.js';/);
   assert.match(GET_SUBSCRIPTION, /plan_name: getPlanLabel\(local\.plan_id\)/);
 });
 
@@ -420,10 +420,9 @@ test('billing-cancel-subscription: falha LOCAL após sucesso EXTERNO retorna REC
 
 // -- SYNC -------------------------------------------------------------------
 
-test('billing-sync: NUNCA ativa uma assinatura só pelo status externo -- exige pagamento CONFIRMED/RECEIVED como evidência', () => {
-  assert.match(SYNC, /PAYMENT_EVIDENCE_STATUSES = new Set\(\['CONFIRMED', 'RECEIVED'\]\);/);
-  assert.match(SYNC, /const shouldActivate = hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES\.has\(subscription\.status\);/);
-  assert.match(SYNC, /if \(shouldActivate \|\| \(subscription\.status === 'active' && shouldExtendPeriod\)\)/);
+test('billing-sync usa pagamentos canônicos validados e regras compartilhadas de ciclo de vida', () => {
+  assert.match(SYNC, /validateProviderPayments\(remotePayments, subscription.asaas_subscription_id\)/);
+  assert.match(SYNC, /resolveBillingLifecycle\(/);
 });
 
 test('billing-sync: mapeamento provider_status/internal_status preserva o valor original da Asaas (nunca perdido)', () => {
@@ -438,11 +437,10 @@ test('billing-sync: falha de sincronização nunca corrompe o estado local -- re
   assert.match(slice, /sync_error: error\.code,\s*\n\s*\}, origin\);/);
 });
 
-test('billing-sync: pagamentos são reconciliados via upsert idempotente (on_conflict=asaas_payment_id) -- nunca duplica cobrança', () => {
-  assert.match(SYNC, /on_conflict=asaas_payment_id/);
-  assert.match(SYNC, /resolution=merge-duplicates/);
-  assert.match(SYNC, /computePaidPeriodEnd\(\{/);
-  assert.match(SYNC, /expectedCurrentPeriodEndsAt/);
+test('billing-sync aplica pagamentos e assinatura em uma RPC atômica com guarda concorrente', () => {
+  assert.match(SYNC, /rpc\/apply_billing_lifecycle/);
+  assert.match(SYNC, /p_expected_updated_at: subscription.updated_at/);
+  assert.match(SYNC, /p_payments: payments/);
 });
 
 test('billing-webhook: datas do pagamento confirmado determinam o período e a guarda concorrente evita regressão', () => {
@@ -457,20 +455,9 @@ test('billing-sync: campos ainda não existentes na migration 024 (provider_stat
   assert.doesNotMatch(SYNC, /patch\w*\(\{[^}]*provider_status/s);
 });
 
-test('BLOCO ASAAS FINAL: billing-sync suspende past_due após grace period expirado (isGracePeriodExpired), usando updated_at como início da carência -- nunca uma coluna nova', () => {
-  assert.match(SYNC, /import \{ computePaidPeriodEnd, isGracePeriodExpired \} from '\.\.\/_shared\/billingSubscriptionRules\.ts';/);
-  const idx = SYNC.indexOf("subscription.status === 'past_due'");
-  assert.ok(idx > -1);
-  const slice = SYNC.slice(idx, idx + 900);
-  assert.match(slice, /isGracePeriodExpired\(\{ pastDueSince: subscription\.updated_at, now: new Date\(\)\.toISOString\(\) \}\)/);
-  assert.match(slice, /patch: \{ status: 'suspended'/);
-});
-
-test('BLOCO ASAAS FINAL: suspensão por carência nunca compete com reativação -- só é avaliada quando NÃO há pagamento confirmado novo', () => {
-  const activateIdx = SYNC.indexOf('const shouldActivate = hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES.has(subscription.status);');
-  const ifIdx = SYNC.indexOf('if (shouldActivate || (subscription.status === \'active\' && shouldExtendPeriod)) {', activateIdx);
-  const elseIdx = SYNC.indexOf("} else if (subscription.status === 'past_due') {", ifIdx);
-  assert.ok(activateIdx > -1 && ifIdx > activateIdx && elseIdx > ifIdx, 'a checagem de carência deveria ser o else-if da ativação ou extensão de período');
+test('billing-sync não mede carência por updated_at e não recebe status do cliente', () => {
+  assert.doesNotMatch(SYNC, /pastDueSince: subscription.updated_at/);
+  assert.match(SYNC, /resolveBillingLifecycle/);
 });
 
 test('billing-sync: não confia em status enviado pelo chamador -- workspace_id é o único campo lido do payload', () => {

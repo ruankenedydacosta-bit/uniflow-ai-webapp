@@ -6,6 +6,7 @@ import { AccessProvider } from './AccessContext';
 import { SessionProvider, useSession } from './SessionContext';
 import { appRoutes, publicRoutes } from './routes';
 import { getSafeAuthReturnPath } from './authReturnPath.js';
+import { isBillingRegularizationRoute } from '../features/personal-plan/resolvePersonalPlanAccess.js';
 import {
   PRESENTATION_NEXT_ROUTE,
   PRESENTATION_REPLAY_STATE,
@@ -79,7 +80,7 @@ function AppContent() {
   const { status: personalPlanAccessStatus } = usePersonalPlanAccessGuard({
     workspaceId: personalWorkspaceId,
     enabled: personalPlanGuardEnabled,
-    revalidateWhenLeavingRoute: isPersonalPlanRoute,
+    revalidateWhenLeavingRoute: isPersonalPlanRoute || isBillingRegularizationRoute(location.pathname),
   });
   // Enquanto o backend real está configurado, o cache local nunca decide --
   // só 'active' confirmado agora libera o app. Sem Supabase (modo demo),
@@ -187,11 +188,18 @@ function AppContent() {
   // aqui que sobrescreveria uma rota simplificada legítima (ex.:
   // /app/registros, /app/conta) que ele esteja tentando abrir.
 
+  const regularizing = personalPlanAccessStatus === 'regularization';
+  const allowedRegularizationRoute = regularizing && isBillingRegularizationRoute(location.pathname);
+  if (regularizing && !allowedRegularizationRoute && !isPersonalPlanRoute) {
+    return <Navigate to="/app/conta/pagamentos" replace />;
+  }
+
   // Caso 1 (usuário novo/sem assinatura e sem apresentação vista aqui).
   if (
     presentationUserId
     && !presentationCompleted
     && !personalPlanUnlocked
+    && !allowedRegularizationRoute
     && !isPresentationRoute
   ) {
     return <Navigate to={PRESENTATION_ROUTE} replace />;
@@ -207,6 +215,7 @@ function AppContent() {
   if (
     presentationUserId
     && !personalPlanUnlocked
+    && !allowedRegularizationRoute
     && !isPersonalPlanRoute
     && !isPresentationRoute
   ) {

@@ -14,7 +14,7 @@ import {
   AsaasTimeoutError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
-import { getPlanLabel } from '../_shared/planCatalog.js';
+import { BILLING_PLAN_ID, getPlanLabel } from '../_shared/planCatalog.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -79,7 +79,8 @@ async function hasWorkspaceMembership({
 async function getLocalSubscription({
   authorization, supabaseUrl, anonKey, workspaceId,
 }: { authorization: string; supabaseUrl: string; anonKey: string; workspaceId: string }) {
-  const params = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}`, limit: '1' });
+  const params = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}`,
+    plan_id: `eq.${BILLING_PLAN_ID}`, order: 'created_at.desc,id.desc', limit: '1' });
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     headers: { Authorization: authorization, apikey: anonKey },
   });
@@ -183,7 +184,7 @@ Deno.serve(async (request) => {
   let providerStatus: string | null = null;
   let providerDeleted: boolean | null = null;
   let pix: Record<string, unknown> | null = null;
-  if (local.asaas_subscription_id) {
+  if (local.asaas_subscription_id && payload.local_only !== true) {
     const asaasApiKey = Deno.env.get('ASAAS_API_KEY') ?? '';
     const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
     try {
@@ -225,6 +226,7 @@ Deno.serve(async (request) => {
     value: 29.9,
     cycle: 'MONTHLY',
     internal_status: local.status,
+    grace_ends_at: local.billing_grace_ends_at,
     provider_status: providerStatus,
     provider_deleted: providerDeleted,
     payment_method: local.payment_method,

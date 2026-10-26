@@ -183,9 +183,9 @@ test('cancelamento usa billingService, confirma a ação e atualiza o estado do 
   assert.doesNotMatch(content, /O cancelamento automático ainda não está disponível/);
 });
 
-test('zona de cancelamento só aparece quando a assinatura está ativa e ainda não tem cancelamento agendado', async () => {
+test('zona de cancelamento aparece para assinatura ativa, trial ou inadimplente sem cancelamento agendado', async () => {
   const content = await source('./SimplifiedPaymentsPage.jsx');
-  assert.match(content, /const canManageOrCancel = planState\.status === 'active';/);
+  assert.match(content, /const canManageOrCancel = \['active', 'trialing', 'past_due', 'suspended'\]\.includes\(planState\.status\);/);
   assert.match(content, /\{canManageOrCancel \? \(/);
 });
 

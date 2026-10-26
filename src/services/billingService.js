@@ -120,8 +120,8 @@ export function createBillingService({
     cancelSubscription({ workspaceId } = {}) {
       return invokeBillingFunction('billing-cancel-subscription', { workspace_id: workspaceId });
     },
-    getSubscription({ workspaceId } = {}) {
-      return invokeBillingFunction('billing-get-subscription', { workspace_id: workspaceId });
+    getSubscription({ workspaceId, localOnly = false } = {}) {
+      return invokeBillingFunction('billing-get-subscription', { workspace_id: workspaceId, ...(localOnly ? { local_only: true } : {}) });
     },
     syncSubscription({ workspaceId } = {}) {
       return invokeBillingFunction('billing-sync', { workspace_id: workspaceId });

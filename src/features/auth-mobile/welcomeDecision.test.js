@@ -266,6 +266,6 @@ test('11. usuário sem sessão (bfcache reset ou não) nunca é enviado para /pl
   const app = await readFile(new URL('../../app/App.jsx', import.meta.url), 'utf8');
   assert.match(app, /if \(isSupabaseConfigured\) \{\s*\n\s*if \(!session \|\| sessionError\) \{/);
   const loginGuardIdx = app.indexOf('if (!session || sessionError) {');
-  const personalPlanGuardIdx = app.indexOf('presentationUserId\n    && !personalPlanUnlocked\n    && !isPersonalPlanRoute');
+  const personalPlanGuardIdx = app.indexOf('presentationUserId\n    && !personalPlanUnlocked\n    && !allowedRegularizationRoute\n    && !isPersonalPlanRoute');
   assert.ok(loginGuardIdx !== -1 && personalPlanGuardIdx !== -1 && loginGuardIdx < personalPlanGuardIdx);
 });

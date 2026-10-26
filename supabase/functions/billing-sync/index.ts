@@ -33,12 +33,12 @@ import {
   AsaasTimeoutError,
   createAsaasClient,
 } from '../_shared/asaasClient.ts';
-import { computePaidPeriodEnd, isGracePeriodExpired } from '../_shared/billingSubscriptionRules.ts';
+import { buildBillingPaymentRow } from '../_shared/billingSubscriptionRules.ts';
+import { resolveBillingLifecycle, validateProviderPayments } from '../_shared/billingLifecycle.ts';
+import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const PAYMENT_EVIDENCE_STATUSES = new Set(['CONFIRMED', 'RECEIVED']);
-const ACTIVATABLE_LOCAL_STATUSES = new Set(['pending', 'past_due', 'suspended']);
 
 function getAllowedOrigins() {
   return new Set(
@@ -101,70 +101,9 @@ async function hasWorkspaceMembership({
 async function getLocalSubscription({
   authorization, supabaseUrl, anonKey, workspaceId,
 }: { authorization: string; supabaseUrl: string; anonKey: string; workspaceId: string }) {
-  const params = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}`, limit: '1' });
+  const params = new URLSearchParams({ select: '*', workspace_id: `eq.${workspaceId}`, plan_id: `eq.${BILLING_PLAN_ID}`, order: 'created_at.desc,id.desc', limit: '1' });
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     headers: { Authorization: authorization, apikey: anonKey },
-  });
-  if (!response.ok) return null;
-  const rows = await response.json();
-  return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
-}
-
-async function upsertBillingPayments({
-  supabaseUrl, serviceRoleKey, workspaceId, asaasSubscriptionId, payments,
-}: {
-  supabaseUrl: string; serviceRoleKey: string; workspaceId: string; asaasSubscriptionId: string;
-  payments: Array<Record<string, unknown>>;
-}) {
-  if (!payments.length) return true;
-  const rows = payments.map((payment) => ({
-    workspace_id: workspaceId,
-    asaas_payment_id: payment.id,
-    asaas_subscription_id: asaasSubscriptionId,
-    status: String(payment.status ?? '').toLowerCase(),
-    billing_type: payment.billingType ? String(payment.billingType).toLowerCase() : null,
-    value: payment.value ?? 0,
-    due_date: payment.dueDate ?? null,
-    paid_at: payment.paymentDate ?? payment.clientPaymentDate ?? null,
-    invoice_url: payment.invoiceUrl ?? null,
-  }));
-  const response = await fetch(`${supabaseUrl}/rest/v1/billing_payments?on_conflict=asaas_payment_id`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${serviceRoleKey}`,
-      apikey: serviceRoleKey,
-      'Content-Type': 'application/json',
-      // BILLING2: upsert por asaas_payment_id (unique index da migration
-      // 024) -- reconciliacao repetida nunca duplica cobrancas.
-      Prefer: 'resolution=merge-duplicates',
-    },
-    body: JSON.stringify(rows),
-  });
-  return response.ok;
-}
-
-async function patchSubscriptionStatus({
-  supabaseUrl, serviceRoleKey, subscriptionId, patch, expectedCurrentPeriodEndsAt,
-}: {
-  supabaseUrl: string; serviceRoleKey: string; subscriptionId: string;
-  patch: { status?: string; current_period_ends_at?: string };
-  expectedCurrentPeriodEndsAt?: string | null;
-}) {
-  const params = new URLSearchParams({ id: `eq.${subscriptionId}` });
-  if (expectedCurrentPeriodEndsAt !== undefined) {
-    params.set('current_period_ends_at', expectedCurrentPeriodEndsAt === null
-      ? 'is.null'
-      : `eq.${expectedCurrentPeriodEndsAt}`);
-  }
-  const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
-    method: 'PATCH',
-    headers: {
-      Authorization: `Bearer ${serviceRoleKey}`,
-      apikey: serviceRoleKey,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(patch),
   });
   if (!response.ok) return null;
   const rows = await response.json();
@@ -233,72 +172,25 @@ Deno.serve(async (request) => {
     const remotePayments = Array.isArray(remotePaymentsResponse?.data) ? remotePaymentsResponse.data : [];
 
     const providerStatus = typeof remoteSubscription?.status === 'string' ? remoteSubscription.status : null;
-    const confirmedPayments = remotePayments
-      .filter((payment) => PAYMENT_EVIDENCE_STATUSES.has(String(payment.status ?? '').toUpperCase()))
-      .sort((left, right) => {
-        const dateValue = (payment: Record<string, unknown>) => {
-          const value = payment.paymentDate ?? payment.clientPaymentDate ?? payment.dueDate;
-          const parsed = typeof value === 'string' ? Date.parse(value) : Number.NaN;
-          return Number.isFinite(parsed) ? parsed : 0;
-        };
-        return dateValue(left) - dateValue(right);
-      });
-    const latestConfirmedPayment = confirmedPayments.at(-1) ?? null;
-    const hasConfirmedPayment = latestConfirmedPayment !== null;
-
-    const paymentsUpserted = await upsertBillingPayments({
-      supabaseUrl, serviceRoleKey, workspaceId,
-      asaasSubscriptionId: subscription.asaas_subscription_id, payments: remotePayments,
-    });
-
-    let updatedStatus = subscription.status;
-    const paidPeriodEnd = latestConfirmedPayment
-      ? computePaidPeriodEnd({
-        paymentDate: typeof latestConfirmedPayment.paymentDate === 'string'
-          ? latestConfirmedPayment.paymentDate
-          : (typeof latestConfirmedPayment.clientPaymentDate === 'string' ? latestConfirmedPayment.clientPaymentDate : null),
-        dueDate: typeof latestConfirmedPayment.dueDate === 'string' ? latestConfirmedPayment.dueDate : null,
-        currentPeriodEndsAt: typeof subscription.current_period_ends_at === 'string'
-          ? subscription.current_period_ends_at
-          : null,
-        now: new Date().toISOString(),
-      })
-      : null;
-    const shouldActivate = hasConfirmedPayment && ACTIVATABLE_LOCAL_STATUSES.has(subscription.status);
-    const shouldExtendPeriod = Boolean(
-      paidPeriodEnd
-      && (!subscription.current_period_ends_at
-        || Date.parse(paidPeriodEnd) > Date.parse(String(subscription.current_period_ends_at))),
-    );
-    if (shouldActivate || (subscription.status === 'active' && shouldExtendPeriod)) {
-      const updated = await patchSubscriptionStatus({
-        supabaseUrl,
-        serviceRoleKey,
-        subscriptionId: subscription.id,
-        expectedCurrentPeriodEndsAt: (subscription.current_period_ends_at as string | null) ?? null,
-        patch: {
-          ...(shouldActivate ? { status: 'active' } : {}),
-          ...(paidPeriodEnd ? { current_period_ends_at: paidPeriodEnd } : {}),
-        },
-      });
-      if (updated) updatedStatus = updated.status;
-    } else if (subscription.status === 'past_due') {
-      // BLOCO ASAAS FINAL: Asaas nao envia um evento "3 dias se passaram" --
-      // e por isso que a carencia so pode ser avaliada de forma REATIVA,
-      // aqui (billing-sync ja existe exatamente para reconciliacao) e no
-      // processamento do webhook. `updated_at` da propria assinatura E o
-      // timestamp de quando ela virou 'past_due' (o UPDATE que aplicou esse
-      // status ja atualiza updated_at via trigger existente -- nenhuma
-      // coluna nova necessaria). Nunca suspende uma assinatura que acabou
-      // de ganhar evidencia de pagamento (branch acima tem prioridade).
-      if (isGracePeriodExpired({ pastDueSince: subscription.updated_at, now: new Date().toISOString() })) {
-        const updated = await patchSubscriptionStatus({
-          supabaseUrl, serviceRoleKey, subscriptionId: subscription.id, patch: { status: 'suspended' },
-        });
-        if (updated) updatedStatus = updated.status;
-      }
+    if (!validateProviderPayments(remotePayments, subscription.asaas_subscription_id)) {
+      return jsonResponse(502, errorBody('PROVIDER_PAYMENT_MISMATCH', 'Não foi possível confirmar os dados das cobranças.'), origin);
     }
-
+    const now = new Date().toISOString();
+    const { patch, notices } = resolveBillingLifecycle({ subscription, payments: remotePayments, now });
+    const payments = remotePayments.map((payment) => buildBillingPaymentRow({
+      workspaceId, asaasPaymentId: String(payment.id),
+      asaasSubscriptionId: subscription.asaas_subscription_id, eventType: 'PAYMENT_UPDATED', payment,
+    }));
+    const applied = await fetch(`${supabaseUrl}/rest/v1/rpc/apply_billing_lifecycle`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_subscription_id: subscription.id, p_expected_updated_at: subscription.updated_at,
+        p_patch: patch, p_notices: notices, p_payments: payments, p_now: now }),
+    });
+    if (!applied.ok || await applied.json() !== true) {
+      return jsonResponse(409, errorBody('RECONCILIATION_REQUIRED', 'A assinatura mudou durante a verificação. Tente novamente.'), origin);
+    }
+    const updatedStatus = patch.status ?? subscription.status;
     return jsonResponse(200, {
       workspace_id: workspaceId,
       exists: true,
@@ -306,7 +198,7 @@ Deno.serve(async (request) => {
       internal_status: updatedStatus,
       provider_status: providerStatus,
       payments_reconciled: remotePayments.length,
-      payments_upsert_ok: paymentsUpserted,
+      payments_upsert_ok: true,
       last_synced_at: new Date().toISOString(),
       sync_error: null,
     }, origin);

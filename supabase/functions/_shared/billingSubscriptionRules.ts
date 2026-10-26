@@ -10,6 +10,13 @@
 
 export const GRACE_PERIOD_DAYS = 3;
 
+export function billingDueTimestamp(value: unknown): number {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return Number.NaN;
+  const parsed = Date.parse(`${value}T00:00:00-03:00`);
+  return Number.isFinite(parsed) && new Date(parsed - 3 * 3_600_000).toISOString().slice(0, 10) === value
+    ? parsed : Number.NaN;
+}
+
 // BLOCO ASAAS CHECKOUT: mesma decisao comercial congelada (Bloco Asaas 0) --
 // unico plano vendido, preco/ciclo definidos so pelo backend. Compartilhado
 // aqui em vez de duplicado localmente em billing-create-checkout (que e
@@ -209,6 +216,7 @@ export function resolveSubscriptionPatchForEvent({
     const periodEnd = computePaidPeriodEnd({
       paymentDate, dueDate, currentPeriodEndsAt: subscription.current_period_ends_at, now,
     });
+    if (Date.parse(periodEnd) <= Date.parse(now)) return null;
     if (
       subscription.status === 'active'
       && subscription.current_period_ends_at
@@ -229,8 +237,11 @@ export function resolveSubscriptionPatchForEvent({
     // Só marca past_due se a assinatura estava ativa -- nunca sobrescreve
     // um estado já mais grave (suspended) nem uma assinatura ainda pending
     // (que nunca chegou a ser paga -- isso não é "atraso", é "nunca pagou").
-    if (subscription.status !== 'active') return null;
-    return { status: 'past_due' };
+    if (subscription.status !== 'active' || subscription.cancel_at_period_end) return null;
+    const due = billingDueTimestamp(dueDate);
+    if (!Number.isFinite(due) || Date.parse(subscription.current_period_ends_at ?? '') > due) return null;
+    const graceEnd = new Date(due + GRACE_PERIOD_DAYS * 86_400_000).toISOString();
+    return { status: Date.parse(now) >= Date.parse(graceEnd) ? 'suspended' : 'past_due', billing_grace_ends_at: graceEnd };
   }
 
   // PAYMENT_DELETED, PAYMENT_UPDATED, PAYMENT_CREATED, refund/chargeback e

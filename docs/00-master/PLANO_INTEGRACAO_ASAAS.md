@@ -306,3 +306,20 @@ Reaproveitar o padrão de log estruturado já usado em `uni-chat-llm` (a funçã
 
 **Já existem (só precisam de dado real):** Seu Plano, Pagamento e assinatura (estados vazios), Plano Pessoal (landing/CTA).
 **Precisam ser criadas:** seleção de forma de pagamento (Pix/Pix Automático/Cartão — sem boleto), tela de instrução de pagamento (QR Pix/autorização Pix Automático/formulário de cartão), tela/estado de "pagamento pendente" com polling ou botão de verificação manual, histórico de cobranças com dados reais (a estrutura visual já existe, populá-la é o que falta), tela/estado de "assinatura suspensa" restrita a regularização (novo, decorrente da regra oficial de inadimplência).
+
+## Implementação técnica proposta da inadimplência — issue #60
+
+A regra comercial já definida é tolerância de três dias corridos a partir do `dueDate` da cobrança Asaas, usando data civil no fuso brasileiro (UTC-03). `updated_at` nunca mede carência. O rótulo `decisão` da issue #60 não impede implementar essa regra existente; vencimento comercial fixo, reembolso, chargeback e reativação após cancelamento total continuam como decisões separadas.
+
+O worker `billing-lifecycle` consulta cobranças canônicas (somente leitura), confere assinatura e valor e envia pagamentos, transição de estado e avisos à RPC transacional `apply_billing_lifecycle`. O lock e `updated_at` esperado impedem um worker antigo de desfazer webhook, cancelamento ou nova conciliação. Repetições de aviso usam recibos únicos por assinatura/usuário/cobrança/etapa. As mensagens são in-app na tabela `notifications`: um dia antes, no vencimento, após o vencimento, na suspensão e na reativação. Não foi configurado envio de e-mail de cobrança.
+
+A suspensão bloqueia as operações do produto por RLS e os RPCs financeiros SECURITY DEFINER; os registros financeiros são preservados. Conta, plano, pagamento, recibos, segurança e suporte permanecem acessíveis. O guard consulta apenas o estado persistido a cada 30 segundos e ao voltar para a aba; o webhook continua sendo a via principal de atualização. A carência acaba também pelo relógio no gate SQL, mesmo se o próximo lote do worker atrasar. Uma confirmação antiga cujo período já terminou não reativa uma assinatura suspensa.
+
+### Operação ainda não aplicada
+
+- Aplicar as migrations 052 e 053 somente após revisão no ambiente descartável/Sandbox e aprovação específica para qualquer ambiente com usuários reais.
+- Publicar `billing-lifecycle` no ambiente de homologação e habilitar `UNIFLOW_BILLING_LIFECYCLE_ENABLED=true` apenas nele. O padrão é desligado e o worker recusa URL Asaas de produção.
+- Agendar via Supabase Cron/Vault um POST a `/functions/v1/billing-lifecycle`, com `apikey` obtido do segredo service role no Vault. Começar a cada 5 minutos e observar duração, falhas e quantidade de assinaturas por rodada; cada rodada lê até 20 assinaturas em ordem de última verificação e limita o início de novos itens a 90 segundos. Dimensionar a agenda conforme quantidade de assinaturas e cotas da API. Não guardar a chave em SQL versionado.
+- Acompanhar respostas 503 e erros de RPC. Falha do provedor não suspende nem anuncia pagamento: só registra a tentativa para permitir progresso do restante da fila. Sem cron, avisos antecipados e transições temporizadas não serão automáticos; `billing-sync` usa a mesma conciliação quando solicitado.
+- Antes de aplicar o gate a dados existentes, reconciliar todas as assinaturas `past_due` para preencher `billing_grace_ends_at`. Sem data confirmada, o acesso permanece restrito à regularização.
+- Homologar atraso real do webhook, nova confirmação durante suspensão, dois workers simultâneos, repetição de aviso, falha de rede e cancelamento no fim do período. O teste PostgreSQL local usa schema mínimo e não substitui o Supabase/PostgREST completo.

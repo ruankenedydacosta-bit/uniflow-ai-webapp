@@ -108,7 +108,7 @@ function SimplifiedPlanPage() {
   const renewsAt = resolveRenewsAt(subscription, planState);
   const cancelEffectiveAt = resolveCancelEffectiveAt(subscription, planState);
   const trialEndsAt = resolveTrialEndsAt(subscription, planState);
-  const canCancel = planState.status === 'active';
+  const canCancel = ['active', 'trialing', 'past_due', 'suspended'].includes(planState.status);
 
   const usageMessage = isLoadingTransactions
     ? 'Calculando...'
