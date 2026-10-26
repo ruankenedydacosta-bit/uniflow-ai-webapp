@@ -1,6 +1,6 @@
 import { createAsaasClient } from '../_shared/asaasClient.ts';
 import { buildBillingPaymentRow } from '../_shared/billingSubscriptionRules.ts';
-import { resolveBillingLifecycle, validateProviderPayments } from '../_shared/billingLifecycle.ts';
+import { resolveBillingLifecycle, validateProviderPayments, validateProviderSubscription } from '../_shared/billingLifecycle.ts';
 import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
 import { cancelPixAuthorization, findPixAuthorization, pixAutomaticProcessingEnabled, pixRest, recoverPixAuthorization, savePixAuthorization } from '../_shared/pixAutomaticService.ts';
 
@@ -51,13 +51,19 @@ export async function handleBillingLifecycle(request: Request): Promise<Response
           if (!refreshed?.[0]) throw new Error('SUBSCRIPTION_CHANGED');
           subscription = refreshed[0];
         }
+        let providerStatus: string | null = null;
+        if (subscription.asaas_subscription_id) {
+          const remote = await client.getSubscription(subscription.asaas_subscription_id) as Record<string, unknown>;
+          if (!validateProviderSubscription(remote, subscription)) throw new Error('PROVIDER_SUBSCRIPTION_MISMATCH');
+          providerStatus = String(remote.status);
+        }
         const payments = subscription.asaas_subscription_id
           ? (await client.listSubscriptionPayments(subscription.asaas_subscription_id)).data : [];
-        if (!validateProviderPayments(payments, subscription.asaas_subscription_id)) {
+        if (!validateProviderPayments(payments, subscription.asaas_subscription_id, subscription.asaas_customer_id ?? '')) {
           throw new Error('PROVIDER_PAYMENT_MISMATCH');
         }
         const now = new Date().toISOString();
-        const { patch, notices } = resolveBillingLifecycle({ subscription, payments, now });
+        const { patch, notices } = resolveBillingLifecycle({ subscription, payments, now, providerStatus });
         const rows = payments.map((payment) => buildBillingPaymentRow({ workspaceId: subscription.workspace_id,
           asaasPaymentId: String(payment.id), asaasSubscriptionId: subscription.asaas_subscription_id,
           eventType: 'PAYMENT_UPDATED', payment }));

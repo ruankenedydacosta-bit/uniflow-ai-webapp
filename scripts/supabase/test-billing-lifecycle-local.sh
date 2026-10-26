@@ -11,8 +11,12 @@ psql_local=("$pgbin/psql" -U postgres -h "$cluster" -p 55438 -d postgres -v ON_E
 "${psql_local[@]}" -f supabase/migrations/20261025170000_052_billing_lifecycle.sql -f supabase/migrations/20261025180000_053_billing_rpc_suspension.sql > "$cluster/migrations.log"
 if [ "${BILLING_TEST_INCLUDE_PIX_AUTOMATIC:-0}" = 1 ]; then
   "${psql_local[@]}" -f supabase/migrations/20261025150000_050_billing_operation_attempts.sql -f supabase/migrations/20261025190000_054_pix_automatic_authorizations.sql >> "$cluster/migrations.log"
+fi
+"${psql_local[@]}" -f supabase/migrations/20261026100000_055_billing_payment_identity.sql -f supabase/migrations/20261026110000_056_billing_provider_termination.sql
+if [ "${BILLING_TEST_INCLUDE_PIX_AUTOMATIC:-0}" = 1 ]; then
   "${psql_local[@]}" -f supabase/tests/pix_automatic_validation.sql
 fi
+"${psql_local[@]}" -f supabase/tests/billing_payment_identity_validation.sql
 "${psql_local[@]}" -f supabase/tests/billing_lifecycle_validation.sql
 "${psql_local[@]}" -c "insert into public.subscriptions(id,workspace_id,status,updated_at) values ('90000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','active','2026-10-01Z')" > /dev/null
 race_sql="begin; set local role service_role; select public.apply_billing_lifecycle('90000000-0000-4000-8000-000000000001','2026-10-01Z','{}','[]','[]',now()); select pg_sleep(0.2); commit;"

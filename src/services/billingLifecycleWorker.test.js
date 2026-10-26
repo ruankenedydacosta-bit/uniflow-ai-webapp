@@ -19,11 +19,12 @@ test('worker fica desligado por padrão e não consulta o provedor', async (t) =
   finally { env.UNIFLOW_BILLING_LIFECYCLE_ENABLED = 'true'; }
 });
 test('worker reconcilia pagamento canônico e envia uma única transação de ativação, espelho e aviso', async (t) => {
-  const sub = { id: 'sub_local', workspace_id: 'workspace_fixture', status: 'suspended', asaas_subscription_id: 'sub_provider', updated_at: '2026-10-01Z' };
+  const sub = { id: 'sub_local', workspace_id: 'workspace_fixture', status: 'suspended', payment_method: 'pix', asaas_customer_id: 'cus_fixture', asaas_subscription_id: 'sub_provider', updated_at: '2026-10-01Z' };
   let rpcBody;
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     if (String(url).includes('/rest/v1/subscriptions?')) return json([sub]);
-    if (String(url).includes('/subscriptions/sub_provider/payments')) return json({ data: [{ id: 'payment_fixture', subscription: 'sub_provider', status: 'CONFIRMED', value: 29.9, paymentDate: new Date().toISOString().slice(0,10) }], hasMore: false });
+    if (String(url).endsWith('/subscriptions/sub_provider')) return json({ id: 'sub_provider', customer: 'cus_fixture', value: 29.9, cycle: 'MONTHLY', status: 'ACTIVE', billingType: 'PIX' });
+    if (String(url).includes('/subscriptions/sub_provider/payments')) return json({ data: [{ id: 'payment_fixture', customer: 'cus_fixture', subscription: 'sub_provider', status: 'CONFIRMED', value: 29.9, paymentDate: new Date().toISOString().slice(0,10) }], hasMore: false });
     if (String(url).endsWith('/rpc/apply_billing_lifecycle')) { rpcBody = JSON.parse(options.body); return json(true); }
     throw new Error('unexpected URL');
   });
@@ -68,4 +69,21 @@ test('worker concilia consentimento sem subscriptionId e encerra somente o perí
     assert.equal(patch.p_expected_updated_at, 'after');
     assert.deepEqual(patch.p_payments, []);
   } finally { delete env.UNIFLOW_PIX_AUTOMATIC_PROCESSING_ENABLED; }
+});
+
+test('worker mirrors provider termination with paid cutoff and no provider mutation', async (t) => {
+  let patch;
+  const sub = { id: 'sub_local', workspace_id: 'workspace_fixture', status: 'active', payment_method: 'pix', asaas_customer_id: 'cus_fixture', asaas_subscription_id: 'sub_provider', current_period_ends_at: '2099-11-01T03:00:00Z', updated_at: '2026-10-01Z' };
+  t.mock.method(globalThis, 'fetch', async (input, options) => {
+    const url = String(input);
+    if (url.includes('/rest/v1/subscriptions?')) return json([sub]);
+    if (url.endsWith('/subscriptions/sub_provider')) { assert.equal(options.method, 'GET'); return json({ id: 'sub_provider', customer: 'cus_fixture', value: 29.9, cycle: 'MONTHLY', status: 'INACTIVE', billingType: 'PIX' }); }
+    if (url.includes('/subscriptions/sub_provider/payments')) return json({ data: [], hasMore: false });
+    if (url.endsWith('/rpc/apply_billing_lifecycle')) { patch = JSON.parse(options.body).p_patch; return json(true); }
+    throw new Error('unexpected request');
+  });
+  assert.equal((await handleBillingLifecycle(req())).status, 200);
+  assert.equal(patch.cancel_at_period_end, true);
+  assert.equal(patch.cancel_effective_at, '2099-11-01T03:00:00.000Z');
+  assert.equal(patch.status, undefined);
 });

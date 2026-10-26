@@ -16,17 +16,25 @@ export function effectiveBillingStatus(subscription: Subscription & { billing_gr
   return subscription.status;
 }
 
-export function validateProviderPayments(payments: Payment[], subscriptionId: string): boolean {
-  return payments.every((row) => typeof row.id === 'string' && row.subscription === subscriptionId
+export function validateProviderPayments(payments: Payment[], subscriptionId: string, customerId: string): boolean {
+  return payments.every((row) => Boolean(customerId) && row.customer === customerId
+    && typeof row.id === 'string' && row.subscription === subscriptionId
     && typeof row.value === 'number' && row.value >= 0
     && (!['CONFIRMED','RECEIVED'].includes(String(row.status)) || row.value === PLAN_PRICE_BRL));
+}
+
+export function validateProviderSubscription(remote: Record<string, unknown>, local: Record<string, unknown>) {
+  return remote?.id === local.asaas_subscription_id && remote?.customer === local.asaas_customer_id
+    && Boolean(local.asaas_customer_id) && remote.value === PLAN_PRICE_BRL && remote.cycle === 'MONTHLY'
+    && ['ACTIVE','INACTIVE','EXPIRED'].includes(String(remote.status))
+    && remote.billingType === (local.payment_method === 'credit_card' ? 'CREDIT_CARD' : 'PIX');
 }
 
 // Asaas dueDate is a Brazilian civil date. Three calendar days are measured
 // from midnight in the billing timezone, never from subscriptions.updated_at.
 
-export function resolveBillingLifecycle({ subscription, payments, now }: {
-  subscription: Subscription; payments: Payment[]; now: string;
+export function resolveBillingLifecycle({ subscription, payments, now, providerStatus }: {
+  subscription: Subscription; payments: Payment[]; now: string; providerStatus?: string | null;
 }) {
   const currentTime = Date.parse(now);
   if (!Number.isFinite(currentTime)) throw new Error('INVALID_BILLING_CLOCK');
@@ -39,6 +47,16 @@ export function resolveBillingLifecycle({ subscription, payments, now }: {
     if (!Number.isFinite(localEnd) || Date.parse(paidEnd) > localEnd) patch.current_period_ends_at = paidEnd;
     if (['pending', 'past_due', 'suspended'].includes(subscription.status)) patch.status = 'active';
     if (subscription.cancel_at_period_end && patch.current_period_ends_at) patch.cancel_effective_at = paidEnd;
+  }
+  if (['INACTIVE', 'EXPIRED'].includes(providerStatus ?? '')) {
+    // Provider-side termination stops renewal, while retaining every paid day.
+    const end = Math.max(Number.isFinite(localEnd) ? localEnd : -Infinity,
+      paidEnd ? Date.parse(paidEnd) : -Infinity);
+    if (!Number.isFinite(end)) throw new Error('STOPPED_SUBSCRIPTION_PERIOD_UNAVAILABLE');
+    patch.cancel_at_period_end = true;
+    patch.cancel_effective_at = new Date(end).toISOString();
+    if (currentTime >= end) patch.status = 'canceled';
+    return { patch, notices: [] };
   }
   const effectiveEnd = Date.parse(String(patch.cancel_effective_at ?? subscription.cancel_effective_at ?? subscription.current_period_ends_at ?? ''));
   if (subscription.cancel_at_period_end && Number.isFinite(effectiveEnd) && currentTime >= effectiveEnd) {

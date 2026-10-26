@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../../app/SessionContext.jsx';
 import { listPayments } from '../../services/billingService.js';
+import { safeAsaasUrl } from '../../utils/asaasUrls.js';
 import { formatCurrency } from '../../utils/formatters.js';
 import { ACCOUNT_SUBROUTES, ACCOUNT_SUBROUTE_IDS } from './simplifiedAccountRoutes.js';
 import { formatDate, resolvePaymentMethodLabel } from './subscriptionPresentation.js';
@@ -111,10 +112,10 @@ function SimplifiedPaymentHistoryPage() {
                   {methodLabel ? <span>{methodLabel}</span> : null}
                   {payment.paid_at ? <span>Confirmado em {formatDate(payment.paid_at)}</span> : null}
                 </div>
-                {payment.invoice_url ? (
+                {safeAsaasUrl(payment.invoice_url) ? (
                   <a
                     className={styles.receiptLink}
-                    href={payment.invoice_url}
+                    href={safeAsaasUrl(payment.invoice_url)}
                     target="_blank"
                     rel="noreferrer noopener"
                   >

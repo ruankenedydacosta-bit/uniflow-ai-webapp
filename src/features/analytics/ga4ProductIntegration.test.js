@@ -141,9 +141,9 @@ test('Fase 4B Lite: pix_generated/card_checkout_created só disparam após respo
   // sempre antes do redirect real.
   const cardBlock = confirmHandler.slice(
     confirmHandler.indexOf("if (paymentMethod === 'credit_card') {"),
-    confirmHandler.indexOf('window.location.href = checkoutResult.data.checkout_url;'),
+    confirmHandler.indexOf('window.location.href = safeAsaasUrl(checkoutResult.data.checkout_url);'),
   );
-  assert.match(cardBlock, /if \(checkoutResult\.error \|\| !checkoutResult\.data\?\.checkout_url\) \{[\s\S]*?return;\s*\}/);
+  assert.match(cardBlock, /if \(checkoutResult\.error \|\| !safeAsaasUrl\(checkoutResult\.data\?\.checkout_url\)\) \{[\s\S]*?return;\s*\}/);
   assert.match(cardBlock, /persistPendingGa4SubscriptionActivation\(\);\s*checkoutEventLifecycle\.markCardCheckoutCreated\(\);\s*$/);
 
   // pix_generated: só depois do branch de payload inválido/incompleto.
@@ -155,7 +155,7 @@ test('Fase 4B Lite: pix_generated/card_checkout_created só disparam após respo
 test('Fase 4B Lite: subscription_activated nunca dispara na leitura de mount de assinatura já ativa (already_active)', async () => {
   const plan = await source('features/personal-plan/PersonalPlanPage.jsx');
   const mountEffect = plan.slice(
-    plan.indexOf('getSubscription({ workspaceId }).then(({ data, error }) => {'),
+    plan.indexOf('getSubscription({ workspaceId }).then(async (result) => {'),
     plan.indexOf('const { status: polledSubscription }'),
   );
   const alreadyActiveBranch = mountEffect.slice(

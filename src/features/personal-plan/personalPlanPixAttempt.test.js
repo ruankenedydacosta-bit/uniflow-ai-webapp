@@ -152,9 +152,9 @@ test('11. sucesso real (payload/QR completos) mostra QR Code, payload e liga o p
   assert.match(handlerBody, /setPixData\(pix\);\s*\n\s*setPixModalDismissed\(false\);\s*\n\s*setFlowState\('pending'\);/);
 });
 
-test('12. botão "Copiar código Pix" só aparece habilitado com payload -- disabled={!pixData?.payload}', async () => {
+test('12. botão "Copiar código Pix" só aparece habilitado com payload -- disabled={!canPay}', async () => {
   const page = await source('./PersonalPlanPage.jsx');
-  assert.match(page, /disabled={!pixData\?\.payload}/);
+  assert.match(page, /disabled={!canPay}/);
 });
 
 test('13. erro ao criar Pix (rejeição/timeout) mostra mensagem recuperável, nunca deixa o modal em loading infinito', async () => {

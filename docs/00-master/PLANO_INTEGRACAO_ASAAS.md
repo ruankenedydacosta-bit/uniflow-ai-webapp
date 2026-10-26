@@ -343,3 +343,7 @@ O cancelamento revoga a autorização ativa e inativa a assinatura vinculada. Pa
 Homologar: criação/QR, duas requisições simultâneas (incluindo Pix comum x automático), resposta perdida, pagamento inicial antes de `ACTIVE`, pagamento seguido de `REFUSED`, cancelamento antes/depois da ativação, expiração, instrução recusada, perda/reentrega de webhook e reconciliação via worker. Renovação após recusa/cancelamento total e política de novo QR no ciclo seguinte continuam dependentes da decisão comercial já registrada; não cobrar novamente um período pago.
 
 Fontes oficiais consultadas: [Implementação](https://docs.asaas.com/docs/pix-automatico-implementacao), [Criar autorização](https://docs.asaas.com/reference/criar-uma-autorizacao-pix-automatico), [Eventos](https://docs.asaas.com/docs/eventos-para-pix-autom%C3%A1tico), [FAQ](https://docs.asaas.com/docs/faq-2), [Cancelar autorização](https://docs.asaas.com/reference/cancelar-uma-autorizacao-pix-automatico).
+
+### Revisão final do épico — 26/10/2026
+
+A integração dos PRs de histórico e Pix Automático e as correções de correlação/identidade financeira estão documentadas em [ASAAS_EPIC_TECHNICAL_READINESS.md](./ASAAS_EPIC_TECHNICAL_READINESS.md). O relatório contém a ordem de revisão, o inventário da #55, resultados dos testes, limites do fixture PostgreSQL, bloqueios externos e roteiro de homologação. Não equivale a aceite em produção nem autoriza cobrança real. As issues continuam abertas.

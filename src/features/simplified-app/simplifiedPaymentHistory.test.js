@@ -46,8 +46,8 @@ test('erro de carregamento usa a mensagem honesta pedida, nunca falha silenciosa
 
 test('cada item mostra comprovante (invoice_url) só quando existe -- nunca um link fictício', async () => {
   const page = await source('./SimplifiedPaymentHistoryPage.jsx');
-  assert.match(page, /payment\.invoice_url \? \(/);
-  assert.match(page, /href=\{payment\.invoice_url\}/);
+  assert.match(page, /safeAsaasUrl\(payment\.invoice_url\) \? \(/);
+  assert.match(page, /href=\{safeAsaasUrl\(payment\.invoice_url\)\}/);
   assert.match(page, /target="_blank"/);
   assert.match(page, /rel="noreferrer noopener"/);
 });

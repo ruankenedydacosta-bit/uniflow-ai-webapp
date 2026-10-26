@@ -25,9 +25,11 @@
 //   deduplicacao ("Each event sent by Webhooks has its own ID, which
 //   remains the same if it is the same event.").
 
+import { BILLING_PLAN_ID } from '../_shared/planCatalog.js';
 import { createAsaasClient } from '../_shared/asaasClient.ts';
 import { processPixAutomaticEvent, processPixAutomaticPayment } from '../_shared/pixAutomaticService.ts';
 import {
+  PLAN_PRICE_BRL,
   buildBillingPaymentRow,
   PROCESSABLE_CHECKOUT_EVENT_TYPES,
   PROCESSABLE_PAYMENT_EVENT_TYPES,
@@ -101,7 +103,7 @@ async function fetchWebhookEventByEventId({
   const response = await fetch(`${supabaseUrl}/rest/v1/webhook_events?${params}`, {
     headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
   });
-  if (!response.ok) return null;
+  if (!response.ok) throw new Error('BILLING_WEBHOOK_READ_FAILED');
   const rows = await response.json();
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
@@ -151,7 +153,7 @@ async function findBillingCustomerWorkspace({
   const response = await fetch(`${supabaseUrl}/rest/v1/billing_customers?${params}`, {
     headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
   });
-  if (!response.ok) return null;
+  if (!response.ok) throw new Error('BILLING_WEBHOOK_READ_FAILED');
   const rows = await response.json();
   return Array.isArray(rows) && rows.length === 1 ? rows[0].workspace_id as string : null;
 }
@@ -163,7 +165,7 @@ async function findSubscriptionByAsaasId({
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
   });
-  if (!response.ok) return null;
+  if (!response.ok) throw new Error('BILLING_WEBHOOK_READ_FAILED');
   const rows = await response.json();
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
@@ -178,7 +180,7 @@ async function findSubscriptionByCheckoutId({
   const response = await fetch(`${supabaseUrl}/rest/v1/subscriptions?${params}`, {
     headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
   });
-  if (!response.ok) return null;
+  if (!response.ok) throw new Error('BILLING_WEBHOOK_READ_FAILED');
   const rows = await response.json();
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
@@ -190,7 +192,7 @@ async function findBillingCustomerByWorkspace({
   const response = await fetch(`${supabaseUrl}/rest/v1/billing_customers?${params}`, {
     headers: { Authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey },
   });
-  if (!response.ok) return null;
+  if (!response.ok) throw new Error('BILLING_WEBHOOK_READ_FAILED');
   const rows = await response.json();
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
@@ -233,36 +235,39 @@ async function upsertBillingCustomerAsaasId({
 }
 
 // BLOCO ASAAS CHECKOUT: caminho de correlacao alternativo -- so acionado
-// quando o `payment.customer` NAO bate com nenhum billing_customers
-// conhecido (o Checkout pode ter criado um cliente novo na Asaas). Consulta
+// quando a assinatura do provedor ainda não tem vínculo local, inclusive
+// se o cliente já é conhecido. Consulta
 // a assinatura na Asaas para ler `checkoutSession` (confirmado em
 // docs.asaas.com/reference/retrieve-a-single-subscription) e localiza a
 // linha local pelo `asaas_checkout_id` que NOS geramos em
 // billing-create-checkout -- nunca mistura checkout.id com payment.id.
 async function linkCheckoutOriginatedSubscription({
-  asaasSubscriptionId, asaasCustomerId, supabaseUrl, serviceRoleKey,
-}: { asaasSubscriptionId: string; asaasCustomerId: string; supabaseUrl: string; serviceRoleKey: string }) {
+  asaasSubscriptionId, asaasCustomerId, supabaseUrl, serviceRoleKey, expectedWorkspaceId,
+}: { asaasSubscriptionId: string; asaasCustomerId: string; supabaseUrl: string; serviceRoleKey: string; expectedWorkspaceId: string | null }) {
   const asaasApiKey = Deno.env.get('ASAAS_API_KEY') ?? '';
   const asaasBaseUrl = Deno.env.get('ASAAS_BASE_URL') ?? '';
-  let checkoutSessionId: string | null = null;
-  try {
-    const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl, allowProduction: true });
-    const remote = await client.getSubscription(asaasSubscriptionId) as { checkoutSession?: string };
-    checkoutSessionId = typeof remote?.checkoutSession === 'string' ? remote.checkoutSession : null;
-  } catch {
-    // Best-effort: se a consulta falhar, nao ha como correlacionar agora --
-    // o proximo evento de pagamento tenta de novo (idempotente).
-    return null;
-  }
+  const client = createAsaasClient({ apiKey: asaasApiKey, baseUrl: asaasBaseUrl, allowProduction: true });
+  // Provider/DB failures must leave the durable event retryable.
+  const remote = await client.getSubscription(asaasSubscriptionId) as Record<string, unknown>;
+  const checkoutSessionId = typeof remote?.checkoutSession === 'string' ? remote.checkoutSession : null;
   if (!checkoutSessionId) return null;
-
   const subscription = await findSubscriptionByCheckoutId({ supabaseUrl, serviceRoleKey, asaasCheckoutId: checkoutSessionId });
   if (!subscription) return null;
-
-  await patchSubscription({
+  if (remote.id !== asaasSubscriptionId || remote.customer !== asaasCustomerId
+    || remote.value !== PLAN_PRICE_BRL || remote.cycle !== 'MONTHLY' || remote.billingType !== 'CREDIT_CARD'
+    || subscription.plan_id !== BILLING_PLAN_ID || subscription.payment_method !== 'credit_card'
+    || (expectedWorkspaceId && subscription.workspace_id !== expectedWorkspaceId)
+    || (subscription.asaas_subscription_id && subscription.asaas_subscription_id !== asaasSubscriptionId)
+    || !['pending', 'active', 'past_due'].includes(subscription.status as string)) {
+    throw new Error('BILLING_CHECKOUT_CORRELATION_MISMATCH');
+  }
+  const applied = await patchSubscription({
     supabaseUrl, serviceRoleKey, subscriptionId: subscription.id as string,
     patch: { asaas_customer_id: asaasCustomerId, asaas_subscription_id: asaasSubscriptionId },
+    expectedStatus: subscription.status as string,
+    expectedCurrentPeriodEndsAt: (subscription.current_period_ends_at as string | null) ?? null,
   });
+  if (!applied) throw new Error('BILLING_CHECKOUT_CORRELATION_CONCURRENT_CHANGE');
   await upsertBillingCustomerAsaasId({
     supabaseUrl, serviceRoleKey, workspaceId: subscription.workspace_id as string, asaasCustomerId,
   });
@@ -277,6 +282,10 @@ async function linkCheckoutOriginatedSubscription({
 async function upsertBillingPayment({
   supabaseUrl, serviceRoleKey, row,
 }: { supabaseUrl: string; serviceRoleKey: string; row: Record<string, unknown> }) {
+  // Initial Automatic Pix may remain subscription-less at the provider even
+  // after a verified authorization bound its local mirror. Do not erase it.
+  const paymentRow = { ...row };
+  if (paymentRow.asaas_subscription_id == null) delete paymentRow.asaas_subscription_id;
   const response = await fetch(`${supabaseUrl}/rest/v1/billing_payments?on_conflict=asaas_payment_id`, {
     method: 'POST',
     headers: {
@@ -285,7 +294,7 @@ async function upsertBillingPayment({
       'Content-Type': 'application/json',
       Prefer: 'resolution=merge-duplicates,return=minimal',
     },
-    body: JSON.stringify(row),
+    body: JSON.stringify(paymentRow),
   });
   assertBillingWebhookWriteSucceeded(response, 'billing_payment_upsert');
 }
@@ -336,7 +345,7 @@ async function patchSubscription({
 // Sempre idempotente: reprocessar o MESMO evento aplica o mesmo patch,
 // nunca duplica efeito (upsert por asaas_payment_id; PATCH de subscriptions
 // é atribuição de valor, não incremento).
-async function processPaymentEvent({
+export async function processPaymentEvent({
   supabaseUrl, serviceRoleKey, eventType, payload,
 }: { supabaseUrl: string; serviceRoleKey: string; eventType: string; payload: Record<string, unknown> }) {
   if (!PROCESSABLE_PAYMENT_EVENT_TYPES.has(eventType)) return;
@@ -369,16 +378,13 @@ async function processPaymentEvent({
   if (!asaasCustomerId) return;
 
   let workspaceId = await findBillingCustomerWorkspace({ supabaseUrl, serviceRoleKey, asaasCustomerId });
-  let linkedSubscription: Record<string, unknown> | null = null;
-
-  // BLOCO ASAAS CHECKOUT: `payment.customer` desconhecido pode significar
-  // que o pagamento veio de um Checkout hospedado (cartao) que criou um
-  // cliente novo na Asaas -- tenta o caminho de correlacao alternativo
-  // (via checkoutSession) antes de desistir. Nunca acionado para o Pix
-  // direto (que sempre bate no `findBillingCustomerWorkspace` acima).
-  if (!workspaceId && asaasSubscriptionId) {
+  let linkedSubscription: Record<string, unknown> | null = asaasSubscriptionId
+    ? await findSubscriptionByAsaasId({ supabaseUrl, serviceRoleKey, asaasSubscriptionId }) : null;
+  // Checkout can also reuse an already known customer. Correlate the unknown
+  // subscription, rather than testing only whether the customer is unknown.
+  if (!linkedSubscription && asaasSubscriptionId) {
     linkedSubscription = await linkCheckoutOriginatedSubscription({
-      asaasSubscriptionId, asaasCustomerId, supabaseUrl, serviceRoleKey,
+      asaasSubscriptionId, asaasCustomerId, supabaseUrl, serviceRoleKey, expectedWorkspaceId: workspaceId,
     });
     if (linkedSubscription) workspaceId = linkedSubscription.workspace_id as string;
   }
@@ -405,6 +411,12 @@ async function processPaymentEvent({
 
   const subscription = linkedSubscription
     ?? await findSubscriptionByAsaasId({ supabaseUrl, serviceRoleKey, asaasSubscriptionId });
+  if (subscription && (subscription.workspace_id !== workspaceId
+    || subscription.asaas_customer_id !== asaasCustomerId
+    || subscription.plan_id !== BILLING_PLAN_ID
+    || (['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(String(payment.status)) && payment.value !== PLAN_PRICE_BRL))) {
+    throw new Error('BILLING_PAYMENT_ENTITLEMENT_MISMATCH');
+  }
   const patch = isProviderPaymentStatusConsistent(eventType, payment.status)
     ? resolveSubscriptionPatchForEvent({
       eventType,

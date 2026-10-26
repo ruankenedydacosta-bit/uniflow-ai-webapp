@@ -11,7 +11,12 @@
 // Payload mínimo para o modal Pix funcionar de verdade -- QR Code (base64)
 // + copia-e-cola, sempre vindos prontos da Asaas via billing-create-
 // subscription/billing-get-subscription, nunca gerados no frontend.
-export function isValidPixPayload(pix) {
+export function isValidPixPayload(pix, now = Date.now()) {
+  if (pix?.expiration_date) {
+    let expiration = pix.expiration_date;
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$/.test(expiration)) expiration = `${expiration.replace(' ', 'T')}-03:00`;
+    if (!(Date.parse(expiration) > now)) return false;
+  }
   return Boolean(
     pix
     && typeof pix.payload === 'string' && pix.payload.trim()
